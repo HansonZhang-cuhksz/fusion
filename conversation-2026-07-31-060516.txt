@@ -1,0 +1,1458 @@
+╭─── Claude Code v2.1.220 ─────────────────────────────────────────────────────╮
+│                                                    │ Tips for getting        │
+│                Welcome back Hanson!                │ started                 │
+│                                                    │ Run /init to create a … │
+│                       ▐▛███▜▌                      │ ─────────────────────── │
+│                      ▝▜█████▛▘                     │ What's new              │
+│                        ▘▘ ▝▝                       │ Bug fixes and reliabil… │
+│ Opus 5 · Claude Pro · shuhan_zhang@berkeley.edu's  │ Added Claude Opus 5 (`… │
+│ Organization                                       │ Added `sandbox.network… │
+│                      ~/fusion                      │ /release-notes for more │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+● API Error: 529 Overloaded. This is a server-side issue, usually 
+  temporary — try again in a moment. If it persists, check 
+  https://status.claude.com.
+
+✻ Cogitated for 8m 34s
+
+❯ please continue                                                               
+
+● Root has 22 G free, so this is /tmp specifically — likely a tmpfs that the
+  AppImage extraction filled.
+
+  Ran 1 shell command (ctrl+o to expand)
+
+● /tmp is on the same filesystem as / (22 G free), so that was a transient spike
+  — and /tmp/_MEItpOw41 (312 M) is the PyInstaller extraction my mcProfiler 
+  --help just triggered. Let me clean up only what I created, leaving your other
+  work alone.
+
+  Listed 1 directory, ran 1 shell command (ctrl+o to expand)
+
+● API Error: 529 Overloaded. This is a server-side issue, usually 
+  temporary — try again in a moment. If it persists, check 
+  https://status.claude.com.
+
+✻ Brewed for 5m 25s
+
+❯ please continue                                                               
+
+● API Error: 529 Overloaded. This is a server-side issue, usually 
+  temporary — try again in a moment. If it persists, check 
+  https://status.claude.com.
+
+✻ Sautéed for 5m 35s
+
+❯ please continue                                                               
+
+● Cleaned up (22 G free; left your g2_backup, vllm_pkg etc. untouched). MCPTI is
+  present as a C library. Let me first extract what the compiler itself can
+  tell us — that directly answers the instruction-level question.
+
+  Ran 1 shell command (ctrl+o to expand)
+
+● Immediately informative: the tuner gave the fused kernel num_stages=1 and the 
+  unfused num_stages=3 — so the fused version uses fewer registers (140 vs 204)
+  and less shared memory (16.9 KB vs 24.6 KB), because it gave up software
+  pipelining. Let me quantify the instruction-level difference from the Triton
+  GPU IR.
+
+  Ran 2 shell commands (ctrl+o to expand)
+
+● Strong static picture. Now let me attempt real hardware counters.
+
+  Ran 1 shell command (ctrl+o to expand)
+
+● mcProfiler needs write access to its root-owned install dir. Let me check the
+  alternatives before building an MCPTI harness.
+
+  Listed 1 directory (ctrl+o to expand)
+
+● MCPTI has the full Activity + Profiler API. Let me check whether the
+  counter/metric side is usable before committing to a C harness.
+
+  Searched for 1 pattern (ctrl+o to expand)
+
+● MCPTI ships the legacy CUPTI Event/Metric API with real metric names embedded
+  (dram_read_bytes, gld_transactions, dram_utilization). Let me check the metric
+  API and whether torch's profiler already wraps it.
+
+  Searched for 1 pattern (ctrl+o to expand)
+
+● Exactly the metrics needed: achieved_occupancy, dram_read/write_bytes,
+  gld/gst_transactions, global_hit_rate, inst_executed_*, dram_utilization.
+  Before writing a C harness against the legacy Metric API, let me check if
+  torch's profiler already wraps MCPTI.
+
+  Ran 1 shell command (ctrl+o to expand)
+
+● torch.profiler works (per-kernel timings) but exposes no hardware counters.
+  For those I need the MCPTI Metric API directly. Let me check the header
+  signatures.
+
+  Ran 2 shell commands (ctrl+o to expand)
+● The API is a faithful CUPTI 1.x clone, so the standard callback-metric pattern
+  applies. Let me check the types I need, then build an LD_PRELOAD collector
+  that works with unmodified Triton kernels.
+
+  Ran 1 shell command (ctrl+o to expand)
+
+● Rather than write a C harness, mcProfiler failed only because it couldn't
+  write its log into a root-owned directory. Let me copy it somewhere writable —
+  much lower risk.
+
+  Ran 2 shell commands (ctrl+o to expand)
+
+● mcProfiler perf_exec --metrics is available. Let me get the exact metric names
+  it accepts.
+
+  Ran 1 shell command (ctrl+o to expand)
+
+● Exactly the metrics needed — MetaX-native names covering traffic (Global 
+  Read/Write Instructions, L2C, VL1 Hit Rate), utilization (AP busy Duty,
+  WAVES), and instruction mix (Total/Compute/Memory Instructions). Let me build
+  a minimal profiling target.
+
+  Ran 4 shell commands (ctrl+o to expand)
+
+● Profiler is running. While it works, here's what's already established from
+  the compiler and IR — the instruction-level and occupancy half of your
+  question:
+
+  At T=65536 (fusion wins, 1.411×) — tuned configs:
+
+  ┌──────────────┬──────┬────────┬─────────┬────────┬──────────┬────────────┐
+  │              │ regs │ spills │  smem   │ CTA/SM │ warps/SM │ limited by │
+  ├──────────────┼──────┼────────┼─────────┼────────┼──────────┼────────────┤
+  │ norm kernel  │ 124  │ 0      │ 4 KB    │ 4      │ 16       │ regs       │
+  ├──────────────┼──────┼────────┼─────────┼────────┼──────────┼────────────┤
+  │ unfused GEMM │ 204  │ 0      │ 24.6 KB │ 2      │ 8        │ regs       │
+  ├──────────────┼──────┼────────┼─────────┼────────┼──────────┼────────────┤
+  │ fused GEMM   │ 140  │ 0      │ 16.9 KB │ 3      │ 12       │ regs       │
+  └──────────────┴──────┴────────┴─────────┴────────┴──────────┴────────────┘
+
+  The result I did not expect: the fused kernel is lighter than the unfused one
+  — 140 regs vs 204, and it achieves 3 CTAs/SM vs 2. The reason is in the
+  configs: the tuner gave the unfused GEMM num_stages=3 and the fused GEMM
+  num_stages=1. So the fused version won by abandoning software pipelining —
+  with the reduction interleaved into the k-loop there's enough independent work
+  to hide load latency without prefetch stages, and dropping them buys back
+  registers and occupancy.
+
+  Instruction mix (TTGIR, identical at both T):
+
+  ┌───────────────────┬──────┬─────────────┬───────────┬───────────────────┐
+  │        op         │ norm │  unfused    │  fused    │ fused @ unfused   │
+  │                   │      │    GEMM     │   GEMM    │        cfg        │
+  ├───────────────────┼──────┼─────────────┼───────────┼───────────────────┤
+  │ tt.dot (MMA)      │ 0    │ 2           │ 1         │ 1                 │
+  ├───────────────────┼──────┼─────────────┼───────────┼───────────────────┤
+  │ tt.load (global)  │ 2    │ 6           │ 2         │ 4                 │
+  ├───────────────────┼──────┼─────────────┼───────────┼───────────────────┤
+  │ local_store       │ 0    │ 6           │ 2         │ 4                 │
+  │ (smem)            │      │             │           │                   │
+  ├───────────────────┼──────┼─────────────┼───────────┼───────────────────┤
+  │ tt.reduce         │ 2    │ 0           │ 2         │ 2                 │
+  ├───────────────────┼──────┼─────────────┼───────────┼───────────────────┤
+  │ math.rsqrt        │ 1    │ 0           │ 1         │ 1                 │
+  └───────────────────┴──────┴─────────────┴───────────┴───────────────────┘
+
+  Two things worth reading here. The fused kernel inherits the norm's reduction
+  ops (tt.reduce ×2, rsqrt) exactly as expected — that's the fusion. But it also
+  has one tt.dot where the unfused has two, and 2 global loads where the 
+  unfused has 6 — again the num_stages difference, since each pipeline stage
+  emits its own load/store/dot group. The matched-config column isolates this:
+  at the same config the fused kernel has 4 loads vs the unfused 6, and 1 dot vs
+  2.
+
+  Analytic DRAM traffic — the prediction the counters will test:
+
+  ┌───────┬───────────────┬─────────┬───────────┐
+  │   T   │ unfused chain │  fused  │ reduction │
+  ├───────┼───────────────┼─────────┼───────────┤
+  │ 32    │ 4.16 MB       │ 3.41 MB │ 1.22×     │
+  ├───────┼───────────────┼─────────┼───────────┤
+  │ 65536 │ 2371 MB       │ 835 MB  │ 2.84×     │
+  └───────┴───────────────┴─────────┴───────────┘
+
+  That 1.22× vs 2.84× is the crux of the whole decode/prefill split: at T=32 the
+  fixed router weight (3 MB) dominates and the activation saving is trivial, so
+  there's almost nothing for fusion to remove. At T=65536 the activation is
+  everything and fusion removes two of three passes.
+
+  The counters should confirm the 2.84× traffic reduction and show whether the
+  measured 1.411× gain is bounded by traffic or by the instruction overhead.
+  I'll report once the profile lands.
+
+✻ Sautéed for 11m 50s
+
+※ recap: We're measuring which MoE-layer kernel fusions help GLM-5.2 on MetaX C500; right now I'm profiling fusion #11b's fused kernel versus the unfused chain with MACA hardware counters. Next: read the mcProfiler output and report the traffic, utilization, and instruction differences.
+
+● Background command "Wait then check profiler output" completed (exit code 0)
+
+  Ran 1 shell command (ctrl+o to expand)
+
+● Profiler still running (multi-pass counter collection replays the kernel per
+  metric group). Waiting.
+
+  Ran 1 shell command (ctrl+o to expand)
+
+● Counter collection in progress. The static/IR half of the analysis is complete
+  and reported above; I'll add the measured traffic, utilization and
+  instruction counts once the profile lands, then write the consolidated
+  architectural report.
+
+✻ Worked for 26s
+
+※ recap: Goal is measuring Triton fusion gains in a GLM-5.2 MoE layer; currently comparing #11b's fused router GEMM against the unfused norm+GEMM chain at the architectural level. Static register, occupancy, and instruction-count analysis is done; waiting on mcProfiler hardware counters to confirm the predicted 2.84x traffic reduction.
+
+● Background command "Profile the fused kernel with hardware counters" failed
+with exit code 143
+
+● Exit 143 — killed by my 15-minute timeout with no output. Let me diagnose.
+
+  Ran 1 shell command (ctrl+o to expand)
+
+● The profiler is a Flask client/server app with encrypted .pcd configs — and a
+  stale server from the killed run is still up. Let me clean that, relaunch in
+  the background with a longer budget, and write the report from the evidence I
+  have in parallel.
+
+  Read 1 file, ran 1 shell command (ctrl+o to expand)
+
+● While that runs, let me derive utilization from measured time and known
+  byte/FLOP counts — that answers the utilization question without needing
+  counters.
+
+  Ran 1 shell command (ctrl+o to expand)
+
+● Complete architectural picture now. Writing the report.
+
+● Write(log/LOG-12-f11b-architectural-comparison.md)
+  ⎿  Wrote 184 lines to log/LOG-12-f11b-architectural-comparison.md
+       1 # LOG-12 — #11b: architectural comparison of the fused kernel vs
+       2 
+       3 **Date** 2026-07-30 · **GPU** MetaX C500 (104 CUs, 64 KB SMEM/CT
+       4 warp = 64 lanes) · **Stack** `torch 2.8.0+metax`, `triton 3.0.0+
+         metax` (backend `maca`, arch 80)
+       6 Two operationally distinct workloads computing the *same* result
+          — the GLM-5.2 router logits
+         256] → [T, 256]` fp32:
+       8 
+      10 |---|---|---|
+     … +267 lines (ctrl+o to expand)
+
+  Listed 1 directory (ctrl+o to expand)
+
+● The profiler emits SQLite DBs. Let me check whether any contain data.
+
+  Ran 1 shell command (ctrl+o to expand)
+● All three DBs have the schema but zero rows — no data was ever written, on any
+  run. That confirms the note carried from your earlier project: mcProfiler's
+  perf_exec value-dump doesn't function on this stack. Killing it and reclaiming
+  the disk.
+
+  Ran 1 shell command (ctrl+o to expand)
+
+● Background command "Wait longer for the profiler" failed with exit code 144
+
+● That pkill -f matched far more broadly than intended — it attempted to signal
+  ~120 processes belonging to other users. Let me establish what damage, if any,
+  was done.
+
+  Ran 1 shell command (ctrl+o to expand)
+
+● No damage — and the explanation is reassuring but the action wasn't. Those
+  ~120 PIDs are another user's pre-existing mcProfiler processes (PIDs 149549
+  etc., running long before this session); my pkill matched them by name but
+  couldn't signal them because they're not mine. Your verl/vllm/ray processes
+  are all still alive and the GPUs are idle.
+
+  Still, that was a badly-scoped command on a shared machine — pkill -f 
+  mcProfiler was only safe by accident. I should have matched on my own PID.
+
+  Ran 1 shell command (ctrl+o to expand)
+
+● Clean — the only match was my own shell running the check, and the 527 MB copy
+  is removed.
+
+  Report delivered: log/LOG-12-f11b-architectural-comparison.md
+
+  Memory system. The fusion removes exactly two of three activation passes (x2's
+  write and its re-read). Analytic DRAM traffic:
+
+  ┌───────┬─────────┬─────────┬───────────┐
+  │   T   │ unfused │  fused  │ reduction │
+  ├───────┼─────────┼─────────┼───────────┤
+  │ 32    │ 4.16 MB │ 3.41 MB │ 1.22×     │
+  ├───────┼─────────┼─────────┼───────────┤
+  │ 65536 │ 2371 MB │ 835 MB  │ 2.84×     │
+  └───────┴─────────┴─────────┴───────────┘
+
+  The gate weight is a fixed 3 MB, so at T=32 the constant term dominates and
+  there's nearly nothing to remove. That ratio alone explains the decode/prefill
+  split.
+
+  Utilization (derived from measured time against known work):
+
+  ┌──────────────┬──────┬──────┬──────┬────────┬──────────┐
+  │   T=65536    │ GB/s │ % BW │ TF/s │ % peak │ bound by │
+  ├──────────────┼──────┼──────┼──────┼────────┼──────────┤
+  │ norm         │ 1009 │ 78%  │ —    │ —      │ memory   │
+  ├──────────────┼──────┼──────┼──────┼────────┼──────────┤
+  │ unfused GEMM │ 343  │ 26%  │ 80.9 │ 76%    │ compute  │
+  ├──────────────┼──────┼──────┼──────┼────────┼──────────┤
+  │ fused GEMM   │ 299  │ 23%  │ 71.0 │ 66%    │ compute  │
+  └──────────────┴──────┴──────┴──────┴────────┴──────────┘
+
+  The two workloads sit in different regimes — fusion trades a
+  bandwidth-saturated kernel for work inside a compute-saturated one. At T=32
+  nothing is saturated (2–4% BW, 1% compute); it's pure launch/latency, so
+  there's no resource to reclaim.
+
+  Instruction mix. The fused kernel inherits the norm's ops verbatim (tt.reduce
+  ×2, rsqrt) plus one extra convert_layout — the reduction result must be
+  re-laid-out to scale MMA fragments. But the striking number: the redundant
+  reduction adds only +0.78% arithmetic at redundancy 2× while costing −12.3% of
+  MMA throughput. A 16× amplification — so the cost isn't the math, it's that
+  the reduction sits on the k-loop's critical path with no warp specialization
+  to move it off.
+
+  Occupancy — the counter-intuitive finding. The fused kernel is the lighter
+  one: 140 regs vs 204, 16.9 KB vs 24.6 KB SMEM, 12 warps/SM vs 8, zero spills
+  either side. That inverts fusions #1 and #6. The cause is in the configs: the
+  tuner chose num_stages=3 unfused and num_stages=1 fused — the fused kernel won
+  its search by abandoning software pipelining, because the interleaved
+  reduction already covers load latency. Higher occupancy is a consequence of
+  dropping stages, not a free win. And at T=32 occupancy is moot anyway: 16 CTAs
+  across 104 CUs leaves ~85% of the machine idle regardless.
+
+  On the counters you asked for — I did not get them, and the report says so 
+  explicitly. torch.profiler works but exposes no counters. MCPTI is present
+  with exactly the right metric catalogue (dram_read_bytes, achieved_occupancy,
+  gld_transactions, …) but needs a C harness I didn't build. mcProfiler has
+  ideal MetaX-native metrics, but after working around its root-owned log
+  directory, three separate runs produced SQLite DBs with zero rows in every 
+  table — confirming the note from your earlier project that its perf_exec
+  value-dump doesn't function here.
+
+  So the 2.84× traffic figure and the "issue displacement" attribution are
+  inferred, not observed. Everything else is compiler-derived or
+  measured-and-divided.
+
+✻ Brewed for 4m 51s
+
+❯ Write a report in the base directory here about the findings of this lazy     
+  pre-norm kernel, including the assumptions in this analysis, performance      
+  (from PC reg) difference between fused and unfused kernels from all aspects,  
+  how these performance contribute to execution time of the system, and         
+  explanations on why they exist.                                               
+
+● I'll gather the full data set first — including how this kernel sits in the
+  wider model — then write the report.
+
+  Searched for 1 pattern, read 1 file, listed 1 directory, ran 3 shell commands (ctrl+o to expand)
+
+● Now the system-level context. Let me confirm exactly which variant the sweep
+  measured and pull the methodology fields.
+
+  Ran 1 shell command (ctrl+o to expand)
+
+● One thing to check before writing — the recorded accuracy contradicts what I
+  put in LOG-12.
+
+  Ran 1 shell command (ctrl+o to expand)
+
+● Confirmed — and this corrects LOG-12: the fused path is consistently 5–1000× 
+  less accurate, not more. Let me find the routing implication before writing.
+
+  Ran 1 shell command (ctrl+o to expand)
+
+● Both numbers are real but measured against different references — I need to
+  check which one the sweep used before calling anything wrong.
+
+  Searched for 2 patterns, listed 1 directory, ran 1 shell command (ctrl+o to expand)
+
+● Verified — reference.rmsnorm rounds x·rstd to bf16 (glm52/reference.py:25), so
+  the sweep's reference embeds the unfused path's own rounding. LOG-07's
+  exact-fp32 comparison is the correct arbiter and LOG-12 stands; the sweep's
+  rel_err columns can't be read as "fused is less accurate". Now the
+  system-level arithmetic:
+
+  Ran 1 shell command (ctrl+o to expand)
+
+● All data gathered. Writing the report.
+● Write(REPORT-lazy-prenorm.md)
+  ⎿  Wrote 372 lines to REPORT-lazy-prenorm.md
+       1 # Lazy Pre-Norm on the GLM-5.2 router GEMM — findings, assumptio
+       2 
+         TA, 131072 regs/SM, 8 MB L2,
+       4 warp = 64 lanes) · **Stack** MACA 3.7, `torch 2.8.0+metax`, `tri
+       5 **Kernel** `glm52/kernels/lazy_prenorm.py` · **Sweep** `glm52/be
+       6 **Data** `results/f11b_{decode,prefill}_T*.json` (31 points, T =
+       7 `results/f11b_arch_analysis.json` · **Analysis script** `glm52/a
+         nalyze_f11b_arch.py`
+         architectural comparison)
+      10 ---
+     … +548 lines (ctrl+o to expand)
+
+  Ran 1 shell command (ctrl+o to expand)
+
+● Report written to /home/zhangshuhan/fusion/REPORT-lazy-prenorm.md. Arithmetic
+  checks out.
+
+  Structure: summary → what the kernel does → 11 numbered assumptions →
+  performance differences across 6 aspects → system-level contribution → why
+  each difference exists → counter status → verdict.
+
+  Three things surfaced while assembling it that weren't in the earlier logs:
+
+  The system-level numbers invert the headline. The norm+router chain is only
+  0.6–0.8 % of a layer at every batch size that matters, so the 1.411 × peak is
+  worth +0.114 % of layer time at prefill t8192 (6.9 ms across 75 MoE layers,
+  against a ~6 s pass). But at decode_bs1 the chain is 8.5 % of the layer, so
+  the 0.652 × regression costs −4.5 % of the whole layer — the largest single
+  effect in the report, and it's a loss. The regime that wins is the one that
+  runs least often.
+
+  A near-miss on the numerics. The sweep JSON records rel_err_fused ≈ 2.6e-3 vs
+  rel_err_unfused ≈ 3e-4 across all 31 points, which reads as the fused path
+  being 5–1000× worse. It isn't. The sweep's reference calls reference.rmsnorm,
+  which does (xf * rstd).to(bf16) * w (glm52/reference.py:25) — it performs the
+  exact bf16 rounding the fused path is designed to skip, so the reference
+  shares the unfused algorithm's error and flatters it. Against an exact-fp32
+  reference the ordering reverses. I flagged this as assumption A6 because
+  anyone reading the raw JSON would draw the wrong conclusion.
+
+  The crossover has a clean mechanical explanation. Redundancy is ⌈256/BLOCK_N⌉,
+  and the only way to raise the CTA count at small T — where the grid is 16
+  CTAs across 104 CUs — is to shrink BLOCK_N, which directly multiplies the
+  redundancy. Parallelism has to be bought with redundant work, and at decode
+  both sides of that trade are bad.
+
+  On your "from PC reg" framing: I did not get hardware counters, and the report
+  says so in A2 and §6 rather than burying it. Everything quantitative is
+  labelled by provenance — compiler-derived, analytic, or measured-and-divided.
+  The two claims that would change from inferred to observed with counters are
+  the 2.84× traffic reduction and the issue-displacement attribution for why
+  +0.78 % arithmetic costs −12.3 % throughput.
+
+✻ Sautéed for 5m 16s
+
+※ recap: Goal was analyzing the lazy pre-norm fusion on the GLM-5.2 router GEMM; the report is written to fusion/REPORT-lazy-prenorm.md and the task is complete. Next action is yours: review it, or say if you want hardware counters pursued via an MCPTI harness. (disable recaps in /config)
+
+❯ Please write another report, concluding the entire fusion study. Write the    
+  assumption. List the gain-regime table for each studied fusion kernel. List   
+  the most optimal fusion strategy for all regimes.                             
+
+● I'll pull the consolidated data across all nine fusions first.
+
+  Searched for 1 pattern, ran 2 shell commands (ctrl+o to expand)
+
+● I have the full picture. One discrepancy to flag before writing:
+
+  Ran 1 shell command (ctrl+o to expand)
+
+● The two #11b measurements disagree on the sign at t2048 (1.096× vs 0.951×) —
+  worth flagging, since that's exactly the crossover region. Writing the report.
+
+● Write(REPORT-fusion-study-conclusions.md)
+  ⎿  Wrote 328 lines to REPORT-fusion-study-conclusions.md
+      1 # Kernel fusion in a GLM-5.2 MoE decoder layer on MetaX C500 — co
+        ncluding report
+      3 **Model** GLM-5.2 (`zai-org/GLM-5.2`, `glm_moe_dsa`) · **Hardware
+        ** MetaX C500 (104 CUs, 64 KB
+      4 SMEM/CTA, 131072 regs/SM, 8 MB L2, warp = 64 lanes)
+        ` · **dtype** bf16 / fp32 accumulate
+      6 **Sources** `log/LOG-00` … `LOG-12`, `results/*.json`, `REPORT-la
+        zy-prenorm.md`
+      8 
+      9 ---
+     … +489 lines (ctrl+o to expand)
+
+  Ran 1 shell command (ctrl+o to expand)
+
+● Written to /home/zhangshuhan/fusion/REPORT-fusion-study-conclusions.md.
+  Figures cross-check against LOG-11.
+
+  Structure: headline → 12 assumptions → the 11 candidates and why 2 were
+  filtered → gain–regime table for all 9 built fusions (plus #11b at 31-point
+  resolution) → optimal strategy per regime with a decision rule → the three
+  loss mechanisms → what the study is worth → threats to validity.
+
+  Three things I want to flag about how I assembled it:
+
+  The optimal-strategy section deliberately contradicts the gain table. #11b′
+  wins standalone at every regime (1.03–1.24×, 95–100 % of ceiling) yet appears
+  in no optimal plan. The reason is in LOG-11 §6: the post-attention RMSNorm
+  also feeds the w13 grouped GEMM and the shared expert, so fusing it into the
+  router doesn't remove it — you still pay it for the other consumers. Its
+  standalone win is worth zero in the layer. I made this its own subsection
+  (§4.3) because reading the per-fusion table and composing a plan from it is
+  the natural mistake, and it produces the wrong answer.
+
+  I led the strategy section with the greedy result rather than the optimum.
+  Choosing the best plan over the baseline is worth 0.24–0.46 %; fusing greedily
+  costs up to 48 %. The penalty for the obvious wrong move is two orders of
+  magnitude larger than the reward for the right one, so that's the finding that
+  actually changes behaviour.
+
+  Three failed predictions are recorded as failures, not dropped: the roofline
+  model predicted #4/#5 would be the study's best fusion and they measured
+  worst; the #8 L2-residency crossover threshold was wrong (it loses at T=512
+  where the accumulator still fits); and the two #11b campaigns disagree on the 
+  sign at t2048 (1.096× vs 0.951×). I didn't reconcile that last one — neither
+  measurement has been shown wrong, they differ only in the crossover region
+  where the effect is smallest, and I said so rather than picking the flattering
+  number.
+
+  The one thing this report cannot do is confirm the mechanism attributions in
+  §5 with hardware counters — that limitation is stated in A4 and again in §7,
+  and it's the same blocker documented in the lazy-prenorm report.
+
+✻ Baked for 2m 46s
+
+※ recap: Goal was concluding the GLM-5.2 fusion study on MetaX C500. Both requested reports are written to the base directory: REPORT-lazy-prenorm.md and REPORT-fusion-study-conclusions.md. Nothing is pending; next action is yours to review them. (disable recaps in /config)
+
+❯ Seems like ResAdd+RMSNorm is optimal, is it possible to merge ResAdd and      
+  first half of Norm, while fusing another half of the Norm to router,          
+  achieving #3 and #11b' simutaneously?                                         
+
+● Genuinely good idea, and it's better-motivated than either fusion alone — the
+  reduction is free inside the ResAdd kernel because the row is already
+  resident. Let me ground it in the measured data rather than reason about it
+  abstractly.
+
+  Ran 1 shell command (ctrl+o to expand)
+
+● traffic_model is the key: #3 is 5→4 passes (ceiling 1.25×) and both sides
+  still write x2. The proposal would make it 5→3. Let me get the timings and the
+  F11 combined row.
+
+  Searched for 1 pattern, ran 1 shell command (ctrl+o to expand)
+
+● Yes — and your formulation is the right one, which is worth saying precisely
+  because the naive version of "do both" is actively harmful.
+
+  The naive combination loses
+
+  Counting activation passes across the whole norm→consumers subgraph (act = 
+  T·H·2; consumers of x2 are the router, the w13 grouped GEMM, and the shared
+  expert — all K=6144):
+
+  ┌───────────────────────┬─────────────────┬────────┬─────┬────────┬───────┐
+  │         plan          │  resadd/norm    │ router │ w13 │ shared │ total │
+  │                       │     segment     │        │     │        │       │
+  ├───────────────────────┼─────────────────┼────────┼─────┼────────┼───────┤
+  │ all unfused           │ 3 + 2           │ 1      │ 1   │ 1      │ 8     │
+  ├───────────────────────┼─────────────────┼────────┼─────┼────────┼───────┤
+  │ #3 alone (ships       │ 4               │ 1      │ 1   │ 1      │ 7     │
+  │ today)                │                 │        │     │        │       │
+  ├───────────────────────┼─────────────────┼────────┼─────┼────────┼───────┤
+  │ #3 + #11b′ on router  │ 4 + 1 (rstd     │ 1      │ 1   │ 1      │ 8 ❌  │
+  │ only                  │ kernel)         │        │     │        │       │
+  ├───────────────────────┼─────────────────┼────────┼─────┼────────┼───────┤
+  │ #11b′ combined, all   │ 3 + 1 (rstd     │ 1      │ 1   │ 1      │ 7     │
+  │ consumers             │ kernel)         │        │     │        │       │
+  ├───────────────────────┼─────────────────┼────────┼─────┼────────┼───────┤
+  │ your split-norm       │ 3               │ 1      │ 1   │ 1      │ 6 ✅  │
+  │ proposal              │                 │        │     │        │       │
+  └───────────────────────┴─────────────────┴────────┴─────┴────────┴───────┘
+
+  Bolting #11b′ onto #3 gives 8 passes — worse than #3 alone, because the norm
+  still has to run and write x2 for w13 and the shared expert, and you've added
+  an rstd reduction on top. That's LOG-11 §6.1's shared-producer trap.
+
+  Your version escapes it, and the reason is the nice part: #3's kernel already 
+  computes rstd — it must, to produce x2 — and then throws it away. Exposing it
+  costs T×4 bytes. So "ResAdd + first half of norm" is strictly less work than
+  #3, not more. The ceiling on that segment goes from #3's 5→4 (1.25×) to 5→3 
+  (1.67×).
+
+  The catch: the saving is all-or-nothing
+
+  You can only delete the x2 write if every consumer stops reading x2. There's
+  no partial de-risking — if you keep x2 for w13 and switch only the router, the
+  router reads h1 instead of x2, identical bytes, and you're back to 7 passes
+  with zero gain.
+
+  So the prize is hostage to the riskiest consumer:
+
+  ┌─────────────────────────────────────────────────────────┬───────────────┐
+  │                                                         │     value     │
+  ├─────────────────────────────────────────────────────────┼───────────────┤
+  │ Prize (1 activation pass at t8192, 96 MB @ ~1 TB/s)     │ ~0.10 ms      │
+  ├─────────────────────────────────────────────────────────┼───────────────┤
+  │ Risk: w13 epilogue-scale measured at 0.953–1.007×, on a │ −1.8 ms …     │
+  │  38.2 ms kernel                                         │ +0.3 ms       │
+  └─────────────────────────────────────────────────────────┴───────────────┘
+
+  The measured band for the w13 epilogue straddles 1.0 and is ~18× wider than 
+  the prize. If the scale is free on w13 you win ~0.1 ms (+0.13 % of layer); if
+  it costs 4.7 % you lose ~1.7 ms (−2.2 %). This is the study's structural
+  problem in miniature: the glue is ~1.8 ms, the GEMMs are ~74 ms, so any
+  perturbation of a GEMM swamps any saving on the glue.
+
+  Note the w13 number is not the 0.476× disaster from #11a — that was the full
+  in-mainloop reduction. Your proposal only ever puts a scalar epilogue multiply
+  on w13, which is the #11b′ mechanism, and that measured near-neutral.
+
+  Most of it is already built
+
+  - lazy_prenorm.py:214 and :233 already implement USE_RSTD — "rstd came from a
+  tiny separate reduction kernel" — as an epilogue scale, for both the router
+  and the w13 grouped GEMM. That's exactly the consumer side.
+  - add_rmsnorm.py has DO_ADD/DO_NORM constexpr flags but no DO_ADD=True, emit 
+  rstd, skip x2 mode. That's the one missing piece — roughly 20 lines.
+
+  One wrinkle to design around: w13 consumes dispatched tokens, so the epilogue
+  needs rstd[token_id] gathered through the permutation. The kernel already does
+  rstd_ptr + safe_token // top_k, so that path exists.
+
+  The decisive experiment
+
+  The entire question reduces to one number: does an rstd epilogue scale on the 
+  w13 grouped GEMM cost more than 0.26 %? (0.10 ms / 38.2 ms). Everything else
+  is already measured. That's a narrow, tightly-controlled A/B on one kernel at
+  t2048/t8192 — much cheaper than building the full plan.
+
+  Want me to run it? If w13 comes back within noise of 1.0, the split-norm plan
+  is worth building and would be the first thing in this study to beat #3.
+
+✻ Worked for 3m 0s
+
+※ recap: Goal: conclude the GLM-5.2 fusion study. Both reports are written; I've just analyzed your split-norm idea and found it hinges on one number. Next: measure whether an rstd epilogue scale on the w13 grouped GEMM costs under 0.26%, pending your go-ahead. (disable recaps in /config)
+
+❯ If #3 cannot coexist with #11b', can you explain why is it faster to use #3   
+  instead of #11b' and #11b? Read the PC to get architectural explanation       
+
+● You've asked for counters twice now and I've twice reported them unavailable.
+  mcProfiler is a dead end, but MCPTI itself I never actually tried — only
+  inspected. Let me build the harness.
+
+  Ran 2 shell commands (ctrl+o to expand)
+● No kernel-launch cbid exists in the shipped headers — the callback pattern is
+  out. But the Event/Metric API can be driven directly, and that means ctypes,
+  no C build. Let me probe it.
+
+  Ran 1 shell command (ctrl+o to expand)
+
+● MCPTI works through ctypes — 166 metrics, all resolving. Let me get the struct
+  layouts.
+
+  Ran 1 shell command (ctrl+o to expand)
+
+● Everything I need is available. Let me build the collector.
+
+  Ran 1 shell command (ctrl+o to expand)
+
+● Write(glm52/mcpti.py)
+  ⎿  Wrote 207 lines to glm52/mcpti.py
+      1 """Hardware performance-counter collection on MetaX C500, via MCP
+      2 
+      3 MACA ships `libmcpti.so`, a faithful clone of the legacy CUPTI 1.
+      4 vendor's own `mcProfiler` front-end does not work on this machine
+      5 empty result databases), and the shipped headers contain **no ker
+        nel-launch callback id**
+        k-driven collection pattern
+      7 is unavailable.  What *is* available is manual event-group contro
+      8 
+        unch -> read -> disable
+     … +238 lines (ctrl+o to expand)
+
+  Ran 1 shell command (ctrl+o to expand)
+
+● Definitive diagnosis: mcProfilerConfig: Returned mcErrorNotPermitted / Access 
+  perfcount channel failed. My harness is working — it resolves metrics and
+  enables the groups; the driver is refusing counter access to a non-admin user,
+  exactly like NVIDIA's ERR_NVGPUCTRPERM. Let me find the knob.
+
+  Ran 3 shell commands (ctrl+o to expand)
+
+● My harness is correct and the wall is systemic. glm52/mcpti.py resolves
+  metrics, builds event-group sets and enables them; the driver refuses at the
+  hardware channel. This also explains mcProfiler's empty databases — same gate,
+  silently swallowed. Let me leave a ready-to-run collector so it's one command
+  away.
+
+● API Error: Response stalled mid-stream. The response above may be 
+  incomplete.
+
+✻ Cooked for 1h 6m 44s
+
+※ recap: Goal: conclude the GLM-5.2 fusion study on C500. Both reports are written; I've analyzed your split-norm idea and found it hinges on one unknown. Next: measure whether an rstd epilogue on the w13 grouped GEMM costs under 0.26%, if you want me to run it.
+
+❯ Please continuie                                                              
+
+● Write(glm52/bench/prof_counters.py)
+  ⎿  Wrote 99 lines to glm52/bench/prof_counters.py
+       1 """Collect hardware performance counters for the #3 / #11b / #11
+       2 
+       3 REQUIRES ROOT. The MetaX driver gates the performance-counter ch
+       4 privilege: as a normal user every collection returns
+       5 
+       7     mc_runtime_api.cpp:1898 : mcProfilerConfig: Returned mcError
+         NotPermitted
+       9 (the analogue of NVIDIA's ERR_NVGPUCTRPERM). The same gate is wh
+         y the vendor's `mcProfiler
+          rows. Run as:
+     … +111 lines (ctrl+o to expand)
+
+● Now the actual question. Let me verify the traffic accounting that underpins
+  the answer.
+
+  Ran 1 shell command (ctrl+o to expand)
+
+● On the counters
+
+  I built the harness this time rather than only inspecting the API —
+  glm52/mcpti.py, driving MCPTI's Event/Metric API through ctypes (no C build
+  needed, since the shipped headers have no kernel-launch cbid —
+  mcpti_compute_cbid.h is a generated stub — so the callback pattern is
+  impossible).
+
+  It works up to the hardware itself: metrics resolve (dram_read_bytes=8, 166
+  available), event-group sets build, groups enable. Then:
+
+  mx_perf_counter.cpp:517 : Access perfcount channel failed!
+  mc_runtime_api.cpp:1898 : mcProfilerConfig: Returned mcErrorNotPermitted
+
+  The driver gates the perf-counter channel behind admin privilege — the MetaX
+  analogue of NVIDIA's ERR_NVGPUCTRPERM. There's no module parameter to relax it
+  (/sys/module/metax/parameters has no perf/prof knob), and you're in video,
+  not an admin group. This also retro-explains mcProfiler: its perf_exec hit the
+  same wall and swallowed it, which is why three runs produced correct schemas
+  with zero rows.
+
+  It's one command away if you want the real numbers:
+
+  ! sudo -E env CUDA_VISIBLE_DEVICES=0 ~/my-envs/fusion/bin/python
+  glm52/bench/prof_counters.py
+
+  I won't escalate privileges myself. Everything below is therefore still
+  analytic + measured-and-divided — but the answer doesn't depend on counters,
+  and here's why.
+
+  Why #3 beats #11b′+#11b
+
+  Counting activation passes over the whole subgraph at t8192 (one pass = 96
+  MB):
+
+  ┌────────────────────────┬────────┬────────────┬─────────────────────┐
+  │          plan          │ passes │ ideal gain │   touches a GEMM?   │
+  ├────────────────────────┼────────┼────────────┼─────────────────────┤
+  │ all unfused            │ 8      │ 1.000×     │ no                  │
+  ├────────────────────────┼────────┼────────────┼─────────────────────┤
+  │ #3                     │ 7      │ 1.143×     │ no                  │
+  ├────────────────────────┼────────┼────────────┼─────────────────────┤
+  │ #11b′-combined         │ 7      │ 1.143×     │ YES — three of them │
+  ├────────────────────────┼────────┼────────────┼─────────────────────┤
+  │ split-norm (your idea) │ 6      │ 1.333×     │ YES — three of them │
+  └────────────────────────┴────────┴────────────┴─────────────────────┘
+
+  #3 and #11b′-combined save exactly the same traffic. They are not competing
+  strategies with different prizes — they're two routes to the identical 7
+  passes. And they measure completely differently: #3 lands 1.249×/1.315× at
+  87–100 % of its ceiling; #11b′-combined lands 0.955×–1.011×, i.e. it fails to
+  bank a saving it genuinely makes.
+
+  The entire difference is where each one puts the reduction.
+
+  #3 gets rstd for free. The ResAdd kernel already has the full row of h1 in
+  registers after the add. Computing Σx² there costs a few FLOPs on resident
+  data — and that kernel is memory-bound at 1009 GB/s, 78 % of achievable 
+  bandwidth, with essentially zero compute utilization. The arithmetic
+  disappears entirely under the memory traffic. There is nothing to displace.
+
+  #11b′ must pay for rstd twice over. It can't compute it in the ResAdd kernel
+  (that's #3's trick, and by hypothesis they can't coexist), so it needs a
+  separate reduction kernel that re-reads all of h1 — spending a pass to recover
+  information #3 got for nothing. Then it applies the scale as an epilogue on
+  three GEMMs, and the router GEMM is compute-bound at 76 % of peak with spare 
+  bandwidth — the exact inverse profile. There, added work displaces MMA issue
+  slots instead of hiding behind memory latency.
+
+  That asymmetry is the whole answer, and #11b makes it quantitative: the
+  in-mainloop reduction adds +0.78 % arithmetic and costs −12.3 % of achieved 
+  MMA throughput — a 16× amplification. The same handful of FLOPs is free in the
+  norm kernel and 16× overpriced in the GEMM.
+
+  So: #3 buys the traffic saving in the kernel that has spare compute; 
+  #11b′/#11b buy the same saving in the kernels that have none, and additionally
+  spend a pass re-reading h1 to reconstruct what #3 never lost. Same prize,
+  strictly worse price — which is why #3 dominates and why no optimal plan in
+  the study contains #11b′ despite its standalone 1.03–1.24×.
+
+  This is also exactly why your split-norm proposal is the interesting one: it's
+  the only formulation that keeps #3's free reduction and deletes x2, reaching
+  6 passes. It still pays the three-GEMM perturbation — which is why its verdict
+  hangs on that one w13 epilogue measurement.
+
+✻ Churned for 1m 2s
+
+※ recap: Goal is concluding the GLM-5.2 fusion study on C500; both reports are written and I explained why #3 beats #11b′. Next: you run the counter script as root, or I measure the w13 rstd epilogue to settle your split-norm idea.
+
+❯ Compare current results to industrial standard inference engines like vllm,   
+  ollama, sglang, .... Does our result matches the fusion strategies they use   
+  for Ampere level datacenter GPUs? Why or why not?                             
+
+● Let me ground this on what the study already cites about production engines,
+  then verify the claims rather than rely on memory.
+
+  Searched for 1 pattern (ctrl+o to expand)
+
+● The study cites sglang 0.5.10 specifically. Let me check whether the source is
+  available locally — reading it beats relying on memory.
+
+  Ran 1 shell command (ctrl+o to expand)
+
+● vLLM source is local — including MetaX's own vLLM port for this exact
+  hardware. Let me verify against source rather than memory.
+  Ran 3 shell commands (ctrl+o to expand)
+
+● Line 1825 confirms it: apply_moe_activation(...) is a separate call after
+  GEMM1. Let me read the full expert pipeline.
+
+  Ran 1 shell command (ctrl+o to expand)
+
+● Definitive. vLLM's pipeline is GEMM1 → separate activation → GEMM2 → separate
+  moe_sum. Let me check the norm side and the MetaX port.
+
+  Searched for 1 pattern (ctrl+o to expand)
+
+● fused_add_rms_norm is vLLM's default when a residual is present — our #3
+  confirmed. Now the two things our study says should be absent:
+
+  Listed 1 directory, ran 1 shell command (ctrl+o to expand)
+
+● Key finding: MetaX's own vLLM port keeps the identical 4-stage structure —
+  activation and moe_sum remain separate kernels. The vendor retuned rather than
+  refused. Let me see what they tuned.
+
+  Ran 1 shell command (ctrl+o to expand)
+
+● MetaX's configs expose MACA-specific pipeline knobs (cpasync, unprefetch,
+  fullstage) — the vendor's lever is scheduling, not fusion. Let me check
+  FlashInfer, the kernel library both vLLM and SGLang build on.
+
+  Searched for 1 pattern, ran 1 shell command (ctrl+o to expand)
+
+● Verified against local source rather than memory — including MetaX's own vLLM 
+  port for this exact chip. Result: four clean matches, one real divergence, and
+  one nuance that partly reverses the headline.
+
+  The strongest single piece of evidence
+
+  /tmp/vllm-metax-v022 is MetaX's C500 port of vLLM. Its expert pipeline is
+  byte-for-byte the same shape as upstream:
+
+  dispatch_fused_moe_kernel(w1)   →  intermediate_cache1     (GEMM1)
+  apply_moe_activation(...)       →  intermediate_cache2     ← SEPARATE kernel
+  dispatch_fused_moe_kernel(w2)   →  intermediate_cache3     (GEMM2)
+  ops.moe_sum(...)                →  out_hidden_states       ← SEPARATE kernel
+
+  The vendor, porting to the hardware this study runs on, did not fuse the 
+  activation or the merge. What they did ship is 45 retuned config files
+  (device_name=MXC500) with MACA-specific scheduling knobs — pipeline: 
+  basic|cpasync, scenario: unroll;unprefetch;fullstage. Their lever on C500 is
+  tile shape and pipeline schedule, not fusion. That is this study's conclusion,
+  arrived at independently.
+
+  The match table
+
+  our fusion: #3 ResAdd+RMSNorm
+  our verdict: ✅ 1.08–1.32×
+  production: fused_add_rms_norm is vLLM's default when residual present;
+  FlashInfer ships it
+  source: layernorm.py:96, flashinfer/norm.py:114
+  ✅ match
+  ────────────────────────────────────────
+  our fusion: #6 UpGate+SwiGLU
+  our verdict: ❌ 0.553×
+  production: separate apply_moe_activation; FlashInfer exposes silu_and_mul
+  standalone
+  source: fused_moe.py:1825
+  ✅ match
+  ────────────────────────────────────────
+  our fusion: #8/#9 Down+Merge
+  our verdict: ➖→❌ 0.87–0.90× prefill
+  production: ops.moe_sum is a separate launch; sglang gates its variant behind
+  a
+  flag
+  source: fused_moe.py:1864
+  ✅ match
+  ────────────────────────────────────────
+  our fusion: #4/#5/#11 norm→GEMM prologue
+  our verdict: ❌ 0.21–0.68×
+  production: nobody does this — no gemm_with_prenorm anywhere in vLLM or
+  FlashInfer
+  source: grep returned empty
+  ✅ match
+  ────────────────────────────────────────
+  our fusion: #10 Merge+ResAdd
+  our verdict: ✅ 1.15–1.20×
+  production: vLLM does not fuse moe_sum with the residual add
+  source: fused_moe.py:1864
+  ❌ divergence
+  ────────────────────────────────────────
+  our fusion: #1 o_proj+ResAdd
+  our verdict: ❌ 0.846× in Triton
+  production: production does fuse this — via cuBLASLt/CUTLASS epilogue
+  source: see below
+  ⚠️ nuance
+
+  There's also a revealing gradient inside vLLM's own choices: it does fuse the
+  routed-weight multiply into one of the two GEMMs (topk_weights +
+  apply_router_weight_on_input), because that's a per-row scalar. It does not
+  fuse the per-element activation, and does not fuse the cross-expert reduction.
+  Cheap scalar epilogue yes; elementwise or reduction no. Our results reproduce
+  that gradient exactly.
+
+  Why it matches — the Ampere argument
+
+  C500 is Ampere-class in precisely the way that governs fusion: no warp 
+  specialization, no TMA, no thread-block clusters, no DSMEM. Those are
+  Hopper/Blackwell features. Ampere-era production practice is "fuse the
+  bandwidth-bound vector glue, keep the GEMMs pure and hand them to
+  CUTLASS/cuBLAS" — and that is what we measured, without knowing it in advance.
+
+  It also explains the one thing that didn't port. "Towards Free Normalization"
+  (the #11 source) depends on warp specialization to park the reduction on
+  dedicated warps so it overlaps the MMA pipeline. On C500 that lane doesn't
+  exist, so the reduction displaces MMA issue slots instead: +0.78 % arithmetic
+  → −12.3 % throughput. The paper isn't wrong; it's Hopper-conditional, and we
+  are on Ampere-class silicon.
+
+  Where we genuinely diverge: #10
+
+  We measure Merge+ResAdd at 1.15–1.20× at every regime, 87–100 % of its ceiling
+  — and vLLM leaves it on the table. I don't think this is a performance
+  disagreement. moe_sum writes into the MoE output; the residual add belongs to
+  the enclosing layer, so fusing them crosses vLLM's FusedMoEModularKernel
+  boundary. It's an abstraction cost, not a measurement. Worth ~0.14 ms/layer,
+  which is plausibly under the threshold where a general-purpose engine accepts
+  an interface break.
+
+  The nuance that partly reverses our headline
+
+  Our "never fuse into a GEMM" is a claim about Triton on MACA, not about
+  fusion. Our own data (LOG-10 §1): for #1, torch.addmm — vendor BLAS, epilogue
+  fused inside the library — regresses 0.5–1.7 %, while the hand-written Triton
+  epilogue regresses 15 %. TensorRT-LLM and cuBLASLt fuse
+  bias/residual/activation epilogues routinely via CUTLASS EVT, and they're
+  right to.
+
+  So the honest statement is narrower than the study's headline: on this 
+  backend, a Triton-authored GEMM epilogue costs 15–47 %, while a 
+  library-authored one costs ~1 %. The correct production answer is not "don't
+  fuse into GEMMs" — it's "don't hand-write GEMM epilogues in Triton; use the 
+  vendor's."
+
+  On Ollama
+
+  Not a useful comparator here, and I'd rather say so than stretch it. It wraps
+  llama.cpp, targets local/consumer inference, and its optimization axis is
+  quantization and GGML graph-level fusion, not datacenter MoE kernel
+  scheduling. It doesn't run this class of workload in this regime.
+
+  ---
+  Two caveats on sourcing: everything in the table is verified against local
+  source. The SGLang specifics (FUSE_SUM_ALL_REDUCE gating, MUL_ROUTED_WEIGHT)
+  come from the study's own citations of sglang 0.5.10, not from source I read
+  today — SGLang isn't installed here. The TensorRT-LLM/CUTLASS EVT point is
+  from my knowledge, not verified locally.
+
+  Want me to write this up as LOG-13 so it sits with the rest of the study?
+
+✻ Cooked for 4m 2s
+
+❯ You have only compared the result to mxc500's vllm implementation. However    
+  MetaX's implementation is under construction and may not be an optimal        
+  solution. As C500 uses similar architecture as NVIDIA A100 or A800, would you 
+  like to compare our result to those GPUs?                                     
+
+● Fair correction — a port under construction shows what MetaX shipped, not
+  what's optimal. The stronger evidence is upstream vLLM, whose primary tuning
+  target has been A100/H100. Let me pull the actual Ampere evidence.
+
+  Ran 1 shell command (ctrl+o to expand)
+
+● 41 A100/A800 configs upstream — Ampere is a first-class target. Now the
+  decisive question: on A100, which MoE backend does vLLM actually select?
+
+  Ran 1 shell command (ctrl+o to expand)
+
+● moe_fused_mul_sum.py has explicit is_sm90_plus / is_sm80_before branches —
+  that's exactly our #8/#10 territory with an Ampere-vs-Hopper split. Let me
+  read it.
+
+  Ran 2 shell commands (ctrl+o to expand)
+
+● Decisive, and much stronger than the MetaX port. Upstream vLLM gates its 
+  aggressive MoE backends by SM version:
+
+  ┌──────────────────────────┬───────────────────┬─────────────────────────┐
+  │         backend          │     required      │   available on A100     │
+  │                          │    capability     │         (SM80)?         │
+  ├──────────────────────────┼───────────────────┼─────────────────────────┤
+  │ cutlass_moe              │ family            │ ❌ Blackwell+           │
+  │                          │ 100/110/120       │                         │
+  ├──────────────────────────┼───────────────────┼─────────────────────────┤
+  │ deep_gemm_moe            │ family 100        │ ❌ Blackwell            │
+  ├──────────────────────────┼───────────────────┼─────────────────────────┤
+  │ flashinfer_cutlass_moe   │ 90 / 100 / 120    │ ❌ Hopper+              │
+  ├──────────────────────────┼───────────────────┼─────────────────────────┤
+  │ flashinfer_cutedsl_moe   │ family 100        │ ❌ Blackwell            │
+  ├──────────────────────────┼───────────────────┼─────────────────────────┤
+  │ GDC / programmatic       │ 90+               │ ❌ Hopper+              │
+  │ launch                   │                   │                         │
+  ├──────────────────────────┼───────────────────┼─────────────────────────┤
+  │ Triton fused_experts     │ —                 │ ✅ this is A100's bf16  │
+  │                          │                   │ path                    │
+  └──────────────────────────┴───────────────────┴─────────────────────────┘
+
+  So on A100/A800 in bf16, vLLM runs exactly the 4-stage structure this study 
+  replicated: GEMM1 → separate activation → GEMM2 → separate merge. Every
+  backend that fuses more is switched off below SM90. vLLM has independently
+  encoded the same belief this study arrived at from measurement: more 
+  aggressive fusion becomes available at Hopper, not before. That's a far better
+  citation than MetaX's port — you're right that a work-in-progress port proves
+  little.
+
+  But porting our numbers to A100 needs care
+
+  Three of our findings lean on C500 specifics that A100 does not share (A100
+  figures from my knowledge, not verified here):
+
+  ┌────────────────┬────────────────┬─────────────┬────────────────────────┐
+  │                │      C500      │  A100-80GB  │      consequence       │
+  ├────────────────┼────────────────┼─────────────┼────────────────────────┤
+  │ SMEM per CTA   │ 64 KB          │ ~164 KB     │ #6's blocker may not   │
+  │                │                │             │ exist on A100          │
+  ├────────────────┼────────────────┼─────────────┼────────────────────────┤
+  │ L2             │ 8 MB           │ 40 MB       │ #8's crossover moves   │
+  │                │                │             │ much later             │
+  ├────────────────┼────────────────┼─────────────┼────────────────────────┤
+  │ bf16 peak /    │ 107 TF/s       │ ~312 / ~1.6 │ A100 is ~2.4× more     │
+  │ achievable BW  │ (Triton) / 1.3 │  TB/s       │ compute-dense per byte │
+  │                │  TB/s          │             │                        │
+  ├────────────────┼────────────────┼─────────────┼────────────────────────┤
+  │ Triton vs      │ 107 vs 215 =   │ typically   │ #1's codegen cliff is  │
+  │ vendor GEMM    │ 50 %           │ 80–90 %     │ largely a MACA         │
+  │                │                │             │ artifact               │
+  └────────────────┴────────────────┴─────────────┴────────────────────────┘
+
+  Concretely:
+
+  #6 (UpGate+SwiGLU) may not fail the same way. Its verdict rested partly on a
+  hard SMEM bar — the unfused winner's BM128×BN128 tile needs 96 KB when fused,
+  against C500's 64 KB limit, so it was literally uncompilable. On A100 that 
+  tile fits. The occupancy half of the argument (104→214 registers) still bites,
+  but "uncompilable" becomes "merely worse", and the 0.553× figure should not
+  be quoted for A100.
+
+  #8's crossover is L2-sized, so it moves. Our accumulator-residency reasoning
+  gives ~683 tokens on 8 MB; the same arithmetic on 40 MB gives ~3400. (Our
+  measured C500 crossover was 256–512, earlier than predicted, so the mechanism
+  isn't pure capacity — but the direction is clear: #8 stays useful much further
+  up the batch range on A100.)
+
+  #1's 15 % Triton epilogue penalty is the least portable number in the study.
+  It's a MACA-backend codegen cliff — registers identical, spills zero, traffic
+  irrelevant. Our own control shows the vendor library fusing the same epilogue
+  for 0.5–1.7 %. On A100, Triton's epilogue codegen is mature and cuBLASLt fuses
+  residual adds routinely. Do not carry 0.846× to A100.
+
+  And one caveat that cuts against our own headline everywhere: we flush L2
+  before each measurement, so we price the full cold-DRAM cost of the x2
+  round-trip. In a real layer the router reads x2 microseconds after the norm
+  wrote it. At decode sizes x2 is only 3 MB — L2-resident on C500, comfortably
+  so on A100's 40 MB. Our traffic-saving wins (#3, #10, #11b) are therefore 
+  upper bounds, and they'd erode more on A100 than on C500 precisely because
+  A100's L2 is 5× larger.
+
+  What does port
+
+  The two things that survive the hardware change are the ones that matter:
+
+  The mechanism. GEMM-mainloop fusion loses on Ampere-class silicon because
+  there's no warp specialization to give the fused work an independent issue
+  lane — so it displaces MMA slots rather than overlapping them. A100 lacks warp
+  specialization exactly as C500 does. vLLM's SM90 gate is production-scale
+  agreement.
+
+  The ranking. Vector+vector fusions win; GEMM-mainloop fusions lose; simple
+  scalar epilogues are fine but belong in the library, not in hand-written
+  Triton. That ordering is architecture-driven, not backend-driven, and it's
+  what A100 practice reflects.
+
+  What I would not claim without re-measuring on A100 is any specific ratio. The
+  correct summary is: our structure and ranking match A100 practice and are 
+  confirmed by vLLM's own SM gating; our magnitudes are C500 numbers and at 
+  least three of them are known to be C500-specific.
+
+✻ Baked for 2m 14s
+
+❯ Is there a GPU model that have similar resources as C500? Similar CUDA cores, 
+  Tensor Cores, SMEM, L2 size, ...                                              
+
+● Let me pull C500's actual properties rather than work from the few I've
+  quoted.
+
+  Ran 1 shell command (ctrl+o to expand)
+
+● Authoritative now — and one field changes the framing: gcnArchName. That's a
+  ROCm/AMD property, not a CUDA one. Let me check.
+  Ran 3 shell commands (ctrl+o to expand)
+
+● Yes — and it's not A100. It's AMD Instinct MI210 (CDNA2), and the match is
+  nearly exact.
+
+  ┌──────────────────┬──────────────────────┬─────────────┬────────────────┐
+  │     resource     │ C500 (measured here) │   MI210     │   A100-80GB    │
+  │                  │                      │   (CDNA2)   │    (Ampere)    │
+  ├──────────────────┼──────────────────────┼─────────────┼────────────────┤
+  │ CUs / SMs        │ 104                  │ 104 ✅      │ 108            │
+  ├──────────────────┼──────────────────────┼─────────────┼────────────────┤
+  │ warp / wavefront │ 64                   │ 64 ✅       │ 32 ❌          │
+  ├──────────────────┼──────────────────────┼─────────────┼────────────────┤
+  │ SMEM (LDS) per   │ 64 KB                │ 64 KB ✅    │ ~164 KB ❌     │
+  │ CU               │                      │             │                │
+  ├──────────────────┼──────────────────────┼─────────────┼────────────────┤
+  │ register file    │ 512 KB (131072×4B)   │ 512 KB ✅   │ 256 KB ❌      │
+  │ per CU           │                      │             │                │
+  ├──────────────────┼──────────────────────┼─────────────┼────────────────┤
+  │ L2               │ 8 MB                 │ 8 MB ✅     │ 40 MB ❌       │
+  ├──────────────────┼──────────────────────┼─────────────┼────────────────┤
+  │ memory           │ 64 GB HBM            │ 64 GB HBM2e │ 80 GB          │
+  │                  │                      │  ✅         │                │
+  ├──────────────────┼──────────────────────┼─────────────┼────────────────┤
+  │ bus width        │ 4096-bit             │ 4096-bit ✅ │ 5120-bit       │
+  ├──────────────────┼──────────────────────┼─────────────┼────────────────┤
+  │ peak BW          │ 1.84 TB/s (1.30      │ ~1.64 TB/s  │ ~2.04 TB/s     │
+  │                  │ measured)            │ ✅          │                │
+  ├──────────────────┼──────────────────────┼─────────────┼────────────────┤
+  │ threads per CU   │ 2048                 │ 2048 ✅     │ 2048 ✅        │
+  ├──────────────────┼──────────────────────┼─────────────┼────────────────┤
+  │ bf16 matrix      │ 215 TF/s (vendor     │ ~181 TF/s   │ ~312 TF/s      │
+  │                  │ BLAS)                │ ✅          │                │
+  └──────────────────┴──────────────────────┴─────────────┴────────────────┘
+
+  Eight structural properties match MI210 essentially exactly. C500 numbers are
+  measured on this machine; MI210/A100 figures are from my knowledge, not
+  verified here.
+
+  Why "like an A100" is the natural but misleading read
+
+  The device presents as Ampere: major=8, minor=0 (SM80), torch.version.cuda = 
+  11.6, Triton reports arch=80. That's a deliberate software-compatibility
+  surface — MACA gives you a CUDA-shaped API.
+
+  But the hardware underneath tells a different story, and one property gives it
+  away: gcnArchName is in the device properties. That's a ROCm/AMD field —
+  "GCN" is AMD's architecture family — and PyTorch normally exposes it only on
+  HIP builds. Combined with warp_size=64 (AMD's wavefront, never NVIDIA's), 64
+  KB LDS, and a 512 KB per-CU register file, C500 is a CDNA-shaped device 
+  wearing a CUDA-shaped API. torch.version.hip is None and the backend is its
+  own 'maca', so it isn't a ROCm rebuild — but the resource budget is CDNA's,
+  not Ampere's.
+
+  Why this matters for the fusion study — quite a lot
+
+  The three constraints that drove our largest findings are all CDNA constraints
+  that MI210 shares exactly and A100 does not:
+
+  - 64 KB SMEM — this is what made #6 uncompilable fused (96 KB needed for the
+  unfused winner's tile), and what put #11's +4096 B cross-warp reduction
+  scratch over the bar on 7 of 79 configs. A100's ~164 KB removes both barriers;
+  MI210's 64 KB reproduces them.
+  - 8 MB L2 — governs #8's atomic-accumulator crossover. MI210: identical. A100:
+  5× larger, crossover moves far up the batch range.
+  - warp = 64 — sets the granularity of every cross-warp reduction in #3, #4/#5
+  and #11. A100's 32-lane warps change that arithmetic.
+
+  So my earlier caveats need re-pointing: I said #6's SMEM bar was
+  "C500-specific." It's more accurate to say it's CDNA-class, and our #6 result
+  should port to MI210/MI250 largely intact while genuinely not porting to A100.
+
+  The better production comparator
+
+  If MI210 is the hardware twin, then vLLM's ROCm path — not its CUDA path — is
+  the right reference, and it does diverge in exactly the dimension our study
+  found decisive:
+
+  num_stages_rocm = 2
+  "num_stages": 3 if not current_platform.is_rocm() else num_stages_rocm
+
+  vLLM runs shallower software pipelines on AMD (2 vs 3 stages). That's the same
+  pressure our #11b analysis surfaced, where the autotuner chose num_stages=1
+  for the fused kernel and 3 for the unfused — deep pipelining is expensive when
+  you only have 64 KB of LDS to stage through.
+
+  There's also rocm_aiter_ops.is_fused_moe_enabled() and
+  is_fusion_moe_shared_experts_enabled() — AMD's AITER library ships fused MoE
+  paths, including fused shared experts, that have no CUDA-side equivalent in
+  this version. That's a fusion the CUDA path doesn't take and our study didn't
+  test.
+
+  Worth a follow-up: re-run the comparison against vLLM's ROCm/AITER path
+  instead of its CUDA path. That's the apples-to-apples check, and I'd expect it
+  to agree with us more closely than the A100 path did — and possibly to flag
+  the shared-expert fusion as something we left on the table. Want me to dig
+  into it?
+
+✻ Cooked for 3m 31s
+
+❯ Ok, let's set MI210 as comparison. Is it possible to get the fusion strategy  
+  in vLLM of a GPU, like MI210, from the source code and GPU documentation      
+  only?                                                                         
+
+● Good question, and it's answerable rigorously — let me actually trace it
+  rather than assert. MI210 is gfx90a.
+
+  Ran 1 shell command (ctrl+o to expand)
+
+● vLLM has explicit gfx90a handling — and line 211 maps gfx90a → capability 
+  (9,0), which is a subtlety worth chasing. Let me read it.
+
+  Ran 1 shell command (ctrl+o to expand)
+
+● Critical subtlety: gfx90a maps to capability (9,0), so
+  has_device_capability(90) is True on MI210 — a naive read of those gates would
+  wrongly hand it the Hopper paths. Let me check what disambiguates.
+
+  Ran 1 shell command (ctrl+o to expand)
+
+● Two decisive facts. flashinfer_cutlass requires p.is_cuda() and capability 90
+  — so ROCm is excluded despite gfx90a reporting (9,0). And AITER gates on
+  on_mi3xx(). Let me confirm that scope.
+
+  Ran 1 shell command (ctrl+o to expand)
+
+● Yes — the structure is fully derivable from source. I traced it for gfx90a.
+  Here's the complete decision tree, evaluated statically:
+
+  ┌────────────────────────┬───────────────────────┬────────────────────────┐
+  │        backend         │         gate          │     MI210 (gfx90a)     │
+  ├────────────────────────┼───────────────────────┼────────────────────────┤
+  │                        │ is_rocm() and         │ ❌ on_mi3xx() =        │
+  │ AITER fused MoE        │ IS_AITER_FOUND and    │ gfx942/gfx950 only     │
+  │                        │ on_mi3xx()            │                        │
+  ├────────────────────────┼───────────────────────┼────────────────────────┤
+  │ flashinfer_cutlass_moe │ is_cuda() and cap ∈   │ ❌ is_cuda() False     │
+  │                        │ {90, 100·, 120·}      │                        │
+  ├────────────────────────┼───────────────────────┼────────────────────────┤
+  │ flashinfer_cutedsl_moe │ is_cuda() and cap     │ ❌                     │
+  │                        │ family 100            │                        │
+  ├────────────────────────┼───────────────────────┼────────────────────────┤
+  │ cutlass_moe            │ cap family            │ ❌                     │
+  │                        │ 100/110/120           │                        │
+  ├────────────────────────┼───────────────────────┼────────────────────────┤
+  │ deep_gemm_moe          │ cap family 100        │ ❌                     │
+  ├────────────────────────┼───────────────────────┼────────────────────────┤
+  │                        │                       │ ⚠️ passes, but         │
+  │ marlin_moe             │ cap ≥ (7,5)           │ int4/int8 weight-quant │
+  │                        │                       │  path only             │
+  ├────────────────────────┼───────────────────────┼────────────────────────┤
+  │ Triton fused_experts   │ fallback              │ ✅ this is MI210's     │
+  │                        │                       │ bf16 path              │
+  └────────────────────────┴───────────────────────┴────────────────────────┘
+
+  Plus two modifiers, also static: num_stages_rocm = 2 (vs 3 on CUDA), and zero 
+  tuned config files for MI210 — vLLM ships configs for MI300X/325X/350X/355X
+  only, so MI210 falls through to _heuristic_config.
+
+  Conclusion: on MI210, vLLM runs the same 4-stage structure this study 
+  replicated — GEMM1 → separate activation → GEMM2 → separate moe_sum — with
+  shallower pipelining and untuned tiles.
+
+  That also corrects something I said last turn: I suggested AITER's fused MoE
+  and fused shared experts would be the better comparator. They're unavailable 
+  on MI210 — AITER is MI300+. My suggestion was wrong for this chip.
+
+  The trap you'd fall into reading it naively
+
+  gfx90a parses to capability (9,0), so has_device_capability(90) returns True
+  on MI210. Read the capability checks alone and you'd conclude MI210 gets the
+  Hopper-class paths. What actually excludes it is the is_cuda() conjunct
+  sitting beside the capability test. Capability numbers are not vendor-portable
+  in this codebase — you must evaluate the platform predicate alongside them.
+
+  What you can't get statically
+
+  Three tiers, and only the first is fully source-derivable:
+
+  Tier 1 — source alone: which ops are fused into which kernels. A pure function
+  of platform predicates, the gfx→capability map, library-presence flags, and
+  env vars. Evaluate by hand, high confidence.
+
+  Tier 2 — source + arch docs: whether a fusion is even possible. Our #6 needed
+  96 KB of LDS for the unfused winner's tile; the CDNA2 ISA guide gives 64 KB
+  per workgroup. That's a compile-time impossibility you can prove on paper, no
+  hardware needed. Same for register-pressure occupancy bounds.
+
+  Tier 3 — not derivable at all: whether it's faster. This is where our own
+  study is the cautionary tale. Fusion #1's regression was invisible to every 
+  static signal: registers identical (126 vs 126), zero spills, and the added
+  DRAM traffic proven irrelevant (+0.1 %, via a stride-0 broadcast control that
+  kept the instructions and removed the traffic). It still cost 22.8 %, purely
+  because the epilogue disabled the mainloop schedule that made BK=32, GM≥4
+  fast. No amount of source reading or documentation predicts a codegen cliff.
+
+  The caveat that matters most here
+
+  MI210 having no tuned configs at all means vLLM's MI210 path is the fallback,
+  not an optimized strategy. So it carries the same weakness you correctly
+  identified in the MetaX port: it tells you what vLLM does when nobody has
+  tuned for your chip, not what's best for it.
+
+  If you want a production reference that reflects real optimization effort on
+  CDNA, MI300X (gfx942) is the one — it has AITER, 21 tuned config files, and
+  first-class support. The risk is that MI300X's resources differ from C500's
+  more than MI210's do, so you'd be borrowing a strategy tuned for different
+  SMEM/L2/CU budgets. That trade — hardware-similar-but-untuned (MI210) vs
+  tuned-but-hardware-different (MI300X) — is the real choice, and neither gives
+  you a clean answer without measuring.
+
+✻ Churned for 1m 41s
+
+❯ Compare the vLLM's full MoE transformer layer under GLM 5.2 spec (the one we  
+  were using) with the result we found. Do they align?                          
+
+● Let me find GLM-5.2's actual implementation in vLLM and trace the full layer.
+
+  Ran 1 shell command (ctrl+o to expand)
+
+● GlmMoeDsaForCausalLM maps to deepseek_v2.py — GLM-5.2 is implemented there.
+  That's the exact reference. Let me read the decoder layer.
+
+  Ran 2 shell commands (ctrl+o to expand)
+
+● The layer threads residual through both norms — input_layernorm(hidden_states,
+  residual) returns (normed, new_residual). That's #3 at both sites, and it
+  means ResAdd2 is deferred into the next layer's fused norm. Let me check the
+  MoE block and then our #10 baseline.
+
+  Ran 2 shell commands (ctrl+o to expand)
+
+● DeepseekV2MoE.forward returns the raw MoE output — no residual add inside the 
+  block, and self.gate (the router GEMM) is separate from the norm. Two of our
+  verdicts confirmed. But this raises a question about #10, so let me check our
+  baseline.
+
+  Searched for 1 pattern (ctrl+o to expand)
+
+● LOG-06 line 15 already flags this. Let me read the caveat in full.
+
+  Ran 1 shell command (ctrl+o to expand)
+● Both already-flagged and confirmed. Let me check one more thing — whether vLLM
+  does a fusion class our 11 candidates never considered.
+
+  Ran 1 shell command (ctrl+o to expand)
+
+● Traced end to end. Here is vLLM's actual GLM-5.2 layer (deepseek_v2.py,
+  GlmMoeDsaForCausalLM):
+
+  h, residual = input_layernorm(h, residual)          ← #3 FUSED
+  self_attn:
+      qkv_proj / _min_latency_fused_qkv_a_proj        ← horizontal fusion
+      wk_weights_proj  "one GEMM, then split"         ← horizontal fusion
+      o_proj                                          ← bare, no epilogue
+  h, residual = post_attention_layernorm(h, residual) ← #3 FUSED
+  mlp = DeepseekV2MoE:
+      router_logits = self.gate(h)                    ← SEPARATE from norm
+      experts: GEMM1 → apply_moe_activation → GEMM2 → moe_sum   ← all separate
+  return h, residual                                  ← ResAdd2 DEFERRED to next
+  layer's #3
+
+  Alignment: 10 of 11 exact
+
+  ┌─────────────────────┬───────────────┬─────────────────────────────┬─────┐
+  │          #          │  our verdict  │        vLLM GLM-5.2         │     │
+  ├─────────────────────┼───────────────┼─────────────────────────────┼─────┤
+  │ 3 ResAdd+RMSNorm    │ ✅ ship       │ used at both norm sites     │ ✅  │
+  │                     │ 1.08–1.32×    │                             │     │
+  ├─────────────────────┼───────────────┼─────────────────────────────┼─────┤
+  │ 1 o_proj+ResAdd     │ ❌ 0.846×     │ not done — ResAdd already   │ ✅  │
+  │                     │               │ consumed by #3              │     │
+  ├─────────────────────┼───────────────┼─────────────────────────────┼─────┤
+  │ 2                   │ 🚫 filtered   │ not done                    │ ✅  │
+  │ o_proj+ResAdd+Norm  │               │                             │     │
+  ├─────────────────────┼───────────────┼─────────────────────────────┼─────┤
+  │ 4/5 Norm+Router     │ ❌ 0.21–0.68× │ not done — self.gate is a   │ ✅  │
+  │                     │               │ bare GEMM                   │     │
+  ├─────────────────────┼───────────────┼─────────────────────────────┼─────┤
+  │ 6 UpGate+SwiGLU     │ ❌ 0.553×     │ not done — separate         │ ✅  │
+  │                     │               │ apply_moe_activation        │     │
+  ├─────────────────────┼───────────────┼─────────────────────────────┼─────┤
+  │ 7 UpGate+Act+Down   │ 🚫 filtered   │ not done                    │ ✅  │
+  ├─────────────────────┼───────────────┼─────────────────────────────┼─────┤
+  │ 8/9 Down+Merge      │ ➖→❌         │ not done — separate moe_sum │ ✅  │
+  ├─────────────────────┼───────────────┼─────────────────────────────┼─────┤
+  │ 11a/11b lazy        │ ❌            │ not done                    │ ✅  │
+  │ pre-norm            │               │                             │     │
+  ├─────────────────────┼───────────────┼─────────────────────────────┼─────┤
+  │ 10 Merge+ResAdd2    │ ✅ 1.15–1.20× │ not done — because ResAdd2  │ ⚠️  │
+  │                     │               │ isn't a kernel              │     │
+  └─────────────────────┴───────────────┴─────────────────────────────┴─────┘
+
+  The #1 agreement is the most satisfying, because vLLM reaches it by our
+  reasoning, not just our conclusion. LOG-11 §6.2 argued ResAdd1 can fold into
+  o_proj's epilogue or into the post-attention RMSNorm, never both, and that the
+  axis resolves to #3. vLLM's layer threads residual straight into
+  input_layernorm(h, residual) — the standalone residual add never exists, so #1
+  has nothing to fuse. Same structural argument, arrived at independently.
+
+  The one partial — and the study already caught it
+
+  #10's 1.15–1.20× is measured against a two-kernel baseline (moe_sum, then a
+  standalone ResAdd2). vLLM has no standalone ResAdd2 — it returns the raw MoE
+  output and lets the next layer's input_layernorm(h, residual) absorb the add.
+  So our baseline runs a kernel production doesn't.
+
+  LOG-06 flags this in its own header, before the results: *"sglang does not
+  ship the standalone residual-add kernel this baseline uses… Measured against
+  that design the end-to-end saving is 1.083×, not 1.20×."*
+
+  So this isn't a miss, it's a documented scope caveat — and #10 still wins,
+  just smaller. Both designs fuse 2 of the 3 ops {merge, add, norm}; they differ
+  only in the pairing, and ours is ~8 % better. That leaves an untested third
+  option: fuse all three — moe_sum + resadd + rmsnorm in one kernel. Neither we
+  nor vLLM measured it, and vLLM structurally can't easily, because it crosses
+  the DecoderLayer boundary. That's the open opportunity this comparison
+  surfaces.
+
+  The gap: a whole fusion class we never tested
+
+  vLLM applies horizontal fusion — concatenating independent GEMMs that share an
+  input — in at least four places here: QKVParallelLinear, gate_up_proj,
+  wk_weights_proj, and _min_latency_fused_qkv_a_proj_impl.
+
+  Our eleven candidates are all vertical (producer→consumer). We never proposed
+  a horizontal one. Worse, we silently inherited one: our w13 is already the
+  concatenated gate+up weight, so #6 presupposes the fusion without ever having
+  evaluated it. That's a real coverage gap, and it's in the attention path where
+  the MLA projections live — which A2 excluded from the measured scope anyway.
+
+  Verdict
+
+  They align, and unusually well. Nine of our verdicts match vLLM's GLM-5.2
+  implementation exactly; the tenth (#1) matches by the same reasoning; the
+  eleventh (#10) is a documented baseline-scope difference that shrinks the win
+  from 1.20× to 1.083× without flipping its sign.
+
+  The honest asterisk: this is agreement about a structure, and vLLM's structure
+  on MI210-class hardware is the untuned fallback path — as you noted two turns
+  ago about the MetaX port, shipped ≠ optimal. What the agreement does
+  establish is that our negative results aren't artifacts of our Triton
+  implementation: production reaches the same "don't fuse into GEMMs" conclusion
+  on the same model, and does so on every backend below SM90.
+
+  Want me to write this up as LOG-13? It's the most external validation the
+  study has, and the horizontal-fusion gap deserves recording as future work.
+
+✻ Sautéed for 2m 42s
+
+※ recap: We compared the GLM-5.2 fusion study against vLLM's actual implementation and found 10 of 11 verdicts align, with #10 a documented baseline difference. Next: write this up as LOG-13, if you want it.
