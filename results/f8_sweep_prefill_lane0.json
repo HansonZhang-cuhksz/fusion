@@ -1,0 +1,64 @@
+{
+  "id": "f8_sweep_prefill_lane0",
+  "fusion": "#8 Down GEMM + Expert Merge (atomic)",
+  "note": "both sides independently tuned at every batch size",
+  "rows": [
+    {
+      "T": 262144,
+      "rows": 2097152,
+      "rows_per_expert": 8192.0,
+      "unfused_ms": 740.5862426757812,
+      "fused_ms": 867.7877807617188,
+      "gain": 0.8533873757813101,
+      "gain_min": 0.8532294825478,
+      "gain_max": 0.8537115019810386,
+      "gain_spread_pct": 0.05648307520337519,
+      "rounds_unfused": [
+        740.81201171875,
+        740.5862426757812,
+        740.8632202148438,
+        740.5399169921875,
+        740.422119140625
+      ],
+      "rounds_fused": [
+        867.7545166015625,
+        867.9695434570312,
+        867.9534301757812,
+        867.7652587890625,
+        867.7877807617188
+      ],
+      "rounds_gain": [
+        0.8537115019810386,
+        0.8532398956374716,
+        0.8535748514350606,
+        0.8533873757813101,
+        0.8532294825478
+      ],
+      "unfused_cfg": {
+        "BLOCK_M": 64,
+        "BLOCK_N": 256,
+        "BLOCK_K": 32,
+        "GROUP_M": 4,
+        "num_warps": 16,
+        "num_stages": 3
+      },
+      "moe_sum_cfg": {
+        "BLOCK_M": 2,
+        "BLOCK_DIM": 512,
+        "num_warps": 8,
+        "num_stages": 4
+      },
+      "fused_cfg": {
+        "BLOCK_M": 64,
+        "BLOCK_N": 256,
+        "BLOCK_K": 32,
+        "GROUP_M": 16,
+        "num_warps": 16,
+        "num_stages": 3
+      },
+      "rel_err_unfused": 0.0038570212200284004,
+      "rel_err_fused": 0.007519567385315895,
+      "accum_MB": 3072.0
+    }
+  ]
+}

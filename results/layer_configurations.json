@@ -1,0 +1,460 @@
+{
+  "id": "layer_configurations",
+  "scope": "S3-S11 + shared expert; attention core / MLA projections / DSA indexer excluded (untouched by every fusion candidate). MoE dispatch-layout construction excluded from the timed region, as in every per-family bench.",
+  "configs": {
+    "A_all_unfused": {
+      "resadd1": "separate",
+      "norm": "split",
+      "gateup": "split",
+      "down": "split"
+    },
+    "B_f3": {
+      "resadd1": "separate",
+      "norm": "fused3",
+      "gateup": "split",
+      "down": "split"
+    },
+    "C_f1": {
+      "resadd1": "in_oproj",
+      "norm": "split",
+      "gateup": "split",
+      "down": "split"
+    },
+    "D_f6": {
+      "resadd1": "separate",
+      "norm": "split",
+      "gateup": "fused6",
+      "down": "split"
+    },
+    "E_f10": {
+      "resadd1": "separate",
+      "norm": "split",
+      "gateup": "split",
+      "down": "merge_f10"
+    },
+    "F_f8": {
+      "resadd1": "separate",
+      "norm": "split",
+      "gateup": "split",
+      "down": "atomic8"
+    },
+    "G_f9": {
+      "resadd1": "separate",
+      "norm": "split",
+      "gateup": "split",
+      "down": "atomic9"
+    },
+    "H_f3_f10": {
+      "resadd1": "separate",
+      "norm": "fused3",
+      "gateup": "split",
+      "down": "merge_f10"
+    },
+    "I_f3_f9": {
+      "resadd1": "separate",
+      "norm": "fused3",
+      "gateup": "split",
+      "down": "atomic9"
+    },
+    "J_greedy_all": {
+      "resadd1": "in_oproj",
+      "norm": "split",
+      "gateup": "fused6",
+      "down": "atomic9"
+    },
+    "K_f3_f8": {
+      "resadd1": "separate",
+      "norm": "fused3",
+      "gateup": "split",
+      "down": "atomic8"
+    }
+  },
+  "regimes": {
+    "decode_bs512": {
+      "rows": {
+        "A_all_unfused": {
+          "ms": 16.514816284179688,
+          "p10_p90": [
+            16.501760482788086,
+            16.539648056030273
+          ],
+          "n_kernels": 14,
+          "sel": {
+            "resadd1": "separate",
+            "norm": "split",
+            "gateup": "split",
+            "down": "split"
+          },
+          "rel_err_vs_fp32_ref": 0.009615384973585606,
+          "correct": true
+        },
+        "B_f3": {
+          "ms": 16.498687744140625,
+          "p10_p90": [
+            16.490495681762695,
+            16.514816284179688
+          ],
+          "n_kernels": 13,
+          "sel": {
+            "resadd1": "separate",
+            "norm": "fused3",
+            "gateup": "split",
+            "down": "split"
+          },
+          "rel_err_vs_fp32_ref": 0.009615384973585606,
+          "correct": true
+        },
+        "C_f1": {
+          "ms": 16.493568420410156,
+          "p10_p90": [
+            16.481279373168945,
+            16.503807067871094
+          ],
+          "n_kernels": 13,
+          "sel": {
+            "resadd1": "in_oproj",
+            "norm": "split",
+            "gateup": "split",
+            "down": "split"
+          },
+          "rel_err_vs_fp32_ref": 0.006410256493836641,
+          "correct": true
+        },
+        "D_f6": {
+          "ms": 16.99123191833496,
+          "p10_p90": [
+            16.943872451782227,
+            17.026304244995117
+          ],
+          "n_kernels": 13,
+          "sel": {
+            "resadd1": "separate",
+            "norm": "split",
+            "gateup": "fused6",
+            "down": "split"
+          },
+          "rel_err_vs_fp32_ref": 0.009615384973585606,
+          "correct": true
+        },
+        "E_f10": {
+          "ms": 16.486656188964844,
+          "p10_p90": [
+            16.476160049438477,
+            16.500991821289062
+          ],
+          "n_kernels": 13,
+          "sel": {
+            "resadd1": "separate",
+            "norm": "split",
+            "gateup": "split",
+            "down": "merge_f10"
+          },
+          "rel_err_vs_fp32_ref": 0.0072115384973585606,
+          "correct": true
+        },
+        "F_f8": {
+          "ms": 16.58905601501465,
+          "p10_p90": [
+            16.58086395263672,
+            16.601600646972656
+          ],
+          "n_kernels": 14,
+          "sel": {
+            "resadd1": "separate",
+            "norm": "split",
+            "gateup": "split",
+            "down": "atomic8"
+          },
+          "rel_err_vs_fp32_ref": 0.009615384973585606,
+          "correct": true
+        },
+        "G_f9": {
+          "ms": 16.605695724487305,
+          "p10_p90": [
+            16.59699249267578,
+            16.63360023498535
+          ],
+          "n_kernels": 13,
+          "sel": {
+            "resadd1": "separate",
+            "norm": "split",
+            "gateup": "split",
+            "down": "atomic9"
+          },
+          "rel_err_vs_fp32_ref": 0.009615384973585606,
+          "correct": true
+        },
+        "H_f3_f10": {
+          "ms": 16.477439880371094,
+          "p10_p90": [
+            16.471296310424805,
+            16.49407958984375
+          ],
+          "n_kernels": 12,
+          "sel": {
+            "resadd1": "separate",
+            "norm": "fused3",
+            "gateup": "split",
+            "down": "merge_f10"
+          },
+          "rel_err_vs_fp32_ref": 0.0072115384973585606,
+          "correct": true
+        },
+        "I_f3_f9": {
+          "ms": 16.601856231689453,
+          "p10_p90": [
+            16.588544845581055,
+            16.61542320251465
+          ],
+          "n_kernels": 12,
+          "sel": {
+            "resadd1": "separate",
+            "norm": "fused3",
+            "gateup": "split",
+            "down": "atomic9"
+          },
+          "rel_err_vs_fp32_ref": 0.009615384973585606,
+          "correct": true
+        },
+        "J_greedy_all": {
+          "ms": 17.073408126831055,
+          "p10_p90": [
+            17.03936004638672,
+            17.121536254882812
+          ],
+          "n_kernels": 11,
+          "sel": {
+            "resadd1": "in_oproj",
+            "norm": "split",
+            "gateup": "fused6",
+            "down": "atomic9"
+          },
+          "rel_err_vs_fp32_ref": 0.009615384973585606,
+          "correct": true
+        },
+        "K_f3_f8": {
+          "ms": 16.589567184448242,
+          "p10_p90": [
+            16.578815460205078,
+            16.612096786499023
+          ],
+          "n_kernels": 13,
+          "sel": {
+            "resadd1": "separate",
+            "norm": "fused3",
+            "gateup": "split",
+            "down": "atomic8"
+          },
+          "rel_err_vs_fp32_ref": 0.009615384973585606,
+          "correct": true
+        }
+      },
+      "best": "H_f3_f10",
+      "speedup_vs_unfused": 1.002268338047655,
+      "shared_expert_ms": {
+        "w13": 0.3246079981327057,
+        "act": 0.025087999179959297,
+        "w2": 0.1438719928264618
+      },
+      "T": 512,
+      "oproj_K": 32768,
+      "moe_rows": 4096
+    },
+    "decode_bs1024": {
+      "rows": {
+        "A_all_unfused": {
+          "ms": 21.604095458984375,
+          "p10_p90": [
+            21.573888778686523,
+            21.65452766418457
+          ],
+          "n_kernels": 14,
+          "sel": {
+            "resadd1": "separate",
+            "norm": "split",
+            "gateup": "split",
+            "down": "split"
+          },
+          "rel_err_vs_fp32_ref": 0.008241758681833744,
+          "correct": true
+        },
+        "B_f3": {
+          "ms": 21.60588836669922,
+          "p10_p90": [
+            21.582847595214844,
+            21.646848678588867
+          ],
+          "n_kernels": 13,
+          "sel": {
+            "resadd1": "separate",
+            "norm": "fused3",
+            "gateup": "split",
+            "down": "split"
+          },
+          "rel_err_vs_fp32_ref": 0.008241758681833744,
+          "correct": true
+        },
+        "C_f1": {
+          "ms": 21.576448440551758,
+          "p10_p90": [
+            21.551616668701172,
+            21.640960693359375
+          ],
+          "n_kernels": 13,
+          "sel": {
+            "resadd1": "in_oproj",
+            "norm": "split",
+            "gateup": "split",
+            "down": "split"
+          },
+          "rel_err_vs_fp32_ref": 0.005494505632668734,
+          "correct": true
+        },
+        "D_f6": {
+          "ms": 25.074687957763672,
+          "p10_p90": [
+            25.033727645874023,
+            25.137664794921875
+          ],
+          "n_kernels": 13,
+          "sel": {
+            "resadd1": "separate",
+            "norm": "split",
+            "gateup": "fused6",
+            "down": "split"
+          },
+          "rel_err_vs_fp32_ref": 0.008241758681833744,
+          "correct": true
+        },
+        "E_f10": {
+          "ms": 21.56108856201172,
+          "p10_p90": [
+            21.543167114257812,
+            21.60793685913086
+          ],
+          "n_kernels": 13,
+          "sel": {
+            "resadd1": "separate",
+            "norm": "split",
+            "gateup": "split",
+            "down": "merge_f10"
+          },
+          "rel_err_vs_fp32_ref": 0.006181318778544664,
+          "correct": true
+        },
+        "F_f8": {
+          "ms": 22.380287170410156,
+          "p10_p90": [
+            22.3503360748291,
+            22.457599639892578
+          ],
+          "n_kernels": 14,
+          "sel": {
+            "resadd1": "separate",
+            "norm": "split",
+            "gateup": "split",
+            "down": "atomic8"
+          },
+          "rel_err_vs_fp32_ref": 0.010989011265337467,
+          "correct": true
+        },
+        "G_f9": {
+          "ms": 22.178815841674805,
+          "p10_p90": [
+            22.14067268371582,
+            22.22412872314453
+          ],
+          "n_kernels": 13,
+          "sel": {
+            "resadd1": "separate",
+            "norm": "split",
+            "gateup": "split",
+            "down": "atomic9"
+          },
+          "rel_err_vs_fp32_ref": 0.010989011265337467,
+          "correct": true
+        },
+        "H_f3_f10": {
+          "ms": 21.550336837768555,
+          "p10_p90": [
+            21.535232543945312,
+            21.612031936645508
+          ],
+          "n_kernels": 12,
+          "sel": {
+            "resadd1": "separate",
+            "norm": "fused3",
+            "gateup": "split",
+            "down": "merge_f10"
+          },
+          "rel_err_vs_fp32_ref": 0.006181318778544664,
+          "correct": true
+        },
+        "I_f3_f9": {
+          "ms": 22.1527042388916,
+          "p10_p90": [
+            22.116352081298828,
+            22.214143753051758
+          ],
+          "n_kernels": 12,
+          "sel": {
+            "resadd1": "separate",
+            "norm": "fused3",
+            "gateup": "split",
+            "down": "atomic9"
+          },
+          "rel_err_vs_fp32_ref": 0.010989011265337467,
+          "correct": true
+        },
+        "J_greedy_all": {
+          "ms": 25.639423370361328,
+          "p10_p90": [
+            25.579519271850586,
+            25.714176177978516
+          ],
+          "n_kernels": 11,
+          "sel": {
+            "resadd1": "in_oproj",
+            "norm": "split",
+            "gateup": "fused6",
+            "down": "atomic9"
+          },
+          "rel_err_vs_fp32_ref": 0.008241758681833744,
+          "correct": true
+        },
+        "K_f3_f8": {
+          "ms": 22.372352600097656,
+          "p10_p90": [
+            22.334720611572266,
+            22.429439544677734
+          ],
+          "n_kernels": 13,
+          "sel": {
+            "resadd1": "separate",
+            "norm": "fused3",
+            "gateup": "split",
+            "down": "atomic8"
+          },
+          "rel_err_vs_fp32_ref": 0.010989011265337467,
+          "correct": true
+        }
+      },
+      "best": "H_f3_f10",
+      "speedup_vs_unfused": 1.0024945606010949,
+      "shared_expert_ms": {
+        "w13": 0.5227519869804382,
+        "act": 0.02969600073993206,
+        "w2": 0.2613759934902191
+      },
+      "T": 1024,
+      "oproj_K": 32768,
+      "moe_rows": 8192
+    }
+  },
+  "_meta": {
+    "recorded_at": "2026-07-28 08:41:40",
+    "device": "MetaX C500",
+    "visible_devices": "0",
+    "torch": "2.8.0+metax3.7.1.3"
+  }
+}

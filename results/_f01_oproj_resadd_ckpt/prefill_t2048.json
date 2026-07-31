@@ -1,0 +1,5138 @@
+{
+ "row": {
+  "regime": "prefill_t2048",
+  "fused_ms": 4.868095874786377,
+  "unfused_ms": 4.2388482093811035,
+  "speedup": 0.8707404945197621,
+  "fused_p10_p90": [
+   4.863999843597412,
+   4.873216152191162
+  ],
+  "unfused_p10_p90": [
+   4.237055778503418,
+   4.243711948394775
+  ],
+  "M": 2048,
+  "K": 16384,
+  "N": 6144,
+  "variant": "triton",
+  "fused_cfg": {
+   "BLOCK_M": 64,
+   "BLOCK_N": 256,
+   "BLOCK_K": 32,
+   "GROUP_M": 4,
+   "SPLIT_K": 2,
+   "num_warps": 8,
+   "num_stages": 2,
+   "EPI": {
+    "BLOCK": 512,
+    "num_warps": 1,
+    "num_stages": 1
+   }
+  },
+  "unfused_cfg": {
+   "BLOCK_M": 128,
+   "BLOCK_N": 128,
+   "BLOCK_K": 32,
+   "GROUP_M": 8,
+   "SPLIT_K": 1,
+   "num_warps": 8,
+   "num_stages": 2,
+   "EPI": {
+    "BLOCK": 2048,
+    "num_warps": 8,
+    "num_stages": 1
+   }
+  },
+  "rel_err": 0.0027846700977534056,
+  "rel_err_unfused": 0.003129216143861413,
+  "fused_vs_unfused_maxrel": 0.0055555556900799274,
+  "ok": true,
+  "vendor_fused_ms": 2.0142080783843994,
+  "vendor_unfused_ms": 1.9804160594940186,
+  "vendor_speedup": 0.9832231737857563,
+  "vendor_rel_err": 0.0027851799968630075,
+  "vendor_fused_p10_p90": [
+   2.011136054992676,
+   2.0239360332489014
+  ],
+  "vendor_unfused_p10_p90": [
+   1.9796479940414429,
+   1.9811840057373047
+  ],
+  "fused_tflops": 84.69776911164334,
+  "unfused_tflops": 97.27096608543117,
+  "vendor_fused_tflops": 204.704203523362,
+  "triton_vs_vendor": 0.4137568630923456,
+  "fused_noflush_ms": 4.864255905151367,
+  "unfused_noflush_ms": 4.236032009124756,
+  "resid_bytes_saved": 25165824,
+  "gemm_min_bytes": 268435456
+ },
+ "tuning": {
+  "regime": "prefill_t2048",
+  "coarse_grid_size": 120,
+  "refine_grid_size_fused": 13,
+  "refine_grid_size_unfused": 14,
+  "joint_grid_size_fused": 15,
+  "joint_grid_size_unfused": 15,
+  "tune_fused_coarse": {
+   "best_cfg": {
+    "BLOCK_M": 64,
+    "BLOCK_N": 256,
+    "BLOCK_K": 32,
+    "GROUP_M": 8,
+    "SPLIT_K": 2,
+    "num_warps": 8,
+    "num_stages": 2
+   },
+   "best_ms": 4.8703999519348145,
+   "n_tried": 120,
+   "n_failed": 21,
+   "table": [
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     6.760960102081299,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     5.059072017669678,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     7.386112213134766,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     5.204224109649658,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 4,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     7.856639862060547,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 4,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     5.596672058105469,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 8,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     8.632575988769531,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 8,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     6.3797760009765625,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 4
+     },
+     6.738175868988037,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 64,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 8,
+      "num_stages": 3
+     },
+     9.40339183807373,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 16,
+      "num_stages": 2
+     },
+     9.724672317504883,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     5.071616172790527,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 128,
+      "BLOCK_K": 64,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     6.87283182144165,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 256,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 8,
+      "num_stages": 3
+     },
+     6.752511978149414,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 64,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 4,
+      "num_stages": 2
+     },
+     5.967616081237793,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 16,
+      "num_stages": 4
+     },
+     7.431424140930176,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     7.3658881187438965,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 256,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     null,
+     "OutOfResources: out of resource: shared memory, Required: 67584, Hardware limit: 65536. Reducing block sizes or `num_stages` may help."
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 128,
+      "BLOCK_K": 64,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 4,
+      "num_stages": 2
+     },
+     13.593600273132324,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 2,
+      "num_warps": 8,
+      "num_stages": 3
+     },
+     8.284928321838379,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 4,
+      "num_stages": 4
+     },
+     8.769536018371582,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 64,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 3
+     },
+     8.91596794128418,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 64,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 4,
+      "num_stages": 4
+     },
+     5.9404802322387695,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 16,
+      "num_stages": 4
+     },
+     7.291135787963867,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 4,
+      "num_stages": 2
+     },
+     5.220608234405518,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 256,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     null,
+     "OutOfResources: out of resource: shared memory, Required: 69632, Hardware limit: 65536. Reducing block sizes or `num_stages` may help."
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 64,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 16,
+      "num_stages": 2
+     },
+     null,
+     "OutOfResources: out of resource: shared memory, Required: 69632, Hardware limit: 65536. Reducing block sizes or `num_stages` may help."
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 256,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 3
+     },
+     5.437952041625977,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 128,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     8.770560264587402,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 64,
+      "GROUP_M": 1,
+      "SPLIT_K": 2,
+      "num_warps": 4,
+      "num_stages": 2
+     },
+     7.044352054595947,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 2,
+      "num_warps": 4,
+      "num_stages": 3
+     },
+     5.91871976852417,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 128,
+      "BLOCK_K": 64,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 4,
+      "num_stages": 2
+     },
+     16.87500762939453,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 256,
+      "BLOCK_N": 256,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 2,
+      "num_warps": 16,
+      "num_stages": 2
+     },
+     null,
+     "OutOfResources: out of resource: shared memory, Required: 133120, Hardware limit: 65536. Reducing block sizes or `num_stages` may help."
+    ],
+    [
+     {
+      "BLOCK_M": 256,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 16,
+      "num_stages": 3
+     },
+     null,
+     "OutOfResources: out of resource: shared memory, Required: 73728, Hardware limit: 65536. Reducing block sizes or `num_stages` may help."
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 16,
+      "num_stages": 2
+     },
+     9.716992378234863,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 2,
+      "num_warps": 16,
+      "num_stages": 4
+     },
+     null,
+     "OutOfResources: out of resource: shared memory, Required: 67584, Hardware limit: 65536. Reducing block sizes or `num_stages` may help."
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 2,
+      "num_warps": 16,
+      "num_stages": 2
+     },
+     7.895808219909668,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 2,
+      "num_warps": 4,
+      "num_stages": 4
+     },
+     12.849408149719238,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 64,
+      "GROUP_M": 1,
+      "SPLIT_K": 2,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     5.144832134246826,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 3
+     },
+     8.19968032836914,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 256,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 4,
+      "num_stages": 3
+     },
+     19.106304168701172,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 64,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     4.96998405456543,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 256,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 16,
+      "num_stages": 2
+     },
+     null,
+     "OutOfResources: out of resource: shared memory, Required: 67584, Hardware limit: 65536. Reducing block sizes or `num_stages` may help."
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 64,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 16,
+      "num_stages": 2
+     },
+     9.891327857971191,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 64,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     7.577600002288818,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 16,
+      "num_stages": 4
+     },
+     null,
+     "OutOfResources: out of resource: shared memory, Required: 69632, Hardware limit: 65536. Reducing block sizes or `num_stages` may help."
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 16,
+      "num_stages": 2
+     },
+     7.911680221557617,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 16,
+      "num_stages": 4
+     },
+     11.346431732177734,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 64,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     7.345151901245117,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 64,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 4,
+      "num_stages": 3
+     },
+     5.719808101654053,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 256,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 16,
+      "num_stages": 2
+     },
+     null,
+     "OutOfResources: out of resource: shared memory, Required: 67584, Hardware limit: 65536. Reducing block sizes or `num_stages` may help."
+    ],
+    [
+     {
+      "BLOCK_M": 256,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     6.968575954437256,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 4,
+      "num_stages": 4
+     },
+     27.217151641845703,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 64,
+      "GROUP_M": 1,
+      "SPLIT_K": 2,
+      "num_warps": 4,
+      "num_stages": 4
+     },
+     8.18892765045166,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 2,
+      "num_warps": 4,
+      "num_stages": 4
+     },
+     14.17420768737793,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 2,
+      "num_warps": 8,
+      "num_stages": 3
+     },
+     5.339903831481934,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 16,
+      "num_stages": 3
+     },
+     null,
+     "OutOfResources: out of resource: shared memory, Required: 69632, Hardware limit: 65536. Reducing block sizes or `num_stages` may help."
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 3
+     },
+     8.147456169128418,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 64,
+      "BLOCK_K": 64,
+      "GROUP_M": 1,
+      "SPLIT_K": 2,
+      "num_warps": 4,
+      "num_stages": 2
+     },
+     17.764863967895508,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 3
+     },
+     8.171263694763184,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 256,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 16,
+      "num_stages": 2
+     },
+     null,
+     "OutOfResources: out of resource: shared memory, Required: 67584, Hardware limit: 65536. Reducing block sizes or `num_stages` may help."
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 4,
+      "num_stages": 4
+     },
+     5.902080059051514,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 64,
+      "BLOCK_K": 64,
+      "GROUP_M": 1,
+      "SPLIT_K": 2,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     6.830336093902588,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 4,
+      "num_stages": 3
+     },
+     4.921599864959717,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 4
+     },
+     4.971776008605957,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 64,
+      "GROUP_M": 1,
+      "SPLIT_K": 2,
+      "num_warps": 16,
+      "num_stages": 3
+     },
+     10.131711959838867,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 16,
+      "num_stages": 4
+     },
+     7.436543941497803,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 2,
+      "num_warps": 16,
+      "num_stages": 4
+     },
+     7.902976036071777,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 3
+     },
+     5.158400058746338,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 64,
+      "GROUP_M": 1,
+      "SPLIT_K": 2,
+      "num_warps": 16,
+      "num_stages": 2
+     },
+     null,
+     "OutOfResources: out of resource: shared memory, Required: 67584, Hardware limit: 65536. Reducing block sizes or `num_stages` may help."
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 256,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 2,
+      "num_warps": 8,
+      "num_stages": 3
+     },
+     5.538559913635254,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     7.476736068725586,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 2,
+      "num_warps": 16,
+      "num_stages": 3
+     },
+     9.065471649169922,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 16,
+      "num_stages": 3
+     },
+     12.604928016662598,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 256,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 4,
+      "num_stages": 3
+     },
+     12.283391952514648,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 16,
+      "num_stages": 4
+     },
+     7.296256065368652,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 16,
+      "num_stages": 2
+     },
+     7.497727870941162,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 16,
+      "num_stages": 2
+     },
+     7.50054407119751,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 64,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 16,
+      "num_stages": 3
+     },
+     10.135040283203125,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 256,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     10.289152145385742,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 64,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     4.916736125946045,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 64,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 4,
+      "num_stages": 2
+     },
+     29.866239547729492,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 256,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 16,
+      "num_stages": 2
+     },
+     null,
+     "OutOfResources: out of resource: shared memory, Required: 69632, Hardware limit: 65536. Reducing block sizes or `num_stages` may help."
+    ],
+    [
+     {
+      "BLOCK_M": 256,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 3
+     },
+     18.30886459350586,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 256,
+      "BLOCK_N": 256,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 16,
+      "num_stages": 2
+     },
+     null,
+     "OutOfResources: out of resource: shared memory, Required: 135168, Hardware limit: 65536. Reducing block sizes or `num_stages` may help."
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 128,
+      "BLOCK_K": 64,
+      "GROUP_M": 1,
+      "SPLIT_K": 2,
+      "num_warps": 4,
+      "num_stages": 2
+     },
+     14.880255699157715,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 64,
+      "GROUP_M": 1,
+      "SPLIT_K": 2,
+      "num_warps": 16,
+      "num_stages": 4
+     },
+     9.829119682312012,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 256,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     35.210750579833984,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 4,
+      "num_stages": 2
+     },
+     5.984511852264404,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 16,
+      "num_stages": 3
+     },
+     8.583680152893066,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 64,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 4
+     },
+     8.664575576782227,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 256,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 8,
+      "num_stages": 3
+     },
+     5.543935775756836,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 8,
+      "num_stages": 4
+     },
+     7.39353609085083,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 4,
+      "num_stages": 2
+     },
+     6.239744186401367,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 256,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 16,
+      "num_stages": 2
+     },
+     null,
+     "OutOfResources: out of resource: shared memory, Required: 66560, Hardware limit: 65536. Reducing block sizes or `num_stages` may help."
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 16,
+      "num_stages": 2
+     },
+     null,
+     "OutOfResources: out of resource: shared memory, Required: 69632, Hardware limit: 65536. Reducing block sizes or `num_stages` may help."
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 128,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 4,
+      "num_stages": 2
+     },
+     18.782976150512695,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 2,
+      "num_warps": 8,
+      "num_stages": 4
+     },
+     5.118720054626465,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 256,
+      "BLOCK_N": 256,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 16,
+      "num_stages": 2
+     },
+     null,
+     "OutOfResources: out of resource: shared memory, Required: 135168, Hardware limit: 65536. Reducing block sizes or `num_stages` may help."
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 4,
+      "num_stages": 3
+     },
+     19.56505584716797,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 256,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 2,
+      "num_warps": 16,
+      "num_stages": 2
+     },
+     null,
+     "OutOfResources: out of resource: shared memory, Required: 67584, Hardware limit: 65536. Reducing block sizes or `num_stages` may help."
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 64,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 4
+     },
+     8.644351959228516,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 256,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 16,
+      "num_stages": 3
+     },
+     null,
+     "OutOfResources: out of resource: shared memory, Required: 66560, Hardware limit: 65536. Reducing block sizes or `num_stages` may help."
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 4
+     },
+     6.9470720291137695,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 4,
+      "num_stages": 4
+     },
+     8.430848121643066,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 256,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     null,
+     "OutOfResources: out of resource: shared memory, Required: 66560, Hardware limit: 65536. Reducing block sizes or `num_stages` may help."
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     7.03718376159668,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 128,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 16,
+      "num_stages": 2
+     },
+     9.279487609863281,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 256,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 2,
+      "num_warps": 8,
+      "num_stages": 3
+     },
+     26.42406463623047,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 64,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 3
+     },
+     8.950016021728516,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 3
+     },
+     7.920896053314209,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 64,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     7.325183868408203,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 256,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     4.8703999519348145,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 256,
+      "BLOCK_N": 256,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 16,
+      "num_stages": 2
+     },
+     null,
+     "OutOfResources: out of resource: shared memory, Required: 133120, Hardware limit: 65536. Reducing block sizes or `num_stages` may help."
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 256,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 4,
+      "num_stages": 2
+     },
+     21.127168655395508,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 256,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     4.937215805053711,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 256,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 2,
+      "num_warps": 4,
+      "num_stages": 2
+     },
+     21.130239486694336,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 4,
+      "num_stages": 3
+     },
+     16.03558349609375,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 256,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 4,
+      "num_stages": 3
+     },
+     18.498559951782227,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 4
+     },
+     6.946047782897949,
+     null
+    ]
+   ]
+  },
+  "tune_unfused_coarse": {
+   "best_cfg": {
+    "BLOCK_M": 128,
+    "BLOCK_N": 128,
+    "BLOCK_K": 32,
+    "GROUP_M": 8,
+    "SPLIT_K": 1,
+    "num_warps": 8,
+    "num_stages": 2
+   },
+   "best_ms": 4.241407871246338,
+   "n_tried": 120,
+   "n_failed": 11,
+   "table": [
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     6.800640106201172,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     4.241407871246338,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     7.3666558265686035,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     5.2303361892700195,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 4,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     7.846399784088135,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 4,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     5.629695892333984,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 8,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     8.610048294067383,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 8,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     6.412543773651123,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 4
+     },
+     6.7788801193237305,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 64,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 8,
+      "num_stages": 3
+     },
+     9.360383987426758,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 16,
+      "num_stages": 2
+     },
+     9.774592399597168,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     4.778495788574219,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 128,
+      "BLOCK_K": 64,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     6.780672073364258,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 256,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 8,
+      "num_stages": 3
+     },
+     6.42790412902832,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 64,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 4,
+      "num_stages": 2
+     },
+     6.014463901519775,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 16,
+      "num_stages": 4
+     },
+     7.478015899658203,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     7.4060797691345215,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 256,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     null,
+     "OutOfResources: out of resource: shared memory, Required: 67584, Hardware limit: 65536. Reducing block sizes or `num_stages` may help."
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 128,
+      "BLOCK_K": 64,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 4,
+      "num_stages": 2
+     },
+     13.12179183959961,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 2,
+      "num_warps": 8,
+      "num_stages": 3
+     },
+     8.266752243041992,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 4,
+      "num_stages": 4
+     },
+     8.744959831237793,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 64,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 3
+     },
+     8.961024284362793,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 64,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 4,
+      "num_stages": 4
+     },
+     5.9509758949279785,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 16,
+      "num_stages": 4
+     },
+     7.333888053894043,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 4,
+      "num_stages": 2
+     },
+     5.274367809295654,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 256,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     14.776320457458496,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 64,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 16,
+      "num_stages": 2
+     },
+     10.360320091247559,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 256,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 3
+     },
+     5.487360000610352,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 128,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     8.79923152923584,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 64,
+      "GROUP_M": 1,
+      "SPLIT_K": 2,
+      "num_warps": 4,
+      "num_stages": 2
+     },
+     8.021247863769531,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 2,
+      "num_warps": 4,
+      "num_stages": 3
+     },
+     5.881343841552734,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 128,
+      "BLOCK_K": 64,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 4,
+      "num_stages": 2
+     },
+     17.71776008605957,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 256,
+      "BLOCK_N": 256,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 2,
+      "num_warps": 16,
+      "num_stages": 2
+     },
+     null,
+     "OutOfResources: out of resource: shared memory, Required: 133120, Hardware limit: 65536. Reducing block sizes or `num_stages` may help."
+    ],
+    [
+     {
+      "BLOCK_M": 256,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 16,
+      "num_stages": 3
+     },
+     8.656895637512207,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 16,
+      "num_stages": 2
+     },
+     9.766912460327148,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 2,
+      "num_warps": 16,
+      "num_stages": 4
+     },
+     null,
+     "OutOfResources: out of resource: shared memory, Required: 67584, Hardware limit: 65536. Reducing block sizes or `num_stages` may help."
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 2,
+      "num_warps": 16,
+      "num_stages": 2
+     },
+     7.973120212554932,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 2,
+      "num_warps": 4,
+      "num_stages": 4
+     },
+     15.506431579589844,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 64,
+      "GROUP_M": 1,
+      "SPLIT_K": 2,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     5.054463863372803,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 3
+     },
+     8.236543655395508,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 256,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 4,
+      "num_stages": 3
+     },
+     19.69152069091797,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 64,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     5.012735843658447,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 256,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 16,
+      "num_stages": 2
+     },
+     6.631680011749268,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 64,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 16,
+      "num_stages": 2
+     },
+     9.934080123901367,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 64,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     9.263360023498535,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 16,
+      "num_stages": 4
+     },
+     13.03551959991455,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 16,
+      "num_stages": 2
+     },
+     7.991040229797363,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 16,
+      "num_stages": 4
+     },
+     11.391231536865234,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 64,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     7.381760120391846,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 64,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 4,
+      "num_stages": 3
+     },
+     5.720064163208008,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 256,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 16,
+      "num_stages": 2
+     },
+     7.773439884185791,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 256,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     6.804224014282227,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 4,
+      "num_stages": 4
+     },
+     18.07923126220703,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 64,
+      "GROUP_M": 1,
+      "SPLIT_K": 2,
+      "num_warps": 4,
+      "num_stages": 4
+     },
+     7.49721622467041,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 2,
+      "num_warps": 4,
+      "num_stages": 4
+     },
+     13.954048156738281,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 2,
+      "num_warps": 8,
+      "num_stages": 3
+     },
+     5.281792163848877,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 16,
+      "num_stages": 3
+     },
+     7.243008136749268,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 3
+     },
+     8.176896095275879,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 64,
+      "BLOCK_K": 64,
+      "GROUP_M": 1,
+      "SPLIT_K": 2,
+      "num_warps": 4,
+      "num_stages": 2
+     },
+     15.122688293457031,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 3
+     },
+     8.209407806396484,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 256,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 16,
+      "num_stages": 2
+     },
+     7.564032077789307,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 4,
+      "num_stages": 4
+     },
+     8.442879676818848,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 64,
+      "BLOCK_K": 64,
+      "GROUP_M": 1,
+      "SPLIT_K": 2,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     6.979328155517578,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 4,
+      "num_stages": 3
+     },
+     4.962560176849365,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 4
+     },
+     5.018367767333984,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 64,
+      "GROUP_M": 1,
+      "SPLIT_K": 2,
+      "num_warps": 16,
+      "num_stages": 3
+     },
+     10.056703567504883,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 16,
+      "num_stages": 4
+     },
+     7.478015899658203,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 2,
+      "num_warps": 16,
+      "num_stages": 4
+     },
+     7.761919975280762,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 3
+     },
+     5.198080062866211,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 64,
+      "GROUP_M": 1,
+      "SPLIT_K": 2,
+      "num_warps": 16,
+      "num_stages": 2
+     },
+     null,
+     "OutOfResources: out of resource: shared memory, Required: 67584, Hardware limit: 65536. Reducing block sizes or `num_stages` may help."
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 256,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 2,
+      "num_warps": 8,
+      "num_stages": 3
+     },
+     5.493247985839844,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     7.420159816741943,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 2,
+      "num_warps": 16,
+      "num_stages": 3
+     },
+     9.190655708312988,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 16,
+      "num_stages": 3
+     },
+     12.607999801635742,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 256,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 4,
+      "num_stages": 3
+     },
+     12.28006362915039,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 16,
+      "num_stages": 4
+     },
+     9.996288299560547,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 16,
+      "num_stages": 2
+     },
+     7.540736198425293,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 16,
+      "num_stages": 2
+     },
+     7.541759967803955,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 64,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 16,
+      "num_stages": 3
+     },
+     10.058496475219727,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 256,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     10.438655853271484,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 64,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     4.955391883850098,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 64,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 4,
+      "num_stages": 2
+     },
+     29.619712829589844,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 256,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 16,
+      "num_stages": 2
+     },
+     13.702912330627441,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 256,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 3
+     },
+     19.21331214904785,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 256,
+      "BLOCK_N": 256,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 16,
+      "num_stages": 2
+     },
+     null,
+     "OutOfResources: out of resource: shared memory, Required: 67584, Hardware limit: 65536. Reducing block sizes or `num_stages` may help."
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 128,
+      "BLOCK_K": 64,
+      "GROUP_M": 1,
+      "SPLIT_K": 2,
+      "num_warps": 4,
+      "num_stages": 2
+     },
+     14.38003158569336,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 64,
+      "GROUP_M": 1,
+      "SPLIT_K": 2,
+      "num_warps": 16,
+      "num_stages": 4
+     },
+     9.758208274841309,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 256,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     32.013824462890625,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 4,
+      "num_stages": 2
+     },
+     5.8787841796875,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 16,
+      "num_stages": 3
+     },
+     8.623104095458984,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 64,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 4
+     },
+     8.704256057739258,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 256,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 8,
+      "num_stages": 3
+     },
+     5.494272232055664,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 8,
+      "num_stages": 4
+     },
+     7.371776103973389,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 4,
+      "num_stages": 2
+     },
+     6.383359909057617,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 256,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 16,
+      "num_stages": 2
+     },
+     null,
+     "OutOfResources: out of resource: shared memory, Required: 66560, Hardware limit: 65536. Reducing block sizes or `num_stages` may help."
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 16,
+      "num_stages": 2
+     },
+     7.410943984985352,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 128,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 4,
+      "num_stages": 2
+     },
+     18.447359085083008,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 2,
+      "num_warps": 8,
+      "num_stages": 4
+     },
+     5.104127883911133,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 256,
+      "BLOCK_N": 256,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 16,
+      "num_stages": 2
+     },
+     null,
+     "OutOfResources: out of resource: shared memory, Required: 67584, Hardware limit: 65536. Reducing block sizes or `num_stages` may help."
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 4,
+      "num_stages": 3
+     },
+     17.647104263305664,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 256,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 2,
+      "num_warps": 16,
+      "num_stages": 2
+     },
+     null,
+     "OutOfResources: out of resource: shared memory, Required: 67584, Hardware limit: 65536. Reducing block sizes or `num_stages` may help."
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 64,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 4
+     },
+     8.682239532470703,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 256,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 16,
+      "num_stages": 3
+     },
+     null,
+     "OutOfResources: out of resource: shared memory, Required: 66560, Hardware limit: 65536. Reducing block sizes or `num_stages` may help."
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 4
+     },
+     6.98086404800415,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 4,
+      "num_stages": 4
+     },
+     8.356863975524902,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 256,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     null,
+     "OutOfResources: out of resource: shared memory, Required: 66560, Hardware limit: 65536. Reducing block sizes or `num_stages` may help."
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     7.068160057067871,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 128,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 16,
+      "num_stages": 2
+     },
+     9.32044792175293,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 256,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 2,
+      "num_warps": 8,
+      "num_stages": 3
+     },
+     16.101119995117188,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 64,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 3
+     },
+     8.97868824005127,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 3
+     },
+     7.961855888366699,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 64,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     7.367424011230469,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 256,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     4.988671779632568,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 256,
+      "BLOCK_N": 256,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 16,
+      "num_stages": 2
+     },
+     null,
+     "OutOfResources: out of resource: shared memory, Required: 133120, Hardware limit: 65536. Reducing block sizes or `num_stages` may help."
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 256,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 4,
+      "num_stages": 2
+     },
+     21.34809684753418,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 256,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     4.9784321784973145,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 256,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 2,
+      "num_warps": 4,
+      "num_stages": 2
+     },
+     15.752960205078125,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 4,
+      "num_stages": 3
+     },
+     13.812735557556152,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 256,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 4,
+      "num_stages": 3
+     },
+     19.218944549560547,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 1,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 4
+     },
+     6.982143878936768,
+     null
+    ]
+   ]
+  },
+  "tune_fused_refine": {
+   "best_cfg": {
+    "BLOCK_M": 64,
+    "BLOCK_N": 256,
+    "BLOCK_K": 32,
+    "GROUP_M": 4,
+    "SPLIT_K": 2,
+    "num_warps": 8,
+    "num_stages": 2
+   },
+   "best_ms": 4.870143890380859,
+   "n_tried": 13,
+   "n_failed": 1,
+   "table": [
+    [
+     {
+      "BLOCK_M": 16,
+      "BLOCK_N": 256,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     12.543999671936035,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 32,
+      "BLOCK_N": 256,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     8.37939167022705,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 64,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     7.700479984283447,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 256,
+      "BLOCK_K": 16,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     6.994175910949707,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 256,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     4.937471866607666,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 256,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 3,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     5.221375942230225,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 256,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 4,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     5.263872146606445,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 256,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 4,
+      "num_stages": 2
+     },
+     20.851455688476562,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 256,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 16,
+      "num_stages": 2
+     },
+     null,
+     "OutOfResources: out of resource: shared memory, Required: 66560, Hardware limit: 65536. Reducing block sizes or `num_stages` may help."
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 256,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 8,
+      "num_stages": 1
+     },
+     9.271295547485352,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 256,
+      "BLOCK_K": 32,
+      "GROUP_M": 4,
+      "SPLIT_K": 2,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     4.870143890380859,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 256,
+      "BLOCK_K": 32,
+      "GROUP_M": 16,
+      "SPLIT_K": 2,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     4.8757758140563965,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 32,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     8.045568466186523,
+     null
+    ]
+   ]
+  },
+  "tune_unfused_refine": {
+   "best_cfg": {
+    "BLOCK_M": 128,
+    "BLOCK_N": 128,
+    "BLOCK_K": 32,
+    "GROUP_M": 16,
+    "SPLIT_K": 1,
+    "num_warps": 8,
+    "num_stages": 2
+   },
+   "best_ms": 4.24345588684082,
+   "n_tried": 14,
+   "n_failed": 0,
+   "table": [
+    [
+     {
+      "BLOCK_M": 32,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     7.8023681640625,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     6.979072093963623,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 256,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     12.128000259399414,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 32,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     10.43558406829834,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 256,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     9.82425594329834,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 16,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     5.129983901977539,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 3,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     5.499135971069336,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 4,
+      "num_stages": 2
+     },
+     4.647679805755615,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 16,
+      "num_stages": 2
+     },
+     7.4007039070129395,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 1
+     },
+     5.205503940582275,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 3
+     },
+     5.193215847015381,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 4,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     4.246272087097168,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 16,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     4.24345588684082,
+     null
+    ],
+    [
+     {
+      "BLOCK_M": 64,
+      "BLOCK_N": 256,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 2
+     },
+     4.977920055389404,
+     null
+    ]
+   ]
+  },
+  "tune_fused_joint": {
+   "best_cfg": [
+    {
+     "BLOCK_M": 64,
+     "BLOCK_N": 256,
+     "BLOCK_K": 32,
+     "GROUP_M": 4,
+     "SPLIT_K": 2,
+     "num_warps": 8,
+     "num_stages": 2
+    },
+    {
+     "BLOCK": 512,
+     "num_warps": 1,
+     "num_stages": 1
+    }
+   ],
+   "best_ms": 4.867839813232422,
+   "n_tried": 15,
+   "n_failed": 0,
+   "table": [
+    [
+     [
+      {
+       "BLOCK_M": 64,
+       "BLOCK_N": 256,
+       "BLOCK_K": 32,
+       "GROUP_M": 4,
+       "SPLIT_K": 2,
+       "num_warps": 8,
+       "num_stages": 2
+      },
+      {
+       "BLOCK": 512,
+       "num_warps": 1,
+       "num_stages": 1
+      }
+     ],
+     4.867839813232422,
+     null
+    ],
+    [
+     [
+      {
+       "BLOCK_M": 64,
+       "BLOCK_N": 256,
+       "BLOCK_K": 32,
+       "GROUP_M": 4,
+       "SPLIT_K": 2,
+       "num_warps": 8,
+       "num_stages": 2
+      },
+      {
+       "BLOCK": 2048,
+       "num_warps": 8,
+       "num_stages": 1
+      }
+     ],
+     4.869887828826904,
+     null
+    ],
+    [
+     [
+      {
+       "BLOCK_M": 64,
+       "BLOCK_N": 256,
+       "BLOCK_K": 32,
+       "GROUP_M": 4,
+       "SPLIT_K": 2,
+       "num_warps": 8,
+       "num_stages": 2
+      },
+      {
+       "BLOCK": 4096,
+       "num_warps": 16,
+       "num_stages": 1
+      }
+     ],
+     4.869631767272949,
+     null
+    ],
+    [
+     [
+      {
+       "BLOCK_M": 64,
+       "BLOCK_N": 256,
+       "BLOCK_K": 32,
+       "GROUP_M": 4,
+       "SPLIT_K": 2,
+       "num_warps": 8,
+       "num_stages": 2
+      },
+      {
+       "BLOCK": 1024,
+       "num_warps": 2,
+       "num_stages": 1
+      }
+     ],
+     4.8703999519348145,
+     null
+    ],
+    [
+     [
+      {
+       "BLOCK_M": 64,
+       "BLOCK_N": 256,
+       "BLOCK_K": 32,
+       "GROUP_M": 4,
+       "SPLIT_K": 2,
+       "num_warps": 8,
+       "num_stages": 2
+      },
+      {
+       "BLOCK": 4096,
+       "num_warps": 8,
+       "num_stages": 1
+      }
+     ],
+     4.870912075042725,
+     null
+    ],
+    [
+     [
+      {
+       "BLOCK_M": 64,
+       "BLOCK_N": 256,
+       "BLOCK_K": 32,
+       "GROUP_M": 8,
+       "SPLIT_K": 2,
+       "num_warps": 8,
+       "num_stages": 2
+      },
+      {
+       "BLOCK": 512,
+       "num_warps": 1,
+       "num_stages": 1
+      }
+     ],
+     4.871679782867432,
+     null
+    ],
+    [
+     [
+      {
+       "BLOCK_M": 64,
+       "BLOCK_N": 256,
+       "BLOCK_K": 32,
+       "GROUP_M": 8,
+       "SPLIT_K": 2,
+       "num_warps": 8,
+       "num_stages": 2
+      },
+      {
+       "BLOCK": 2048,
+       "num_warps": 8,
+       "num_stages": 1
+      }
+     ],
+     4.868607997894287,
+     null
+    ],
+    [
+     [
+      {
+       "BLOCK_M": 64,
+       "BLOCK_N": 256,
+       "BLOCK_K": 32,
+       "GROUP_M": 8,
+       "SPLIT_K": 2,
+       "num_warps": 8,
+       "num_stages": 2
+      },
+      {
+       "BLOCK": 4096,
+       "num_warps": 16,
+       "num_stages": 1
+      }
+     ],
+     4.870912075042725,
+     null
+    ],
+    [
+     [
+      {
+       "BLOCK_M": 64,
+       "BLOCK_N": 256,
+       "BLOCK_K": 32,
+       "GROUP_M": 8,
+       "SPLIT_K": 2,
+       "num_warps": 8,
+       "num_stages": 2
+      },
+      {
+       "BLOCK": 1024,
+       "num_warps": 2,
+       "num_stages": 1
+      }
+     ],
+     4.8703999519348145,
+     null
+    ],
+    [
+     [
+      {
+       "BLOCK_M": 64,
+       "BLOCK_N": 256,
+       "BLOCK_K": 32,
+       "GROUP_M": 8,
+       "SPLIT_K": 2,
+       "num_warps": 8,
+       "num_stages": 2
+      },
+      {
+       "BLOCK": 4096,
+       "num_warps": 8,
+       "num_stages": 1
+      }
+     ],
+     4.8706560134887695,
+     null
+    ],
+    [
+     [
+      {
+       "BLOCK_M": 64,
+       "BLOCK_N": 256,
+       "BLOCK_K": 32,
+       "GROUP_M": 16,
+       "SPLIT_K": 2,
+       "num_warps": 8,
+       "num_stages": 2
+      },
+      {
+       "BLOCK": 512,
+       "num_warps": 1,
+       "num_stages": 1
+      }
+     ],
+     4.873983860015869,
+     null
+    ],
+    [
+     [
+      {
+       "BLOCK_M": 64,
+       "BLOCK_N": 256,
+       "BLOCK_K": 32,
+       "GROUP_M": 16,
+       "SPLIT_K": 2,
+       "num_warps": 8,
+       "num_stages": 2
+      },
+      {
+       "BLOCK": 2048,
+       "num_warps": 8,
+       "num_stages": 1
+      }
+     ],
+     4.872191905975342,
+     null
+    ],
+    [
+     [
+      {
+       "BLOCK_M": 64,
+       "BLOCK_N": 256,
+       "BLOCK_K": 32,
+       "GROUP_M": 16,
+       "SPLIT_K": 2,
+       "num_warps": 8,
+       "num_stages": 2
+      },
+      {
+       "BLOCK": 4096,
+       "num_warps": 16,
+       "num_stages": 1
+      }
+     ],
+     4.871424198150635,
+     null
+    ],
+    [
+     [
+      {
+       "BLOCK_M": 64,
+       "BLOCK_N": 256,
+       "BLOCK_K": 32,
+       "GROUP_M": 16,
+       "SPLIT_K": 2,
+       "num_warps": 8,
+       "num_stages": 2
+      },
+      {
+       "BLOCK": 1024,
+       "num_warps": 2,
+       "num_stages": 1
+      }
+     ],
+     4.873216152191162,
+     null
+    ],
+    [
+     [
+      {
+       "BLOCK_M": 64,
+       "BLOCK_N": 256,
+       "BLOCK_K": 32,
+       "GROUP_M": 16,
+       "SPLIT_K": 2,
+       "num_warps": 8,
+       "num_stages": 2
+      },
+      {
+       "BLOCK": 4096,
+       "num_warps": 8,
+       "num_stages": 1
+      }
+     ],
+     4.8755202293396,
+     null
+    ]
+   ]
+  },
+  "tune_unfused_joint": {
+   "best_cfg": [
+    {
+     "BLOCK_M": 128,
+     "BLOCK_N": 128,
+     "BLOCK_K": 32,
+     "GROUP_M": 8,
+     "SPLIT_K": 1,
+     "num_warps": 8,
+     "num_stages": 2
+    },
+    {
+     "BLOCK": 2048,
+     "num_warps": 8,
+     "num_stages": 1
+    }
+   ],
+   "best_ms": 4.2388482093811035,
+   "n_tried": 15,
+   "n_failed": 0,
+   "table": [
+    [
+     [
+      {
+       "BLOCK_M": 128,
+       "BLOCK_N": 128,
+       "BLOCK_K": 32,
+       "GROUP_M": 8,
+       "SPLIT_K": 1,
+       "num_warps": 8,
+       "num_stages": 2
+      },
+      {
+       "BLOCK": 512,
+       "num_warps": 1,
+       "num_stages": 1
+      }
+     ],
+     4.241663932800293,
+     null
+    ],
+    [
+     [
+      {
+       "BLOCK_M": 128,
+       "BLOCK_N": 128,
+       "BLOCK_K": 32,
+       "GROUP_M": 8,
+       "SPLIT_K": 1,
+       "num_warps": 8,
+       "num_stages": 2
+      },
+      {
+       "BLOCK": 2048,
+       "num_warps": 4,
+       "num_stages": 1
+      }
+     ],
+     4.239871978759766,
+     null
+    ],
+    [
+     [
+      {
+       "BLOCK_M": 128,
+       "BLOCK_N": 128,
+       "BLOCK_K": 32,
+       "GROUP_M": 8,
+       "SPLIT_K": 1,
+       "num_warps": 8,
+       "num_stages": 2
+      },
+      {
+       "BLOCK": 2048,
+       "num_warps": 8,
+       "num_stages": 1
+      }
+     ],
+     4.2388482093811035,
+     null
+    ],
+    [
+     [
+      {
+       "BLOCK_M": 128,
+       "BLOCK_N": 128,
+       "BLOCK_K": 32,
+       "GROUP_M": 8,
+       "SPLIT_K": 1,
+       "num_warps": 8,
+       "num_stages": 2
+      },
+      {
+       "BLOCK": 1024,
+       "num_warps": 2,
+       "num_stages": 1
+      }
+     ],
+     4.2393598556518555,
+     null
+    ],
+    [
+     [
+      {
+       "BLOCK_M": 128,
+       "BLOCK_N": 128,
+       "BLOCK_K": 32,
+       "GROUP_M": 8,
+       "SPLIT_K": 1,
+       "num_warps": 8,
+       "num_stages": 2
+      },
+      {
+       "BLOCK": 8192,
+       "num_warps": 8,
+       "num_stages": 1
+      }
+     ],
+     4.242432117462158,
+     null
+    ],
+    [
+     [
+      {
+       "BLOCK_M": 128,
+       "BLOCK_N": 128,
+       "BLOCK_K": 32,
+       "GROUP_M": 16,
+       "SPLIT_K": 1,
+       "num_warps": 8,
+       "num_stages": 2
+      },
+      {
+       "BLOCK": 512,
+       "num_warps": 1,
+       "num_stages": 1
+      }
+     ],
+     4.241407871246338,
+     null
+    ],
+    [
+     [
+      {
+       "BLOCK_M": 128,
+       "BLOCK_N": 128,
+       "BLOCK_K": 32,
+       "GROUP_M": 16,
+       "SPLIT_K": 1,
+       "num_warps": 8,
+       "num_stages": 2
+      },
+      {
+       "BLOCK": 2048,
+       "num_warps": 4,
+       "num_stages": 1
+      }
+     ],
+     4.241663932800293,
+     null
+    ],
+    [
+     [
+      {
+       "BLOCK_M": 128,
+       "BLOCK_N": 128,
+       "BLOCK_K": 32,
+       "GROUP_M": 16,
+       "SPLIT_K": 1,
+       "num_warps": 8,
+       "num_stages": 2
+      },
+      {
+       "BLOCK": 2048,
+       "num_warps": 8,
+       "num_stages": 1
+      }
+     ],
+     4.241919994354248,
+     null
+    ],
+    [
+     [
+      {
+       "BLOCK_M": 128,
+       "BLOCK_N": 128,
+       "BLOCK_K": 32,
+       "GROUP_M": 16,
+       "SPLIT_K": 1,
+       "num_warps": 8,
+       "num_stages": 2
+      },
+      {
+       "BLOCK": 1024,
+       "num_warps": 2,
+       "num_stages": 1
+      }
+     ],
+     4.2442240715026855,
+     null
+    ],
+    [
+     [
+      {
+       "BLOCK_M": 128,
+       "BLOCK_N": 128,
+       "BLOCK_K": 32,
+       "GROUP_M": 16,
+       "SPLIT_K": 1,
+       "num_warps": 8,
+       "num_stages": 2
+      },
+      {
+       "BLOCK": 8192,
+       "num_warps": 8,
+       "num_stages": 1
+      }
+     ],
+     4.242176055908203,
+     null
+    ],
+    [
+     [
+      {
+       "BLOCK_M": 128,
+       "BLOCK_N": 128,
+       "BLOCK_K": 32,
+       "GROUP_M": 4,
+       "SPLIT_K": 1,
+       "num_warps": 8,
+       "num_stages": 2
+      },
+      {
+       "BLOCK": 512,
+       "num_warps": 1,
+       "num_stages": 1
+      }
+     ],
+     4.244480133056641,
+     null
+    ],
+    [
+     [
+      {
+       "BLOCK_M": 128,
+       "BLOCK_N": 128,
+       "BLOCK_K": 32,
+       "GROUP_M": 4,
+       "SPLIT_K": 1,
+       "num_warps": 8,
+       "num_stages": 2
+      },
+      {
+       "BLOCK": 2048,
+       "num_warps": 4,
+       "num_stages": 1
+      }
+     ],
+     4.244991779327393,
+     null
+    ],
+    [
+     [
+      {
+       "BLOCK_M": 128,
+       "BLOCK_N": 128,
+       "BLOCK_K": 32,
+       "GROUP_M": 4,
+       "SPLIT_K": 1,
+       "num_warps": 8,
+       "num_stages": 2
+      },
+      {
+       "BLOCK": 2048,
+       "num_warps": 8,
+       "num_stages": 1
+      }
+     ],
+     4.242432117462158,
+     null
+    ],
+    [
+     [
+      {
+       "BLOCK_M": 128,
+       "BLOCK_N": 128,
+       "BLOCK_K": 32,
+       "GROUP_M": 4,
+       "SPLIT_K": 1,
+       "num_warps": 8,
+       "num_stages": 2
+      },
+      {
+       "BLOCK": 1024,
+       "num_warps": 2,
+       "num_stages": 1
+      }
+     ],
+     4.2442240715026855,
+     null
+    ],
+    [
+     [
+      {
+       "BLOCK_M": 128,
+       "BLOCK_N": 128,
+       "BLOCK_K": 32,
+       "GROUP_M": 4,
+       "SPLIT_K": 1,
+       "num_warps": 8,
+       "num_stages": 2
+      },
+      {
+       "BLOCK": 8192,
+       "num_warps": 8,
+       "num_stages": 1
+      }
+     ],
+     4.243711948394775,
+     null
+    ]
+   ]
+  },
+  "tune_epi_add_bf16": {
+   "best_cfg": {
+    "BLOCK": 512,
+    "num_warps": 1,
+    "num_stages": 1
+   },
+   "best_ms": 0.06681600213050842,
+   "n_tried": 29,
+   "n_failed": 0,
+   "table": [
+    [
+     {
+      "BLOCK": 256,
+      "num_warps": 1,
+      "num_stages": 1
+     },
+     0.0727040022611618,
+     null
+    ],
+    [
+     {
+      "BLOCK": 256,
+      "num_warps": 2,
+      "num_stages": 1
+     },
+     0.1154559999704361,
+     null
+    ],
+    [
+     {
+      "BLOCK": 256,
+      "num_warps": 4,
+      "num_stages": 1
+     },
+     0.1815039962530136,
+     null
+    ],
+    [
+     {
+      "BLOCK": 512,
+      "num_warps": 1,
+      "num_stages": 1
+     },
+     0.06681600213050842,
+     null
+    ],
+    [
+     {
+      "BLOCK": 512,
+      "num_warps": 2,
+      "num_stages": 1
+     },
+     0.06988800317049026,
+     null
+    ],
+    [
+     {
+      "BLOCK": 512,
+      "num_warps": 4,
+      "num_stages": 1
+     },
+     0.10009600222110748,
+     null
+    ],
+    [
+     {
+      "BLOCK": 512,
+      "num_warps": 8,
+      "num_stages": 1
+     },
+     0.15769599378108978,
+     null
+    ],
+    [
+     {
+      "BLOCK": 1024,
+      "num_warps": 1,
+      "num_stages": 1
+     },
+     0.06758400052785873,
+     null
+    ],
+    [
+     {
+      "BLOCK": 1024,
+      "num_warps": 2,
+      "num_stages": 1
+     },
+     0.06707199662923813,
+     null
+    ],
+    [
+     {
+      "BLOCK": 1024,
+      "num_warps": 4,
+      "num_stages": 1
+     },
+     0.06732799857854843,
+     null
+    ],
+    [
+     {
+      "BLOCK": 1024,
+      "num_warps": 8,
+      "num_stages": 1
+     },
+     0.08755200356245041,
+     null
+    ],
+    [
+     {
+      "BLOCK": 1024,
+      "num_warps": 16,
+      "num_stages": 1
+     },
+     0.14668799936771393,
+     null
+    ],
+    [
+     {
+      "BLOCK": 2048,
+      "num_warps": 1,
+      "num_stages": 1
+     },
+     0.06809599697589874,
+     null
+    ],
+    [
+     {
+      "BLOCK": 2048,
+      "num_warps": 2,
+      "num_stages": 1
+     },
+     0.06809599697589874,
+     null
+    ],
+    [
+     {
+      "BLOCK": 2048,
+      "num_warps": 4,
+      "num_stages": 1
+     },
+     0.06681600213050842,
+     null
+    ],
+    [
+     {
+      "BLOCK": 2048,
+      "num_warps": 8,
+      "num_stages": 1
+     },
+     0.06681600213050842,
+     null
+    ],
+    [
+     {
+      "BLOCK": 2048,
+      "num_warps": 16,
+      "num_stages": 1
+     },
+     0.08140800148248672,
+     null
+    ],
+    [
+     {
+      "BLOCK": 4096,
+      "num_warps": 1,
+      "num_stages": 1
+     },
+     0.06835199892520905,
+     null
+    ],
+    [
+     {
+      "BLOCK": 4096,
+      "num_warps": 2,
+      "num_stages": 1
+     },
+     0.06809599697589874,
+     null
+    ],
+    [
+     {
+      "BLOCK": 4096,
+      "num_warps": 4,
+      "num_stages": 1
+     },
+     0.06809599697589874,
+     null
+    ],
+    [
+     {
+      "BLOCK": 4096,
+      "num_warps": 8,
+      "num_stages": 1
+     },
+     0.06732799857854843,
+     null
+    ],
+    [
+     {
+      "BLOCK": 4096,
+      "num_warps": 16,
+      "num_stages": 1
+     },
+     0.06732799857854843,
+     null
+    ],
+    [
+     {
+      "BLOCK": 8192,
+      "num_warps": 2,
+      "num_stages": 1
+     },
+     0.06835199892520905,
+     null
+    ],
+    [
+     {
+      "BLOCK": 8192,
+      "num_warps": 4,
+      "num_stages": 1
+     },
+     0.06809599697589874,
+     null
+    ],
+    [
+     {
+      "BLOCK": 8192,
+      "num_warps": 8,
+      "num_stages": 1
+     },
+     0.06707199662923813,
+     null
+    ],
+    [
+     {
+      "BLOCK": 8192,
+      "num_warps": 16,
+      "num_stages": 1
+     },
+     0.06809599697589874,
+     null
+    ],
+    [
+     {
+      "BLOCK": 16384,
+      "num_warps": 4,
+      "num_stages": 1
+     },
+     0.06860800087451935,
+     null
+    ],
+    [
+     {
+      "BLOCK": 16384,
+      "num_warps": 8,
+      "num_stages": 1
+     },
+     0.06835199892520905,
+     null
+    ],
+    [
+     {
+      "BLOCK": 16384,
+      "num_warps": 16,
+      "num_stages": 1
+     },
+     0.06937599927186966,
+     null
+    ]
+   ]
+  },
+  "tune_epi_add_f32": {
+   "best_cfg": {
+    "BLOCK": 512,
+    "num_warps": 2,
+    "num_stages": 1
+   },
+   "best_ms": 0.08294399827718735,
+   "n_tried": 29,
+   "n_failed": 0,
+   "table": [
+    [
+     {
+      "BLOCK": 256,
+      "num_warps": 1,
+      "num_stages": 1
+     },
+     0.08422400057315826,
+     null
+    ],
+    [
+     {
+      "BLOCK": 256,
+      "num_warps": 2,
+      "num_stages": 1
+     },
+     0.11622399836778641,
+     null
+    ],
+    [
+     {
+      "BLOCK": 256,
+      "num_warps": 4,
+      "num_stages": 1
+     },
+     0.179967999458313,
+     null
+    ],
+    [
+     {
+      "BLOCK": 512,
+      "num_warps": 1,
+      "num_stages": 1
+     },
+     0.08448000252246857,
+     null
+    ],
+    [
+     {
+      "BLOCK": 512,
+      "num_warps": 2,
+      "num_stages": 1
+     },
+     0.08294399827718735,
+     null
+    ],
+    [
+     {
+      "BLOCK": 512,
+      "num_warps": 4,
+      "num_stages": 1
+     },
+     0.10035199671983719,
+     null
+    ],
+    [
+     {
+      "BLOCK": 512,
+      "num_warps": 8,
+      "num_stages": 1
+     },
+     0.16076800227165222,
+     null
+    ],
+    [
+     {
+      "BLOCK": 1024,
+      "num_warps": 1,
+      "num_stages": 1
+     },
+     0.08473599702119827,
+     null
+    ],
+    [
+     {
+      "BLOCK": 1024,
+      "num_warps": 2,
+      "num_stages": 1
+     },
+     0.08422400057315826,
+     null
+    ],
+    [
+     {
+      "BLOCK": 1024,
+      "num_warps": 4,
+      "num_stages": 1
+     },
+     0.08320000022649765,
+     null
+    ],
+    [
+     {
+      "BLOCK": 1024,
+      "num_warps": 8,
+      "num_stages": 1
+     },
+     0.0867839977145195,
+     null
+    ],
+    [
+     {
+      "BLOCK": 1024,
+      "num_warps": 16,
+      "num_stages": 1
+     },
+     0.1451520025730133,
+     null
+    ],
+    [
+     {
+      "BLOCK": 2048,
+      "num_warps": 1,
+      "num_stages": 1
+     },
+     0.0865280032157898,
+     null
+    ],
+    [
+     {
+      "BLOCK": 2048,
+      "num_warps": 2,
+      "num_stages": 1
+     },
+     0.08550400286912918,
+     null
+    ],
+    [
+     {
+      "BLOCK": 2048,
+      "num_warps": 4,
+      "num_stages": 1
+     },
+     0.08448000252246857,
+     null
+    ],
+    [
+     {
+      "BLOCK": 2048,
+      "num_warps": 8,
+      "num_stages": 1
+     },
+     0.08294399827718735,
+     null
+    ],
+    [
+     {
+      "BLOCK": 2048,
+      "num_warps": 16,
+      "num_stages": 1
+     },
+     0.08575999736785889,
+     null
+    ],
+    [
+     {
+      "BLOCK": 4096,
+      "num_warps": 1,
+      "num_stages": 1
+     },
+     0.08832000195980072,
+     null
+    ],
+    [
+     {
+      "BLOCK": 4096,
+      "num_warps": 2,
+      "num_stages": 1
+     },
+     0.0872960016131401,
+     null
+    ],
+    [
+     {
+      "BLOCK": 4096,
+      "num_warps": 4,
+      "num_stages": 1
+     },
+     0.08448000252246857,
+     null
+    ],
+    [
+     {
+      "BLOCK": 4096,
+      "num_warps": 8,
+      "num_stages": 1
+     },
+     0.08448000252246857,
+     null
+    ],
+    [
+     {
+      "BLOCK": 4096,
+      "num_warps": 16,
+      "num_stages": 1
+     },
+     0.08422400057315826,
+     null
+    ],
+    [
+     {
+      "BLOCK": 8192,
+      "num_warps": 2,
+      "num_stages": 1
+     },
+     0.08883199840784073,
+     null
+    ],
+    [
+     {
+      "BLOCK": 8192,
+      "num_warps": 4,
+      "num_stages": 1
+     },
+     0.0865280032157898,
+     null
+    ],
+    [
+     {
+      "BLOCK": 8192,
+      "num_warps": 8,
+      "num_stages": 1
+     },
+     0.08601599931716919,
+     null
+    ],
+    [
+     {
+      "BLOCK": 8192,
+      "num_warps": 16,
+      "num_stages": 1
+     },
+     0.08499199897050858,
+     null
+    ],
+    [
+     {
+      "BLOCK": 16384,
+      "num_warps": 4,
+      "num_stages": 1
+     },
+     0.08883199840784073,
+     null
+    ],
+    [
+     {
+      "BLOCK": 16384,
+      "num_warps": 8,
+      "num_stages": 1
+     },
+     0.08832000195980072,
+     null
+    ],
+    [
+     {
+      "BLOCK": 16384,
+      "num_warps": 16,
+      "num_stages": 1
+     },
+     0.08601599931716919,
+     null
+    ]
+   ]
+  },
+  "tune_epi_cast_f32": {
+   "best_cfg": {
+    "BLOCK": 512,
+    "num_warps": 1,
+    "num_stages": 1
+   },
+   "best_ms": 0.06681600213050842,
+   "n_tried": 29,
+   "n_failed": 0,
+   "table": [
+    [
+     {
+      "BLOCK": 256,
+      "num_warps": 1,
+      "num_stages": 1
+     },
+     0.07475200295448303,
+     null
+    ],
+    [
+     {
+      "BLOCK": 256,
+      "num_warps": 2,
+      "num_stages": 1
+     },
+     0.12108799815177917,
+     null
+    ],
+    [
+     {
+      "BLOCK": 256,
+      "num_warps": 4,
+      "num_stages": 1
+     },
+     0.18252800405025482,
+     null
+    ],
+    [
+     {
+      "BLOCK": 512,
+      "num_warps": 1,
+      "num_stages": 1
+     },
+     0.06681600213050842,
+     null
+    ],
+    [
+     {
+      "BLOCK": 512,
+      "num_warps": 2,
+      "num_stages": 1
+     },
+     0.06937599927186966,
+     null
+    ],
+    [
+     {
+      "BLOCK": 512,
+      "num_warps": 4,
+      "num_stages": 1
+     },
+     0.10214400291442871,
+     null
+    ],
+    [
+     {
+      "BLOCK": 512,
+      "num_warps": 8,
+      "num_stages": 1
+     },
+     0.1656319946050644,
+     null
+    ],
+    [
+     {
+      "BLOCK": 1024,
+      "num_warps": 1,
+      "num_stages": 1
+     },
+     0.06784000247716904,
+     null
+    ],
+    [
+     {
+      "BLOCK": 1024,
+      "num_warps": 2,
+      "num_stages": 1
+     },
+     0.06707199662923813,
+     null
+    ],
+    [
+     {
+      "BLOCK": 1024,
+      "num_warps": 4,
+      "num_stages": 1
+     },
+     0.06758400052785873,
+     null
+    ],
+    [
+     {
+      "BLOCK": 1024,
+      "num_warps": 8,
+      "num_stages": 1
+     },
+     0.08832000195980072,
+     null
+    ],
+    [
+     {
+      "BLOCK": 1024,
+      "num_warps": 16,
+      "num_stages": 1
+     },
+     0.1454080045223236,
+     null
+    ],
+    [
+     {
+      "BLOCK": 2048,
+      "num_warps": 1,
+      "num_stages": 1
+     },
+     0.06860800087451935,
+     null
+    ],
+    [
+     {
+      "BLOCK": 2048,
+      "num_warps": 2,
+      "num_stages": 1
+     },
+     0.06784000247716904,
+     null
+    ],
+    [
+     {
+      "BLOCK": 2048,
+      "num_warps": 4,
+      "num_stages": 1
+     },
+     0.06732799857854843,
+     null
+    ],
+    [
+     {
+      "BLOCK": 2048,
+      "num_warps": 8,
+      "num_stages": 1
+     },
+     0.06681600213050842,
+     null
+    ],
+    [
+     {
+      "BLOCK": 2048,
+      "num_warps": 16,
+      "num_stages": 1
+     },
+     0.08089599758386612,
+     null
+    ],
+    [
+     {
+      "BLOCK": 4096,
+      "num_warps": 1,
+      "num_stages": 1
+     },
+     0.06963200122117996,
+     null
+    ],
+    [
+     {
+      "BLOCK": 4096,
+      "num_warps": 2,
+      "num_stages": 1
+     },
+     0.06886400282382965,
+     null
+    ],
+    [
+     {
+      "BLOCK": 4096,
+      "num_warps": 4,
+      "num_stages": 1
+     },
+     0.06784000247716904,
+     null
+    ],
+    [
+     {
+      "BLOCK": 4096,
+      "num_warps": 8,
+      "num_stages": 1
+     },
+     0.06707199662923813,
+     null
+    ],
+    [
+     {
+      "BLOCK": 4096,
+      "num_warps": 16,
+      "num_stages": 1
+     },
+     0.06681600213050842,
+     null
+    ],
+    [
+     {
+      "BLOCK": 8192,
+      "num_warps": 2,
+      "num_stages": 1
+     },
+     0.06963200122117996,
+     null
+    ],
+    [
+     {
+      "BLOCK": 8192,
+      "num_warps": 4,
+      "num_stages": 1
+     },
+     0.06886400282382965,
+     null
+    ],
+    [
+     {
+      "BLOCK": 8192,
+      "num_warps": 8,
+      "num_stages": 1
+     },
+     0.06886400282382965,
+     null
+    ],
+    [
+     {
+      "BLOCK": 8192,
+      "num_warps": 16,
+      "num_stages": 1
+     },
+     0.06809599697589874,
+     null
+    ],
+    [
+     {
+      "BLOCK": 16384,
+      "num_warps": 4,
+      "num_stages": 1
+     },
+     0.06988800317049026,
+     null
+    ],
+    [
+     {
+      "BLOCK": 16384,
+      "num_warps": 8,
+      "num_stages": 1
+     },
+     0.06886400282382965,
+     null
+    ],
+    [
+     {
+      "BLOCK": 16384,
+      "num_warps": 16,
+      "num_stages": 1
+     },
+     0.06886400282382965,
+     null
+    ]
+   ]
+  },
+  "timing_fused": {
+   "p50_ms": 4.868095874786377,
+   "p10_ms": 4.863999843597412,
+   "p90_ms": 4.873216152191162,
+   "mean_ms": 4.8703360080719,
+   "n": 60,
+   "noflush_p50_ms": 4.864255905151367
+  },
+  "timing_unfused": {
+   "p50_ms": 4.2388482093811035,
+   "p10_ms": 4.237055778503418,
+   "p90_ms": 4.243711948394775,
+   "mean_ms": 4.2403541247049965,
+   "n": 60,
+   "noflush_p50_ms": 4.236032009124756
+  },
+  "timing_vendor_fused": {
+   "p50_ms": 2.0142080783843994,
+   "p10_ms": 2.011136054992676,
+   "p90_ms": 2.0239360332489014,
+   "mean_ms": 2.0154794692993163,
+   "n": 60,
+   "noflush_p50_ms": 2.0106239318847656
+  },
+  "timing_vendor_unfused": {
+   "p50_ms": 1.9804160594940186,
+   "p10_ms": 1.9796479940414429,
+   "p90_ms": 1.9811840057373047,
+   "mean_ms": 1.9804288148880005,
+   "n": 60,
+   "noflush_p50_ms": 1.977344036102295
+  },
+  "checks": [
+   {
+    "label": "prefill_t2048/triton-fused",
+    "rel_err": 0.0027846700977534056,
+    "tol": 0.02,
+    "ok": true
+   },
+   {
+    "label": "prefill_t2048/triton-unfused",
+    "rel_err": 0.003129216143861413,
+    "tol": 0.02,
+    "ok": true
+   },
+   {
+    "label": "prefill_t2048/vendor-addmm",
+    "rel_err": 0.0027851799968630075,
+    "tol": 0.02,
+    "ok": true
+   },
+   {
+    "label": "prefill_t2048/fused-vs-unfused",
+    "rel_err": 0.0055555556900799274,
+    "tol": 0.0,
+    "ok": false
+   }
+  ]
+ }
+}

@@ -1,0 +1,108 @@
+{
+  "decode_bs1": {
+    "gemm_ms": 0.2759679853916168,
+    "gemm_cfg": {
+      "BLOCK_M": 16,
+      "BLOCK_N": 128,
+      "BLOCK_K": 64,
+      "GROUP_M": 8,
+      "SPLIT_K": 2,
+      "num_warps": 8,
+      "num_stages": 3
+    },
+    "epi_ms": 0.015359999611973763,
+    "epi_cfg": {
+      "BLOCK": 256,
+      "num_warps": 2,
+      "num_stages": 1
+    },
+    "split_k": 2,
+    "recorded_chain_ms": 0.27775999903678894,
+    "sum_ms": 0.2913279850035906
+  },
+  "decode_bs32": {
+    "gemm_ms": 0.30847999453544617,
+    "gemm_cfg": {
+      "BLOCK_M": 32,
+      "BLOCK_N": 256,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 4,
+      "num_warps": 8,
+      "num_stages": 2
+    },
+    "epi_ms": 0.01664000004529953,
+    "epi_cfg": {
+      "BLOCK": 1024,
+      "num_warps": 8,
+      "num_stages": 1
+    },
+    "split_k": 4,
+    "recorded_chain_ms": 0.3097600042819977,
+    "sum_ms": 0.3251199945807457
+  },
+  "decode_bs256": {
+    "gemm_ms": 1.2518399953842163,
+    "gemm_cfg": {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 64,
+      "GROUP_M": 16,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 2
+    },
+    "epi_ms": 0.025599999353289604,
+    "epi_cfg": {
+      "BLOCK": 512,
+      "num_warps": 1,
+      "num_stages": 1
+    },
+    "split_k": 1,
+    "recorded_chain_ms": 1.260032057762146,
+    "sum_ms": 1.277439994737506
+  },
+  "prefill_t2048": {
+    "gemm_ms": 4.1828,
+    "gemm_cfg": {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 2
+    },
+    "epi_ms": 0.0648,
+    "epi_cfg": {
+      "BLOCK": 2048,
+      "num_warps": 8,
+      "num_stages": 1
+    },
+    "split_k": 1,
+    "recorded_chain_ms": 4.2388482093811035,
+    "sum_ms": 4.2476,
+    "note": "re-measured over 5 passes; the first pass (4.954) was a one-off excursion"
+  },
+  "prefill_t8192": {
+    "gemm_ms": 15.34489631652832,
+    "gemm_cfg": {
+      "BLOCK_M": 128,
+      "BLOCK_N": 128,
+      "BLOCK_K": 32,
+      "GROUP_M": 8,
+      "SPLIT_K": 1,
+      "num_warps": 8,
+      "num_stages": 2
+    },
+    "epi_ms": 0.21452799439430237,
+    "epi_cfg": {
+      "BLOCK": 2048,
+      "num_warps": 8,
+      "num_stages": 1
+    },
+    "split_k": 1,
+    "recorded_chain_ms": 15.548928260803223,
+    "sum_ms": 15.559424310922623
+  }
+}
