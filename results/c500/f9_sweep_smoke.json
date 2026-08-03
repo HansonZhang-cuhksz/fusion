@@ -1,0 +1,91 @@
+{
+  "id": "f9_sweep_smoke",
+  "fusion": "#9 Down GEMM + Expert Merge + ResAdd2 (atomic)",
+  "note": "both sides retuned per point; two unfused baselines reported",
+  "rows": [
+    {
+      "T": 512,
+      "rows": 4096,
+      "rows_per_expert": 16.0,
+      "fused_ms": 4.6630401611328125,
+      "unfused2_ms": 4.602880001068115,
+      "unfused3_ms": 4.620543956756592,
+      "gain_vs_2k": 0.9868846195478688,
+      "gain_vs_2k_min": 0.9866110121734238,
+      "gain_vs_2k_max": 0.9882993263822138,
+      "gain_vs_3k": 0.9908910892303465,
+      "gain_vs_3k_min": 0.9908357003532208,
+      "gain_vs_3k_max": 0.9915398682098969,
+      "gain_spread_pct": 0.17107513637850527,
+      "rounds": {
+        "fused": [
+          4.65996789932251,
+          4.660223960876465,
+          4.66534423828125,
+          4.665088176727295,
+          4.6630401611328125
+        ],
+        "unfused2": [
+          4.600831985473633,
+          4.605696201324463,
+          4.602880001068115,
+          4.603903770446777,
+          4.601088047027588
+        ],
+        "unfused3": [
+          4.620543956756592,
+          4.61952018737793,
+          4.622848033905029,
+          4.622335910797119,
+          4.620543956756592
+        ]
+      },
+      "rel_err": {
+        "fused": 0.008312010206282139,
+        "unfused2": 0.0033594295382499695,
+        "unfused3": 0.0041473014280200005
+      },
+      "unfused_cfg": {
+        "BLOCK_M": 32,
+        "BLOCK_N": 64,
+        "BLOCK_K": 64,
+        "GROUP_M": 1,
+        "num_warps": 8,
+        "num_stages": 4
+      },
+      "moe_sum_res0_cfg": {
+        "BLOCK_M": 2,
+        "BLOCK_DIM": 512,
+        "num_warps": 8,
+        "num_stages": 2
+      },
+      "moe_sum_res1_cfg": {
+        "BLOCK_M": 2,
+        "BLOCK_DIM": 512,
+        "num_warps": 8,
+        "num_stages": 2
+      },
+      "resadd_cfg": {
+        "BLOCK_M": 2,
+        "BLOCK_N": 256,
+        "num_warps": 4,
+        "num_stages": 3
+      },
+      "fused_cfg": {
+        "BLOCK_M": 32,
+        "BLOCK_N": 64,
+        "BLOCK_K": 64,
+        "GROUP_M": 1,
+        "num_warps": 8,
+        "num_stages": 3
+      },
+      "seed_cfg": {
+        "BLOCK_M": 2,
+        "BLOCK_N": 256,
+        "num_warps": 4,
+        "num_stages": 2
+      },
+      "accum_MB": 6.0
+    }
+  ]
+}

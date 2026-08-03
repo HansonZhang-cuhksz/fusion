@@ -1,0 +1,39 @@
+device=NVIDIA GeForce RTX 4060 Laptop GPU warp=32 CUs=24
+  == decode_bs1 (T=1) ==
+    [fused] coarse 164 cfgs (0 fail) -> 0.0113 ms | refine 46 (0 fail) -> 0.0113 ms | best 0.0113 ms {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 16, 'num_stages': 2, 'grid_cap': 48, 'eps': 1e-05}  [219s]
+    [add] coarse 164 cfgs (0 fail) -> 0.0102 ms | refine 88 (0 fail) -> 0.0102 ms | best 0.0102 ms {'ROWS': 1, 'BLOCK_N': 4096, 'num_warps': 16, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}  [86s]
+    [norm] coarse 164 cfgs (0 fail) -> 0.0113 ms | refine 28 (0 fail) -> 0.0102 ms | best 0.0102 ms {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 4, 'num_stages': 1, 'grid_cap': 384, 'eps': 1e-05, 'EVICT': 1}  [145s]
+    [chain] joint 12 pairs -> 0.0154 ms (independent-best sum would be 0.0205 ms)
+    fused 0.0113 ms (4 GB/s) | unfused 0.0164 ms (4 GB/s) | speedup 1.455x | eager 0.0502 | compile 0.0123
+  == decode_bs32 (T=32) ==
+    [fused] coarse 164 cfgs (0 fail) -> 0.0184 ms | refine 60 (0 fail) -> 0.0184 ms | best 0.0184 ms {'ROWS': 1, 'BLOCK_N': 4096, 'num_warps': 8, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}  [29s]
+    [add] coarse 164 cfgs (0 fail) -> 0.0164 ms | refine 44 (0 fail) -> 0.0164 ms | best 0.0164 ms {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 8, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}  [12s]
+    [norm] coarse 164 cfgs (0 fail) -> 0.0164 ms | refine 44 (0 fail) -> 0.0164 ms | best 0.0164 ms {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 4, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}  [13s]
+    [chain] joint 9 pairs -> 0.0236 ms (independent-best sum would be 0.0328 ms)
+    fused 0.0174 ms (90 GB/s) | unfused 0.0246 ms (80 GB/s) | speedup 1.412x | eager 0.0922 | compile 0.0195
+  == decode_bs256 (T=256) ==
+    [fused] coarse 164 cfgs (0 fail) -> 0.0942 ms | refine 46 (0 fail) -> 0.0952 ms | best 0.0942 ms {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 16, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05}  [14s]
+    [add] coarse 164 cfgs (0 fail) -> 0.0748 ms | refine 50 (0 fail) -> 0.0748 ms | best 0.0748 ms {'ROWS': 2, 'BLOCK_N': 8192, 'num_warps': 8, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}  [13s]
+    [norm] coarse 164 cfgs (0 fail) -> 0.0502 ms | refine 28 (0 fail) -> 0.0502 ms | best 0.0502 ms {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 4, 'num_stages': 1, 'grid_cap': 384, 'eps': 1e-05}  [12s]
+    [chain] joint 12 pairs -> 0.0922 ms (independent-best sum would be 0.1249 ms)
+    fused 0.0942 ms (134 GB/s) | unfused 0.0922 ms (171 GB/s) | speedup 0.978x | eager 0.2755 | compile 0.1044
+  == prefill_t2048 (T=2048) ==
+    [fused] coarse 164 cfgs (0 fail) -> 0.6984 ms | refine 34 (0 fail) -> 0.6984 ms | best 0.6984 ms {'ROWS': 1, 'BLOCK_N': 4096, 'num_warps': 2, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05}  [28s]
+    [add] coarse 164 cfgs (0 fail) -> 0.5325 ms | refine 82 (0 fail) -> 0.5263 ms | best 0.5263 ms {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 4, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05, 'EVICT': 1}  [24s]
+    [norm] coarse 164 cfgs (0 fail) -> 0.3482 ms | refine 72 (0 fail) -> 0.3471 ms | best 0.3471 ms {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 32, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05, 'EVICT': 1}  [25s]
+    [chain] joint 16 pairs -> 0.7485 ms (independent-best sum would be 0.8735 ms)
+    fused 0.7004 ms (144 GB/s) | unfused 0.7526 ms (167 GB/s) | speedup 1.075x | eager 3.5461 | compile 0.7055
+  == prefill_t8192 (T=8192) ==
+    [fused] coarse 164 cfgs (0 fail) -> 2.6204 ms | refine 54 (0 fail) -> 2.6173 ms | best 2.6173 ms {'ROWS': 4, 'BLOCK_N': 512, 'num_warps': 16, 'num_stages': 1, 'grid_cap': 192, 'eps': 1e-05, 'EVICT': 1}  [80s]
+    [add] coarse 164 cfgs (0 fail) -> 2.0429 ms | refine 44 (0 fail) -> 1.9773 ms | best 1.9773 ms {'ROWS': 8, 'BLOCK_N': 512, 'num_warps': 2, 'num_stages': 1, 'grid_cap': 24, 'eps': 1e-05, 'EVICT': 1}  [65s]
+    [norm] coarse 164 cfgs (0 fail) -> 1.3394 ms | refine 64 (0 fail) -> 1.3466 ms | best 1.3394 ms {'ROWS': 8, 'BLOCK_N': 512, 'num_warps': 4, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}  [87s]
+    [chain] joint 12 pairs -> 3.2901 ms (independent-best sum would be 3.3167 ms)
+    fused 2.6450 ms (152 GB/s) | unfused 3.2922 ms (153 GB/s) | speedup 1.245x | eager 14.7845 | compile 2.8170
+
+wrote results/f03_resadd_rmsnorm.json
+regime               fused   unfused  speedup     eager   compile
+decode_bs1          0.0113    0.0164    1.455    0.0502    0.0123
+decode_bs32         0.0174    0.0246    1.412    0.0922    0.0195
+decode_bs256        0.0942    0.0922    0.978    0.2755    0.1044
+prefill_t2048       0.7004    0.7526    1.075    3.5461    0.7055
+prefill_t8192       2.6450    3.2922    1.245   14.7845    2.8170

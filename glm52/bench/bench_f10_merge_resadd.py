@@ -11,11 +11,12 @@ Both sides produce the same `out`; the fused side additionally avoids materializ
 merged intermediate `m`, which is exactly the benefit being measured.  `m` has no other
 consumer in the GLM-5.2 decoder layer (the next op is the post-MoE RMSNorm, which reads
 `out`), so nothing downstream is skipped.  The fused kernel reproduces the unfused chain's
-round-to-bf16 of `m`, which makes the two outputs **bitwise identical** (asserted below).
+round-to-bf16 of `m`, which makes the two outputs **bitwise identical** whenever both sides
+tune to the same reduction order (recorded below as `bitwise_identical`, not asserted --
+the KVEC slab and the KVEC=0 loop sum the 8 experts in a different order).
 
 Run:
-    CUDA_VISIBLE_DEVICES=3 /home/zhangshuhan/my-envs/fusion/bin/python \
-        glm52/bench/bench_f10_merge_resadd.py
+    python3 glm52/bench/bench_f10_merge_resadd.py
 """
 
 from __future__ import annotations
@@ -26,7 +27,7 @@ import sys
 import time
 from pathlib import Path
 
-sys.path.insert(0, "/home/zhangshuhan/fusion")
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import torch
 
@@ -53,10 +54,14 @@ REGIMES = [r for r in C.DECODE_REGIMES if r.T in (1, 32, 256)] + [
     r for r in C.PREFILL_REGIMES if r.T in (2048, 8192)
 ]
 
+WARP = C.env().warp_size  # lanes per warp: 32 on sm89, 64 on C500
+
 BLOCKS = [256, 512, 1024, 2048, 4096]
 ROWSET = [1, 2, 4, 8, 16]
-WARPS = [1, 2, 4, 8, 16]
-CAPS = [104, 208, 416, 832, 1664]
+# the ladder is a CTA-size ladder: same 32..1024 threads it spanned on C500 (16 warps of
+# 64), which at 32 lanes needs one more rung.  1024 threads/CTA is the cap on both.
+WARPS = [w for w in (1, 2, 4, 8, 16, 32) if w * WARP <= 1024]
+CAPS = [C.env().num_sm * m for m in (1, 2, 4, 8, 16)]  # whole waves; 104*m on C500
 
 
 # --------------------------------------------------------------------------------------
@@ -64,7 +69,7 @@ CAPS = [104, 208, 416, 832, 1664]
 # --------------------------------------------------------------------------------------
 def _valid(cfg: dict) -> bool:
     b, r, w, kv = cfg["BLOCK_N"], cfg["ROWS"], cfg["num_warps"], cfg["KVEC"]
-    th = w * 64  # warp = 64 lanes on C500
+    th = w * WARP  # real lane count; halving it doubles every per-thread footprint below
     epr = b * r / th  # output elements per thread
     if epr < 4 or epr > 32:
         return False
@@ -77,7 +82,8 @@ def _valid(cfg: dict) -> bool:
 
 
 def coarse_grid() -> list[dict]:
-    """174 configs: tile width x rows/program x warps x stages x {loop, 3-D slab}."""
+    """188 configs here, 174 on C500: tile width x rows/program x warps x stages x
+    {loop, 3-D slab}.  The count moves because `_valid` counts real lanes."""
     out = []
     for b, r, w, s, kv in itertools.product(
         BLOCKS, (1, 2, 4, 8), WARPS, (1, 2), (0, 1)
@@ -245,13 +251,21 @@ def run_regime(regime, warmup_t, rep_t, warmup_f, rep_f) -> dict:
     out_hi = torch.empty_like(out)
     K.fused_merge_resadd(y, wt, res, out_hi, dict(f_cfg, ROUND_MID=0))
     torch.cuda.synchronize()
-    ref_out_hi = (
-        (y.float() * wt.unsqueeze(-1)).sum(1) + res.float()
-    ).to(DT)
+    # single-rounding fp32 reference, chunked over T.  The unchunked form holds two
+    # [T,8,H] fp32 temps live at once -- 3.0 GiB at T=8192 on an 8 GB card.  Chunking
+    # cannot move a bit: the reduction is per row, over topk.
+    ref_out_hi = torch.empty_like(out)
+    for i in range(0, T, 512):
+        j = min(i + 512, T)
+        ref_out_hi[i:j] = (
+            (y[i:j].float() * wt[i:j].unsqueeze(-1)).sum(1) + res[i:j].float()
+        ).to(DT)
     chk["fused_no_round_mid_vs_fp32"] = check(out_hi, ref_out_hi, label="no_round_mid")
     assert all(
         chk[k]["ok"] for k in chk if k != "fused_eq_unfused_bitwise"
     ), chk
+    del out_hi, ref_out_hi
+    torch.cuda.empty_cache()
 
     # ---- final timing -------------------------------------------------------------------
     t_fused = bench_chain(
@@ -271,7 +285,15 @@ def run_regime(regime, warmup_t, rep_t, warmup_f, rep_f) -> dict:
         mm = ref.expert_merge(y, wt)
         return (mm.float() + res.float()).to(DT)
 
-    t_eager = bench_chain([torch_eager], warmup_f, rep_f)
+    # `ref.expert_merge` peaks at ~3.0 GiB of fp32 transients at T=8192; an OOM in this
+    # optional reference arm must not throw away the regime's tuning result.
+    t_eager, eager_err = None, None
+    try:
+        t_eager = bench_chain([torch_eager], warmup_f, rep_f)
+    except torch.cuda.OutOfMemoryError as exc:
+        eager_err = f"{type(exc).__name__}: {exc}"[:400]
+        torch.cuda.empty_cache()
+        print(f"    torch eager FAILED: {eager_err}", flush=True)
 
     t_compile, compile_err, compile_chk = None, None, None
     try:
@@ -313,9 +335,17 @@ def run_regime(regime, warmup_t, rep_t, warmup_f, rep_f) -> dict:
             "gbps_fused": gbps(b_fused, t_fused.p50_ms),
             "gbps_unfused": gbps(b_unfused, t_unfused.p50_ms),
             "ideal_speedup": 1.20,
+            # `m` is the intermediate the fusion deletes; where it is already L2-resident
+            # the deletion saves no DRAM traffic, so the 1.20x is not on the table.
+            "m_bytes": act,
+            "l2_bytes": C.env().l2_bytes,
+            "m_fits_in_l2": act <= C.env().l2_bytes,
+            "ceiling_note": "1.20x is a DRAM-traffic ceiling; unattainable where m fits "
+            "in L2",
             "fused_noflush_ms": t_fused.noflush_p50_ms,
             "unfused_noflush_ms": t_unfused.noflush_p50_ms,
-            "torch_eager_ms": t_eager.p50_ms,
+            "torch_eager_ms": t_eager.p50_ms if t_eager else None,
+            "torch_eager_err": eager_err,
             "torch_compile_ms": t_compile.p50_ms if t_compile else None,
             "torch_compile_err": compile_err,
             "torch_compile_check": compile_chk,
@@ -338,7 +368,7 @@ def run_regime(regime, warmup_t, rep_t, warmup_f, rep_f) -> dict:
         f"    fused {t_fused.p50_ms:.4f} ms ({gbps(b_fused, t_fused.p50_ms):.0f} GB/s)"
         f" | unfused {t_unfused.p50_ms:.4f} ms ({gbps(b_unfused, t_unfused.p50_ms):.0f} GB/s)"
         f" | speedup {row['speedup']:.3f}x ({100*row['pct_of_ceiling']:.0f}% of 1.20x)"
-        f" | eager {t_eager.p50_ms:.4f}"
+        + (f" | eager {t_eager.p50_ms:.4f}" if t_eager else " | eager n/a")
         + (f" | compile {t_compile.p50_ms:.4f}" if t_compile else " | compile n/a"),
         flush=True,
     )
@@ -352,14 +382,14 @@ def run_regime(regime, warmup_t, rep_t, warmup_f, rep_f) -> dict:
     timings = {
         "fused": t_fused.as_dict(),
         "unfused": t_unfused.as_dict(),
-        "torch_eager": t_eager.as_dict(),
+        "torch_eager": t_eager.as_dict() if t_eager else None,
         "torch_compile": t_compile.as_dict() if t_compile else None,
     }
     return row, tune_tables, chk, timings
 
 
 def main() -> None:
-    env = C.BenchEnv.probe()
+    env = C.env()  # same cached probe the grids are built from -- one device, one truth
     print(f"device={env.device_name} warp={env.warp_size} CUs={env.num_sm}", flush=True)
     CKPT.mkdir(parents=True, exist_ok=True)
 
@@ -385,18 +415,24 @@ def main() -> None:
                     "ceiling_speedup": 1.20,
                     "note": "row-passes over [T,6144] bf16; the topk input (8x) dominates, "
                     "so the ceiling is (8+4)/(8+2)=1.20x at every regime",
+                    "production_note": "1.20x is measured against the 3-kernel baseline. "
+                    "sglang ships `moe_sum` then defers the add into the next layer's "
+                    "`fused_add_rmsnorm` (13 passes), so the end-to-end saving an engineer "
+                    "can bank is 13/12 = 1.083x -- LOG-06 7.1",
                 },
                 "fairness": {
                     "one_kernel_source":
                         "glm52/kernels/merge_resadd.py::merge_resadd_kernel",
                     "flags": "DO_MERGE / DO_RESADD constexpr select the fused kernel vs "
                     "the two split kernels",
-                    "tuning": "identical two-stage generator (coarse 174 + refine ~70-90) "
-                    "per variant per regime; the unfused side additionally gets a joint "
-                    "chain re-tune over the top-4 x top-4 configs, which can only help it",
-                    "outputs": "fused and unfused `out` are bitwise identical (asserted); "
-                    "the fused side skips only the merged intermediate `m`, which has no "
-                    "other consumer in the layer",
+                    "tuning": "identical two-stage generator (coarse "
+                    f"{len(coarse_grid())} + refine ~70-90) per variant per regime; the "
+                    "unfused side additionally gets a joint chain re-tune over the "
+                    "top-4 x top-4 configs, which can only help it",
+                    "outputs": "fused and unfused `out` are bitwise identical whenever "
+                    "both sides tune to the same reduction order -- recorded per regime "
+                    "as `bitwise_identical`, not asserted; the fused side skips only the "
+                    "merged intermediate `m`, which has no other consumer in the layer",
                 },
                 "env": env.__dict__,
                 "rows": rows,
@@ -408,8 +444,18 @@ def main() -> None:
 
     for regime in REGIMES:
         cf = CKPT / f"{regime.name}.json"
-        if cf.exists():
-            d = json.loads(cf.read_text())
+        # Device fence: a checkpoint is only reusable on the device that wrote it.  Without
+        # it, another platform's timings are republished verbatim inside a freshly probed
+        # `env` block -- a result file indistinguishable from a real run on this box.
+        d = json.loads(cf.read_text()) if cf.exists() else None
+        if d is not None and d.get("device") != env.device_name:
+            print(
+                f"  == {regime.name} == checkpoint written by "
+                f"{d.get('device') or 'an unrecorded device'}, ignoring it",
+                flush=True,
+            )
+            d = None
+        if d is not None:
             print(f"  == {regime.name} == (from checkpoint)", flush=True)
         else:
             if regime.T <= 256:
@@ -419,7 +465,13 @@ def main() -> None:
             else:
                 wt_, rt_, wf_, rf_ = 10, 25, 30, 120
             row, tab, chk, tim = run_regime(regime, wt_, rt_, wf_, rf_)
-            d = {"row": row, "tables": tab, "checks": chk, "timings": tim}
+            d = {
+                "row": row,
+                "tables": tab,
+                "checks": chk,
+                "timings": tim,
+                "device": env.device_name,
+            }
             cf.write_text(json.dumps(d, indent=2, default=str))
         rows.append(d["row"])
         tables[regime.name] = d["tables"]
@@ -434,11 +486,11 @@ def main() -> None:
         f"{'eager':>10}{'compile':>10}"
     )
     for r in rows:
-        tc = r.get("torch_compile_ms")
+        tc, te = r.get("torch_compile_ms"), r.get("torch_eager_ms")
         print(
             f"{r['regime']:<16}{r['fused_ms']:>10.4f}{r['unfused_ms']:>10.4f}"
             f"{r['speedup']:>9.3f}{100*r['pct_of_ceiling']:>7.0f}%"
-            f"{r['torch_eager_ms']:>10.4f}"
+            f"{(f'{te:.4f}' if te else 'n/a'):>10}"
             f"{(f'{tc:.4f}' if tc else 'n/a'):>10}"
         )
 

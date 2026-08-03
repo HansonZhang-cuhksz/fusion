@@ -1,0 +1,592 @@
+{
+  "id": "f9_sweep_lane0",
+  "fusion": "#9 Down GEMM + Expert Merge + ResAdd2 (atomic)",
+  "note": "both sides retuned per point; two unfused baselines reported",
+  "rows": [
+    {
+      "T": 1024,
+      "rows": 8192,
+      "rows_per_expert": 32.0,
+      "fused_ms": 6.024191856384277,
+      "unfused2_ms": 5.4871039390563965,
+      "unfused3_ms": 5.52243185043335,
+      "gain_vs_2k": 0.9110345851386632,
+      "gain_vs_2k_min": 0.9102558661228662,
+      "gain_vs_2k_max": 0.9117321847707915,
+      "gain_vs_3k": 0.9165604167108495,
+      "gain_vs_3k_min": 0.9158569214768665,
+      "gain_vs_3k_max": 0.9170069855534068,
+      "gain_spread_pct": 0.16204858432466634,
+      "rounds": {
+        "fused": [
+          6.01804780960083,
+          6.022655963897705,
+          6.025728225708008,
+          6.033152103424072,
+          6.024191856384277
+        ],
+        "unfused2": [
+          5.486847877502441,
+          5.486847877502441,
+          5.4871039390563965,
+          5.4917120933532715,
+          5.488383769989014
+        ],
+        "unfused3": [
+          5.51859188079834,
+          5.51910400390625,
+          5.52294397354126,
+          5.525504112243652,
+          5.52243185043335
+        ]
+      },
+      "rel_err": {
+        "fused": 0.009487477131187916,
+        "unfused2": 0.003260662080720067,
+        "unfused3": 0.004033639561384916
+      },
+      "unfused_cfg": {
+        "BLOCK_M": 64,
+        "BLOCK_N": 64,
+        "BLOCK_K": 64,
+        "GROUP_M": 1,
+        "num_warps": 8,
+        "num_stages": 3
+      },
+      "moe_sum_res0_cfg": {
+        "BLOCK_M": 2,
+        "BLOCK_DIM": 512,
+        "num_warps": 8,
+        "num_stages": 4
+      },
+      "moe_sum_res1_cfg": {
+        "BLOCK_M": 2,
+        "BLOCK_DIM": 256,
+        "num_warps": 8,
+        "num_stages": 1
+      },
+      "resadd_cfg": {
+        "BLOCK_M": 2,
+        "BLOCK_N": 256,
+        "num_warps": 4,
+        "num_stages": 2
+      },
+      "fused_cfg": {
+        "BLOCK_M": 64,
+        "BLOCK_N": 64,
+        "BLOCK_K": 64,
+        "GROUP_M": 4,
+        "num_warps": 8,
+        "num_stages": 3
+      },
+      "seed_cfg": {
+        "BLOCK_M": 2,
+        "BLOCK_N": 256,
+        "num_warps": 4,
+        "num_stages": 3
+      },
+      "accum_MB": 12.0
+    },
+    {
+      "T": 640,
+      "rows": 5120,
+      "rows_per_expert": 20.0,
+      "fused_ms": 4.8504319190979,
+      "unfused2_ms": 4.768767833709717,
+      "unfused3_ms": 4.792575836181641,
+      "gain_vs_2k": 0.9835268999300278,
+      "gain_vs_2k_min": 0.9827995480041206,
+      "gain_vs_2k_max": 0.9836955656428081,
+      "gain_vs_3k": 0.9883389101953871,
+      "gain_vs_3k_min": 0.9877591983893569,
+      "gain_vs_3k_max": 0.9886525811354654,
+      "gain_spread_pct": 0.09110250454270899,
+      "rounds": {
+        "fused": [
+          4.8504319190979,
+          4.851967811584473,
+          4.848639965057373,
+          4.851712226867676,
+          4.848639965057373
+        ],
+        "unfused2": [
+          4.771327972412109,
+          4.768511772155762,
+          4.768767833709717,
+          4.772607803344727,
+          4.7669758796691895
+        ],
+        "unfused3": [
+          4.795392036437988,
+          4.792575836181641,
+          4.792575836181641,
+          4.795135974884033,
+          4.791039943695068
+        ]
+      },
+      "rel_err": {
+        "fused": 0.008513785898685455,
+        "unfused2": 0.003266742918640375,
+        "unfused3": 0.004498877562582493
+      },
+      "unfused_cfg": {
+        "BLOCK_M": 32,
+        "BLOCK_N": 64,
+        "BLOCK_K": 64,
+        "GROUP_M": 1,
+        "num_warps": 8,
+        "num_stages": 4
+      },
+      "moe_sum_res0_cfg": {
+        "BLOCK_M": 2,
+        "BLOCK_DIM": 512,
+        "num_warps": 8,
+        "num_stages": 1
+      },
+      "moe_sum_res1_cfg": {
+        "BLOCK_M": 2,
+        "BLOCK_DIM": 512,
+        "num_warps": 8,
+        "num_stages": 1
+      },
+      "resadd_cfg": {
+        "BLOCK_M": 2,
+        "BLOCK_N": 256,
+        "num_warps": 4,
+        "num_stages": 4
+      },
+      "fused_cfg": {
+        "BLOCK_M": 32,
+        "BLOCK_N": 64,
+        "BLOCK_K": 64,
+        "GROUP_M": 1,
+        "num_warps": 8,
+        "num_stages": 3
+      },
+      "seed_cfg": {
+        "BLOCK_M": 2,
+        "BLOCK_N": 256,
+        "num_warps": 4,
+        "num_stages": 3
+      },
+      "accum_MB": 7.5
+    },
+    {
+      "T": 384,
+      "rows": 3072,
+      "rows_per_expert": 12.0,
+      "fused_ms": 4.546559810638428,
+      "unfused2_ms": 4.5004801750183105,
+      "unfused3_ms": 4.515071868896484,
+      "gain_vs_2k": 0.989807946914983,
+      "gain_vs_2k_min": 0.9891873855383759,
+      "gain_vs_2k_max": 0.9902027587915334,
+      "gain_vs_3k": 0.9928486554480034,
+      "gain_vs_3k_min": 0.9921157779163109,
+      "gain_vs_3k_max": 0.9930743368495307,
+      "gain_spread_pct": 0.10258285522178111,
+      "rounds": {
+        "fused": [
+          4.545792102813721,
+          4.546559810638428,
+          4.546304225921631,
+          4.547840118408203,
+          4.547840118408203
+        ],
+        "unfused2": [
+          4.496640205383301,
+          4.502016067504883,
+          4.4999680519104,
+          4.502016067504883,
+          4.5004801750183105
+        ],
+        "unfused3": [
+          4.509952068328857,
+          4.515071868896484,
+          4.513792037963867,
+          4.515071868896484,
+          4.5155839920043945
+        ]
+      },
+      "rel_err": {
+        "fused": 0.011141318827867508,
+        "unfused2": 0.0036669953260570765,
+        "unfused3": 0.0051144990138709545
+      },
+      "unfused_cfg": {
+        "BLOCK_M": 32,
+        "BLOCK_N": 64,
+        "BLOCK_K": 64,
+        "GROUP_M": 1,
+        "num_warps": 8,
+        "num_stages": 4
+      },
+      "moe_sum_res0_cfg": {
+        "BLOCK_M": 2,
+        "BLOCK_DIM": 512,
+        "num_warps": 8,
+        "num_stages": 4
+      },
+      "moe_sum_res1_cfg": {
+        "BLOCK_M": 2,
+        "BLOCK_DIM": 256,
+        "num_warps": 8,
+        "num_stages": 1
+      },
+      "resadd_cfg": {
+        "BLOCK_M": 2,
+        "BLOCK_N": 256,
+        "num_warps": 4,
+        "num_stages": 1
+      },
+      "fused_cfg": {
+        "BLOCK_M": 32,
+        "BLOCK_N": 64,
+        "BLOCK_K": 64,
+        "GROUP_M": 1,
+        "num_warps": 8,
+        "num_stages": 3
+      },
+      "seed_cfg": {
+        "BLOCK_M": 2,
+        "BLOCK_N": 256,
+        "num_warps": 2,
+        "num_stages": 2
+      },
+      "accum_MB": 4.5
+    },
+    {
+      "T": 192,
+      "rows": 1536,
+      "rows_per_expert": 6.0,
+      "fused_ms": 4.10752010345459,
+      "unfused2_ms": 4.114431858062744,
+      "unfused3_ms": 4.123648166656494,
+      "gain_vs_2k": 1.0015583384225277,
+      "gain_vs_2k_min": 1.0009339901071044,
+      "gain_vs_2k_max": 1.0018701928693003,
+      "gain_vs_3k": 1.0038022668007274,
+      "gain_vs_3k_min": 1.0033001061104618,
+      "gain_vs_3k_max": 1.00417687245136,
+      "gain_spread_pct": 0.09347461114152433,
+      "rounds": {
+        "fused": [
+          4.1113600730896,
+          4.10752010345459,
+          4.108799934387207,
+          4.10700798034668,
+          4.1064958572387695
+        ],
+        "unfused2": [
+          4.115200042724609,
+          4.114431858062744,
+          4.115200042724609,
+          4.113408088684082,
+          4.114175796508789
+        ],
+        "unfused3": [
+          4.124927997589111,
+          4.123392105102539,
+          4.123648166656494,
+          4.122623920440674,
+          4.123648166656494
+        ]
+      },
+      "rel_err": {
+        "fused": 0.009974183514714241,
+        "unfused2": 0.0034229587763547897,
+        "unfused3": 0.00516012916341424
+      },
+      "unfused_cfg": {
+        "BLOCK_M": 16,
+        "BLOCK_N": 32,
+        "BLOCK_K": 64,
+        "GROUP_M": 1,
+        "num_warps": 2,
+        "num_stages": 4
+      },
+      "moe_sum_res0_cfg": {
+        "BLOCK_M": 2,
+        "BLOCK_DIM": 256,
+        "num_warps": 8,
+        "num_stages": 1
+      },
+      "moe_sum_res1_cfg": {
+        "BLOCK_M": 2,
+        "BLOCK_DIM": 512,
+        "num_warps": 8,
+        "num_stages": 2
+      },
+      "resadd_cfg": {
+        "BLOCK_M": 2,
+        "BLOCK_N": 256,
+        "num_warps": 4,
+        "num_stages": 3
+      },
+      "fused_cfg": {
+        "BLOCK_M": 16,
+        "BLOCK_N": 64,
+        "BLOCK_K": 64,
+        "GROUP_M": 1,
+        "num_warps": 8,
+        "num_stages": 4
+      },
+      "seed_cfg": {
+        "BLOCK_M": 2,
+        "BLOCK_N": 256,
+        "num_warps": 2,
+        "num_stages": 2
+      },
+      "accum_MB": 2.25
+    },
+    {
+      "T": 96,
+      "rows": 768,
+      "rows_per_expert": 3.0,
+      "fused_ms": 3.796736001968384,
+      "unfused2_ms": 3.807744026184082,
+      "unfused3_ms": 3.8138880729675293,
+      "gain_vs_2k": 1.0028318963067668,
+      "gain_vs_2k_min": 1.002359128674804,
+      "gain_vs_2k_max": 1.0041857957086227,
+      "gain_vs_3k": 1.0045849630117807,
+      "gain_vs_3k_min": 1.0041116045326708,
+      "gain_vs_3k_max": 1.0054685334700177,
+      "gain_spread_pct": 0.1821508710030052,
+      "rounds": {
+        "fused": [
+          3.796736001968384,
+          3.7964799404144287,
+          3.791872024536133,
+          3.796992063522339,
+          3.79801607131958
+        ],
+        "unfused2": [
+          3.807487964630127,
+          3.808255910873413,
+          3.807744026184082,
+          3.807744026184082,
+          3.806976079940796
+        ],
+        "unfused3": [
+          3.8141438961029053,
+          3.8141438961029053,
+          3.812608003616333,
+          3.8138880729675293,
+          3.813632011413574
+        ]
+      },
+      "rel_err": {
+        "fused": 0.009546075947582722,
+        "unfused2": 0.003751078387722373,
+        "unfused3": 0.00421186164021492
+      },
+      "unfused_cfg": {
+        "BLOCK_M": 16,
+        "BLOCK_N": 32,
+        "BLOCK_K": 64,
+        "GROUP_M": 1,
+        "num_warps": 2,
+        "num_stages": 4
+      },
+      "moe_sum_res0_cfg": {
+        "BLOCK_M": 2,
+        "BLOCK_DIM": 512,
+        "num_warps": 8,
+        "num_stages": 1
+      },
+      "moe_sum_res1_cfg": {
+        "BLOCK_M": 2,
+        "BLOCK_DIM": 512,
+        "num_warps": 8,
+        "num_stages": 4
+      },
+      "resadd_cfg": {
+        "BLOCK_M": 2,
+        "BLOCK_N": 256,
+        "num_warps": 4,
+        "num_stages": 2
+      },
+      "fused_cfg": {
+        "BLOCK_M": 16,
+        "BLOCK_N": 64,
+        "BLOCK_K": 64,
+        "GROUP_M": 1,
+        "num_warps": 4,
+        "num_stages": 4
+      },
+      "seed_cfg": {
+        "BLOCK_M": 32,
+        "BLOCK_N": 256,
+        "num_warps": 4,
+        "num_stages": 2
+      },
+      "accum_MB": 1.125
+    },
+    {
+      "T": 32,
+      "rows": 256,
+      "rows_per_expert": 1.0,
+      "fused_ms": 2.570240020751953,
+      "unfused2_ms": 2.575615882873535,
+      "unfused3_ms": 2.579967975616455,
+      "gain_vs_2k": 1.0020915798050678,
+      "gain_vs_2k_min": 1.0004972982567601,
+      "gain_vs_2k_max": 1.002490981640529,
+      "gain_vs_3k": 1.0035849706677895,
+      "gain_vs_3k_min": 1.002088875017405,
+      "gain_vs_3k_max": 1.0043833768470118,
+      "gain_spread_pct": 0.198952213944023,
+      "rounds": {
+        "fused": [
+          2.569216012954712,
+          2.573568105697632,
+          2.570240020751953,
+          2.570751905441284,
+          2.569727897644043
+        ],
+        "unfused2": [
+          2.575615882873535,
+          2.574847936630249,
+          2.575615882873535,
+          2.575615882873535,
+          2.575360059738159
+        ],
+        "unfused3": [
+          2.5779199600219727,
+          2.578943967819214,
+          2.58022403717041,
+          2.579967975616455,
+          2.5809919834136963
+        ]
+      },
+      "rel_err": {
+        "fused": 0.011903965845704079,
+        "unfused2": 0.00324240536428988,
+        "unfused3": 0.0049283732660114765
+      },
+      "unfused_cfg": {
+        "BLOCK_M": 16,
+        "BLOCK_N": 32,
+        "BLOCK_K": 64,
+        "GROUP_M": 1,
+        "num_warps": 2,
+        "num_stages": 4
+      },
+      "moe_sum_res0_cfg": {
+        "BLOCK_M": 2,
+        "BLOCK_DIM": 512,
+        "num_warps": 8,
+        "num_stages": 1
+      },
+      "moe_sum_res1_cfg": {
+        "BLOCK_M": 2,
+        "BLOCK_DIM": 512,
+        "num_warps": 8,
+        "num_stages": 1
+      },
+      "resadd_cfg": {
+        "BLOCK_M": 2,
+        "BLOCK_N": 256,
+        "num_warps": 4,
+        "num_stages": 1
+      },
+      "fused_cfg": {
+        "BLOCK_M": 16,
+        "BLOCK_N": 64,
+        "BLOCK_K": 64,
+        "GROUP_M": 1,
+        "num_warps": 4,
+        "num_stages": 4
+      },
+      "seed_cfg": {
+        "BLOCK_M": 16,
+        "BLOCK_N": 128,
+        "num_warps": 16,
+        "num_stages": 2
+      },
+      "accum_MB": 0.375
+    },
+    {
+      "T": 4,
+      "rows": 32,
+      "rows_per_expert": 0.125,
+      "fused_ms": 0.4940800070762634,
+      "unfused2_ms": 0.4858880043029785,
+      "unfused3_ms": 0.48819199204444885,
+      "gain_vs_2k": 0.9833938709115386,
+      "gain_vs_2k_min": 0.9829103998730585,
+      "gain_vs_2k_max": 0.9839378223965463,
+      "gain_vs_3k": 0.9875711725042328,
+      "gain_vs_3k_min": 0.9870465939953581,
+      "gain_vs_3k_max": 0.9886010099541733,
+      "gain_spread_pct": 0.10447721445888238,
+      "rounds": {
+        "fused": [
+          0.49433600902557373,
+          0.49433600902557373,
+          0.4940800070762634,
+          0.4940800070762634,
+          0.4933120012283325
+        ],
+        "unfused2": [
+          0.4858880043029785,
+          0.4858880043029785,
+          0.4861440062522888,
+          0.4858880043029785,
+          0.4851199984550476
+        ],
+        "unfused3": [
+          0.48819199204444885,
+          0.48819199204444885,
+          0.48844799399375916,
+          0.48767998814582825,
+          0.48742398619651794
+        ]
+      },
+      "rel_err": {
+        "fused": 0.008696197532117367,
+        "unfused2": 0.002919489284977317,
+        "unfused3": 0.002921426435932517
+      },
+      "unfused_cfg": {
+        "BLOCK_M": 16,
+        "BLOCK_N": 32,
+        "BLOCK_K": 64,
+        "GROUP_M": 16,
+        "num_warps": 4,
+        "num_stages": 4
+      },
+      "moe_sum_res0_cfg": {
+        "BLOCK_M": 2,
+        "BLOCK_DIM": 256,
+        "num_warps": 8,
+        "num_stages": 4
+      },
+      "moe_sum_res1_cfg": {
+        "BLOCK_M": 2,
+        "BLOCK_DIM": 256,
+        "num_warps": 8,
+        "num_stages": 4
+      },
+      "resadd_cfg": {
+        "BLOCK_M": 2,
+        "BLOCK_N": 128,
+        "num_warps": 4,
+        "num_stages": 2
+      },
+      "fused_cfg": {
+        "BLOCK_M": 16,
+        "BLOCK_N": 64,
+        "BLOCK_K": 64,
+        "GROUP_M": 16,
+        "num_warps": 8,
+        "num_stages": 3
+      },
+      "seed_cfg": {
+        "impl": "torch"
+      },
+      "accum_MB": 0.046875
+    }
+  ]
+}

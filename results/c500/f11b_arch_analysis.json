@@ -1,0 +1,280 @@
+[
+  {
+    "T": 32,
+    "cfg": {
+      "fused": {
+        "BLOCK_M": 16,
+        "BLOCK_N": 32,
+        "BLOCK_K": 128,
+        "GROUP_M": 1,
+        "num_warps": 4,
+        "num_stages": 1
+      },
+      "unfused_gemm": {
+        "BLOCK_M": 16,
+        "BLOCK_N": 32,
+        "BLOCK_K": 128,
+        "GROUP_M": 1,
+        "num_warps": 4,
+        "num_stages": 3
+      },
+      "norm": {
+        "ROWS": 1,
+        "BLOCK_N": 8192,
+        "num_warps": 8,
+        "num_stages": 2,
+        "grid_cap": null,
+        "eps": 1e-05
+      }
+    },
+    "kernels": {
+      "fused": {
+        "n_regs": 112,
+        "n_spills": 0,
+        "shared": 12288,
+        "threads": 256,
+        "ctas_per_sm": 4,
+        "limited_by": "regs",
+        "warps_per_sm": 16,
+        "ops": {
+          "tt.dot (MMA)": 1,
+          "tt.load (global)": 2,
+          "tt.store (global)": 1,
+          "local_load (smem)": 2,
+          "local_store (smem)": 2,
+          "arith.mulf": 3,
+          "arith.addf": 3,
+          "reduce": 2,
+          "math.sqrt/rsqrt": 1,
+          "arith.divf": 1,
+          "convert_layout": 2
+        }
+      },
+      "unfused_gemm": {
+        "n_regs": 136,
+        "n_spills": 0,
+        "shared": 24576,
+        "threads": 256,
+        "ctas_per_sm": 2,
+        "limited_by": "smem",
+        "warps_per_sm": 8,
+        "ops": {
+          "tt.dot (MMA)": 2,
+          "tt.load (global)": 6,
+          "tt.store (global)": 1,
+          "local_load (smem)": 4,
+          "local_store (smem)": 6,
+          "convert_layout": 1
+        }
+      },
+      "norm": {
+        "n_regs": 80,
+        "n_spills": 0,
+        "shared": 8192,
+        "threads": 512,
+        "ctas_per_sm": 3,
+        "limited_by": "regs",
+        "warps_per_sm": 24,
+        "ops": {
+          "tt.load (global)": 2,
+          "tt.store (global)": 1,
+          "arith.mulf": 4,
+          "arith.addf": 2,
+          "reduce": 2,
+          "math.sqrt/rsqrt": 1,
+          "arith.divf": 1,
+          "convert_layout": 1
+        }
+      },
+      "fused_at_unfused_cfg": {
+        "n_regs": 154,
+        "n_spills": 0,
+        "shared": 20480,
+        "threads": 256,
+        "ctas_per_sm": 3,
+        "limited_by": "regs",
+        "warps_per_sm": 12,
+        "ops": {
+          "tt.dot (MMA)": 1,
+          "tt.load (global)": 4,
+          "tt.store (global)": 1,
+          "local_load (smem)": 2,
+          "local_store (smem)": 4,
+          "arith.mulf": 3,
+          "arith.addf": 3,
+          "reduce": 2,
+          "math.sqrt/rsqrt": 1,
+          "arith.divf": 1,
+          "convert_layout": 2
+        }
+      }
+    },
+    "traffic_MB": {
+      "unfused_chain": {
+        "norm_read_h1": 0.38,
+        "norm_write_x2": 0.38,
+        "gemm_read_x2": 0.38,
+        "gemm_read_B": 3.0,
+        "gemm_write_logits": 0.03,
+        "TOTAL_MB": 4.16
+      },
+      "fused": {
+        "gemm_read_h1": 0.38,
+        "gemm_read_B": 3.0,
+        "gemm_write_logits": 0.03,
+        "TOTAL_MB": 3.41
+      }
+    },
+    "grid": {
+      "fused": 16,
+      "unfused_gemm": 16,
+      "sq_redundancy_fused": 8
+    },
+    "measured_ms": {
+      "unfused_ms": 0.06988800317049026,
+      "fused_ms": 0.11059200018644333,
+      "norm_only_ms": 0.019711999222636223,
+      "gemm_only_ms": 0.06297600269317627,
+      "gain": 0.6319444720474214
+    }
+  },
+  {
+    "T": 65536,
+    "cfg": {
+      "fused": {
+        "BLOCK_M": 64,
+        "BLOCK_N": 128,
+        "BLOCK_K": 32,
+        "GROUP_M": 1,
+        "num_warps": 4,
+        "num_stages": 1
+      },
+      "unfused_gemm": {
+        "BLOCK_M": 64,
+        "BLOCK_N": 128,
+        "BLOCK_K": 32,
+        "GROUP_M": 1,
+        "num_warps": 4,
+        "num_stages": 3
+      },
+      "norm": {
+        "ROWS": 1,
+        "BLOCK_N": 8192,
+        "num_warps": 4,
+        "num_stages": 3,
+        "grid_cap": null,
+        "eps": 1e-05
+      }
+    },
+    "kernels": {
+      "fused": {
+        "n_regs": 140,
+        "n_spills": 0,
+        "shared": 16896,
+        "threads": 256,
+        "ctas_per_sm": 3,
+        "limited_by": "regs",
+        "warps_per_sm": 12,
+        "ops": {
+          "tt.dot (MMA)": 1,
+          "tt.load (global)": 2,
+          "tt.store (global)": 1,
+          "local_load (smem)": 2,
+          "local_store (smem)": 2,
+          "arith.mulf": 3,
+          "arith.addf": 3,
+          "reduce": 2,
+          "math.sqrt/rsqrt": 1,
+          "arith.divf": 1,
+          "convert_layout": 2
+        }
+      },
+      "unfused_gemm": {
+        "n_regs": 204,
+        "n_spills": 0,
+        "shared": 24576,
+        "threads": 256,
+        "ctas_per_sm": 2,
+        "limited_by": "regs",
+        "warps_per_sm": 8,
+        "ops": {
+          "tt.dot (MMA)": 2,
+          "tt.load (global)": 6,
+          "tt.store (global)": 1,
+          "local_load (smem)": 4,
+          "local_store (smem)": 6,
+          "convert_layout": 1
+        }
+      },
+      "norm": {
+        "n_regs": 124,
+        "n_spills": 0,
+        "shared": 4096,
+        "threads": 256,
+        "ctas_per_sm": 4,
+        "limited_by": "regs",
+        "warps_per_sm": 16,
+        "ops": {
+          "tt.load (global)": 2,
+          "tt.store (global)": 1,
+          "arith.mulf": 4,
+          "arith.addf": 2,
+          "reduce": 2,
+          "math.sqrt/rsqrt": 1,
+          "arith.divf": 1,
+          "convert_layout": 1
+        }
+      },
+      "fused_at_unfused_cfg": {
+        "n_regs": 200,
+        "n_spills": 0,
+        "shared": 20480,
+        "threads": 256,
+        "ctas_per_sm": 2,
+        "limited_by": "regs",
+        "warps_per_sm": 8,
+        "ops": {
+          "tt.dot (MMA)": 1,
+          "tt.load (global)": 4,
+          "tt.store (global)": 1,
+          "local_load (smem)": 2,
+          "local_store (smem)": 4,
+          "arith.mulf": 3,
+          "arith.addf": 3,
+          "reduce": 2,
+          "math.sqrt/rsqrt": 1,
+          "arith.divf": 1,
+          "convert_layout": 2
+        }
+      }
+    },
+    "traffic_MB": {
+      "unfused_chain": {
+        "norm_read_h1": 768.0,
+        "norm_write_x2": 768.0,
+        "gemm_read_x2": 768.0,
+        "gemm_read_B": 3.0,
+        "gemm_write_logits": 64.0,
+        "TOTAL_MB": 2371.0
+      },
+      "fused": {
+        "gemm_read_h1": 768.0,
+        "gemm_read_B": 3.0,
+        "gemm_write_logits": 64.0,
+        "TOTAL_MB": 835.0
+      }
+    },
+    "grid": {
+      "fused": 2048,
+      "unfused_gemm": 2048,
+      "sq_redundancy_fused": 2
+    },
+    "measured_ms": {
+      "unfused_ms": 4.131584167480469,
+      "fused_ms": 2.9283840656280518,
+      "norm_only_ms": 1.595903992652893,
+      "gemm_only_ms": 2.549504041671753,
+      "gain": 1.4108751020656733
+    }
+  }
+]

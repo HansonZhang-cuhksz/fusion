@@ -1,0 +1,122 @@
+{
+  "id": "f9_sweep_prefill_verifyA",
+  "note": "WIDE re-tune: full (tile x warps x stages x group) cross, both sides equally; supersedes the same T in the lane sweeps",
+  "rows": [
+    {
+      "T": 4096,
+      "rows": 32768,
+      "rows_per_expert": 128.0,
+      "unfused2_ms": 12.364031791687012,
+      "fused_ms": 13.935872077941895,
+      "gain_vs_2k": 0.887209047452234,
+      "gain_vs_2k_min": 0.8865267473253222,
+      "gain_vs_2k_max": 0.8881023862022409,
+      "gain_spread_pct": 0.1775949965167059,
+      "rounds_unfused": [
+        12.364031791687012,
+        12.364031791687012,
+        12.362239837646484,
+        12.365568161010742,
+        12.364800453186035
+      ],
+      "rounds_fused": [
+        13.94048023223877,
+        13.935872077941895,
+        13.944576263427734,
+        13.923583984375,
+        13.93228816986084
+      ],
+      "rounds_gain": [
+        0.8869157723199477,
+        0.887209047452234,
+        0.8865267473253222,
+        0.8881023862022409,
+        0.8874924421915354
+      ],
+      "unfused_cfg": {
+        "BLOCK_M": 128,
+        "BLOCK_N": 128,
+        "BLOCK_K": 64,
+        "GROUP_M": 1,
+        "num_warps": 16,
+        "num_stages": 2
+      },
+      "moe_sum_cfg": {
+        "BLOCK_M": 2,
+        "BLOCK_DIM": 256,
+        "num_warps": 4,
+        "num_stages": 1
+      },
+      "fused_cfg": {
+        "BLOCK_M": 128,
+        "BLOCK_N": 128,
+        "BLOCK_K": 64,
+        "GROUP_M": 1,
+        "num_warps": 16,
+        "num_stages": 2
+      },
+      "rel_err_unfused": 0.0030438201501965523,
+      "rel_err_fused": 0.008530211634933949,
+      "accum_MB": 48.0,
+      "n_cfgs_per_side": 486
+    },
+    {
+      "T": 1024,
+      "rows": 8192,
+      "rows_per_expert": 32.0,
+      "unfused2_ms": 5.498367786407471,
+      "fused_ms": 6.115583896636963,
+      "gain_vs_2k": 0.8990372253027208,
+      "gain_vs_2k_min": 0.8986392747748176,
+      "gain_vs_2k_max": 0.8995854774045173,
+      "gain_spread_pct": 0.10524621262274053,
+      "rounds_unfused": [
+        5.498879909515381,
+        5.494783878326416,
+        5.496064186096191,
+        5.499648094177246,
+        5.498367786407471
+      ],
+      "rounds_fused": [
+        6.116352081298828,
+        6.114560127258301,
+        6.115583896636963,
+        6.1135358810424805,
+        6.115839958190918
+      ],
+      "rounds_gain": [
+        0.8990456789314972,
+        0.8986392747748176,
+        0.8986981912092722,
+        0.8995854774045173,
+        0.8990372253027208
+      ],
+      "unfused_cfg": {
+        "BLOCK_M": 64,
+        "BLOCK_N": 64,
+        "BLOCK_K": 64,
+        "GROUP_M": 1,
+        "num_warps": 8,
+        "num_stages": 3
+      },
+      "moe_sum_cfg": {
+        "BLOCK_M": 2,
+        "BLOCK_DIM": 256,
+        "num_warps": 4,
+        "num_stages": 4
+      },
+      "fused_cfg": {
+        "BLOCK_M": 64,
+        "BLOCK_N": 128,
+        "BLOCK_K": 64,
+        "GROUP_M": 1,
+        "num_warps": 16,
+        "num_stages": 2
+      },
+      "rel_err_unfused": 0.0029640959110111,
+      "rel_err_fused": 0.008687355555593967,
+      "accum_MB": 12.0,
+      "n_cfgs_per_side": 486
+    }
+  ]
+}

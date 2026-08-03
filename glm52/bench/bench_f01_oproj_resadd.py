@@ -1,20 +1,21 @@
 """Fusion #1 benchmark: o_proj GEMM + residual add (dense GEMM epilogue fusion).
 
 Run:
-    CUDA_VISIBLE_DEVICES=1 /home/zhangshuhan/my-envs/fusion/bin/python \
-        glm52/bench/bench_f01_oproj_resadd.py
+    GLM52_RESULTS_DIR=results/rtx4060 python3 glm52/bench/bench_f01_oproj_resadd.py
 
 Reports FOUR numbers per regime:
   triton-fused    : oproj_gemm_kernel(FUSE_RESADD=True)
   triton-unfused  : oproj_gemm_kernel(FUSE_RESADD=False) + epilogue_kernel(HAS_RES=True)
-  vendor-fused    : torch.addmm(residual, a, b)          (MetaX BLAS, beta=1)
+  vendor-fused    : torch.addmm(residual, a, b)          (vendor BLAS, beta=1)
   vendor-unfused  : torch.mm(a, b) ; torch.add(c, residual)
 
 Tuning protocol (identical, independent budgets for the two Triton sides):
   0. epilogue_kernel tuned on its own grid, separately for each (dtype-in, HAS_RES) pair.
   1. coarse GEMM grid (same grid object for both sides) -> per-side winner
   2. refine grid built around each side's own coarse winner
-  3. joint refine: that side's top-3 GEMM configs x every epilogue config, timed as chain
+  3. joint refine: that side's top-3 GEMM configs x every epilogue config, timed as chain.
+     A SPLIT_K==1 fused winner has no epilogue kernel at all, so instead of skipping the
+     stage it spends the SAME number of trials on fresh GEMM neighbours (see stage 3).
 Nothing is ever shared between the fused and unfused searches.
 """
 
@@ -33,6 +34,7 @@ torch.backends.cuda.matmul.allow_tf32 = False  # keep the fp32 reference exact
 
 from glm52 import config as C
 from glm52.common import (
+    RESULTS_DIR,
     autotune,
     bench_chain,
     check,
@@ -45,13 +47,13 @@ from glm52.kernels.oproj_resadd import (
     gemm_launch,
     make_fused_chain,
     make_unfused_chain,
-    smem_bytes,
 )
 
 RESULT_ID = "f01_oproj_resadd"
 DEV = "cuda"
 N_OUT = C.HIDDEN_SIZE  # 6144
-SMEM_LIMIT = 65536
+SMEM_LIMIT = C.env().smem_bytes  # per-block opt-in ceiling; 101376 on sm89, 65536 on C500
+WARP = C.env().warp_size  # 32 on sm89, 64 on C500
 
 REGIMES = [r for r in C.DECODE_REGIMES if r.T in (1, 32, 256)] + [
     r for r in C.PREFILL_REGIMES if r.T in (2048, 8192)
@@ -69,9 +71,12 @@ if _only:
 def _valid_gemm(cfg: dict, M: int) -> bool:
     bm, bn, bk = cfg["BLOCK_M"], cfg["BLOCK_N"], cfg["BLOCK_K"]
     w, st = cfg["num_warps"], cfg["num_stages"]
-    if smem_bytes(cfg) > SMEM_LIMIT:
+    # Triton 3.6 buffers num_stages-1 mainloop tiles, not num_stages; the kernel module's
+    # own estimate is the 3.0 model and over-predicts by 1.33-1.5x, which would reject
+    # configs this device can actually run.
+    if C.smem_stage_bytes(bm, bn, bk, st) > SMEM_LIMIT:
         return False
-    threads = w * 64
+    threads = w * WARP
     per_thread = (bm * bn) / threads  # fp32 accumulator elements per lane
     if per_thread < 1 or per_thread > 64:
         return False
@@ -195,11 +200,17 @@ def refine_grid(best: dict, M: int, seen: set) -> list[dict]:
 
 
 def epi_grid() -> list[dict]:
+    """Elementwise-epilogue grid.
+
+    This one guard has to be exactly right: the epilogue kernel is the ENTIRE unfused-side
+    overhead (a SPLIT_K==1 fused chain has no epilogue at all), so a wrong lane count
+    under-tunes only the unfused arm and inflates the fusion win.
+    """
     out = []
     for blk, w in itertools.product(
         [256, 512, 1024, 2048, 4096, 8192, 16384], [1, 2, 4, 8, 16]
     ):
-        per_thread = blk / (w * 64)
+        per_thread = blk / (w * WARP)
         if per_thread < 1 or per_thread > 64:
             continue
         out.append(dict(BLOCK=blk, num_warps=w, num_stages=1))
@@ -322,8 +333,9 @@ def run_regime(regime, log: list) -> dict:
         return picked
 
     epi_top_cast = top_k_cfgs(t_epi_cast_f32, k=5)
+    f_top = top_k_cfgs(t_f_coarse, t_f_ref)
     joint_f, joint_u = [], []
-    for cfg in top_k_cfgs(t_f_coarse, t_f_ref):
+    for cfg in f_top:
         if cfg.get("SPLIT_K", 1) == 1:
             continue  # no epilogue kernel in the chain at all
         for epi in epi_top_cast:
@@ -335,6 +347,25 @@ def run_regime(regime, log: list) -> dict:
         for epi in tops:
             joint_u.append((cfg, epi))
 
+    # If the fused side's top configs are all SPLIT_K==1 the loop above leaves joint_f
+    # empty while the unfused side still gets 3 GEMM x 5 epilogue = 15 timed chains -- the
+    # two sides no longer have the same stage-3 budget, and the shortfall pushes the ratio
+    # the same way as the effect under study. Spend the difference on fresh GEMM
+    # neighbours of the fused side's own best configs instead. (Selection only; the final
+    # numbers are re-measured identically below.)
+    extra_f: list[dict] = []
+    if len(joint_f) < len(joint_u):
+        for cfg in f_top:
+            extra_f += refine_grid(cfg, M, seen_f)
+            if len(extra_f) >= len(joint_u) - len(joint_f):
+                break
+        extra_f = extra_f[: len(joint_u) - len(joint_f)]
+    print(
+        f"  stage3 trials: fused {len(joint_f)}+{len(extra_f)} extra, "
+        f"unfused {len(joint_u)}",
+        flush=True,
+    )
+
     t_f_joint = (
         autotune(lambda p: fused_chain(p[0], p[1]), joint_f, tw, tr) if joint_f else None
     )
@@ -343,9 +374,12 @@ def run_regime(regime, log: list) -> dict:
         if joint_u
         else None
     )
+    t_f_extra = autotune(fused_chain, extra_f, tw, tr) if extra_f else None
     f_epi, u_epi = None, None
     if t_f_joint is not None and t_f_joint.best_ms < f_ms:
         f_cfg, f_epi, f_ms = t_f_joint.best_cfg[0], t_f_joint.best_cfg[1], t_f_joint.best_ms
+    if t_f_extra is not None and t_f_extra.best_ms < f_ms:
+        f_cfg, f_epi, f_ms = t_f_extra.best_cfg, None, t_f_extra.best_ms
     if t_u_joint is not None and t_u_joint.best_ms < u_ms:
         u_cfg, u_epi, u_ms = t_u_joint.best_cfg[0], t_u_joint.best_cfg[1], t_u_joint.best_ms
 
@@ -364,7 +398,9 @@ def run_regime(regime, log: list) -> dict:
     for fn in unfused_chain(u_cfg, u_epi):
         fn()
     chk_u = check(out, ref, label=f"{regime.name}/triton-unfused")
-    chk_fu = check(out_f, out.float(), tol=0.0, label=f"{regime.name}/fused-vs-unfused")
+    # not bitwise: the two arms are tuned independently and may differ in SPLIT_K, so the
+    # atomic accumulation order differs. The number itself is still recorded below.
+    chk_fu = check(out_f, out.float(), tol=2e-2, label=f"{regime.name}/fused-vs-unfused")
     del out_f
 
     # ---------------- final timing, high rep ----------------
@@ -429,12 +465,14 @@ def run_regime(regime, log: list) -> dict:
             "refine_grid_size_unfused": len(rg_u),
             "joint_grid_size_fused": len(joint_f),
             "joint_grid_size_unfused": len(joint_u),
+            "extra_grid_size_fused": len(extra_f),  # stage-3 budget equaliser, see above
             "tune_fused_coarse": t_f_coarse.as_dict(),
             "tune_unfused_coarse": t_u_coarse.as_dict(),
             "tune_fused_refine": t_f_ref.as_dict() if t_f_ref else None,
             "tune_unfused_refine": t_u_ref.as_dict() if t_u_ref else None,
             "tune_fused_joint": t_f_joint.as_dict() if t_f_joint else None,
             "tune_unfused_joint": t_u_joint.as_dict() if t_u_joint else None,
+            "tune_fused_extra": t_f_extra.as_dict() if t_f_extra else None,
             "tune_epi_add_bf16": t_epi_add_bf16.as_dict(),
             "tune_epi_add_f32": t_epi_add_f32.as_dict(),
             "tune_epi_cast_f32": t_epi_cast_f32.as_dict(),
@@ -451,26 +489,38 @@ def run_regime(regime, log: list) -> dict:
     return row
 
 
-CKPT_DIR = Path(__file__).resolve().parents[2] / "results" / f"_{RESULT_ID}_ckpt"
+# Checkpoints follow the results tree ($GLM52_RESULTS_DIR), so isolating a port's outputs
+# also isolates its inputs -- otherwise this reads another device's timings and republishes
+# them under a freshly probed local env block.
+CKPT_DIR = RESULTS_DIR / f"_{RESULT_ID}_ckpt"
 
 
 def main() -> None:
     import json
 
-    env = C.BenchEnv.probe()
+    env = C.env()
     CKPT_DIR.mkdir(parents=True, exist_ok=True)
     rows, tune_log = [], []
     for regime in REGIMES:
         ck = CKPT_DIR / f"{regime.name}.json"
         if ck.exists() and not os.environ.get("F01_FORCE"):
             blob = json.loads(ck.read_text())
-            print(f"[ckpt] reusing {ck}", flush=True)
-            rows.append(blob["row"])
-            tune_log.append(blob["tuning"])
-            continue
+            if blob.get("device") != env.device_name:  # never reuse another GPU's timings
+                print(f"[ckpt] ignoring {ck}: device {blob.get('device')!r}", flush=True)
+            else:
+                print(f"[ckpt] reusing {ck}", flush=True)
+                rows.append(blob["row"])
+                tune_log.append(blob["tuning"])
+                continue
         sub: list = []
         row = run_regime(regime, sub)
-        ck.write_text(json.dumps({"row": row, "tuning": sub[0]}, indent=1, default=str))
+        ck.write_text(
+            json.dumps(
+                {"row": row, "tuning": sub[0], "device": env.device_name},
+                indent=1,
+                default=str,
+            )
+        )
         rows.append(row)
         tune_log.append(sub[0])
     payload = {
@@ -485,7 +535,9 @@ def main() -> None:
                 "One kernel source; FUSE_RESADD constexpr selects the epilogue. Unfused = "
                 "same kernel with the flag off + epilogue_kernel(HAS_RES=True). Both sides "
                 "searched the SAME coarse grid, then each refined around its own winner, "
-                "then each got a joint GEMMxEpilogue pass. No config is ever shared."
+                "then each got a stage-3 pass of the same size: joint GEMMxEpilogue where "
+                "the side has an epilogue, extra GEMM neighbours where it does not (a "
+                "SPLIT_K==1 fused chain). See extra_grid_size_fused. No config is shared."
             ),
             "split_k": (
                 "SPLIT_K>1 accumulates into an fp32 buffer with tl.atomic_add, so the chain "

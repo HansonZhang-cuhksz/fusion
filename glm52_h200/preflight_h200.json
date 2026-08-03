@@ -1,0 +1,184 @@
+{
+  "schema": 1,
+  "probe_errors": {},
+  "argv": [
+    "/home/shuhan/fusion/glm52_h200/preflight.py",
+    "--quick"
+  ],
+  "cwd": "/home/shuhan/fusion",
+  "timestamp": "2026-08-03 15:09:08",
+  "stack": {
+    "python": "3.13.12",
+    "platform": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.41",
+    "torch": "2.11.0+cu130",
+    "torch_cuda": "13.0",
+    "torch_hip": null,
+    "cudnn": 91900,
+    "cuda_available": true,
+    "device_count": 1,
+    "triton": "3.6.0",
+    "triton_file": "/home/shuhan/miniconda3/lib/python3.13/site-packages/triton/__init__.py"
+  },
+  "device": {
+    "name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "major": 8,
+    "minor": 9,
+    "multi_processor_count": 24,
+    "warp_size": 32,
+    "shared_memory_per_block": 49152,
+    "shared_memory_per_block_optin": 101376,
+    "shared_memory_per_multiprocessor": 102400,
+    "regs_per_multiprocessor": 65536,
+    "max_threads_per_multi_processor": 1536,
+    "L2_cache_size": 33554432,
+    "total_memory": 8585216000,
+    "is_multi_gpu_board": 0,
+    "gcnArchName": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "uuid": "eea7f43b-18a7-4d88-ab28-f3db82f8ca4b",
+    "mem_free_bytes": 7440695296,
+    "mem_total_bytes": 8585216000,
+    "compute_capability": "8.9"
+  },
+  "nvidia_smi": [
+    {
+      "name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+      "driver_version": "610.88",
+      "vbios_version": "95.07.26.00.1b",
+      "pstate": "P4",
+      "clocks.sm": "1020 MHz",
+      "clocks.mem": "5501 MHz",
+      "clocks.gr": "1020 MHz",
+      "clocks.max.sm": "3105 MHz",
+      "clocks.max.mem": "8001 MHz",
+      "clocks_throttle_reasons.active": "0x0000000000000001",
+      "power.draw": "9.77 W",
+      "power.limit": "[N/A]",
+      "enforced.power.limit": "35.00 W",
+      "power.max_limit": "60.00 W",
+      "temperature.gpu": "65",
+      "memory.total": "8188 MiB",
+      "memory.used": "1303 MiB",
+      "memory.free": "6654 MiB",
+      "ecc.mode.current": "[N/A]",
+      "mig.mode.current": "[N/A]",
+      "persistence_mode": "Enabled",
+      "compute_mode": "Default",
+      "utilization.gpu": "12 %",
+      "pcie.link.gen.current": "4",
+      "pcie.link.width.current": "8"
+    }
+  ],
+  "nvidia_smi_topo": "\t\u001b[4mGPU0\tCPU Affinity\tNUMA Affinity\tGPU NUMA ID\u001b[0m\nGPU0\t X \t\t\t\tN/A\n\nLegend:\n\n  X    = Self\n  SYS  = Connection traversing PCIe as well as the SMP interconnect between NUMA nodes (e.g., QPI/UPI)\n  NODE = Connection traversing PCIe as well as the interconnect between PCIe Host Bridges within a NUMA node\n  PHB  = Connection traversing PCIe as well as a PCIe Host Bridge (typically the CPU)\n  PXB  = Connection traversing multiple PCIe bridges (without traversing the PCIe Host Bridge)\n  PIX  = Connection traversing at most a single PCIe bridge\n  NV#  = Connection traversing a bonded set of # NVLinks\n",
+  "triton_features": {
+    "attribute_inventory": {
+      "triton.language.make_tensor_descriptor": true,
+      "triton.language._experimental_make_tensor_descriptor": false,
+      "triton.language._experimental_descriptor_load": false,
+      "triton.language._experimental_descriptor_store": false,
+      "triton.tools.tensor_descriptor.TensorDescriptor": true,
+      "triton.tools.experimental_descriptor.create_2d_tma_descriptor": false,
+      "triton.language.async_task": false,
+      "triton.set_allocator": true,
+      "triton.language.range": true
+    },
+    "tl_range_signature": "(arg1, arg2=None, step=None, num_stages=None, loop_unroll_factor=None, disallow_acc_multi_buffer=False, flatten=False, warp_specialize=False, disable_licm=False)",
+    "compile_probes": {
+      "baseline_elementwise": {
+        "ok": true
+      },
+      "tl_dot_bf16": {
+        "ok": true
+      },
+      "warp_specialize_tl_range": {
+        "ok": true
+      },
+      "warp_specialize_num_consumer_groups": {
+        "ok": false,
+        "error": "KeyError: 'Keyword argument num_consumer_groups was specified but unrecognised'"
+      },
+      "tma_tensor_descriptor": {
+        "ok": false,
+        "error": "CompilationError: at 2:8:\ndef k_tma_device(desc_ptr, Out, BM: tl.constexpr, BN: tl.constexpr):\n    d = tl.make_tensor_descriptor(desc_ptr, shape=[BM, BN], strides=[BN, 1],\n        ^"
+      },
+      "thread_block_cluster_num_ctas": {
+        "ok": false,
+        "error": "ValueError: num_ctas > 1 requires NVIDIA SM90+ (Hopper). Current target is sm_89. This configuration will fail. Please set num_ctas=1 or target an SM90+ GPU."
+      }
+    },
+    "triton_target": {
+      "backend": "cuda",
+      "arch": 89,
+      "warp_size": 32
+    },
+    "triton_device_properties": {
+      "max_shared_mem": 101376,
+      "max_num_regs": 65536,
+      "multiprocessor_count": 24,
+      "warpSize": 32,
+      "sm_clock_rate": 1470000,
+      "mem_clock_rate": 8001000,
+      "mem_bus_width": 128
+    }
+  },
+  "calibration": {
+    "bandwidth": {
+      "copy_1024MB_GBs": 141.93073302836027,
+      "rmw_1024MB_GBs": 143.66277376012638,
+      "read_1024MB_GBs": 163.7695115894612
+    },
+    "gemm": {
+      "cublas_4096x16384x6144_TFs": 12.142465679578127,
+      "triton_4096x16384x6144_TFs": 11.955667385973108,
+      "triton_4096x16384x6144_cfg": {
+        "BM": 256,
+        "BN": 128,
+        "BK": 64,
+        "GM": 8,
+        "num_warps": 8,
+        "num_stages": 3
+      }
+    },
+    "smem_probe": {
+      "BM128_BN128_BK64_s3": {
+        "ok": true,
+        "shared_bytes": 65536
+      },
+      "BM128_BN256_BK64_s3": {
+        "ok": true,
+        "shared_bytes": 98304
+      },
+      "BM128_BN256_BK64_s4": {
+        "ok": false,
+        "error": "OutOfResources: out of resource: shared memory, Required: 147456, Hardware limit: 101376. Reducing block sizes or `num_stages` may help."
+      },
+      "BM256_BN256_BK64_s3": {
+        "ok": false,
+        "error": "OutOfResources: out of resource: shared memory, Required: 131072, Hardware limit: 101376. Reducing block sizes or `num_stages` may help."
+      },
+      "BM128_BN256_BK128_s3": {
+        "ok": false,
+        "error": "OutOfResources: out of resource: shared memory, Required: 196608, Hardware limit: 101376. Reducing block sizes or `num_stages` may help."
+      }
+    },
+    "launch_us": 3.3645715032305037,
+    "harness_floor_us": 2.779428714088031,
+    "timer_tick_us": 1.024,
+    "timer_tick_match_frac": 1.0,
+    "timer_tick_candidates": {
+      "0.256": 1.0,
+      "0.512": 1.0,
+      "1.024": 1.0,
+      "2.048": 0.64,
+      "4.096": 0.0
+    }
+  },
+  "capacity": {
+    "w13_bytes": 12884901888,
+    "w2_bytes": 6442450944,
+    "expert_weights_bytes": 19327352832,
+    "free_bytes": 7386169344,
+    "total_bytes": 8585216000,
+    "expert_weights_fit": false,
+    "whole_layer_feasible": false
+  }
+}

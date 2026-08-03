@@ -1,0 +1,64 @@
+device=NVIDIA GeForce RTX 4060 Laptop GPU warp=32 CUs=24
+--router-only: F11a w13 skipped (2 x 12.9 GB not allocated)
+folding identity: router rel_err 3.063e-03
+SQ_MODE pre-study (at prefill_t2048):
+  SQ study [router] over 4 common cfgs: m0(per-step tl.sum) 4.218ms, m1(tile-accum) 4.165ms, m2(tensor-core dot) 5.116ms, m3(2nd load) 4.214ms  -> SQ_MODE=1
+
+===== decode_bs1 (T=1, F11b only) =====
+  norm: 164 cfgs -> 0.0123 ms {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 16, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}
+  router fused  : coarse 44(0f) + refine 14(0f) -> 0.0768 ms {'BLOCK_M': 16, 'BLOCK_N': 32, 'BLOCK_K': 128, 'num_warps': 2, 'num_stages': 3, 'GROUP_M': 8}
+  router unfused: coarse 44(0f) + refine 17(0f) -> 0.0532 ms {'BLOCK_M': 16, 'BLOCK_N': 64, 'BLOCK_K': 128, 'num_warps': 4, 'num_stages': 4, 'GROUP_M': 8}
+  rstd kernel: 118 cfgs -> 0.0102 ms {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 8, 'num_stages': 1}
+  rel_err  router f=2.39e-03 u=1.03e-05 | topk agree 100.00%
+  F11b router : fused 0.0748 | unfused 0.0584 -> 0.781x  (ceiling 1.01x)
+  half-fused  : router 0.0563 (1.036x)   [exploratory]
+  isolation   : router +2.86%   (same cfg, FUSE_NORM on/off)
+
+===== decode_bs32 (T=32, F11b only) =====
+  norm: 164 cfgs -> 0.0154 ms {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 4, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}
+  router fused  : coarse 88(0f) + refine 26(0f) -> 0.0829 ms {'BLOCK_M': 16, 'BLOCK_N': 32, 'BLOCK_K': 128, 'num_warps': 2, 'num_stages': 3, 'GROUP_M': 8}
+  router unfused: coarse 88(0f) + refine 20(0f) -> 0.0512 ms {'BLOCK_M': 16, 'BLOCK_N': 32, 'BLOCK_K': 128, 'num_warps': 4, 'num_stages': 4, 'GROUP_M': 8}
+  rstd kernel: 118 cfgs -> 0.0143 ms {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 4, 'num_stages': 2}
+  rel_err  router f=2.39e-03 u=9.33e-06 | topk agree 98.83%
+  F11b router : fused 0.0819 | unfused 0.0604 -> 0.738x  (ceiling 1.22x)
+  half-fused  : router 0.0604 (1.000x)   [exploratory]
+  isolation   : router +8.33%   (same cfg, FUSE_NORM on/off)
+
+===== decode_bs256 (T=256, F11b only) =====
+  norm: 164 cfgs -> 0.0492 ms {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 4, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}
+  router fused  : coarse 168(0f) + refine 19(0f) -> 0.1608 ms {'BLOCK_M': 16, 'BLOCK_N': 256, 'BLOCK_K': 64, 'num_warps': 4, 'num_stages': 3, 'GROUP_M': 8}
+  router unfused: coarse 168(0f) + refine 26(0f) -> 0.0983 ms {'BLOCK_M': 32, 'BLOCK_N': 32, 'BLOCK_K': 128, 'num_warps': 4, 'num_stages': 3, 'GROUP_M': 1}
+  rstd kernel: 118 cfgs -> 0.0358 ms {'ROWS': 1, 'BLOCK_N': 1024, 'num_warps': 2, 'num_stages': 2}
+  rel_err  router f=2.80e-03 u=9.98e-06 | topk agree 98.29%
+  F11b router : fused 0.1608 | unfused 0.1444 -> 0.898x  (ceiling 1.66x)
+  half-fused  : router 0.1331 (1.085x)   [exploratory]
+  isolation   : router +7.59%   (same cfg, FUSE_NORM on/off)
+
+===== prefill_t2048 (T=2048, F11b only) =====
+  norm: 164 cfgs -> 0.3308 ms {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 16, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}
+  router fused  : coarse 168(0f) + refine 34(0f) -> 0.6349 ms {'BLOCK_M': 32, 'BLOCK_N': 128, 'BLOCK_K': 32, 'num_warps': 2, 'num_stages': 3, 'GROUP_M': 8}
+  router unfused: coarse 168(0f) + refine 38(0f) -> 0.5642 ms {'BLOCK_M': 32, 'BLOCK_N': 64, 'BLOCK_K': 64, 'num_warps': 4, 'num_stages': 3, 'GROUP_M': 8}
+  rstd kernel: 118 cfgs -> 0.2109 ms {'ROWS': 1, 'BLOCK_N': 2048, 'num_warps': 2, 'num_stages': 2}
+  rel_err  router f=3.21e-03 u=2.95e-04 | topk agree 98.67%
+  F11b router : fused 0.6349 | unfused 0.8960 -> 1.411x  (ceiling 1.66x)
+  half-fused  : router 0.7854 (1.141x)   [exploratory]
+  isolation   : router +4.02%   (same cfg, FUSE_NORM on/off)
+
+===== prefill_t8192 (T=8192, F11b only) =====
+  norm: 164 cfgs -> 1.2698 ms {'ROWS': 4, 'BLOCK_N': 512, 'num_warps': 2, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}
+  router fused  : coarse 168(0f) + refine 34(0f) -> 2.2395 ms {'BLOCK_M': 32, 'BLOCK_N': 128, 'BLOCK_K': 32, 'num_warps': 2, 'num_stages': 3, 'GROUP_M': 8}
+  router unfused: coarse 168(0f) + refine 38(0f) -> 2.1391 ms {'BLOCK_M': 32, 'BLOCK_N': 64, 'BLOCK_K': 64, 'num_warps': 4, 'num_stages': 3, 'GROUP_M': 8}
+  rstd kernel: 118 cfgs -> 0.7434 ms {'ROWS': 1, 'BLOCK_N': 4096, 'num_warps': 4, 'num_stages': 1}
+  rel_err  router f=3.12e-03 u=5.03e-04 | topk agree 98.98%
+  F11b router : fused 2.2405 | unfused 3.4611 -> 1.545x  (ceiling 1.66x)
+  half-fused  : router 2.9184 (1.186x)   [exploratory]
+  isolation   : router +3.01%   (same cfg, FUSE_NORM on/off)
+
+wrote results/f11_lazy_prenorm.json
+
+regime            F11b rt   ceil
+decode_bs1          0.781   1.01
+decode_bs32         0.738   1.22
+decode_bs256        0.898   1.66
+prefill_t2048       1.411   1.66
+prefill_t8192       1.545   1.66

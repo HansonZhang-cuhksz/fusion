@@ -14,10 +14,16 @@ from pathlib import Path
 import torch
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
+from glm52 import config as C
+from glm52.common import RESULTS_DIR
 from glm52.kernels import lazy_prenorm as L
 from glm52.kernels import add_rmsnorm as NK
 
-H, ER, SMEM, REGS_SM, NSM = 6144, 256, 65536, 131072, 104
+H, ER = 6144, 256
+# Every occupancy limit below is per-SM and is probed, never hardcoded: the C500 numbers
+# baked in here (65536 smem, 131072 regs, 2048 threads, 104 SMs) are each wrong in a
+# different direction on sm89 (102400 smem, 65536 regs, 1536 threads, 24 SMs), so the
+# `limited_by` labels this script feeds into the #11b narrative flip.
 
 OPS = {
     "tt.dot (MMA)":        r"\btt\.dot\b",
@@ -37,28 +43,45 @@ def counts(ir: str) -> Counter:
     return Counter({k: len(re.findall(p, ir)) for k, p in OPS.items()})
 
 def compile_router(a, b, c, cfg, fuse):
-    ck = L.router_gemm_kernel.cache
-    for d in list(ck.keys()): d.clear() if isinstance(d, dict) else ck[d].clear()
+    # Triton 3.x dropped JITFunction.cache; it is device_caches[dev] = (kernel_cache, ...).
+    kern = L.router_gemm_kernel
+    kern.device_caches.clear()
     L.launch_router(a, b, c, cfg, fuse_norm=fuse)
     torch.cuda.synchronize()
-    ent = [v for d in ck.values() for v in d.values()]
+    ent = [v for tup in kern.device_caches.values() for v in tup[0].values()]
     assert len(ent) == 1, len(ent)
     return ent[0]
 
 def compile_norm(h1, w, x2, cfg):
-    ck = NK.add_rmsnorm_kernel.cache
-    for d in list(ck.keys()): ck[d].clear()
+    kern = NK.add_rmsnorm_kernel
+    kern.device_caches.clear()
     NK.norm_only(h1, w, x2, cfg)
     torch.cuda.synchronize()
-    ent = [v for d in ck.values() for v in d.values()]
+    ent = [v for tup in kern.device_caches.values() for v in tup[0].values()]
     assert len(ent) == 1, len(ent)
     return ent[0]
 
+def sm_limits():
+    """(regs, shared bytes, threads) available per SM. Triton's probe exports the register
+    file but not per-SM smem or threads/SM, so those two come from torch's properties --
+    102400 B / 1536 on sm89, vs the 65536 / 2048 this script used to assume."""
+    e = C.env()
+    p = torch.cuda.get_device_properties(0)
+    regs = (getattr(e, "regs_per_sm", 0) or getattr(e, "max_regs_per_block", 0)
+            or e.extras.get("max_num_regs", 0))
+    smem = getattr(e, "smem_per_sm", 0) or p.shared_memory_per_multiprocessor
+    thr = getattr(e, "threads_per_sm", 0) or p.max_threads_per_multi_processor
+    assert regs and smem and thr, f"device probe gave no per-SM limits: {regs},{smem},{thr}"
+    return regs, smem, thr
+
 def ctas_per_sm(k, threads):
-    by_reg = REGS_SM // max(1, k.n_regs * threads)
+    regs_sm, smem_sm, thr_sm = sm_limits()
+    by_reg = regs_sm // max(1, k.n_regs * threads)
     sh = getattr(k.metadata, "shared", 0) or 1
-    by_sh = SMEM // sh
-    return min(by_reg, by_sh), by_reg, by_sh
+    by_sh = smem_sm // sh
+    # threads/SM binds on Ada as well (1536). The 24-CTAs/SM hardware cap is not exported
+    # by either probe, so it is left out; it only bites at num_warps == 1.
+    return min(by_reg, by_sh, thr_sm // max(1, threads)), by_reg, by_sh
 
 def report(T: int, row: dict) -> dict:
     g = torch.Generator(device="cuda").manual_seed(0)
@@ -77,15 +100,16 @@ def report(T: int, row: dict) -> dict:
     km = compile_router(x2, b, lg, cu, True)     # fused at the UNFUSED config (matched)
 
     res = {}
-    for nm, k, thr in (("fused", kf, cf["num_warps"] * 64),
-                       ("unfused_gemm", ku, cu["num_warps"] * 64),
-                       ("norm", kn, cn["num_warps"] * 64),
-                       ("fused_at_unfused_cfg", km, cu["num_warps"] * 64)):
+    warp = C.env().warp_size          # 32 lanes on sm89, 64 on C500 -- threads/CTA is 2x off
+    for nm, k, thr in (("fused", kf, cf["num_warps"] * warp),
+                       ("unfused_gemm", ku, cu["num_warps"] * warp),
+                       ("norm", kn, cn["num_warps"] * warp),
+                       ("fused_at_unfused_cfg", km, cu["num_warps"] * warp)):
         occ, byr, bys = ctas_per_sm(k, thr)
         res[nm] = dict(n_regs=k.n_regs, n_spills=k.n_spills,
                        shared=getattr(k.metadata, "shared", 0), threads=thr,
                        ctas_per_sm=occ, limited_by="regs" if byr <= bys else "smem",
-                       warps_per_sm=occ * thr // 64,
+                       warps_per_sm=occ * thr // warp,
                        ops={k2: v for k2, v in counts(k.asm["ttgir"]).items() if v})
     out["kernels"] = res
 
@@ -116,10 +140,15 @@ if __name__ == "__main__":
     Ts = [int(x) for x in sys.argv[1:]] or [65536]
     allout = []
     for T in Ts:
-        cands = list(ROOT.glob(f"results/f11b_*_T{T}.json"))
+        # RESULTS_DIR, not ROOT/results: the tuned configs must be this device's own.
+        cands = sorted(RESULTS_DIR.glob(f"f11b_*_T{T}.json"))
+        if not cands:
+            raise SystemExit(f"no f11b_*_T{T}.json in {RESULTS_DIR}; run bench_f11b_sweep first")
         row = json.loads(cands[0].read_text())
         allout.append(report(T, row))
         torch.cuda.empty_cache()
-    (ROOT / "results" / "f11b_arch_analysis.json").write_text(json.dumps(allout, indent=2))
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    out_path = RESULTS_DIR / "f11b_arch_analysis.json"
+    out_path.write_text(json.dumps(allout, indent=2))
     print(json.dumps(allout, indent=2)[:200])
-    print("\nwrote results/f11b_arch_analysis.json")
+    print(f"\nwrote {out_path}")

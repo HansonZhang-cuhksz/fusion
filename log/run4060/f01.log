@@ -1,0 +1,43 @@
+[ckpt] reusing /home/shuhan/fusion/results/rtx4060/_f01_oproj_resadd_ckpt/decode_bs1.json
+[ckpt] reusing /home/shuhan/fusion/results/rtx4060/_f01_oproj_resadd_ckpt/decode_bs32.json
+
+===== decode_bs256: M=256 K=32768 N=6144 =====
+  epi add-bf16 {'BLOCK': 16384, 'num_warps': 8, 'num_stages': 1} 0.0686 | add-f32 {'BLOCK': 4096, 'num_warps': 2, 'num_stages': 1} 0.0983 | cast-f32 {'BLOCK': 8192, 'num_warps': 4, 'num_stages': 1} 0.0748
+  coarse grid: 120 configs
+  coarse fused   8.6129 ms {'BLOCK_M': 64, 'BLOCK_N': 64, 'BLOCK_K': 32, 'GROUP_M': 8, 'SPLIT_K': 8, 'num_warps': 4, 'num_stages': 3} (fail 0/120)
+  coarse unfused 8.5576 ms {'BLOCK_M': 64, 'BLOCK_N': 64, 'BLOCK_K': 32, 'GROUP_M': 8, 'SPLIT_K': 8, 'num_warps': 4, 'num_stages': 3} (fail 0/120)
+  refine grids: fused 22, unfused 22
+  stage3 trials: fused 15+0 extra, unfused 15
+  BEST fused   8.5729 ms  {'BLOCK_M': 64, 'BLOCK_N': 64, 'BLOCK_K': 16, 'GROUP_M': 8, 'SPLIT_K': 8, 'num_warps': 4, 'num_stages': 3} epi={'BLOCK': 8192, 'num_warps': 4, 'num_stages': 1}
+  BEST unfused 8.5576 ms  {'BLOCK_M': 64, 'BLOCK_N': 64, 'BLOCK_K': 32, 'GROUP_M': 8, 'SPLIT_K': 8, 'num_warps': 4, 'num_stages': 3} epi=None
+  RESULT decode_bs256: triton fused 8.5709 / unfused 8.5627 -> 0.9990x | vendor 8.3333 / 8.3220 -> 0.9986x
+
+===== prefill_t2048: M=2048 K=16384 N=6144 =====
+  epi add-bf16 {'BLOCK': 8192, 'num_warps': 16, 'num_stages': 1} 0.5233 | add-f32 {'BLOCK': 16384, 'num_warps': 8, 'num_stages': 1} 0.7045 | cast-f32 {'BLOCK': 16384, 'num_warps': 8, 'num_stages': 1} 0.5366
+  coarse grid: 120 configs
+  coarse fused   33.8698 ms {'BLOCK_M': 64, 'BLOCK_N': 64, 'BLOCK_K': 32, 'GROUP_M': 8, 'SPLIT_K': 1, 'num_warps': 4, 'num_stages': 4} (fail 0/120)
+  coarse unfused 34.0941 ms {'BLOCK_M': 64, 'BLOCK_N': 64, 'BLOCK_K': 32, 'GROUP_M': 8, 'SPLIT_K': 1, 'num_warps': 4, 'num_stages': 4} (fail 0/120)
+  refine grids: fused 19, unfused 19
+  stage3 trials: fused 0+15 extra, unfused 15
+  BEST fused   33.4162 ms  {'BLOCK_M': 128, 'BLOCK_N': 64, 'BLOCK_K': 32, 'GROUP_M': 8, 'SPLIT_K': 1, 'num_warps': 4, 'num_stages': 3} epi=None
+  BEST unfused 33.8944 ms  {'BLOCK_M': 64, 'BLOCK_N': 64, 'BLOCK_K': 32, 'GROUP_M': 8, 'SPLIT_K': 1, 'num_warps': 2, 'num_stages': 4} epi={'BLOCK': 8192, 'num_warps': 8, 'num_stages': 1}
+  RESULT prefill_t2048: triton fused 33.4172 / unfused 33.8995 -> 1.0144x | vendor 33.5094 / 33.5759 -> 1.0020x
+
+===== prefill_t8192: M=8192 K=16384 N=6144 =====
+  epi add-bf16 {'BLOCK': 512, 'num_warps': 16, 'num_stages': 1} 2.0163 | add-f32 {'BLOCK': 512, 'num_warps': 16, 'num_stages': 1} 2.6839 | cast-f32 {'BLOCK': 512, 'num_warps': 16, 'num_stages': 1} 2.0214
+  coarse grid: 120 configs
+  coarse fused   137.2529 ms {'BLOCK_M': 64, 'BLOCK_N': 64, 'BLOCK_K': 64, 'GROUP_M': 8, 'SPLIT_K': 1, 'num_warps': 8, 'num_stages': 3} (fail 0/120)
+  coarse unfused 151.3667 ms {'BLOCK_M': 64, 'BLOCK_N': 64, 'BLOCK_K': 64, 'GROUP_M': 8, 'SPLIT_K': 1, 'num_warps': 8, 'num_stages': 3} (fail 0/120)
+  refine grids: fused 19, unfused 19
+  stage3 trials: fused 0+15 extra, unfused 15
+  BEST fused   137.2529 ms  {'BLOCK_M': 64, 'BLOCK_N': 64, 'BLOCK_K': 64, 'GROUP_M': 8, 'SPLIT_K': 1, 'num_warps': 8, 'num_stages': 3} epi=None
+  BEST unfused 151.3667 ms  {'BLOCK_M': 64, 'BLOCK_N': 64, 'BLOCK_K': 64, 'GROUP_M': 8, 'SPLIT_K': 1, 'num_warps': 8, 'num_stages': 3} epi=None
+  RESULT prefill_t8192: triton fused 167.1956 / unfused 171.6582 -> 1.0267x | vendor 163.0024 / 162.9194 -> 0.9995x
+
+wrote /home/shuhan/fusion/results/rtx4060/f01_oproj_resadd.json
+regime               fused   unfused  speedup    vfused  vunfused  vspeedup   rel_err
+decode_bs1          2.5928    2.5979   1.0020    2.6266    2.6286    1.0008  2.02e-03
+decode_bs32         2.6071    2.6112   1.0016    2.6747    2.6737    0.9996  3.25e-03
+decode_bs256        8.5709    8.5627   0.9990    8.3333    8.3220    0.9986  3.02e-03
+prefill_t2048      33.4172   33.8995   1.0144   33.5094   33.5759    1.0020  2.81e-03
+prefill_t8192     167.1956  171.6582   1.0267  163.0024  162.9194    0.9995  2.48e-03

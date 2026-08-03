@@ -20,8 +20,7 @@ The latency-aware ceiling (`python -m glm52.traffic`) is higher than the traffic
 because the norm's bytes hide behind the router GEMM's compute -- "free normalization".
 
 Run:
-    CUDA_VISIBLE_DEVICES=3 /home/zhangshuhan/my-envs/fusion/bin/python \
-        glm52/bench/bench_f04f05_norm_router.py
+    python glm52/bench/bench_f04f05_norm_router.py
 """
 
 from __future__ import annotations
@@ -32,7 +31,7 @@ import sys
 import time
 from pathlib import Path
 
-sys.path.insert(0, "/home/zhangshuhan/fusion")
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import torch
 
@@ -69,7 +68,12 @@ REGIMES = [r for r in C.DECODE_REGIMES if r.T in (1, 32, 256)] + [
 # has that shape -- so the fused kernel and the unfused router GEMM see the identical
 # grid, and the two norm kernels see the identical grid.
 # --------------------------------------------------------------------------------------
-SMEM = 65536
+# per-block opt-in shared-memory ceiling: 101376 on sm89, 65536 on C500
+SMEM = C.env().smem_bytes
+WARP = C.env().warp_size  # 32 lanes on sm89, 64 on C500
+# fp32 accumulator tile lives in the per-block register file (65536 regs on sm89,
+# 131072 on C500) -- a register budget, which the C500 code wrote as a SMEM constant
+REGS = C.env().regs_per_sm
 
 
 def _gemm_ok(cfg: dict) -> bool:
@@ -80,13 +84,15 @@ def _gemm_ok(cfg: dict) -> bool:
         cfg["num_warps"],
         cfg["num_stages"],
     )
-    # Triton's mainloop double-buffer, the hard C500 ceiling
-    if s * 2 * bk * (bm + be) > SMEM:
+    # Triton's mainloop multi-buffer.  Triton 3.6 stages num_stages-1 buffers (floor 2),
+    # not num_stages -- the old formula over-predicts by 1.33-1.5x and would reject tiles
+    # this device runs fine.  See C.smem_stage_bytes.
+    if C.smem_stage_bytes(bm, be, bk, s) > SMEM:
         return False
-    # fp32 accumulator tile: 4 B * BM * BE must be a sane number of registers
-    if bm * be * 4 > SMEM:
+    # fp32 accumulator tile: BM*BE registers per program
+    if bm * be > REGS:
         return False
-    threads = w * 64
+    threads = w * WARP
     if bm * be / threads > 128 or bm * be / threads < 1:
         return False
     return True
@@ -94,7 +100,9 @@ def _gemm_ok(cfg: dict) -> bool:
 
 def gemm_grid() -> list[dict]:
     """Grid for every variant containing the router GEMM (fused #4/#5 and the
-    stand-alone router kernel).  ~55 configs after the SMEM/register prefilter."""
+    stand-alone router kernel).  The size is device-dependent -- the SMEM/register
+    prefilter is a function of `C.env()` -- so the printed `grids:` line, not a number
+    in this docstring, is the count of record."""
     out: list[dict] = []
     for bm, bk, be, (w, s) in itertools.product(
         (16, 32, 64, 128), (32, 64), (32, 64, 128, 256), ((4, 2), (8, 2))
@@ -110,8 +118,9 @@ def gemm_grid() -> list[dict]:
         if _gemm_ok(cfg):
             out.append(cfg)
     # BLOCK_E = 256 (the whole expert dimension in one program) is the only shape the
-    # FUSE_TOPK variants can use, and BLOCK_K=32 is the only k-tile that fits SMEM there,
-    # so that corner gets a denser warp/stage sweep -- for every GEMM-side variant alike.
+    # FUSE_TOPK variants can use, so that corner gets a denser warp/stage sweep -- for
+    # every GEMM-side variant alike.  (On C500's 65536 B ceiling BLOCK_K=32 was the only
+    # k-tile that fit here; sm89's 101376 B admits BLOCK_K=64 too, via the loop above.)
     for bm, (w, s) in itertools.product((16, 32, 64), ((4, 1), (4, 3), (2, 2), (8, 4))):
         cfg = dict(BLOCK_M=bm, BLOCK_K=32, BLOCK_E=256, num_warps=w, num_stages=s)
         if _gemm_ok(cfg):
@@ -127,21 +136,32 @@ def gemm_grid() -> list[dict]:
 
 def fused_grid() -> list[dict]:
     """Grid for the FUSED variants: `gemm_grid()` plus, for every config in it, the same
-    config with the *pass-1* k-tile (`NORM_BK`) widened to the largest tile that still
-    fits in registers.
+    config with the *pass-1* k-tile (`NORM_BK`) widened -- over a ladder, not to a single
+    value.
 
     This is not extra freedom -- it is the fused-side counterpart of a knob the unfused
     side already has.  On the unfused side the norm kernel picks its own BLOCK_K (it
     always picks 2048); without NORM_BK the fused kernel would be forced to compute the
     sum of squares in the GEMM's 32/64-wide tiles, i.e. 96-192 sequential cross-lane
     reductions per row instead of 3.  Leaving that out would be exactly the "under-tuned
-    fused side" failure mode."""
+    fused side" failure mode.
+
+    C500 offered exactly ONE value here (`min(2048, 32768 // BLOCK_M)`, i.e. a fixed
+    BLOCK_M*NORM_BK = 32768-element pass-1 tile).  At warp 64 that was 32-128 elem/thread;
+    at warp 32 it is 64-256, which spills on half the register file -- so the single offer
+    would simply be rejected and the fused arm would lose the knob entirely.  Bound the
+    pass-1 tile per thread instead (same 64 elem/thread budget `_norm_ok` gives the
+    unfused norm kernel) and let the tuner pick."""
     out: list[dict] = []
     for c in gemm_grid():
         out.append(c)
-        wide = min(2048, 32768 // c["BLOCK_M"])
-        if wide > c["BLOCK_K"] and C.HIDDEN_SIZE % wide == 0:
-            out.append(dict(c, NORM_BK=wide))
+        for nbk in (256, 512, 1024, 2048):
+            if (
+                nbk > c["BLOCK_K"]
+                and C.HIDDEN_SIZE % nbk == 0
+                and c["BLOCK_M"] * nbk <= 64 * WARP * c["num_warps"]
+            ):
+                out.append(dict(c, NORM_BK=nbk))
     return _dedup(out)
 
 
@@ -149,7 +169,7 @@ def _norm_ok(cfg: dict) -> bool:
     bm, bk, w = cfg["BLOCK_M"], cfg["BLOCK_K"], cfg["num_warps"]
     if bm * bk > 32768:
         return False
-    epr = bm * bk / (w * 64)
+    epr = bm * bk / (w * WARP)  # elem/thread; WARP is 32 on sm89, was 64 on C500
     if epr < 2 or epr > 64:
         return False
     return True
@@ -242,12 +262,16 @@ def kernel_stats(run, cfg) -> dict:
     unambiguous (the LOG-10 recipe)."""
     try:
         dev = torch.cuda.current_device()
-        cache = K.norm_router_kernel.cache
-        if dev in cache:
-            cache[dev].clear()
+        # Triton 3.x replaced `JITFunction.cache` with `device_caches[dev]`, a 5-tuple
+        # (kernel_cache, key_cache, target, backend, binder); [0] is the compiled-kernel
+        # dict.  The old name raised AttributeError inside this bare except, so n_regs /
+        # n_spills came back as {"error": ...} -- the one diagnostic that explains a fused
+        # regression on a register file half C500's.
+        kc = K.norm_router_kernel.device_caches[dev][0]
+        kc.clear()
         run(cfg)
         torch.cuda.synchronize()
-        vals = list(cache[dev].values())
+        vals = list(kc.values())
         if len(vals) != 1:
             return {"note": f"{len(vals)} kernels in cache"}
         k = vals[0]
@@ -717,6 +741,12 @@ def run_regime(regime, wt, rt, wf, rf) -> dict:
         ),
     }
     gflop = 2.0 * T * H * E / 1e9
+    # The `ceiling` below is a DRAM-traffic ceiling: it assumes the bytes the fusion
+    # removes were going to DRAM.  Where the activation fits in L2 (32 MB on this device
+    # vs 8 MB on C500 -- so T<=2048 now fits and did not before) they never leave the
+    # chip, the fusion has nothing to save, and the ceiling is not attainable.  Record
+    # residency so a 1.0x at prefill_t2048 is not read as an underperforming kernel.
+    l2_bytes = C.env().l2_bytes
 
     rows = []
     for key, ceil_key in (
@@ -739,6 +769,9 @@ def run_regime(regime, wt, rt, wf, rf) -> dict:
                     "traffic_ratio_model": ceil[ceil_key]["traffic_ratio"],
                     "bytes_fused": bf,
                     "bytes_unfused": bu,
+                    "act_bytes": act,
+                    "l2_bytes": l2_bytes,
+                    "act_fits_l2": act <= l2_bytes,
                     "gbps_fused": bf / (f.p50_ms * 1e-3) / 1e9,
                     "gbps_unfused": bu / (u.p50_ms * 1e-3) / 1e9,
                     "tflops_fused": gflop / (f.p50_ms * 1e-3) / 1e3,
@@ -797,9 +830,15 @@ def run_regime(regime, wt, rt, wf, rf) -> dict:
 
 
 def main() -> None:
-    env = C.BenchEnv.probe()
+    env = C.env()  # the same cached probe the config grids above were built from
     print(f"device={env.device_name} warp={env.warp_size} CUs={env.num_sm}", flush=True)
     CKPT.mkdir(parents=True, exist_ok=True)
+
+    # Grid sizes are device-dependent (SMEM ceiling, warp width), so the fairness
+    # accounting below is counted live rather than quoting the C500 numbers.
+    _fg = fused_grid()
+    n_gg, n_fg, n_ng = len(gemm_grid()), len(_fg), len(norm_grid())
+    n_fg_full = len([c for c in _fg if c["BLOCK_E"] == E])
 
     rows, tables, checks, timings = [], {}, {}, {}
 
@@ -826,16 +865,20 @@ def main() -> None:
                     "one_kernel_source": "glm52/kernels/norm_router.py::norm_router_kernel",
                     "flags": "DO_ADD / DO_NORM / DO_GEMM / DO_TOPK constexpr select all "
                     "seven kernels (4 fused variants + 3 stand-alone pieces)",
-                    "grids": "gemm_grid() (80 cfgs) for the stand-alone router GEMM; "
-                    "fused_grid() = gemm_grid() x {NORM_BK tied, NORM_BK widened} (160) for "
-                    "the fused #4/#5 kernels -- NORM_BK is the fused-side counterpart of the "
-                    "k-tile the unfused norm kernel tunes independently over norm_grid() "
-                    "(58 cfgs), so the unfused side sees 80+58=138 configs against the fused "
-                    "side's 160; the FUSE_TOPK variants get fused_grid() restricted to "
-                    "BLOCK_E=256 (48), which is a structural requirement (all 256 logits of a "
-                    "row must live in one program), not a tuning choice; every config of every "
-                    "variant is numerically screened against the fp32 reference before it is "
-                    "allowed into a timing grid (see 'screen' in the bench)",
+                    "grids": f"gemm_grid() ({n_gg} cfgs) for the stand-alone router GEMM; "
+                    f"fused_grid() = gemm_grid() x {{NORM_BK tied, NORM_BK ladder}} ({n_fg}) "
+                    "for the fused #4/#5 kernels -- NORM_BK is the fused-side counterpart of "
+                    "the k-tile the unfused norm kernel tunes independently over norm_grid() "
+                    f"({n_ng} cfgs), so the unfused side sees {n_gg}+{n_ng}={n_gg + n_ng} "
+                    f"configs against the fused side's {n_fg}; the FUSE_TOPK variants get "
+                    f"fused_grid() restricted to BLOCK_E=256 ({n_fg_full}), which is a "
+                    "structural requirement (all 256 logits of a row must live in one "
+                    "program), not a tuning choice; every config of every variant is "
+                    "numerically screened against the fp32 reference before it is allowed "
+                    "into a timing grid (see 'screen' in the bench).  Counts are live for "
+                    "THIS device -- the SMEM ceiling and warp width both prune the grid, and "
+                    "they prune the BLOCK_E=256 family (the fused FUSE_TOPK arm's only legal "
+                    "shape) harder than they prune the rest",
                     "baseline_extra": "each unfused chain additionally gets a joint re-tune "
                     "over the top-3 x top-3 (x top-2) configs of its pieces, timed as the "
                     "real chain -- this can only help the baseline",
@@ -870,9 +913,18 @@ def main() -> None:
         tables[regime.name] = tab
         checks[regime.name] = chk
         timings[regime.name] = tim
+        # `device` is stamped so a checkpoint can never be silently reused across a port.
+        # Nothing reads these today (CKPT is write-only here, and CKPT itself follows
+        # common.RESULTS_DIR); the stamp is what makes a future reader safe.
         (CKPT / f"{regime.name}.json").write_text(
             json.dumps(
-                {"rows": rr, "checks": chk, "timings": tim, "tune_tables": tab},
+                {
+                    "device": env.device_name,
+                    "rows": rr,
+                    "checks": chk,
+                    "timings": tim,
+                    "tune_tables": tab,
+                },
                 indent=2,
                 default=str,
             )

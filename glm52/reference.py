@@ -108,14 +108,16 @@ def moe_align_block_size(
     starts = torch.cat(
         [torch.zeros(1, dtype=padded.dtype, device=device), padded.cumsum(0)[:-1]]
     )
+    # one .tolist() each instead of 3*num_experts per-element .item() syncs -- same values
+    counts_l, starts_l, padded_l = counts.tolist(), starts.tolist(), padded.tolist()
     src = 0
     for e in range(num_experts):
-        c = int(counts[e].item())
-        s = int(starts[e].item())
+        c = counts_l[e]
+        s = starts_l[e]
         if c:
             sorted_token_ids[s : s + c] = order[src : src + c].int()
             src += c
-        nblk = int(padded[e].item()) // block_m
+        nblk = padded_l[e] // block_m
         if nblk:
             expert_ids[s // block_m : s // block_m + nblk] = e
     del sorted_experts
@@ -155,9 +157,32 @@ def moe_mlp(
 
 
 def expert_merge(
-    per_expert_out: torch.Tensor, topk_weights: torch.Tensor
+    per_expert_out: torch.Tensor, topk_weights: torch.Tensor, chunk: int = 512
 ) -> torch.Tensor:
-    """per_expert_out: [T, topk, H] (unweighted) -> [T, H]."""
-    return (per_expert_out.float() * topk_weights.unsqueeze(-1)).sum(1).to(
-        per_expert_out.dtype
+    """per_expert_out: [T, topk, H] (unweighted) -> [T, H].
+
+    Chunked over T. The one-shot form holds two fp32 [T, topk, H] temporaries at once
+    (`.float()` and the product, 1536 MiB each at T=8192/H=6144) before `.sum(1)` reduces
+    them; a 512-row chunk bounds that transient at 192 MiB, which matters because this
+    runs inside a timed arm on an 8 GB card.
+
+    Bit-identical to the one-shot form: same fp32 upcast, same per-row product, same
+    sum over the same `topk` values in the same order (the reduction is per output
+    element and never split across rows), and the slice assignment *is* the fp32->bf16
+    `.to(dtype)` copy, same rounding. Small T takes the original expression verbatim so
+    decode timings keep the exact allocation/launch sequence they had.
+    """
+    T, _, H = per_expert_out.shape
+    if T <= chunk:
+        return (per_expert_out.float() * topk_weights.unsqueeze(-1)).sum(1).to(
+            per_expert_out.dtype
+        )
+    out = torch.empty(
+        T, H, device=per_expert_out.device, dtype=per_expert_out.dtype
     )
+    for i in range(0, T, chunk):
+        j = min(i + chunk, T)
+        out[i:j] = (
+            per_expert_out[i:j].float() * topk_weights[i:j].unsqueeze(-1)
+        ).sum(1)
+    return out

@@ -32,10 +32,18 @@ from typing import Callable, Iterable, Sequence
 
 import torch
 
-RESULTS_DIR = Path(__file__).resolve().parent.parent / "results"
+# `GLM52_RESULTS_DIR` keeps a port's results from overwriting another platform's. The C500
+# baseline lives in results/c500/; the RTX 4060 port writes to results/rtx4060/.
+RESULTS_DIR = Path(
+    os.environ.get("GLM52_RESULTS_DIR", Path(__file__).resolve().parent.parent / "results")
+)
 
-# Buffer used to evict L2 between measurements. C500 L2 is 8 MB; 128 MB is a wide margin.
-_FLUSH_BYTES = 128 * 2**20
+# Buffer used to evict L2 between measurements. It must exceed the device's L2: C500 is
+# 8 MB, RTX 4060 (Ada) is 32 MB, so 128 MB clears both with margin. Sized from the device
+# rather than assumed, because a flush smaller than L2 silently turns every measurement
+# into a warm-cache one -- which flatters the arm that re-reads an intermediate.
+_FLUSH_BYTES = max(128 * 2**20, 4 * torch.cuda.get_device_properties(0).L2_cache_size) \
+    if torch.cuda.is_available() else 128 * 2**20
 _flush_buf: torch.Tensor | None = None
 
 

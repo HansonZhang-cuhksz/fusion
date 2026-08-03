@@ -1,0 +1,159 @@
+device=NVIDIA GeForce RTX 4060 Laptop GPU warp=32 CUs=24
+  == decode_bs1 (T=1) ==
+    grids: gemm=97 fused=226 fused(BE=256, FUSE_TOPK)=100 norm=53 topk=21
+    [screen norm     ]  53 offered ->  53 valid (0 compile-fail, 0 wrong-answer)
+    [norm      ]  53/53 cfgs timed -> 0.0143 ms  {'BLOCK_M': 1, 'BLOCK_K': 2048, 'BLOCK_E': 256, 'num_warps': 8, 'num_stages': 2}  [22s]
+    [screen add+norm ]  53 offered ->  53 valid (0 compile-fail, 0 wrong-answer)
+    [add+norm  ]  53/53 cfgs timed -> 0.0143 ms  {'BLOCK_M': 1, 'BLOCK_K': 2048, 'BLOCK_E': 256, 'num_warps': 8, 'num_stages': 2}  [25s]
+    [screen router   ]  97 offered ->  97 valid (0 compile-fail, 0 wrong-answer)
+    [router    ]  97/97 cfgs timed -> 0.1116 ms  {'BLOCK_M': 16, 'BLOCK_K': 64, 'BLOCK_E': 32, 'num_warps': 4, 'num_stages': 2}  [42s]
+    [screen topk     ]  21 offered ->  21 valid (0 compile-fail, 0 wrong-answer)
+    [topk      ]  21/21 cfgs timed -> 0.0143 ms  {'BLOCK_M': 1, 'BLOCK_K': 32, 'BLOCK_E': 256, 'num_warps': 4, 'num_stages': 2}  [81s]
+    [screen F5       ] 226 offered -> 226 valid (0 compile-fail, 0 wrong-answer)
+    [F5        ] 226/226 cfgs timed -> 0.1628 ms  {'BLOCK_M': 16, 'BLOCK_K': 64, 'BLOCK_E': 32, 'num_warps': 4, 'num_stages': 2, 'NORM_BK': 256}  [160s]
+    [screen F4       ] 226 offered -> 226 valid (0 compile-fail, 0 wrong-answer)
+    [F4        ] 226/226 cfgs timed -> 0.1843 ms  {'BLOCK_M': 16, 'BLOCK_K': 64, 'BLOCK_E': 32, 'num_warps': 4, 'num_stages': 2, 'NORM_BK': 256}  [183s]
+    [screen F5+topk  ] 100 offered -> 100 valid (0 compile-fail, 0 wrong-answer)
+    [F5+topk   ] 100/100 cfgs timed -> 0.2775 ms  {'BLOCK_M': 16, 'BLOCK_K': 32, 'BLOCK_E': 256, 'num_warps': 4, 'num_stages': 3, 'NORM_BK': 256}  [300s]
+    [screen F4+topk  ] 100 offered -> 100 valid (0 compile-fail, 0 wrong-answer)
+    [F4+topk   ] 100/100 cfgs timed -> 0.3236 ms  {'BLOCK_M': 16, 'BLOCK_K': 32, 'BLOCK_E': 256, 'num_warps': 8, 'num_stages': 4, 'NORM_BK': 256}  [410s]
+    [U5        ] joint 9 combos -> 0.1229 ms [1s]
+    [U5+topk   ] joint 18 combos -> 0.1331 ms [1s]
+    [U4        ] joint 9 combos -> 0.1239 ms [1s]
+    [U4+topk   ] joint 18 combos -> 0.1352 ms [1s]
+    attrib {'regs_fused_F5_at_fused_best': {'shared': 8320, 'n_regs': 72, 'n_spills': 0}, 'regs_router_at_router_best': {'shared': 6144, 'n_regs': 40, 'n_spills': 0}, 'regs_fused_F5_at_router_best': {'shared': 8320, 'n_regs': 48, 'n_spills': 0}, 'regs_router_at_fused_best': {'shared': 6144, 'n_regs': 40, 'n_spills': 0}, 'cross_fused_F5_on_router_cfg_ms': 0.187391996383667, 'cross_router_on_fused_cfg_ms': 0.11468800157308578, 'iso_fused_F5_bcast_ms': 0.1669120043516159, 'iso_router_bcast_ms': 0.1157120019197464, 'iso_fused_F5_no_x2_store_ms': 0.15667200088500977, 'gflop_router': 0.003145728}
+    F5       fused 0.1679 | unfused 0.1239 | speedup 0.738x (ceiling 1.00x, 73% of it) | torch 0.2693
+    F5_topk  fused 0.2806 | unfused 0.1372 | speedup 0.489x (ceiling 1.00x, 49% of it) | torch 0.2693
+    F4       fused 0.1884 | unfused 0.1260 | speedup 0.668x (ceiling 1.01x, 66% of it) | torch 0.3430
+    F4_topk  fused 0.3256 | unfused 0.1372 | speedup 0.421x (ceiling 1.01x, 42% of it) | torch 0.3430
+  == decode_bs32 (T=32) ==
+    grids: gemm=97 fused=226 fused(BE=256, FUSE_TOPK)=100 norm=53 topk=21
+    [screen norm     ]  53 offered ->  53 valid (0 compile-fail, 0 wrong-answer)
+    [norm      ]  53/53 cfgs timed -> 0.0164 ms  {'BLOCK_M': 1, 'BLOCK_K': 2048, 'BLOCK_E': 256, 'num_warps': 4, 'num_stages': 2}  [4s]
+    [screen add+norm ]  53 offered ->  53 valid (0 compile-fail, 0 wrong-answer)
+    [add+norm  ]  53/53 cfgs timed -> 0.0184 ms  {'BLOCK_M': 1, 'BLOCK_K': 2048, 'BLOCK_E': 256, 'num_warps': 8, 'num_stages': 2, 'EVICT': 1}  [3s]
+    [screen router   ]  97 offered ->  97 valid (0 compile-fail, 0 wrong-answer)
+    [router    ]  97/97 cfgs timed -> 0.1270 ms  {'BLOCK_M': 16, 'BLOCK_K': 64, 'BLOCK_E': 32, 'num_warps': 4, 'num_stages': 2}  [16s]
+    [screen topk     ]  21 offered ->  21 valid (0 compile-fail, 0 wrong-answer)
+    [topk      ]  21/21 cfgs timed -> 0.0174 ms  {'BLOCK_M': 1, 'BLOCK_K': 32, 'BLOCK_E': 256, 'num_warps': 4, 'num_stages': 2}  [3s]
+    [screen F5       ] 226 offered -> 226 valid (0 compile-fail, 0 wrong-answer)
+    [F5        ] 226/226 cfgs timed -> 0.1751 ms  {'BLOCK_M': 16, 'BLOCK_K': 64, 'BLOCK_E': 32, 'num_warps': 4, 'num_stages': 2, 'NORM_BK': 256}  [24s]
+    [screen F4       ] 226 offered -> 226 valid (0 compile-fail, 0 wrong-answer)
+    [F4        ] 226/226 cfgs timed -> 0.2028 ms  {'BLOCK_M': 16, 'BLOCK_K': 64, 'BLOCK_E': 32, 'num_warps': 4, 'num_stages': 2, 'NORM_BK': 256}  [26s]
+    [screen F5+topk  ] 100 offered -> 100 valid (0 compile-fail, 0 wrong-answer)
+    [F5+topk   ] 100/100 cfgs timed -> 0.2898 ms  {'BLOCK_M': 16, 'BLOCK_K': 32, 'BLOCK_E': 256, 'num_warps': 4, 'num_stages': 3, 'NORM_BK': 256}  [16s]
+    [screen F4+topk  ] 100 offered -> 100 valid (0 compile-fail, 0 wrong-answer)
+    [F4+topk   ] 100/100 cfgs timed -> 0.3297 ms  {'BLOCK_M': 16, 'BLOCK_K': 32, 'BLOCK_E': 256, 'num_warps': 8, 'num_stages': 3, 'NORM_BK': 256}  [14s]
+    [U5        ] joint 9 combos -> 0.1321 ms [1s]
+    [U5+topk   ] joint 18 combos -> 0.1454 ms [1s]
+    [U4        ] joint 9 combos -> 0.1352 ms [1s]
+    [U4+topk   ] joint 18 combos -> 0.1464 ms [1s]
+    attrib {'regs_fused_F5_at_fused_best': {'shared': 8320, 'n_regs': 72, 'n_spills': 0}, 'regs_router_at_router_best': {'shared': 6144, 'n_regs': 40, 'n_spills': 0}, 'regs_fused_F5_at_router_best': {'shared': 8320, 'n_regs': 48, 'n_spills': 0}, 'regs_router_at_fused_best': {'shared': 6144, 'n_regs': 40, 'n_spills': 0}, 'cross_fused_F5_on_router_cfg_ms': 0.1955839991569519, 'cross_router_on_fused_cfg_ms': 0.12390399724245071, 'iso_fused_F5_bcast_ms': 0.1730560064315796, 'iso_router_bcast_ms': 0.1228799968957901, 'iso_fused_F5_no_x2_store_ms': 0.16281600296497345, 'gflop_router': 0.100663296}
+    F5       fused 0.1741 | unfused 0.1341 | speedup 0.771x (ceiling 1.10x, 70% of it) | torch 0.3604
+    F5_topk  fused 0.2898 | unfused 0.1434 | speedup 0.495x (ceiling 1.10x, 45% of it) | torch 0.3604
+    F4       fused 0.2007 | unfused 0.1352 | speedup 0.673x (ceiling 1.17x, 58% of it) | torch 0.4792
+    F4_topk  fused 0.3297 | unfused 0.1464 | speedup 0.444x (ceiling 1.17x, 38% of it) | torch 0.4792
+  == decode_bs256 (T=256) ==
+    grids: gemm=97 fused=226 fused(BE=256, FUSE_TOPK)=100 norm=53 topk=21
+    [screen norm     ]  53 offered ->  53 valid (0 compile-fail, 0 wrong-answer)
+    [norm      ]  53/53 cfgs timed -> 0.0522 ms  {'BLOCK_M': 1, 'BLOCK_K': 2048, 'BLOCK_E': 256, 'num_warps': 8, 'num_stages': 2}  [3s]
+    [screen add+norm ]  53 offered ->  53 valid (0 compile-fail, 0 wrong-answer)
+    [add+norm  ]  53/53 cfgs timed -> 0.1014 ms  {'BLOCK_M': 2, 'BLOCK_K': 2048, 'BLOCK_E': 256, 'num_warps': 4, 'num_stages': 2}  [4s]
+    [screen router   ]  97 offered ->  97 valid (0 compile-fail, 0 wrong-answer)
+    [router    ]  97/97 cfgs timed -> 0.1464 ms  {'BLOCK_M': 16, 'BLOCK_K': 32, 'BLOCK_E': 256, 'num_warps': 8, 'num_stages': 4}  [8s]
+    [screen topk     ]  21 offered ->  21 valid (0 compile-fail, 0 wrong-answer)
+    [topk      ]  21/21 cfgs timed -> 0.0266 ms  {'BLOCK_M': 4, 'BLOCK_K': 32, 'BLOCK_E': 256, 'num_warps': 4, 'num_stages': 2}  [1s]
+    [screen F5       ] 226 offered -> 226 valid (0 compile-fail, 0 wrong-answer)
+    [F5        ] 226/226 cfgs timed -> 0.2406 ms  {'BLOCK_M': 16, 'BLOCK_K': 64, 'BLOCK_E': 64, 'num_warps': 4, 'num_stages': 2, 'NORM_BK': 256}  [24s]
+    [screen F4       ] 226 offered -> 226 valid (0 compile-fail, 0 wrong-answer)
+    [F4        ] 226/226 cfgs timed -> 0.2867 ms  {'BLOCK_M': 16, 'BLOCK_K': 64, 'BLOCK_E': 64, 'num_warps': 4, 'num_stages': 2}  [27s]
+    [screen F5+topk  ] 100 offered -> 100 valid (0 compile-fail, 0 wrong-answer)
+    [F5+topk   ] 100/100 cfgs timed -> 0.3133 ms  {'BLOCK_M': 16, 'BLOCK_K': 32, 'BLOCK_E': 256, 'num_warps': 4, 'num_stages': 3, 'NORM_BK': 256}  [12s]
+    [screen F4+topk  ] 100 offered -> 100 valid (0 compile-fail, 0 wrong-answer)
+    [F4+topk   ] 100/100 cfgs timed -> 0.3901 ms  {'BLOCK_M': 16, 'BLOCK_K': 32, 'BLOCK_E': 256, 'num_warps': 8, 'num_stages': 4, 'NORM_BK': 256}  [16s]
+    [U5        ] joint 9 combos -> 0.1833 ms [1s]
+    [U5+topk   ] joint 18 combos -> 0.2038 ms [1s]
+    [U4        ] joint 9 combos -> 0.2314 ms [1s]
+    [U4+topk   ] joint 18 combos -> 0.2519 ms [1s]
+    attrib {'regs_fused_F5_at_fused_best': {'shared': 12416, 'n_regs': 72, 'n_spills': 0}, 'regs_router_at_router_best': {'shared': 52224, 'n_regs': 60, 'n_spills': 0}, 'regs_fused_F5_at_router_best': {'shared': 53440, 'n_regs': 58, 'n_spills': 0}, 'regs_router_at_fused_best': {'shared': 10240, 'n_regs': 44, 'n_spills': 0}, 'cross_fused_F5_on_router_cfg_ms': 0.34406399726867676, 'cross_router_on_fused_cfg_ms': 0.1515520066022873, 'iso_fused_F5_bcast_ms': 0.23654399812221527, 'iso_router_bcast_ms': 0.1372160017490387, 'iso_fused_F5_no_x2_store_ms': 0.2303999960422516, 'gflop_router': 0.805306368}
+    F5       fused 0.2417 | unfused 0.1833 | speedup 0.758x (ceiling 1.63x, 46% of it) | torch 0.6748
+    F5_topk  fused 0.3113 | unfused 0.2048 | speedup 0.658x (ceiling 1.63x, 40% of it) | torch 0.6748
+    F4       fused 0.2867 | unfused 0.2324 | speedup 0.811x (ceiling 1.58x, 51% of it) | torch 0.8335
+    F4_topk  fused 0.3912 | unfused 0.2560 | speedup 0.654x (ceiling 1.58x, 41% of it) | torch 0.8335
+  == prefill_t2048 (T=2048) ==
+    grids: gemm=97 fused=226 fused(BE=256, FUSE_TOPK)=100 norm=53 topk=21
+    [screen norm     ]  53 offered ->  53 valid (0 compile-fail, 0 wrong-answer)
+    [norm      ]  53/53 cfgs timed -> 0.3451 ms  {'BLOCK_M': 1, 'BLOCK_K': 2048, 'BLOCK_E': 256, 'num_warps': 16, 'num_stages': 2}  [4s]
+    [screen add+norm ]  53 offered ->  53 valid (0 compile-fail, 0 wrong-answer)
+    [add+norm  ]  53/53 cfgs timed -> 0.6984 ms  {'BLOCK_M': 1, 'BLOCK_K': 1024, 'BLOCK_E': 256, 'num_warps': 16, 'num_stages': 2}  [6s]
+    [screen router   ]  97 offered ->  97 valid (0 compile-fail, 0 wrong-answer)
+    [router    ]  97/97 cfgs timed -> 0.5919 ms  {'BLOCK_M': 32, 'BLOCK_K': 64, 'BLOCK_E': 64, 'num_warps': 4, 'num_stages': 2}  [10s]
+    [screen topk     ]  21 offered ->  21 valid (0 compile-fail, 0 wrong-answer)
+    [topk      ]  21/21 cfgs timed -> 0.0963 ms  {'BLOCK_M': 8, 'BLOCK_K': 32, 'BLOCK_E': 256, 'num_warps': 4, 'num_stages': 2}  [2s]
+    [screen F5       ] 226 offered -> 226 valid (0 compile-fail, 0 wrong-answer)
+    [F5        ] 226/226 cfgs timed -> 0.8827 ms  {'BLOCK_M': 64, 'BLOCK_K': 64, 'BLOCK_E': 128, 'num_warps': 4, 'num_stages': 2}  [44s]
+    [screen F4       ] 226 offered -> 226 valid (0 compile-fail, 0 wrong-answer)
+    [F4        ] 226/226 cfgs timed -> 1.2923 ms  {'BLOCK_M': 32, 'BLOCK_K': 64, 'BLOCK_E': 64, 'num_warps': 8, 'num_stages': 2}  [60s]
+    [screen F5+topk  ] 100 offered -> 100 valid (0 compile-fail, 0 wrong-answer)
+    [F5+topk   ] 100/100 cfgs timed -> 0.9923 ms  {'BLOCK_M': 32, 'BLOCK_K': 32, 'BLOCK_E': 256, 'num_warps': 4, 'num_stages': 1, 'NORM_BK': 256}  [20s]
+    [screen F4+topk  ] 100 offered -> 100 valid (0 compile-fail, 0 wrong-answer)
+    [F4+topk   ] 100/100 cfgs timed -> 1.3210 ms  {'BLOCK_M': 32, 'BLOCK_K': 32, 'BLOCK_E': 256, 'num_warps': 4, 'num_stages': 3}  [24s]
+    [U5        ] joint 9 combos -> 0.9359 ms [1s]
+    [U5+topk   ] joint 18 combos -> 1.0250 ms [2s]
+    [U4        ] joint 9 combos -> 1.2872 ms [1s]
+    [U4+topk   ] joint 18 combos -> 1.3804 ms [2s]
+    attrib {'regs_fused_F5_at_fused_best': {'shared': 32896, 'n_regs': 163, 'n_spills': 0}, 'regs_router_at_router_best': {'shared': 12288, 'n_regs': 55, 'n_spills': 0}, 'regs_fused_F5_at_router_best': {'shared': 16512, 'n_regs': 64, 'n_spills': 0}, 'regs_router_at_fused_best': {'shared': 24576, 'n_regs': 127, 'n_spills': 0}, 'cross_fused_F5_on_router_cfg_ms': 0.9256960153579712, 'cross_router_on_fused_cfg_ms': 0.7178239822387695, 'iso_fused_F5_bcast_ms': 0.7639039754867554, 'iso_router_bcast_ms': 0.7874559760093689, 'iso_fused_F5_no_x2_store_ms': 0.9205759763717651, 'gflop_router': 6.442450944}
+    F5       fused 0.8806 | unfused 0.9359 | speedup 1.063x (ceiling 1.66x, 64% of it) | torch 5.7948
+    F5_topk  fused 0.9882 | unfused 1.0220 | speedup 1.034x (ceiling 1.66x, 62% of it) | torch 5.7948
+    F4       fused 1.2882 | unfused 1.2902 | speedup 1.002x (ceiling 1.91x, 52% of it) | torch 8.3446
+    F4_topk  fused 1.3189 | unfused 1.3691 | speedup 1.038x (ceiling 1.91x, 54% of it) | torch 8.3446
+  == prefill_t8192 (T=8192) ==
+    grids: gemm=97 fused=226 fused(BE=256, FUSE_TOPK)=100 norm=53 topk=21
+    [screen norm     ]  53 offered ->  53 valid (0 compile-fail, 0 wrong-answer)
+    [norm      ]  53/53 cfgs timed -> 1.3599 ms  {'BLOCK_M': 2, 'BLOCK_K': 2048, 'BLOCK_E': 256, 'num_warps': 4, 'num_stages': 2}  [9s]
+    [screen add+norm ]  53 offered ->  53 valid (0 compile-fail, 0 wrong-answer)
+    [add+norm  ]  53/53 cfgs timed -> 2.7607 ms  {'BLOCK_M': 2, 'BLOCK_K': 2048, 'BLOCK_E': 256, 'num_warps': 4, 'num_stages': 2}  [15s]
+    [screen router   ]  97 offered ->  97 valid (0 compile-fail, 0 wrong-answer)
+    [router    ]  97/97 cfgs timed -> 2.1637 ms  {'BLOCK_M': 32, 'BLOCK_K': 32, 'BLOCK_E': 64, 'num_warps': 4, 'num_stages': 2}  [23s]
+    [screen topk     ]  21 offered ->  21 valid (0 compile-fail, 0 wrong-answer)
+    [topk      ]  21/21 cfgs timed -> 0.3144 ms  {'BLOCK_M': 8, 'BLOCK_K': 32, 'BLOCK_E': 256, 'num_warps': 4, 'num_stages': 2}  [3s]
+    [screen F5       ] 226 offered -> 226 valid (0 compile-fail, 0 wrong-answer)
+    [F5        ] 226/226 cfgs timed -> 2.7177 ms  {'BLOCK_M': 64, 'BLOCK_K': 64, 'BLOCK_E': 128, 'num_warps': 4, 'num_stages': 2}  [104s]
+    [screen F4       ] 226 offered -> 226 valid (0 compile-fail, 0 wrong-answer)
+    [F4        ] 226/226 cfgs timed -> 4.0305 ms  {'BLOCK_M': 32, 'BLOCK_K': 32, 'BLOCK_E': 256, 'num_warps': 4, 'num_stages': 3}  [147s]
+    [screen F5+topk  ] 100 offered -> 100 valid (0 compile-fail, 0 wrong-answer)
+    [F5+topk   ] 100/100 cfgs timed -> 3.0300 ms  {'BLOCK_M': 32, 'BLOCK_K': 32, 'BLOCK_E': 256, 'num_warps': 4, 'num_stages': 3}  [38s]
+    [screen F4+topk  ] 100 offered -> 100 valid (0 compile-fail, 0 wrong-answer)
+    [F4+topk   ] 100/100 cfgs timed -> 4.1175 ms  {'BLOCK_M': 32, 'BLOCK_K': 32, 'BLOCK_E': 256, 'num_warps': 4, 'num_stages': 3}  [51s]
+    [U5        ] joint 9 combos -> 3.5092 ms [2s]
+    [U5+topk   ] joint 18 combos -> 3.8226 ms [5s]
+    [U4        ] joint 9 combos -> 4.9377 ms [3s]
+    [U4+topk   ] joint 18 combos -> 5.1528 ms [6s]
+    attrib {'regs_fused_F5_at_fused_best': {'shared': 32896, 'n_regs': 163, 'n_spills': 0}, 'regs_router_at_router_best': {'shared': 6144, 'n_regs': 56, 'n_spills': 0}, 'regs_fused_F5_at_router_best': {'shared': 8256, 'n_regs': 56, 'n_spills': 0}, 'regs_router_at_fused_best': {'shared': 24576, 'n_regs': 127, 'n_spills': 0}, 'cross_fused_F5_on_router_cfg_ms': 3.0842878818511963, 'cross_router_on_fused_cfg_ms': 2.3705599308013916, 'iso_fused_F5_bcast_ms': 2.520064115524292, 'iso_router_bcast_ms': 2.32857608795166, 'iso_fused_F5_no_x2_store_ms': 2.9378559589385986, 'gflop_router': 25.769803776}
+    F5       fused 2.7290 | unfused 3.5471 | speedup 1.300x (ceiling 1.66x, 78% of it) | torch 22.8884
+    F5_topk  fused 3.0362 | unfused 3.8707 | speedup 1.275x (ceiling 1.66x, 77% of it) | torch 22.8884
+    F4       fused 4.0663 | unfused 5.0094 | speedup 1.232x (ceiling 1.95x, 63% of it) | torch 35.6137
+    F4_topk  fused 4.1452 | unfused 5.3627 | speedup 1.294x (ceiling 1.95x, 66% of it) | torch 35.6137
+
+wrote results/f04f05_norm_router.json
+regime          variant       fused   unfused  speedup  ceiling     torch
+decode_bs1      F5           0.1679    0.1239    0.738     1.00    0.2693
+decode_bs1      F5_topk      0.2806    0.1372    0.489     1.00    0.2693
+decode_bs1      F4           0.1884    0.1260    0.668     1.01    0.3430
+decode_bs1      F4_topk      0.3256    0.1372    0.421     1.01    0.3430
+decode_bs32     F5           0.1741    0.1341    0.771     1.10    0.3604
+decode_bs32     F5_topk      0.2898    0.1434    0.495     1.10    0.3604
+decode_bs32     F4           0.2007    0.1352    0.673     1.17    0.4792
+decode_bs32     F4_topk      0.3297    0.1464    0.444     1.17    0.4792
+decode_bs256    F5           0.2417    0.1833    0.758     1.63    0.6748
+decode_bs256    F5_topk      0.3113    0.2048    0.658     1.63    0.6748
+decode_bs256    F4           0.2867    0.2324    0.811     1.58    0.8335
+decode_bs256    F4_topk      0.3912    0.2560    0.654     1.58    0.8335
+prefill_t2048   F5           0.8806    0.9359    1.063     1.66    5.7948
+prefill_t2048   F5_topk      0.9882    1.0220    1.034     1.66    5.7948
+prefill_t2048   F4           1.2882    1.2902    1.002     1.91    8.3446
+prefill_t2048   F4_topk      1.3189    1.3691    1.038     1.91    8.3446
+prefill_t8192   F5           2.7290    3.5471    1.300     1.66   22.8884
+prefill_t8192   F5_topk      3.0362    3.8707    1.275     1.66   22.8884
+prefill_t8192   F4           4.0663    5.0094    1.232     1.95   35.6137
+prefill_t8192   F4_topk      4.1452    5.3627    1.294     1.95   35.6137

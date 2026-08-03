@@ -1,0 +1,67 @@
+15:09:08 ============================================================================================
+15:09:08 PLAN
+15:09:08 ============================================================================================
+15:09:08   f03     #3  ResAdd+RMSNorm
+15:09:08           script  /home/shuhan/fusion/glm52_h200/bench/bench_f03_resadd_rmsnorm.py
+15:09:08           result  (none yet)
+15:09:08           timeout 3.0 h   note: pure vector; smoke-tests the whole stack
+15:09:08   f10     #10 ExpertMerge+ResAdd
+15:09:08           script  /home/shuhan/fusion/glm52_h200/bench/bench_f10_merge_resadd.py
+15:09:08           result  (none yet)
+15:09:08           timeout 4.0 h   note: needs the [T*topk, 6144] intermediate, not the expert weights
+15:09:08   f01     #1  o_proj+ResAdd
+15:09:08           script  /home/shuhan/fusion/glm52_h200/bench/bench_f01_oproj_resadd.py
+15:09:08           result  (none yet)
+15:09:08           timeout 8.0 h   note: first GEMM family; K=16384 prefill / 32768 decode
+15:09:08   f04f05  #4  ResAdd+RMSNorm+Router / #5 RMSNorm+Router
+15:09:08           script  /home/shuhan/fusion/glm52_h200/bench/bench_f04f05_norm_router.py
+15:09:08           result  (none yet)
+15:09:08           timeout 8.0 h
+15:09:08   f11     #11a LazyPreNorm->w13 / #11b LazyPreNorm->router
+15:09:08           script  /home/shuhan/fusion/glm52_h200/bench/bench_f11_lazy_prenorm.py
+15:09:08           result  (none yet)
+15:09:08           timeout 10.0 h   note: #11a needs the 12 GB w13; fits here, unlike the 4060
+15:09:08   f06     #6  UpGate+SwiGLU
+15:09:08           script  /home/shuhan/fusion/glm52_h200/bench/bench_f06_upgate_swiglu.py
+15:09:08           result  (none yet)
+15:09:08           timeout 10.0 h   note: needs 256-expert w13 (12 GB)
+15:09:08   f08f09  #8  Down+ExpertMerge / #9 Down+Merge+ResAdd2
+15:09:08           script  /home/shuhan/fusion/glm52_h200/bench/bench_f08f09_down_merge_resadd.py
+15:09:08           result  (none yet)
+15:09:08           timeout 14.0 h   note: needs 256-expert w2 (6 GB); four variants x seven regimes
+15:09:08   layer   whole-layer combination benchmark
+15:09:08           script  /home/shuhan/fusion/glm52_h200/bench/bench_layer.py
+15:09:08           result  (none yet)
+15:09:08           timeout 16.0 h   note: LAST: most expensive; needs the whole 19.3 GB expert set resident
+15:09:08   no preflight_h200.json; running the preflight probe first (it is what every bench reads its hardware constants from).
+15:09:08     running preflight: /home/shuhan/miniconda3/bin/python3 /home/shuhan/fusion/glm52_h200/preflight.py --quick
+15:09:22     preflight exit=0, log -> /home/shuhan/fusion/log/run_h200/preflight.log
+15:09:22 ============================================================================================
+15:09:22 GLM-5.2 MoE fusion study -- H200 campaign
+15:09:22 ============================================================================================
+15:09:22   repo            /home/shuhan/fusion
+15:09:22   results dir     /home/shuhan/fusion/results/h200
+15:09:22   driver started  2026-08-03 15:09:22
+15:09:22 
+15:09:22   [device] NVIDIA GeForce RTX 4060 Laptop GPU  sm_89 | 24 SM | warp 32 | smem/block 101376 B | regs/SM 65536 | L2 32 MB | VRAM 8.0 GB
+15:09:22   [stack]  torch 2.11.0+cu130 (cuda 13.0) | triton 3.6.0
+15:09:22   [triton features, compiled AND launched] +baseline_elementwise +tl_dot_bf16 +warp_specialize_tl_range -warp_specialize_num_consumer_groups -tma_tensor_descriptor -thread_block_cluster_num_ctas
+15:09:22   [calib]  copy_1024MB_GBs=142  rmw_1024MB_GBs=144  read_1024MB_GBs=164   cublas_4096x16384x6144_TFs=12.1  triton_4096x16384x6144_TFs=12.0
+15:09:22   [calib]  launch 3.36 us | timer tick 1.024 us (measured by preflight)
+15:09:22   [capacity] expert weights 18.0 GB | fit=False | whole layer feasible=False
+15:09:22 
+15:09:22   [hwinfo@start] GPU0 NVIDIA GeForce RTX 4060 Laptop GPU | sm 1020/3105 MHz | mem 5501/8001 MHz | 65 C | 9.67/35 W | used 1201/8188 MiB | util 1% | pstate P4 | throttle 0x0000000000000001
+15:09:22 
+15:09:22 
+15:09:22 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+15:09:22 !! REFUSING TO RUN: this suite targets an NVIDIA H200 (sm_90) and found compute capability 8.9 (NVIDIA GeForce RTX 4060 Laptop GPU).
+15:09:22 !!
+15:09:22 !! Why this is fatal rather than a warning: the benches size their autotuning grids
+15:09:22 !! from the device probe, so on a different device they would produce a correct
+15:09:22 !! search over the WRONG hardware and write it into a file named 'h200'. A wrong-
+15:09:22 !! but-plausible table is worse than no table.
+15:09:22 !!
+15:09:22 !! If you know what you are doing (a dry run on a lab GPU, a stack smoke test):
+15:09:22 !!     python3 run_h200.py --force --results-dir results/<thisdevice>
+15:09:22 !! and do not merge the output into the H200 record.
+15:09:22 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

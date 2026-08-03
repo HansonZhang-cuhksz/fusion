@@ -23,9 +23,15 @@ up into a `combined` row, which is the only end-to-end-honest number:
 Charging the single norm kernel to F11a and to F11b separately (as glm52/traffic.py does)
 double-counts it; the combined row does not.
 
+**F11a is off by default here.**  Its two w13 weight buffers are 12.9 GB *each*; on an
+8 GB card the process died in `torch.empty` before a single F11b number existed.  So
+`--router-only` (the default) skips the whole w13 family -- grid, timings, checks and
+result rows alike, rather than emitting nulls -- and `--with-w13` restores it on a card
+that can hold ~26 GB of weights.  With F11a off the `combined` row is meaningless (it
+would just restate `f11b_router`), so it is omitted too.
+
 Run:
-    CUDA_VISIBLE_DEVICES=1 /home/zhangshuhan/my-envs/fusion/bin/python \
-        glm52/bench/bench_f11_lazy_prenorm.py [--quick]
+    python3 glm52/bench/bench_f11_lazy_prenorm.py [--quick]
 """
 
 from __future__ import annotations
@@ -57,7 +63,8 @@ from glm52.kernels import add_rmsnorm as NK  # noqa: E402
 from glm52.kernels import lazy_prenorm as K  # noqa: E402
 
 RESULT_ID = "f11_lazy_prenorm"
-SMEM_LIMIT = 65536
+SMEM_LIMIT = C.env().smem_bytes  # per-block opt-in ceiling; 101376 on sm89, 65536 on C500
+WARP = C.env().warp_size         # 32 on sm89, 64 on C500 -- every per-lane guard below
 H = C.HIDDEN_SIZE            # 6144
 I = C.MOE_INTERMEDIATE_SIZE  # 2048
 NW13 = C.W13_N               # 4096
@@ -81,9 +88,14 @@ REGIMES = [r for r in C.DECODE_REGIMES if r.T in (1, 32, 256)] + [
 def _ok(cfg: dict, max_bn: int, max_bm: int, acc_lo=2, acc_hi=128) -> bool:
     if cfg["BLOCK_N"] > max_bn or cfg["BLOCK_M"] > max_bm:
         return False
-    if K.smem_bytes(cfg) > SMEM_LIMIT:
+    # Triton 3.6 stages num_stages-1 mainloop buffers, not num_stages; K.smem_bytes still
+    # uses the 3.0 formula and over-predicts 1.33-1.5x, rejecting tiles that do fit.
+    smem = C.smem_stage_bytes(
+        cfg["BLOCK_M"], cfg["BLOCK_N"], cfg["BLOCK_K"], cfg["num_stages"]
+    )
+    if smem > SMEM_LIMIT:
         return False
-    acc_per_lane = cfg["BLOCK_M"] * cfg["BLOCK_N"] / (cfg["num_warps"] * 64)
+    acc_per_lane = cfg["BLOCK_M"] * cfg["BLOCK_N"] / (cfg["num_warps"] * WARP)
     return acc_lo <= acc_per_lane <= acc_hi
 
 
@@ -168,9 +180,10 @@ def rstd_grid() -> list[dict]:
     """Mapping space for the exploratory `rstd`-only reduction kernel."""
     out = []
     for b, r, w, s in itertools.product(
-        (1024, 2048, 4096, 8192), (1, 2, 4, 8), (2, 4, 8, 16), (1, 2)
+        (1024, 2048, 4096, 8192), (1, 2, 4, 8), (2, 4, 8, 16, 32), (1, 2)
     ):
-        if b * r > 65536 or not (2 <= b * r / (w * 64) <= 64):
+        # per-lane element count, not per-thread on a 64-lane warp: 106 -> 88 cfgs here
+        if b * r > 65536 or not (2 <= b * r / (w * WARP) <= 64):
             continue
         if b >= H and s > 2:
             continue
@@ -179,12 +192,18 @@ def rstd_grid() -> list[dict]:
 
 
 def norm_grid() -> list[dict]:
-    """F3's proven RMSNorm mapping space (a bonus search handed to the unfused side)."""
+    """F3's proven RMSNorm mapping space (a bonus search handed to the unfused side).
+
+    `threads` must use the real warp width: at 64 this grid admitted 152 configs, 28 of
+    them at a true 128 fp32/lane -- a guaranteed spill in the UNFUSED arm's only kernel,
+    which would manufacture a fused win at every regime.  At 32 it is 130 correct ones
+    (6 of which the old guard wrongly rejected).
+    """
     out = []
     for b, r, w, s in itertools.product(
-        (512, 1024, 2048, 4096, 8192), (1, 2, 4, 8), (1, 2, 4, 8, 16), (1, 2)
+        (512, 1024, 2048, 4096, 8192), (1, 2, 4, 8), (1, 2, 4, 8, 16, 32), (1, 2)
     ):
-        threads = w * 64
+        threads = w * WARP
         if b * r > 65536:
             continue
         epr = b * r / threads
@@ -254,6 +273,7 @@ class Problem:
         self.gate = gate
         self.b_raw, self.b_fold = b_raw, b_fold
         self.w13_raw, self.w13_fold = w13_raw, w13_fold
+        self.has_w13 = w13_raw is not None
 
         # x2 -- the materialized intermediate the unfused side needs.  Seeded with the
         # fp32 reference so the unfused GEMM has valid input during tuning; the real
@@ -261,14 +281,17 @@ class Problem:
         self.x2 = R.rmsnorm(self.h1, w_norm, EPS).contiguous()
 
         _, _, self.topk_ids = R.router(self.x2, gate)
-        self.layouts: dict[int, tuple] = {}
 
         self.logits_f = torch.zeros(T, E, device="cuda", dtype=torch.float32)
         self.logits_u = torch.zeros(T, E, device="cuda", dtype=torch.float32)
         self.logits_h = torch.zeros(T, E, device="cuda", dtype=torch.float32)
-        self.c_f = torch.zeros(self.rows, NW13, device="cuda", dtype=DT)
-        self.c_u = torch.zeros(self.rows, NW13, device="cuda", dtype=DT)
-        self.c_h = torch.zeros(self.rows, NW13, device="cuda", dtype=DT)
+        # F11a-only state: three [T*8, 4096] bf16 outputs, 512 MB EACH at T=8192, plus the
+        # moe_align layout cache.  Never touched under --router-only.
+        if self.has_w13:
+            self.layouts: dict[int, tuple] = {}
+            self.c_f = torch.zeros(self.rows, NW13, device="cuda", dtype=DT)
+            self.c_u = torch.zeros(self.rows, NW13, device="cuda", dtype=DT)
+            self.c_h = torch.zeros(self.rows, NW13, device="cuda", dtype=DT)
         self.x2_out = torch.empty_like(self.x2)
         self.rstd = torch.ones(T, device="cuda", dtype=torch.float32)
 
@@ -338,10 +361,13 @@ def kstats(fn):
 
 
 def clear_triton_cache():
-    dev = torch.cuda.current_device()
+    # Triton 3.x dropped JITFunction.cache for a per-device `device_caches` map; the old
+    # `.cache[dev]` raised AttributeError inside the bare except below, so every n_regs /
+    # n_spills came back as {"error": ...} -- exactly the diagnostic a half-size register
+    # file makes you need.
     for kern in (K.router_gemm_kernel, K.moe_gateup_prenorm_kernel):
         try:
-            kern.cache[dev].clear()
+            kern.device_caches.clear()
         except Exception:  # noqa: BLE001
             pass
 
@@ -351,6 +377,7 @@ def run_regime(prob: Problem, sq_mode: dict, norm_cfg_hint, quick: bool) -> dict
     reg = prob.regime
     T = reg.T
     big = T >= 2048
+    w13 = prob.has_w13  # False under --router-only: no F11a grid, timing, check or row
     if quick:
         w_t, r_t = 2, 5
     elif T >= 8192:
@@ -363,7 +390,8 @@ def run_regime(prob: Problem, sq_mode: dict, norm_cfg_hint, quick: bool) -> dict
         w_t, r_t = 10, 30
     w_f, r_f = (5, 20) if big else (25, 100)
 
-    print(f"\n===== {reg.name} (T={T}, moe rows={prob.rows}) =====", flush=True)
+    tag_w13 = f", moe rows={prob.rows}" if w13 else ", F11b only"
+    print(f"\n===== {reg.name} (T={T}{tag_w13}) =====", flush=True)
     out: dict = {"T": T, "regime": reg.name}
     tables: dict = {}
 
@@ -417,53 +445,58 @@ def run_regime(prob: Problem, sq_mode: dict, norm_cfg_hint, quick: bool) -> dict
     tables["router_unfused_joint"] = joint_r
 
     # =============================== F11a : w13 =======================================
-    mg = moe_grid(big)
-    if quick:
-        mg = mg[::7]
-    mf_c = autotune(lambda c: [prob.moe_fused(c, sq_mode["moe"])], mg, w_t, r_t)
-    mu_c = autotune(lambda c: [prob.moe_unfused(c)], mg, w_t, r_t)
-    mrf = refine(mf_c.best_cfg, 4096, 4096, acc_lo=4)
-    mru = refine(mu_c.best_cfg, 4096, 4096, acc_lo=4)
-    mf_r = autotune(lambda c: [prob.moe_fused(c, sq_mode["moe"])], mrf, w_t, r_t)
-    mu_r = autotune(lambda c: [prob.moe_unfused(c)], mru, w_t, r_t)
-    mo_f_cfg = mf_c.best_cfg if mf_c.best_ms <= mf_r.best_ms else mf_r.best_cfg
-    mo_u_cfg = mu_c.best_cfg if mu_c.best_ms <= mu_r.best_ms else mu_r.best_cfg
-    print(
-        f"  w13 fused  : coarse {mf_c.n_tried}({mf_c.n_failed}f) + refine "
-        f"{mf_r.n_tried}({mf_r.n_failed}f) -> {min(mf_c.best_ms, mf_r.best_ms):.4f} ms {mo_f_cfg}",
-        flush=True,
-    )
-    print(
-        f"  w13 unfused: coarse {mu_c.n_tried}({mu_c.n_failed}f) + refine "
-        f"{mu_r.n_tried}({mu_r.n_failed}f) -> {min(mu_c.best_ms, mu_r.best_ms):.4f} ms {mo_u_cfg}",
-        flush=True,
-    )
-    joint_m, best_m, best_pair_m = [], float("inf"), None
-    for gc in top_cfgs(mu_c.table, mu_r.table, k=3):
-        for nc in top_cfgs(tn.table, k=2):
-            try:
-                t = bench_chain(
-                    [prob.norm_fn(nc), prob.moe_unfused(gc, prob.x2_out)], w_t, r_t
-                )
-                joint_m.append(({"gemm": gc, "norm": nc}, t.p50_ms, None))
-                if t.p50_ms < best_m:
-                    best_m, best_pair_m = t.p50_ms, (gc, nc)
-            except Exception as exc:  # noqa: BLE001
-                joint_m.append(({"gemm": gc, "norm": nc}, None, str(exc)[:160]))
-    mo_u_gemm, mo_u_norm = best_pair_m
-    tables["moe_fused"] = {"coarse": mf_c.as_dict(), "refine": mf_r.as_dict()}
-    tables["moe_unfused"] = {"coarse": mu_c.as_dict(), "refine": mu_r.as_dict()}
-    tables["moe_unfused_joint"] = joint_m
+    if w13:
+        mg = moe_grid(big)
+        if quick:
+            mg = mg[::7]
+        mf_c = autotune(lambda c: [prob.moe_fused(c, sq_mode["moe"])], mg, w_t, r_t)
+        mu_c = autotune(lambda c: [prob.moe_unfused(c)], mg, w_t, r_t)
+        mrf = refine(mf_c.best_cfg, 4096, 4096, acc_lo=4)
+        mru = refine(mu_c.best_cfg, 4096, 4096, acc_lo=4)
+        mf_r = autotune(lambda c: [prob.moe_fused(c, sq_mode["moe"])], mrf, w_t, r_t)
+        mu_r = autotune(lambda c: [prob.moe_unfused(c)], mru, w_t, r_t)
+        mo_f_cfg = mf_c.best_cfg if mf_c.best_ms <= mf_r.best_ms else mf_r.best_cfg
+        mo_u_cfg = mu_c.best_cfg if mu_c.best_ms <= mu_r.best_ms else mu_r.best_cfg
+        print(
+            f"  w13 fused  : coarse {mf_c.n_tried}({mf_c.n_failed}f) + refine "
+            f"{mf_r.n_tried}({mf_r.n_failed}f) -> {min(mf_c.best_ms, mf_r.best_ms):.4f} ms {mo_f_cfg}",
+            flush=True,
+        )
+        print(
+            f"  w13 unfused: coarse {mu_c.n_tried}({mu_c.n_failed}f) + refine "
+            f"{mu_r.n_tried}({mu_r.n_failed}f) -> {min(mu_c.best_ms, mu_r.best_ms):.4f} ms {mo_u_cfg}",
+            flush=True,
+        )
+        joint_m, best_m, best_pair_m = [], float("inf"), None
+        for gc in top_cfgs(mu_c.table, mu_r.table, k=3):
+            for nc in top_cfgs(tn.table, k=2):
+                try:
+                    t = bench_chain(
+                        [prob.norm_fn(nc), prob.moe_unfused(gc, prob.x2_out)], w_t, r_t
+                    )
+                    joint_m.append(({"gemm": gc, "norm": nc}, t.p50_ms, None))
+                    if t.p50_ms < best_m:
+                        best_m, best_pair_m = t.p50_ms, (gc, nc)
+                except Exception as exc:  # noqa: BLE001
+                    joint_m.append(({"gemm": gc, "norm": nc}, None, str(exc)[:160]))
+        mo_u_gemm, mo_u_norm = best_pair_m
+        tables["moe_fused"] = {"coarse": mf_c.as_dict(), "refine": mf_r.as_dict()}
+        tables["moe_unfused"] = {"coarse": mu_c.as_dict(), "refine": mu_r.as_dict()}
+        tables["moe_unfused_joint"] = joint_m
 
     # ============ EXPLORATORY: "half-fused" (rstd kernel + epilogue scale) ============
     # Not part of the fused-vs-unfused headline.  It is the third point on the design
     # axis: 2/3 of the byte saving, with a k-loop identical to the unfused GEMM.
     tr_rstd = autotune(prob.rstd_fn, rstd_grid()[:: (6 if quick else 1)], w_t, r_t)
     half = {}
-    for tag, mk, gcfgs in (
-        ("router", prob.router_half, top_cfgs(tu_c.table, tu_r.table, tf_c.table, k=3)),
-        ("moe", prob.moe_half, top_cfgs(mu_c.table, mu_r.table, mf_c.table, k=3)),
-    ):
+    half_fams = [
+        ("router", prob.router_half, top_cfgs(tu_c.table, tu_r.table, tf_c.table, k=3))
+    ]
+    if w13:
+        half_fams.append(
+            ("moe", prob.moe_half, top_cfgs(mu_c.table, mu_r.table, mf_c.table, k=3))
+        )
+    for tag, mk, gcfgs in half_fams:
         best, bcfg, tab = float("inf"), None, []
         for gc in gcfgs:
             try:
@@ -483,16 +516,18 @@ def run_regime(prob: Problem, sq_mode: dict, norm_cfg_hint, quick: bool) -> dict
     )
 
     # ================================ validate =======================================
-    prob.logits_f.zero_(); prob.logits_u.zero_()
-    prob.c_f.zero_(); prob.c_u.zero_(); prob.x2_out.zero_()
+    prob.logits_f.zero_(); prob.logits_u.zero_(); prob.x2_out.zero_()
     prob.norm_fn(rt_u_norm)()
     prob.router_fused(rt_f_cfg, sq_mode["router"])()
     prob.router_unfused(rt_u_gemm, prob.x2_out)()
-    prob.moe_fused(mo_f_cfg, sq_mode["moe"])()
-    prob.moe_unfused(mo_u_gemm, prob.x2_out)()
+    if w13:
+        prob.c_f.zero_(); prob.c_u.zero_()
+        prob.moe_fused(mo_f_cfg, sq_mode["moe"])()
+        prob.moe_unfused(mo_u_gemm, prob.x2_out)()
     prob.rstd_fn(tr_rstd.best_cfg)()
     prob.router_half(half["router"]["cfg"])()
-    prob.moe_half(half["moe"]["cfg"])()
+    if w13:
+        prob.moe_half(half["moe"]["cfg"])()
     torch.cuda.synchronize()
 
     chk = {}
@@ -519,20 +554,25 @@ def run_regime(prob: Problem, sq_mode: dict, norm_cfg_hint, quick: bool) -> dict
     )
 
     chk["router_half"] = check(prob.logits_h, ref_router, label="router_half_fused")
-    idx, ref_moe = reference_rows(prob)
-    chk["moe_fused"] = check(prob.c_f[idx], ref_moe, label="moe_fused")
-    chk["moe_unfused"] = check(prob.c_u[idx], ref_moe, label="moe_unfused")
-    chk["moe_half"] = check(prob.c_h[idx], ref_moe, label="moe_half_fused")
-    for kk in (
-        "x2", "router_fused", "router_unfused", "router_half",
-        "moe_fused", "moe_unfused", "moe_half",
-    ):
+    must = ["x2", "router_fused", "router_unfused", "router_half"]
+    if w13:
+        idx, ref_moe = reference_rows(prob)
+        chk["moe_fused"] = check(prob.c_f[idx], ref_moe, label="moe_fused")
+        chk["moe_unfused"] = check(prob.c_u[idx], ref_moe, label="moe_unfused")
+        chk["moe_half"] = check(prob.c_h[idx], ref_moe, label="moe_half_fused")
+        must += ["moe_fused", "moe_unfused", "moe_half"]
+    for kk in must:
         if not chk[kk]["ok"]:
             raise RuntimeError(f"validation failed at {reg.name}: {kk} {chk[kk]}")
+    w13_err = (
+        f"w13 f={chk['moe_fused']['rel_err']:.2e} "
+        f"u={chk['moe_unfused']['rel_err']:.2e} | "
+        if w13
+        else ""
+    )
     print(
         f"  rel_err  router f={chk['router_fused']['rel_err']:.2e} "
-        f"u={chk['router_unfused']['rel_err']:.2e} | "
-        f"w13 f={chk['moe_fused']['rel_err']:.2e} u={chk['moe_unfused']['rel_err']:.2e} | "
+        f"u={chk['router_unfused']['rel_err']:.2e} | " + w13_err +
         f"topk agree {chk['topk_id_agreement']*100:.2f}%",
         flush=True,
     )
@@ -545,56 +585,59 @@ def run_regime(prob: Problem, sq_mode: dict, norm_cfg_hint, quick: bool) -> dict
     )
     t_rt_gemm = bench_chain([prob.router_unfused(rt_u_gemm, prob.x2_out)], w_f, r_f)
 
-    t_mo_f = bench_chain([prob.moe_fused(mo_f_cfg, sq_mode["moe"])], w_f, r_f)
-    t_mo_u = bench_chain(
-        [prob.norm_fn(mo_u_norm), prob.moe_unfused(mo_u_gemm, prob.x2_out)], w_f, r_f
-    )
-    t_mo_gemm = bench_chain([prob.moe_unfused(mo_u_gemm, prob.x2_out)], w_f, r_f)
+    if w13:
+        t_mo_f = bench_chain([prob.moe_fused(mo_f_cfg, sq_mode["moe"])], w_f, r_f)
+        t_mo_u = bench_chain(
+            [prob.norm_fn(mo_u_norm), prob.moe_unfused(mo_u_gemm, prob.x2_out)], w_f, r_f
+        )
+        t_mo_gemm = bench_chain([prob.moe_unfused(mo_u_gemm, prob.x2_out)], w_f, r_f)
 
     t_rstd = bench_chain([prob.rstd_fn(tr_rstd.best_cfg)], w_f, r_f)
     t_rt_h = bench_chain(
         [prob.rstd_fn(tr_rstd.best_cfg), prob.router_half(half["router"]["cfg"])],
         w_f, r_f,
     )
-    t_mo_h = bench_chain(
-        [prob.rstd_fn(tr_rstd.best_cfg), prob.moe_half(half["moe"]["cfg"])], w_f, r_f
-    )
-    t_comb_h = bench_chain(
-        [
-            prob.rstd_fn(tr_rstd.best_cfg),
-            prob.router_half(half["router"]["cfg"]),
-            prob.moe_half(half["moe"]["cfg"]),
-        ],
-        w_f, r_f,
-    )
+    if w13:
+        t_mo_h = bench_chain(
+            [prob.rstd_fn(tr_rstd.best_cfg), prob.moe_half(half["moe"]["cfg"])], w_f, r_f
+        )
+        t_comb_h = bench_chain(
+            [
+                prob.rstd_fn(tr_rstd.best_cfg),
+                prob.router_half(half["router"]["cfg"]),
+                prob.moe_half(half["moe"]["cfg"]),
+            ],
+            w_f, r_f,
+        )
 
-    # combined end-to-end: ONE norm kernel serves both consumers
-    t_comb_f = bench_chain(
-        [
-            prob.router_fused(rt_f_cfg, sq_mode["router"]),
-            prob.moe_fused(mo_f_cfg, sq_mode["moe"]),
-        ],
-        w_f,
-        r_f,
-    )
-    t_comb_u = bench_chain(
-        [
-            prob.norm_fn(norm_cfg),
-            prob.router_unfused(rt_u_gemm, prob.x2_out),
-            prob.moe_unfused(mo_u_gemm, prob.x2_out),
-        ],
-        w_f,
-        r_f,
-    )
+        # combined end-to-end: ONE norm kernel serves both consumers.  With only one
+        # consumer left it degenerates to f11b_router, so it is not measured or reported.
+        t_comb_f = bench_chain(
+            [
+                prob.router_fused(rt_f_cfg, sq_mode["router"]),
+                prob.moe_fused(mo_f_cfg, sq_mode["moe"]),
+            ],
+            w_f,
+            r_f,
+        )
+        t_comb_u = bench_chain(
+            [
+                prob.norm_fn(norm_cfg),
+                prob.router_unfused(rt_u_gemm, prob.x2_out),
+                prob.moe_unfused(mo_u_gemm, prob.x2_out),
+            ],
+            w_f,
+            r_f,
+        )
 
     # ---- ISOLATION: same config, same buffers, FUSE_NORM on vs off.  There is NO extra
     # input tensor in this fusion, so this is a pure instruction-cost measurement (the
     # analogue of F1's stride-0-broadcast trick, only exact).
     iso = {}
-    for tag, cfg, mk in (
-        ("router", rt_f_cfg, prob.router_fused),
-        ("moe", mo_f_cfg, prob.moe_fused),
-    ):
+    iso_fams = [("router", rt_f_cfg, prob.router_fused)]
+    if w13:
+        iso_fams.append(("moe", mo_f_cfg, prob.moe_fused))
+    for tag, cfg, mk in iso_fams:
         on = bench_chain([mk(cfg, sq_mode[tag])], w_f, r_f)
         off_fn = (
             (lambda: K.launch_router(prob.h1, prob.b_fold, prob.logits_f, cfg, False, EPS))
@@ -617,12 +660,13 @@ def run_regime(prob: Problem, sq_mode: dict, norm_cfg_hint, quick: bool) -> dict
     regs["router_unfused_at_fused_cfg"] = kstats(
         lambda: K.launch_router(prob.x2, prob.b_raw, prob.logits_u, rt_f_cfg, False, EPS)
     )
-    clear_triton_cache()
-    regs["moe_fused"] = kstats(prob.moe_fused(mo_f_cfg, sq_mode["moe"]))
-    clear_triton_cache()
-    regs["moe_unfused"] = kstats(prob.moe_unfused(mo_u_gemm, prob.x2_out))
-    clear_triton_cache()
-    regs["moe_unfused_at_fused_cfg"] = kstats(prob.moe_unfused_same(mo_f_cfg))
+    if w13:
+        clear_triton_cache()
+        regs["moe_fused"] = kstats(prob.moe_fused(mo_f_cfg, sq_mode["moe"]))
+        clear_triton_cache()
+        regs["moe_unfused"] = kstats(prob.moe_unfused(mo_u_gemm, prob.x2_out))
+        clear_triton_cache()
+        regs["moe_unfused_at_fused_cfg"] = kstats(prob.moe_unfused_same(mo_f_cfg))
 
     # ---- vendor BLAS reference lines ----------------------------------------------
     t_blas_router = bench_chain(
@@ -633,27 +677,31 @@ def run_regime(prob: Problem, sq_mode: dict, norm_cfg_hint, quick: bool) -> dict
         max(2, w_f // 3),
         max(5, r_f // 3),
     )
-    t_blas_moe = bench_chain(
-        vendor_moe_chain(prob), max(2, w_f // 3), max(5, r_f // 3)
-    )
-    t_blas_moe_dense = bench_chain(
-        [lambda: torch.matmul(prob.x2, prob.w13_raw[0].t())],
-        max(2, w_f // 3),
-        max(5, r_f // 3),
-    )
+    if w13:
+        t_blas_moe = bench_chain(
+            vendor_moe_chain(prob), max(2, w_f // 3), max(5, r_f // 3)
+        )
+        t_blas_moe_dense = bench_chain(
+            [lambda: torch.matmul(prob.x2, prob.w13_raw[0].t())],
+            max(2, w_f // 3),
+            max(5, r_f // 3),
+        )
 
     # ---- redundancy / traffic bookkeeping ------------------------------------------
     rt_ntiles = triton.cdiv(E, rt_f_cfg["BLOCK_N"])
-    mo_ntiles = triton.cdiv(NW13, mo_f_cfg["BLOCK_N"])
     act = T * H * 2
     f_router = 2.0 * T * H * E
-    f_moe = 2.0 * prob.rows * H * NW13
+    if w13:
+        mo_ntiles = triton.cdiv(NW13, mo_f_cfg["BLOCK_N"])
+        f_moe = 2.0 * prob.rows * H * NW13
     tmodel = {t.fusion: t.row() for t in TR.model(reg)}
 
+    # Every F11a-derived key is OMITTED under --router-only rather than emitted as null:
+    # a null in a speedup column silently corrupts the comparison table downstream.
     row = {
         "regime": reg.name,
         "T": T,
-        "moe_rows": prob.rows,
+        "family": "f11b_only" if not w13 else "f11a+f11b",
         # ---- F11b router -------------------------------------------------------
         "f11b_router": speedup_row(
             reg.name, t_rt_f, t_rt_u,
@@ -678,8 +726,33 @@ def run_regime(prob: Problem, sq_mode: dict, norm_cfg_hint, quick: bool) -> dict
                 "bytes_unfused": 2 * act + act + H * E * 2 + T * E * 4,
             },
         ),
-        # ---- F11a w13 ----------------------------------------------------------
-        "f11a_w13": speedup_row(
+        # ---- exploratory half-fused (rstd kernel + epilogue scale) -------------
+        "half_fused": {
+            "note": "EXPLORATORY, not the headline: rstd from a tiny reduction kernel, "
+            "applied as a pure epilogue scale. 2 activation passes vs the unfused "
+            "side's 3 and the fused side's 1; GEMM k-loop identical to unfused.",
+            "rstd_cfg": tr_rstd.best_cfg,
+            "rstd_only_ms": t_rstd.p50_ms,
+            "router_cfg": half["router"]["cfg"],
+            "router_ms": t_rt_h.p50_ms,
+            "router_speedup_vs_unfused": t_rt_u.p50_ms / t_rt_h.p50_ms,
+            "rel_err_router": chk["router_half"]["rel_err"],
+        },
+        "isolation_fuse_on_vs_off_same_cfg": iso,
+        "kernel_stats": regs,
+        "checks": chk,
+        "grid_sizes": {
+            "router_coarse_fused": tf_c.n_tried,
+            "router_coarse_unfused": tu_c.n_tried,
+            "router_refine_fused": tf_r.n_tried,
+            "router_refine_unfused": tu_r.n_tried,
+            "norm": tn.n_tried,
+        },
+    }
+    if w13:
+        row["moe_rows"] = prob.rows
+        # ---- F11a w13 ------------------------------------------------------------
+        row["f11a_w13"] = speedup_row(
             reg.name, t_mo_f, t_mo_u,
             {
                 "fused_cfg": mo_f_cfg,
@@ -704,9 +777,9 @@ def run_regime(prob: Problem, sq_mode: dict, norm_cfg_hint, quick: bool) -> dict
                 "fused_noflush_ms": t_mo_f.noflush_p50_ms,
                 "unfused_noflush_ms": t_mo_u.noflush_p50_ms,
             },
-        ),
-        # ---- combined (the honest end-to-end number) --------------------------
-        "combined": speedup_row(
+        )
+        # ---- combined (the honest end-to-end number) ----------------------------
+        row["combined"] = speedup_row(
             reg.name, t_comb_f, t_comb_u,
             {
                 "note": "unfused = 1 norm + router GEMM + w13 GEMM; "
@@ -715,69 +788,67 @@ def run_regime(prob: Problem, sq_mode: dict, norm_cfg_hint, quick: bool) -> dict
                 "fused_noflush_ms": t_comb_f.noflush_p50_ms,
                 "unfused_noflush_ms": t_comb_u.noflush_p50_ms,
             },
-        ),
-        # ---- exploratory half-fused (rstd kernel + epilogue scale) -------------
-        "half_fused": {
-            "note": "EXPLORATORY, not the headline: rstd from a tiny reduction kernel, "
-            "applied as a pure epilogue scale. 2 activation passes vs the unfused "
-            "side's 3 and the fused side's 1; GEMM k-loop identical to unfused.",
-            "rstd_cfg": tr_rstd.best_cfg,
-            "rstd_only_ms": t_rstd.p50_ms,
-            "router_cfg": half["router"]["cfg"],
-            "router_ms": t_rt_h.p50_ms,
-            "router_speedup_vs_unfused": t_rt_u.p50_ms / t_rt_h.p50_ms,
-            "moe_cfg": half["moe"]["cfg"],
-            "moe_ms": t_mo_h.p50_ms,
-            "moe_speedup_vs_unfused": t_mo_u.p50_ms / t_mo_h.p50_ms,
-            "combined_ms": t_comb_h.p50_ms,
-            "combined_speedup_vs_unfused": t_comb_u.p50_ms / t_comb_h.p50_ms,
-            "rel_err_router": chk["router_half"]["rel_err"],
-            "rel_err_moe": chk["moe_half"]["rel_err"],
-        },
-        "isolation_fuse_on_vs_off_same_cfg": iso,
-        "kernel_stats": regs,
-        "checks": chk,
-        "grid_sizes": {
-            "router_coarse_fused": tf_c.n_tried,
-            "router_coarse_unfused": tu_c.n_tried,
-            "router_refine_fused": tf_r.n_tried,
-            "router_refine_unfused": tu_r.n_tried,
-            "moe_coarse_fused": mf_c.n_tried,
-            "moe_coarse_unfused": mu_c.n_tried,
-            "moe_refine_fused": mf_r.n_tried,
-            "moe_refine_unfused": mu_r.n_tried,
-            "norm": tn.n_tried,
-        },
-    }
+        )
+        row["half_fused"].update(
+            {
+                "moe_cfg": half["moe"]["cfg"],
+                "moe_ms": t_mo_h.p50_ms,
+                "moe_speedup_vs_unfused": t_mo_u.p50_ms / t_mo_h.p50_ms,
+                "combined_ms": t_comb_h.p50_ms,
+                "combined_speedup_vs_unfused": t_comb_u.p50_ms / t_comb_h.p50_ms,
+                "rel_err_moe": chk["moe_half"]["rel_err"],
+            }
+        )
+        row["grid_sizes"].update(
+            {
+                "moe_coarse_fused": mf_c.n_tried,
+                "moe_coarse_unfused": mu_c.n_tried,
+                "moe_refine_fused": mf_r.n_tried,
+                "moe_refine_unfused": mu_r.n_tried,
+            }
+        )
     print(
         f"  F11b router : fused {t_rt_f.p50_ms:.4f} | unfused {t_rt_u.p50_ms:.4f} "
         f"-> {row['f11b_router']['speedup']:.3f}x  (ceiling "
         f"{row['f11b_router']['ceiling']:.2f}x)",
         flush=True,
     )
-    print(
-        f"  F11a w13    : fused {t_mo_f.p50_ms:.4f} | unfused {t_mo_u.p50_ms:.4f} "
-        f"-> {row['f11a_w13']['speedup']:.3f}x  (ceiling "
-        f"{row['f11a_w13']['ceiling']:.2f}x)",
-        flush=True,
-    )
-    print(
-        f"  combined    : fused {t_comb_f.p50_ms:.4f} | unfused {t_comb_u.p50_ms:.4f} "
-        f"-> {row['combined']['speedup']:.3f}x",
-        flush=True,
-    )
-    print(
-        f"  half-fused  : router {t_rt_h.p50_ms:.4f} "
-        f"({t_rt_u.p50_ms/t_rt_h.p50_ms:.3f}x) | w13 {t_mo_h.p50_ms:.4f} "
-        f"({t_mo_u.p50_ms/t_mo_h.p50_ms:.3f}x) | combined {t_comb_h.p50_ms:.4f} "
-        f"({t_comb_u.p50_ms/t_comb_h.p50_ms:.3f}x)   [exploratory]",
-        flush=True,
-    )
-    print(
-        f"  isolation   : router +{iso['router']['instruction_cost_pct']:.2f}% | "
-        f"w13 +{iso['moe']['instruction_cost_pct']:.2f}%   (same cfg, FUSE_NORM on/off)",
-        flush=True,
-    )
+    if w13:
+        print(
+            f"  F11a w13    : fused {t_mo_f.p50_ms:.4f} | unfused {t_mo_u.p50_ms:.4f} "
+            f"-> {row['f11a_w13']['speedup']:.3f}x  (ceiling "
+            f"{row['f11a_w13']['ceiling']:.2f}x)",
+            flush=True,
+        )
+        print(
+            f"  combined    : fused {t_comb_f.p50_ms:.4f} | unfused {t_comb_u.p50_ms:.4f} "
+            f"-> {row['combined']['speedup']:.3f}x",
+            flush=True,
+        )
+    if w13:
+        print(
+            f"  half-fused  : router {t_rt_h.p50_ms:.4f} "
+            f"({t_rt_u.p50_ms/t_rt_h.p50_ms:.3f}x) | w13 {t_mo_h.p50_ms:.4f} "
+            f"({t_mo_u.p50_ms/t_mo_h.p50_ms:.3f}x) | combined {t_comb_h.p50_ms:.4f} "
+            f"({t_comb_u.p50_ms/t_comb_h.p50_ms:.3f}x)   [exploratory]",
+            flush=True,
+        )
+        print(
+            f"  isolation   : router +{iso['router']['instruction_cost_pct']:.2f}% | "
+            f"w13 +{iso['moe']['instruction_cost_pct']:.2f}%   (same cfg, FUSE_NORM on/off)",
+            flush=True,
+        )
+    else:
+        print(
+            f"  half-fused  : router {t_rt_h.p50_ms:.4f} "
+            f"({t_rt_u.p50_ms/t_rt_h.p50_ms:.3f}x)   [exploratory]",
+            flush=True,
+        )
+        print(
+            f"  isolation   : router +{iso['router']['instruction_cost_pct']:.2f}%"
+            f"   (same cfg, FUSE_NORM on/off)",
+            flush=True,
+        )
     return row, tables, norm_cfg
 
 
@@ -862,10 +933,10 @@ def sq_study(prob: Problem) -> tuple[dict, list]:
     ]
     modes = (0, 1, 2, 3)
     tab, pick = [], {}
-    for tag, cfgs, mk in (
-        ("router", cfgs_r, prob.router_fused),
-        ("moe", cfgs_m, prob.moe_fused),
-    ):
+    fams = [("router", cfgs_r, prob.router_fused)]
+    if prob.has_w13:
+        fams.append(("moe", cfgs_m, prob.moe_fused))
+    for tag, cfgs, mk in fams:
         times: dict[int, dict[int, float]] = {m: {} for m in modes}
         for ci, cfg in enumerate(cfgs):
             for m in modes:
@@ -894,6 +965,17 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--quick", action="store_true")
     ap.add_argument("--regimes", default="")
+    # F11a's two w13 buffers are 12.9 GB EACH -- make_w13 died in torch.empty before any
+    # F11b number existed.  Default to F11b only; --with-w13 restores F11a on a card that
+    # can hold ~26 GB of weights.
+    ap.add_argument(
+        "--router-only", action="store_true", default=True,
+        help="F11b only: skip F11a's w13 GEMM and its 2 x 12.9 GB of weights (default)",
+    )
+    ap.add_argument(
+        "--with-w13", dest="router_only", action="store_false",
+        help="also run F11a; needs ~26 GB of VRAM for the w13 weights alone",
+    )
     args = ap.parse_args()
 
     env = C.BenchEnv.probe()
@@ -904,12 +986,17 @@ def main() -> None:
     gate = (torch.randn(E, H, device="cuda", dtype=torch.float32) * 0.02).to(DT)
     b_raw = gate.t().contiguous()                                  # [H, E]
     b_fold = K.fold_weight_nk(gate, w_norm).t().contiguous()       # [H, E], w folded
-    print("building w13 (raw + folded, 2 x 12.9 GB)...", flush=True)
-    t0 = time.time()
-    _rb, w13_raw, _fb, w13_fold = make_w13(w_norm)
-    print(f"  done in {time.time()-t0:.0f}s", flush=True)
+    w13_raw = w13_fold = None
+    if not args.router_only:
+        print("building w13 (raw + folded, 2 x 12.9 GB)...", flush=True)
+        t0 = time.time()
+        _rb, w13_raw, _fb, w13_fold = make_w13(w_norm)
+        print(f"  done in {time.time()-t0:.0f}s", flush=True)
+    else:
+        print("--router-only: F11a w13 skipped (2 x 12.9 GB not allocated)", flush=True)
 
     # ---- validate the folding identity itself, once, outside all timing --------------
+    fold_err13 = None
     with torch.no_grad():
         hh = (torch.randn(64, H, device="cuda", dtype=torch.float32) * 0.5).to(DT)
         x2h = R.rmsnorm(hh, w_norm, EPS)
@@ -918,11 +1005,13 @@ def main() -> None:
         rstd = torch.rsqrt(hf.pow(2).mean(-1, keepdim=True) + EPS)
         rhs = (hf @ b_fold.float()) * rstd
         fold_err = rel_err(rhs, lhs)
-        lhs13 = x2h.float() @ w13_raw[3].float().t()
-        rhs13 = (hf @ w13_fold[3].float().t()) * rstd
-        fold_err13 = rel_err(rhs13, lhs13)
+        if w13_raw is not None:
+            lhs13 = x2h.float() @ w13_raw[3].float().t()
+            rhs13 = (hf @ w13_fold[3].float().t()) * rstd
+            fold_err13 = rel_err(rhs13, lhs13)
     print(
-        f"folding identity: router rel_err {fold_err:.3e}, w13 rel_err {fold_err13:.3e}",
+        f"folding identity: router rel_err {fold_err:.3e}"
+        + (f", w13 rel_err {fold_err13:.3e}" if fold_err13 is not None else ""),
         flush=True,
     )
 
@@ -968,7 +1057,14 @@ def main() -> None:
                     "affine_handling": "((A*rstd)*w) @ B == (A @ (w[:,None]*B)) * rstd; "
                     "w folded into the GEMM weight OFFLINE (load-time transform)",
                     "fold_rel_err_router": fold_err,
-                    "fold_rel_err_w13": fold_err13,
+                    **({} if fold_err13 is None else {"fold_rel_err_w13": fold_err13}),
+                },
+                "scope": {
+                    "router_only": args.router_only,
+                    "why": "F11a's w13 weights are 2 x 12.9 GB; they do not fit alongside "
+                    "the activations on this card, so F11a is out of scope for this run "
+                    "and every f11a_w13 / combined key is OMITTED (not null) from the "
+                    "rows. Pass --with-w13 on a card with ~26 GB spare to restore it.",
                 },
                 "x2_materialization": {
                     "choice": "(ii) fuse ALL K==6144 consumers; x2 is never materialized",
@@ -977,7 +1073,9 @@ def main() -> None:
                     "shared expert is the identical transform on a 1-expert weight. The "
                     "`combined` row charges ONE norm kernel to the unfused side, which is "
                     "what the real layer pays -- the per-family rows double-count it, "
-                    "matching glm52/traffic.py's per-family model.",
+                    "matching glm52/traffic.py's per-family model. Under --router-only "
+                    "only the router is measured, so `combined` would restate f11b_router "
+                    "and is omitted.",
                 },
                 "sq_mode_study": {"pick": sq_pick, "table": sq_tab},
                 "fairness": {
@@ -992,8 +1090,8 @@ def main() -> None:
                     "winner, so their sizes can differ by a few configs; all counts are "
                     "recorded per regime in grid_sizes.",
                     "unfused_bonus": "the unfused side additionally gets (a) an independent "
-                    "search over the RMSNorm kernel's own 152-config space and (b) a joint "
-                    "chain re-tune over top-3 GEMM x top-3 norm configs",
+                    f"search over the RMSNorm kernel's own {len(norm_grid())}-config space "
+                    "and (b) a joint chain re-tune over top-3 GEMM x top-3 norm configs",
                 },
                 "env": env.__dict__,
                 "rows": rows,
@@ -1012,16 +1110,22 @@ def main() -> None:
 
     snapshot(True)
     print(f"\nwrote results/{RESULT_ID}.json\n", flush=True)
-    hdr = f"{'regime':<16}{'F11b rt':>9}{'ceil':>7}{'F11a w13':>10}{'ceil':>7}{'combined':>10}"
+    hdr = f"{'regime':<16}{'F11b rt':>9}{'ceil':>7}"
+    if not args.router_only:
+        hdr += f"{'F11a w13':>10}{'ceil':>7}{'combined':>10}"
     print(hdr)
     for r in rows:
-        print(
+        line = (
             f"{r['regime']:<16}{r['f11b_router']['speedup']:>9.3f}"
             f"{r['f11b_router']['ceiling']:>7.2f}"
-            f"{r['f11a_w13']['speedup']:>10.3f}"
-            f"{r['f11a_w13']['ceiling']:>7.2f}"
-            f"{r['combined']['speedup']:>10.3f}"
         )
+        if "f11a_w13" in r:
+            line += (
+                f"{r['f11a_w13']['speedup']:>10.3f}"
+                f"{r['f11a_w13']['ceiling']:>7.2f}"
+                f"{r['combined']['speedup']:>10.3f}"
+            )
+        print(line)
 
 
 if __name__ == "__main__":

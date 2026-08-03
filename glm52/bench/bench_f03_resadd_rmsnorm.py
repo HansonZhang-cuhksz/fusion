@@ -8,8 +8,7 @@ Bandwidth ceiling = 5/4 = 1.25x.  Both sides materialize BOTH live outputs (h1 i
 next block's residual, x2 feeds the router / MoE), so no work is skipped.
 
 Run:
-    CUDA_VISIBLE_DEVICES=3 /home/zhangshuhan/my-envs/fusion/bin/python \
-        glm52/bench/bench_f03_resadd_rmsnorm.py
+    GLM52_RESULTS_DIR=results/rtx4060 python3 glm52/bench/bench_f03_resadd_rmsnorm.py
 """
 
 from __future__ import annotations
@@ -17,8 +16,9 @@ from __future__ import annotations
 import itertools
 import sys
 import time
+from pathlib import Path
 
-sys.path.insert(0, "/home/zhangshuhan/fusion")
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import torch
 
@@ -47,10 +47,17 @@ REGIMES = [r for r in C.DECODE_REGIMES if r.T in (1, 32, 256)] + [
 # --------------------------------------------------------------------------------------
 # mapping search space
 # --------------------------------------------------------------------------------------
+WARP = C.env().warp_size  # lanes per warp: 32 on sm89, 64 on C500
+_SM = C.env().num_sm
+# persistent-grid rungs in whole waves of the device, so the knob is actually evaluated at
+# a balanced grid: [24,48,96,192,384] here, [104,208,...] on C500's 104 CUs.
+CAPS = [_SM * m for m in (1, 2, 4, 8, 16)]
+
+
 def _valid(cfg: dict) -> bool:
     b, r, w = cfg["BLOCK_N"], cfg["ROWS"], cfg["num_warps"]
-    threads = w * 64
-    if b * r > 65536:
+    threads = w * WARP
+    if b * r > 65536:  # elements per program, not bytes: 1024 threads x 64 elem/thread
         return False
     epr = b * r / threads  # elements per thread per tile
     if epr < 2 or epr > 64:
@@ -66,8 +73,11 @@ def coarse_grid() -> list[dict]:
     BLOCK_N=8192 and the multi-pass BLOCK_N in {512..4096}), rows/program, warps, stages.
     Non-persistent grid (one program per row-block)."""
     out = []
+    # the warp ladder tops out at 32 so a CTA still spans 32..1024 threads at warp 32;
+    # keeping C500's max of 16 would cost the widest tiles 30-40% of their configs
+    # (BLOCK_N=8192: 20 -> 12) because epr <= 64 binds first with half the lanes
     for b, r, w, s in itertools.product(
-        (512, 1024, 2048, 4096, 8192), (1, 2, 4, 8), (1, 2, 4, 8, 16), (1, 2)
+        (512, 1024, 2048, 4096, 8192), (1, 2, 4, 8), (1, 2, 4, 8, 16, 32), (1, 2)
     ):
         cfg = dict(
             ROWS=r, BLOCK_N=b, num_warps=w, num_stages=s, grid_cap=None, eps=EPS
@@ -83,7 +93,7 @@ def refine_grid(best: dict) -> list[dict]:
     of every one of them."""
     blocks = [512, 1024, 2048, 4096, 8192]
     rows = [1, 2, 4, 8, 16]
-    warps = [1, 2, 4, 8, 16]
+    warps = [1, 2, 4, 8, 16, 32]  # must contain every warp count coarse_grid can win with
     bi, ri, wi = (
         blocks.index(best["BLOCK_N"]),
         rows.index(best["ROWS"]),
@@ -118,7 +128,7 @@ def refine_grid(best: dict) -> list[dict]:
             seen.add(key)
             out.append(cfg)
     # (c) persistent grid at the winning shape and its +-1 row neighbours
-    for cap, r in itertools.product((104, 208, 416, 832, 1664), nr):
+    for cap, r in itertools.product(CAPS, nr):
         cfg = dict(best)
         cfg["ROWS"] = r
         cfg["grid_cap"] = cap
@@ -276,6 +286,11 @@ def run_regime(regime, warmup_t, rep_t, warmup_f, rep_f) -> dict:
     b_fused = T * row_bytes * 4  # x, res in; h1, x2 out
     b_unfused = T * row_bytes * 5  # + h1 write/read round trip
     gbps = lambda b, ms: b / (ms * 1e-3) / 1e9
+    # the 5/4 model counts DRAM traffic. The round trip the fusion removes is h1, and h1
+    # only reaches DRAM if it does not fit L2 -- 32 MB here vs 8 MB on C500, so several
+    # regimes that round-tripped there stay resident here and cannot reach the ceiling.
+    h1_bytes = T * row_bytes
+    l2_bytes = C.env().l2_bytes
 
     row = speedup_row(
         regime.name,
@@ -291,9 +306,14 @@ def run_regime(regime, warmup_t, rep_t, warmup_f, rep_f) -> dict:
             "bitwise_identical": chk["fused_eq_unfused_bitwise"],
             "bytes_fused": b_fused,
             "bytes_unfused": b_unfused,
-            "gbps_fused": gbps(b_fused, t_fused.p50_ms),
-            "gbps_unfused": gbps(b_unfused, t_unfused.p50_ms),
+            # _model: derived from the traffic model above, not measured -- where h1 fits
+            # L2 the unfused side never moves those bytes and the number is fictional
+            "gbps_fused_model": gbps(b_fused, t_fused.p50_ms),
+            "gbps_unfused_model": gbps(b_unfused, t_unfused.p50_ms),
             "ideal_speedup": 1.25,
+            "h1_bytes": h1_bytes,
+            "l2_bytes": l2_bytes,
+            "h1_fits_l2": h1_bytes <= l2_bytes,
             "fused_noflush_ms": t_fused.noflush_p50_ms,
             "unfused_noflush_ms": t_unfused.noflush_p50_ms,
             "torch_eager_ms": t_eager.p50_ms,
@@ -328,7 +348,7 @@ def run_regime(regime, warmup_t, rep_t, warmup_f, rep_f) -> dict:
 
 
 def main() -> None:
-    env = C.BenchEnv.probe()
+    env = C.env()  # same cached probe the config grids above were built from
     print(f"device={env.device_name} warp={env.warp_size} CUs={env.num_sm}", flush=True)
 
     rows, tables, checks, timings = [], {}, {}, {}
@@ -344,13 +364,16 @@ def main() -> None:
                 "fused_passes": 4,
                 "ceiling_speedup": 1.25,
                 "note": "both sides write h1 (next block's residual) AND x2 (norm out)",
+                "ceiling_note": "1.25x is a DRAM-traffic ceiling; it is unattainable in "
+                "any regime whose row has h1_fits_l2=true (32 MB L2 here vs 8 MB on C500)",
             },
             "fairness": {
                 "one_kernel_source": "glm52/kernels/add_rmsnorm.py::add_rmsnorm_kernel",
                 "flags": "DO_ADD / DO_NORM constexpr select fused vs the two split kernels",
-                "tuning": "two-stage (coarse 152 + refine ~20-44) per variant per regime; "
-                "the unfused side additionally gets a joint chain re-tune over the top-4 "
-                "x top-4 configs, which can only help it",
+                "tuning": f"two-stage (coarse {len(coarse_grid())} + a per-winner refine "
+                "neighbourhood; exact counts in tune_tables[*].n_tried) per variant per "
+                "regime; the unfused side additionally gets a joint chain re-tune over "
+                "the top-4 x top-4 configs, which can only help it",
             },
             "env": env.__dict__,
             "rows": rows,

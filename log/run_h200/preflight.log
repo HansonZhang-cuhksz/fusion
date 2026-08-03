@@ -1,0 +1,135 @@
+GLM-5.2 fusion study -- H200 preflight probe
+writing: /home/shuhan/fusion/glm52_h200/preflight_h200.json
+This script only reads; it installs nothing and changes no device state.
+
+==============================================================================
+1. STACK
+==============================================================================
+  python               3.13.12
+  platform             Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.41
+  torch                2.11.0+cu130
+  torch_cuda           13.0
+  torch_hip            None
+  cudnn                91900
+  cuda_available       True
+  device_count         1
+  triton               3.6.0
+  triton_file          /home/shuhan/miniconda3/lib/python3.13/site-packages/triton/__init__.py
+
+==============================================================================
+2. DEVICE (torch properties)
+==============================================================================
+  name                                 NVIDIA GeForce RTX 4060 Laptop GPU
+  major                                8
+  minor                                9
+  multi_processor_count                24
+  warp_size                            32
+  shared_memory_per_block              49152
+  shared_memory_per_block_optin        101376
+  shared_memory_per_multiprocessor     102400
+  regs_per_multiprocessor              65536
+  max_threads_per_multi_processor      1536
+  L2_cache_size                        33554432
+  total_memory                         8585216000
+  is_multi_gpu_board                   0
+  gcnArchName                          NVIDIA GeForce RTX 4060 Laptop GPU
+  uuid                                 eea7f43b-18a7-4d88-ab28-f3db82f8ca4b
+  mem_free_bytes                       7440695296
+  mem_total_bytes                      8585216000
+  compute_capability                   8.9
+
+  !! expected sm_90 (Hopper/H200); got sm_89
+
+==============================================================================
+3. nvidia-smi (clocks / power / ECC / MIG)
+==============================================================================
+  --- GPU 0 ---
+    name                               NVIDIA GeForce RTX 4060 Laptop GPU
+    driver_version                     610.88
+    vbios_version                      95.07.26.00.1b
+    pstate                             P4
+    clocks.sm                          1020 MHz
+    clocks.mem                         5501 MHz
+    clocks.gr                          1020 MHz
+    clocks.max.sm                      3105 MHz
+    clocks.max.mem                     8001 MHz
+    clocks_throttle_reasons.active     0x0000000000000001
+    power.draw                         9.77 W
+    power.limit                        [N/A]
+    enforced.power.limit               35.00 W
+    power.max_limit                    60.00 W
+    temperature.gpu                    65
+    memory.total                       8188 MiB
+    memory.used                        1303 MiB
+    memory.free                        6654 MiB
+    ecc.mode.current                   [N/A]
+    mig.mode.current                   [N/A]
+    persistence_mode                   Enabled
+    compute_mode                       Default
+    utilization.gpu                    12 %
+    pcie.link.gen.current              4
+    pcie.link.width.current            8
+
+==============================================================================
+4. TRITON FEATURE PROBES (compile + launch, not attribute sniffing)
+==============================================================================
+  -- attribute inventory (existence only) --
+    yes  triton.language.make_tensor_descriptor
+     no  triton.language._experimental_make_tensor_descriptor
+     no  triton.language._experimental_descriptor_load
+     no  triton.language._experimental_descriptor_store
+    yes  triton.tools.tensor_descriptor.TensorDescriptor
+     no  triton.tools.experimental_descriptor.create_2d_tma_descriptor
+     no  triton.language.async_task
+    yes  triton.set_allocator
+    yes  triton.language.range
+    tl.range(arg1, arg2=None, step=None, num_stages=None, loop_unroll_factor=None, disallow_acc_multi_buffer=False, flatten=False, warp_specialize=False, disable_licm=False)
+  -- compile + launch --
+    OK    baseline_elementwise
+    OK    tl_dot_bf16
+    OK    warp_specialize_tl_range
+    FAIL  warp_specialize_num_consumer_groups: KeyError: 'Keyword argument num_consumer_groups was specified but unrecognised'
+    FAIL  tma_tensor_descriptor: CompilationError: at 2:8:
+def k_tma_device(desc_ptr, Out, BM: tl.constexpr, BN: tl.constexpr):
+    d = tl.make_tensor_descriptor(desc_ptr, shape=[BM, BN], strides=[BN, 
+    FAIL  thread_block_cluster_num_ctas: ValueError: num_ctas > 1 requires NVIDIA SM90+ (Hopper). Current target is sm_89. This configuration will fail. Please set num_ctas=1 or target an SM90+ GPU.
+  triton target: {'backend': 'cuda', 'arch': 89, 'warp_size': 32}
+  triton device properties: {'max_shared_mem': 101376, 'max_num_regs': 65536, 'multiprocessor_count': 24, 'warpSize': 32, 'sm_clock_rate': 1470000, 'mem_clock_rate': 8001000, 'mem_bus_width': 128}
+
+==============================================================================
+5. CALIBRATION (measured on this machine)
+==============================================================================
+  -- bandwidth (buffers >> L2) --
+    copy_1024MB_GBs             141.9 GB/s
+    rmw_1024MB_GBs              143.7 GB/s
+    read_1024MB_GBs             163.8 GB/s
+  -- bf16 GEMM --
+    4096x16384x6144: cuBLAS   12.14 TF/s | Triton   11.96 TF/s (98% of vendor)
+  -- reachable shared-memory ceiling --
+    OK    BM128 BN128 BK64 s3 -> shared=65536
+    OK    BM128 BN256 BK64 s3 -> shared=98304
+    FAIL  BM128 BN256 BK64 s4: out of resource: shared memory, Required: 147456, Hardware limit: 101376. Reducing block sizes or `num_stages`
+    FAIL  BM256 BN256 BK64 s3: out of resource: shared memory, Required: 131072, Hardware limit: 101376. Reducing block sizes or `num_stages`
+    FAIL  BM128 BN256 BK128 s3: out of resource: shared memory, Required: 196608, Hardware limit: 101376. Reducing block sizes or `num_stages`
+  -- launch cost and timer granularity --
+    launch cost         3.36 us
+    harness floor       2.78 us
+    timer tick       1.024 us  (200/200 exact multiples)
+
+==============================================================================
+6. GLM-5.2 CAPACITY CHECK
+==============================================================================
+  w13 (256 experts)         12.00 GB
+  w2  (256 experts)          6.00 GB
+  expert weights total      18.00 GB
+  free / total VRAM          6.88 / 8.00 GB
+  expert weights fit     False
+  whole-layer feasible   False
+  !! #6/#8/#9/#11a and the whole-layer benchmark cannot run on this device.
+
+==============================================================================
+DONE
+==============================================================================
+  all probes completed without error
+
+  -> send back: /home/shuhan/fusion/glm52_h200/preflight_h200.json
