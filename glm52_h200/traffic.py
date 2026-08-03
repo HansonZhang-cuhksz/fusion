@@ -176,14 +176,15 @@ DEVICE_PEAKS: dict[str, DevicePeaks] = {
     # False because these are no longer guesses.
     "h200": DevicePeaks(
         "H200",
-        788.3463741284407e12,
-        4256.129063005892e9,
-        4650.420562966606e9,
+        806.3199999999999e12,
+        4252.999999999999e9,
+        4647.5e9,
         62914560,
         estimated=False,
-        c_peak_vendor=821.6363077328735e12,
-        measured_on="NVIDIA H200 b2318e71 (132 SM), preflight 2026-08-03 15:14:07, "
-                    "torch 2.11.0+cu130 / triton 3.6.0",
+        c_peak_vendor=836.7799999999999e12,
+        measured_on="NVIDIA H200 (132 SM), preflight 2026-08-03 16:36:06 on an IDLE card "
+                    "(149.4/149.8 GB free), torch 2.11.0+cu130 / triton 3.6.0. Supersedes "
+                    "the 15:14 probe, which ran beside a 51 GB co-tenant.",
         # launch_s / timer_tick_s are deliberately left at 0 rather than transcribed: the
         # only H200 measurement of them was taken next to a 51 GB co-tenant (launch 8.89 us
         # but harness floor 40.55 us, tick matching 3 % of samples). 0 makes
@@ -192,8 +193,12 @@ DEVICE_PEAKS: dict[str, DevicePeaks] = {
         # flagged -- and re-running preflight on an idle GPU makes them real.
         launch_trusted=False,
         timer_tick_trusted=False,
-        calib_note="no launch/tick figure in this fallback row; the only H200 measurement of "
-                   "them was taken on a contended GPU. Re-run preflight.py with --gpu auto.",
+        calib_note="launch/tick still left at 0 in this FALLBACK row: the idle re-probe gives "
+                   "a sane launch (11.30 us) and harness floor (5.73 us), but found NO "
+                   "quantisation lattice -- every candidate down to 0.256 us matched <=18% of "
+                   "samples, i.e. this device's event timer is finer than anything probed, so "
+                   "there is no tick to transcribe. A device-matched preflight overlay carries "
+                   "the real figures; quantisation is simply not a limiting factor here.",
     ),
 }
 DEFAULT_PROFILE = "h200"  # used when the device cannot be probed (CPU-only checkout)

@@ -896,7 +896,10 @@ def probe_calibration(quick: bool) -> None:
         # sample: 0.256 trivially divides anything 1.024 divides, so scanning upward and
         # keeping the first match would always report the finest candidate.
         cands = {}
-        for q in (0.256, 0.512, 1.024, 2.048, 4.096):
+        # Candidates span two orders of magnitude: datacenter parts (H200) have an event
+        # timer finer than 0.256 us, where every coarse candidate matches only a few
+        # percent -- which means 'no quantisation', not 'bad measurement'.
+        for q in (0.016, 0.032, 0.064, 0.128, 0.256, 0.512, 1.024, 2.048, 4.096):
             cands[q] = sum(1 for v in vals
                            if abs((v * 1000) / q - round((v * 1000) / q)) < 1e-3) / len(vals)
         ok = [q for q, f in cands.items() if f >= 0.98]

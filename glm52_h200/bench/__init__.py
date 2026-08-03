@@ -600,6 +600,39 @@ def calibration_status() -> dict:
         return out
     if frac < TICK_MATCH_MIN:
         used = out.get("mem_in_use_by_others_bytes")
+        # A low match fraction has TWO very different causes, and conflating them was wrong.
+        #
+        #  (a) contended GPU: the timings are noise, so no lattice fits. Signature -- a
+        #      harness floor far above a launch, and/or another process holding memory.
+        #  (b) a timer FINER than every candidate granularity: no lattice fits because the
+        #      quantum is smaller than 0.256 us. Signature -- a sane harness floor, an idle
+        #      device, and a LOW match at every candidate rather than a good one somewhere.
+        #
+        # Case (b) is the H200's actual behaviour on an idle card (floor 5.7 us, 149 GB
+        # free, every candidate <= 0.18) and it is GOOD news: finer than the finest quantum
+        # tested means quantisation is not a limiting factor for any measurement here. It
+        # must not suppress verdicts or print contention warnings.
+        cands = pf_get("calibration", "timer_tick_candidates", default={}) or {}
+        try:
+            best_any = max(float(v) for v in cands.values()) if cands else frac
+        except (TypeError, ValueError):
+            best_any = frac
+        floor = out.get("harness_floor_us")
+        floor_sane = isinstance(floor, (int, float)) and floor < 15.0
+        idle = not (isinstance(used, int) and used > 2**30)
+        if floor_sane and idle and best_any < TICK_MATCH_MIN:
+            out["trusted"] = True
+            out["timer_tick_us"] = None
+            out["tick_finer_than_tested"] = True
+            out["reason"] = (
+                f"no quantisation lattice at any tested granularity (best match "
+                f"{best_any * 100:.0f}% at {min(cands, key=lambda k: float(k)) if cands else '?'} us), "
+                f"on an idle device with a sane harness floor of {floor} us. The event timer "
+                f"is finer than the finest quantum probed, so timer quantisation is NOT a "
+                f"limiting factor and no cell is tick-limited. This is the good outcome; "
+                f"contrast the RTX 4060, where 200/200 samples landed exactly on 1.024 us."
+            )
+            return out
         out["trusted"] = False
         out["reason"] = (
             f"timer_tick_match_frac={frac:.2f} < {TICK_MATCH_MIN}: the reported "
