@@ -38,7 +38,11 @@ That protocol is what makes the layer numbers defensible, and it is why this fil
 tie far more often than a ranking.
 
 Run:
-    python3 glm52_h200/bench/bench_layer.py [--regimes ...] [--only A_all_unfused,...]
+    python3 glm52_h200/bench/bench_layer.py --gpu auto [--regimes ...] [--only A_all_unfused,...]
+
+`--gpu auto` picks the idlest of the host's GPUs and masks the process to it before
+CUDA initialises; on the 8-GPU measurement host that is the difference between timing an
+idle card and timing one another tenant is already using.
 """
 
 from __future__ import annotations
@@ -82,7 +86,10 @@ MAX_THREADS = B.max_threads_per_block(_ENV)
 # still carries `65536` and `* 64` and would build C500-shaped grids on any other device.
 # --------------------------------------------------------------------------------------
 def _smem_ok(bm, bn, bk, s, mult=1) -> bool:
-    return C.smem_stage_bytes(bm, bn, bk, s, bn_mult=mult) <= SMEM_LIMIT
+    # `B.smem_predict` fits the multi-buffer count to the preflight's own smem_probe rows
+    # (Triton 3.0 staged num_stages, 3.6/sm_89 stages num_stages-1, this H200 stack is back
+    # at num_stages) instead of assuming one of them.
+    return B.smem_predict(bm, bn, bk, s, bn_mult=mult) <= SMEM_LIMIT
 
 
 def _row_guard(c) -> bool:
@@ -102,9 +109,11 @@ def _row_guard(c) -> bool:
 #: Alternatives tried per key during the coordinate search, ordered by how much they
 #: usually matter.  Only keys present in the seed are searched.
 _ALTS = {
-    "BLOCK_M": (16, 32, 64, 128),
-    "BLOCK_N": (32, 64, 128, 256),
-    "BLOCK_K": (32, 64, 128),
+    # Tile alternatives come from THIS device's SMEM ceiling, so the whole-layer search can
+    # reach the shapes the H200 runs (BM/BN up to 256) and stops where sm_89 stops.
+    "BLOCK_M": tuple(t for t in B.tile_ladder(_ENV) if t <= 128),
+    "BLOCK_N": tuple(t for t in B.tile_ladder(_ENV) if t >= 32),
+    "BLOCK_K": tuple(B.bk_ladder(_ENV, hi=128)),
     "BLOCK_E": (64, 128, 256),
     "BLOCK_DIM": (256, 512, 1024),
     "BLOCK": (256, 512, 1024, 2048),
@@ -896,6 +905,15 @@ def main() -> None:
                 correctness="every configuration is validated against an INDEPENDENT fp32 "
                             "reference of the whole subgraph, never against another "
                             "configuration; a failing configuration is excluded outright",
+                h200_axes="this bench composes whole pipelines rather than tuning a "
+                          "fused/unfused PAIR, so there is no grid to bias: every "
+                          "configuration reaches its kernels through the same "
+                          "_tile_then_coord search over the same alternatives, and any "
+                          "sm_90 axis a kernel module honours is therefore available to all "
+                          "of them equally. The per-fusion axis reports live in the "
+                          "individual bench_fNN result files.",
+                gpu_note="which physical card this ran on is under fairness.gpu; on the "
+                         "8-GPU measurement host that is not implied by the device name",
             ).render(env),
             "regimes": out_all,
         })

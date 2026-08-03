@@ -65,3 +65,81 @@
 15:09:22 !!     python3 run_h200.py --force --results-dir results/<thisdevice>
 15:09:22 !! and do not merge the output into the H200 record.
 15:09:22 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+16:23:34 !! cached preflight does not describe the pinned GPU: model differs ('NVIDIA H200' vs 'NVIDIA GeForce RTX 4060 Laptop GPU') -- re-probing before anything is tuned.
+16:23:34     running preflight: /home/shuhan/miniconda3/bin/python3 /home/shuhan/fusion/glm52_h200/preflight.py --gpu none
+16:24:04     preflight exit=0, log -> /home/shuhan/fusion/log/run_h200/preflight.log
+16:24:04 ============================================================================================
+16:24:04 GLM-5.2 MoE fusion study -- H200 campaign
+16:24:04 ============================================================================================
+16:24:04   repo            /home/shuhan/fusion
+16:24:04   results dir     /home/shuhan/fusion/results/h200
+16:24:04   driver started  2026-08-03 16:24:04
+16:24:04   gpu             not pinned (no --gpu given; CUDA_VISIBLE_DEVICES left as the environment set it)
+16:24:04 
+16:24:04   [device] NVIDIA GeForce RTX 4060 Laptop GPU  sm_89 | 24 SM | warp 32 | smem/block 101376 B | regs/SM 65536 | L2 32 MB | VRAM 8.0 GB
+16:24:04   [stack]  torch 2.11.0+cu130 (cuda 13.0) | triton 3.6.0
+16:24:04   [triton features, compiled AND launched] +baseline_elementwise +tl_dot_bf16 +warp_specialize_tl_range -warp_specialize_num_consumer_groups +tma_host_descriptor +tma_device_descriptor -thread_block_cluster_num_ctas
+16:24:04   [calib]  copy_1024MB_GBs=143  rmw_1024MB_GBs=144  read_1024MB_GBs=166  copy_2048MB_GBs=144  rmw_2048MB_GBs=142  read_2048MB_GBs=160   cublas_4096x16384x6144_TFs=12.0  triton_4096x16384x6144_TFs=12.0  cublas_8192x16384x6144_TFs=12.2  triton_8192x16384x6144_TFs=12.0
+16:24:04   [calib]  launch 3.95 us | timer tick 1.024 us (measured by preflight)  <== NOT TRUSTWORTHY
+16:24:04   [calib!] the preflight flagged its own launch/tick calibration as contaminated:
+16:24:04   [calib!]   - tenancy could not be verified (no GPU pinned)
+16:24:04   [calib!] every UNRESOLVED verdict below is computed from that tick, so treat them as advisory until the preflight is re-run on an idle GPU:
+16:24:04   [calib!]     python3 glm52_h200/preflight.py --gpu <idle index>
+16:24:04   [capacity] expert weights 18.0 GB | fit=False | whole layer feasible=False
+16:24:04 
+16:24:04   [hwinfo@start] GPU0 NVIDIA GeForce RTX 4060 Laptop GPU | sm 1020/3105 MHz | mem 5501/8001 MHz | 63 C | 9.29/35 W | used 1680/8188 MiB | util 1% | pstate P4 | throttle 0x0000000000000001
+16:24:04 
+16:24:04 
+16:24:04 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+16:24:04 !! --force: proceeding on a NON-sm_90 device (compute capability 8.9 (NVIDIA GeForce RTX 4060 Laptop GPU)). Results are NOT an H200 measurement; do not file them as one.
+16:24:04 !! Use --results-dir to keep this out of results/h200/.
+16:24:04 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+16:24:04 
+16:24:04   [features] Hopper paths disabled for this run: tma,ws. Both arms of every pair fall back to the classic path, so the ratios stay fair -- but they are no longer a measurement of the Hopper path.
+16:24:04 ============================================================================================
+16:24:04 RUNNING 1 FAMILIES SERIALLY (order = cheapest failure first; whole-layer last)
+16:24:04 ============================================================================================
+16:24:04 
+16:24:04 --- [1/1] f03: #3  ResAdd+RMSNorm ----------------------
+16:24:04   note    pure vector; smoke-tests the whole stack
+16:24:04   dry-run: would run /home/shuhan/fusion/glm52_h200/bench/bench_f03_resadd_rmsnorm.py
+16:24:04 ============================================================================================
+16:24:04 COLLECTING RESULTS
+16:24:04 ============================================================================================
+16:24:04   f03     MISSING
+16:24:05 ============================================================================================
+16:24:05 SPEEDUP TABLE  (fused / unfused, per fusion per regime)
+16:24:05 ============================================================================================
+16:24:05 (no speedup cells were produced -- every family is missing or unparsed)
+16:24:05 
+16:24:05 ============================================================================================
+16:24:05 FAMILY STATUS
+16:24:05 ============================================================================================
+16:24:05   f03     dry_run                    0.0 min   
+16:24:05 
+16:24:05   !! MISSING / UNTRUSTED: f03
+16:24:05      logs for these are in /home/shuhan/fusion/log/run_h200; re-running the driver resumes at the first missing family.
+16:24:05 
+16:24:05 ============================================================================================
+16:24:05 HWINFO -- START vs END (clock and thermal drift across the whole run)
+16:24:05 ============================================================================================
+16:24:05   start GPU0 NVIDIA GeForce RTX 4060 Laptop GPU | sm 1020/3105 MHz | mem 5501/8001 MHz | 63 C | 9.29/35 W | used 1680/8188 MiB | util 1% | pstate P4 | throttle 0x0000000000000001
+16:24:05   end   GPU0 NVIDIA GeForce RTX 4060 Laptop GPU | sm 1020/3105 MHz | mem 5501/8001 MHz | 66 C | 10.18/35 W | used 1686/8188 MiB | util 2% | pstate P4 | throttle 0x0000000000000001
+16:24:05   GPU0 SM clock +0.0%, temperature +3 C, throttle 0x0000000000000001 -> 0x0000000000000001
+16:24:05 
+16:24:05   wrote /home/shuhan/fusion/results/h200/summary.json
+16:24:05 
+16:24:05 ============================================================================================
+16:24:05 WARNINGS (also in summary.json)
+16:24:05 ============================================================================================
+16:24:05   - the CUDA-event tick (1.024 us) used for every UNRESOLVED verdict is itself untrustworthy: tenancy could not be verified (no GPU pinned). Re-run the preflight on an idle GPU before quoting any decode_bs1 cell.
+16:24:05   - --force: proceeding on a NON-sm_90 device (compute capability 8.9 (NVIDIA GeForce RTX 4060 Laptop GPU)). Results are NOT an H200 measurement; do not file them as one.
+16:24:05   - Hopper paths disabled for this run: tma,ws. Both arms of every pair fall back to the classic path, so the ratios stay fair -- but they are no longer a measurement of the Hopper path.
+16:24:05 
+16:24:05 ============================================================================================
+16:24:05 SEND BACK
+16:24:05 ============================================================================================
+16:24:05   1. /home/shuhan/fusion/results/h200            (every result JSON + summary.json)
+16:24:05   2. /home/shuhan/fusion/glm52_h200/preflight_h200.json
+16:24:05   3. /home/shuhan/fusion/log/run_h200             (driver.log + one log per family)
+16:24:05   total wall 0.01 h

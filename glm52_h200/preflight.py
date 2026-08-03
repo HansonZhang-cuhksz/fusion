@@ -6,20 +6,33 @@ designed never to crash. Every probe is individually guarded; a failure is *reco
 run continues, because "this feature raised TypeError: unexpected keyword 'warp_specialize'"
 is exactly the information the kernels need to be written correctly.
 
-It answers four questions the benchmark suite cannot be written without:
+It answers five questions the benchmark suite cannot be written without:
 
+  0. WHICH GPU are we even on?   The node has eight cards and other tenants. This is question
+     zero because the first run of this script got it wrong: it probed whichever device CUDA
+     handed out, that device already had ~51 GB allocated by somebody else, and the two SHORT
+     calibrations came back impossible -- an 8.9 us launch against a 40.55 us "harness floor",
+     and a CUDA-event tick matching 3 % of samples where a real tick matches ~100 %. The long
+     measurements (bandwidth, GEMM) survived it; the ones every UNRESOLVED verdict downstream
+     is built from did not. So the GPUs are enumerated, the idlest is chosen by default, and
+     the tenancy of the chosen one is recorded next to the numbers it produced.
   1. What is the stack?          torch / triton / CUDA / driver versions.
   2. What is the device?         SMs, shared memory ceiling, registers, L2, clocks, ECC, MIG.
   3. Which H200 features are REALLY usable from this Triton?  TMA, warp specialization,
      thread-block clusters, fp8 dot. Probed by COMPILING AND LAUNCHING a tiny kernel for
      each -- attribute existence is not evidence, as several Triton releases expose symbols
-     that fail at compile time.
+     that fail at compile time. (And a probe that fails must be a real failure: the first TMA
+     probe here mixed the host-side and device-side descriptor APIs and reported a false
+     negative on hardware that supports TMA perfectly well. Both forms are now probed
+     separately, under names that say which is which.)
   4. What are this machine's achievable peaks?  Bandwidth, bf16 GEMM (Triton and cuBLAS),
      kernel launch cost, CUDA-event timer granularity. Every roofline ceiling in the study is
      computed from these, never from vendor spec.
 
 Usage:
-    python3 glm52_h200/preflight.py                 # writes glm52_h200/preflight_h200.json
+    python3 glm52_h200/preflight.py                 # enumerate all, probe the idlest GPU
+    python3 glm52_h200/preflight.py --gpu 3         # probe nvidia-smi GPU 3 specifically
+    python3 glm52_h200/preflight.py --gpu none      # whatever CUDA hands out (old behaviour)
     python3 glm52_h200/preflight.py --quick         # skips the slower calibration sweeps
 
 Send back:  glm52_h200/preflight_h200.json   (and the console output if convenient)
@@ -30,6 +43,7 @@ import argparse
 import json
 import os
 import platform
+import re
 import shutil
 import subprocess
 import sys
@@ -50,6 +64,271 @@ def _err(key: str, exc: BaseException) -> None:
 
 def section(title: str) -> None:
     print(f"\n{'=' * 78}\n{title}\n{'=' * 78}")
+
+
+# ======================================================================================
+# 0. GPU selection -- which of the eight cards is clean enough to measure on
+# ======================================================================================
+# Deliberately duplicated from glm52_h200/hwinfo.py rather than imported. This script's one
+# invariant is that it depends on nothing in the project: the operator can scp preflight.py
+# alone onto a fresh node and run it, and it has to keep working when the rest of the suite
+# is broken -- which is exactly the state it is usually run in. ~80 lines is a cheap price.
+#
+# Indices below are nvidia-smi (physical/NVML) indices, NOT CUDA ordinals. CUDA renumbers
+# under CUDA_VISIBLE_DEVICES and orders FASTEST_FIRST by default, so pinning also sets
+# CUDA_DEVICE_ORDER=PCI_BUS_ID; without it "--gpu 3" can select a different card than the
+# one this script inspected and reported on.
+_MIB = 1024 * 1024
+IDLE_MAX_USED_BYTES = 1 * 2 ** 30     # an untouched H200 here reports 4 MiB; a tenant, 20+ GB
+IDLE_MAX_UTIL_PCT = 5.0
+IDLE_MIN_FREE_BYTES = 32 * 2 ** 30    # 19.3 GB of expert weights before any activation
+
+
+def _first_num(v):
+    m = re.search(r"-?\d+(?:\.\d+)?", str(v))
+    return float(m.group()) if m else None
+
+
+def _smi_csv(query: str, fields: list, timeout: int = 30) -> tuple:
+    """(rows as dicts, error). Never raises: a missing nvidia-smi is an answer, not a crash."""
+    if not shutil.which("nvidia-smi"):
+        return [], "nvidia-smi not on PATH"
+    try:
+        p = subprocess.run(["nvidia-smi", f"--{query}={','.join(fields)}",
+                            "--format=csv,noheader"],
+                           capture_output=True, text=True, timeout=timeout)
+    except Exception as e:  # noqa: BLE001
+        return [], f"{type(e).__name__}: {e}"
+    blob = f"{p.stdout}\n{p.stderr}".lower()
+    if p.returncode != 0 or "not a valid field" in blob or "not supported" in blob:
+        return [], (p.stderr or p.stdout).strip()[:200] or f"rc={p.returncode}"
+    rows = []
+    for line in p.stdout.strip().splitlines():
+        line = line.strip()
+        if not line or "no running processes" in line.lower():
+            continue
+        vals = [v.strip() for v in line.split(",")]
+        if len(vals) < len(fields):
+            continue
+        rows.append(dict(zip(fields, vals)))
+    return rows, ""
+
+
+def _norm_uuid(v) -> str:
+    s = str(v or "").strip().lower()
+    return s[4:] if s.startswith("gpu-") else s
+
+
+def enumerate_gpus() -> tuple:
+    """Every physical GPU with the facts needed to judge it idle. ([], error) if unavailable."""
+    rows, err = _smi_csv("query-gpu", [
+        "index", "uuid", "name", "utilization.gpu", "memory.total", "memory.used",
+        "memory.free", "compute_mode", "mig.mode.current", "persistence_mode",
+        "pstate", "clocks.sm", "temperature.gpu",
+    ])
+    if not rows:
+        return [], err or "no GPUs reported"
+    apps, app_err = _smi_csv("query-compute-apps",
+                             ["gpu_uuid", "pid", "process_name", "used_gpu_memory"])
+    by_uuid: dict = {}
+    for a in apps:
+        by_uuid.setdefault(_norm_uuid(a["gpu_uuid"]), []).append({
+            "pid": int(_first_num(a["pid"]) or 0),
+            "name": a["process_name"],
+            "used_bytes": int((_first_num(a["used_gpu_memory"]) or 0) * _MIB),
+        })
+    out = []
+    for g in rows:
+        out.append({
+            "index": int(_first_num(g.get("index")) or 0),
+            "uuid": g.get("uuid"),
+            "name": g.get("name"),
+            "utilization_pct": _first_num(g.get("utilization.gpu")),
+            "memory_total_bytes": int((_first_num(g.get("memory.total")) or 0) * _MIB),
+            "memory_used_bytes": int((_first_num(g.get("memory.used")) or 0) * _MIB),
+            "memory_free_bytes": int((_first_num(g.get("memory.free")) or 0) * _MIB),
+            "compute_mode": g.get("compute_mode"),
+            "mig_mode": g.get("mig.mode.current"),
+            "persistence_mode": g.get("persistence_mode"),
+            "pstate": g.get("pstate"),
+            "sm_mhz": _first_num(g.get("clocks.sm")),
+            "temp_c": _first_num(g.get("temperature.gpu")),
+            "processes": by_uuid.get(_norm_uuid(g.get("uuid")), []),
+            # Non-empty means the tenancy of this card is UNKNOWN, never "proven empty".
+            "process_query_error": app_err or None,
+        })
+    return out, ""
+
+
+def busy_reasons(g: dict) -> list:
+    """Facts about *other people's* use of this card. [] means nobody else is on it.
+
+    Tenancy only. "Not enough free VRAM" lives in `capacity_notes` instead: it is a fact
+    about the study's appetite, not evidence of a neighbour, and a probe run on a small
+    development GPU must not report a stranger who does not exist.
+    """
+    out = []
+    procs = g.get("processes") or []
+    if procs:
+        out.append(f"{len(procs)} other compute process(es): " + ", ".join(
+            f"pid {p['pid']} {p['name']} ({p['used_bytes'] / 2**30:.1f} GB)" for p in procs[:4]))
+    if (g.get("memory_used_bytes") or 0) > IDLE_MAX_USED_BYTES:
+        out.append(f"{g['memory_used_bytes'] / 2**30:.1f} GB already allocated")
+    if (g.get("utilization_pct") or 0) > IDLE_MAX_UTIL_PCT:
+        out.append(f"utilization {g['utilization_pct']:.0f}%")
+    if str(g.get("compute_mode") or "").lower() not in ("default", "", "[n/a]", "n/a"):
+        out.append(f"compute mode {g['compute_mode']}")
+    if str(g.get("mig_mode") or "").lower() == "enabled":
+        out.append("MIG enabled")
+    return out
+
+
+def capacity_notes(g: dict) -> list:
+    """Does the study fit here? Ranked on, reported, never fatal."""
+    if (g.get("memory_free_bytes") or 0) < IDLE_MIN_FREE_BYTES:
+        return [f"only {(g.get('memory_free_bytes') or 0) / 2**30:.1f} GB free "
+                f"(the whole-layer bench wants {IDLE_MIN_FREE_BYTES / 2**30:.0f} GB)"]
+    return []
+
+
+def rank_gpus(gpus: list) -> list:
+    """Idlest first: unoccupied before occupied, roomy before cramped, then (utilization,
+    memory used) ascending, with the index breaking ties deterministically."""
+    ranked = []
+    for g in gpus:
+        r = dict(g)
+        r["reasons"] = busy_reasons(g)
+        r["busy"] = bool(r["reasons"])
+        r["capacity_notes"] = capacity_notes(g)
+        r["capacity_short"] = bool(r["capacity_notes"])
+        ranked.append(r)
+    ranked.sort(key=lambda r: (r["busy"], r["capacity_short"],
+                               r.get("utilization_pct") or 0.0,
+                               r.get("memory_used_bytes") or 0, r.get("index", 0)))
+    for i, r in enumerate(ranked):
+        r["rank"] = i
+    return ranked
+
+
+def print_gpu_table(ranked: list) -> None:
+    head = (f"  {'rank':>4} {'idx':>3}  {'util':>5} {'used GB':>9} {'free GB':>9} "
+            f"{'proc':>4}  {'temp':>5}  state")
+    print(head)
+    print("  " + "-" * (len(head) - 2))
+    for r in ranked:
+        util = "?" if r.get("utilization_pct") is None else f"{r['utilization_pct']:.0f}%"
+        state = ("BUSY: " + "; ".join(r["reasons"])) if r["busy"] else "idle"
+        if r.get("capacity_short"):
+            state += ("  " if r["busy"] else " -- ") + "; ".join(r["capacity_notes"])
+        print(f"  {r['rank']:>4} {r['index']:>3}  {util:>5} "
+              f"{(r.get('memory_used_bytes') or 0) / 2**30:9.1f} "
+              f"{(r.get('memory_free_bytes') or 0) / 2**30:9.1f} "
+              f"{len(r.get('processes') or []):>4}  "
+              f"{(r.get('temp_c') or 0):5.0f}  {state[:110]}")
+    for r in ranked:
+        print(f"       gpu {r['index']}  {r.get('name')}  uuid {r.get('uuid')}")
+
+
+def foreign_processes(index: int) -> tuple:
+    """Compute processes on GPU `index` that are not this one. (list, error)."""
+    gpus, err = enumerate_gpus()
+    if not gpus:
+        return [], err
+    me = os.getpid()
+    for g in gpus:
+        if g.get("index") == index:
+            return ([p for p in (g.get("processes") or []) if p.get("pid") != me],
+                    g.get("process_query_error") or "")
+    return [], f"no GPU with index {index}"
+
+
+def select_gpu(want: str) -> dict:
+    """Resolve --gpu into a physical index, and pin it before torch is ever imported.
+
+    `want` is "auto" (default), "none" (leave CUDA alone), or a decimal nvidia-smi index.
+    Returns the whole decision -- ranking, chosen card, tenancy, and what was pinned -- so
+    the JSON says which device produced the numbers and how confidently it was picked.
+    """
+    section("0. GPU SELECTION (8-card node; the wrong card is how the last probe was ruined)")
+    gpus, err = enumerate_gpus()
+    sel: dict = {"requested": want, "error": err or None,
+                 "thresholds": {"max_used_bytes": IDLE_MAX_USED_BYTES,
+                                "max_util_pct": IDLE_MAX_UTIL_PCT,
+                                "min_free_bytes": IDLE_MIN_FREE_BYTES},
+                 "env_before": {"CUDA_VISIBLE_DEVICES": os.environ.get("CUDA_VISIBLE_DEVICES"),
+                                "CUDA_DEVICE_ORDER": os.environ.get("CUDA_DEVICE_ORDER")}}
+    ranked = rank_gpus(gpus) if gpus else []
+    sel["ranking"] = [{k: v for k, v in r.items() if k != "process_query_error"}
+                      for r in ranked]
+    if not gpus:
+        print(f"  nvidia-smi gave no GPU list ({err}); leaving device selection to CUDA.")
+        sel.update(index=None, uuid=None, pinned=False,
+                   reason=f"could not enumerate GPUs: {err}")
+        return sel
+    print(f"  {len(gpus)} GPU(s) on this host:")
+    print_gpu_table(ranked)
+
+    pre = os.environ.get("CUDA_VISIBLE_DEVICES")
+    if want == "none":
+        sel.update(index=None, uuid=None, pinned=False,
+                   reason="--gpu none: CUDA_VISIBLE_DEVICES left as the caller set it")
+        print(f"\n  --gpu none: not pinning. CUDA_VISIBLE_DEVICES={pre or 'unset (all)'}")
+        return sel
+    if want == "auto" and pre and pre.strip().isdigit():
+        # A parent (run_h200.py) already chose. Honour it rather than second-guessing, or the
+        # probe would describe one card while the campaign measures another.
+        chosen = int(pre.strip())
+        reason = f"inherited CUDA_VISIBLE_DEVICES={chosen} from the caller"
+    elif want == "auto":
+        chosen = ranked[0]["index"]
+        reason = (f"idlest of {len(ranked)}: {(ranked[0].get('utilization_pct') or 0):.0f}% "
+                  f"util, {(ranked[0].get('memory_used_bytes') or 0) / 2**30:.1f} GB used, "
+                  f"{len(ranked[0].get('processes') or [])} other process(es)")
+    else:
+        try:
+            chosen = int(want)
+        except ValueError:
+            print(f"  !! --gpu {want!r} is not an index, 'auto' or 'none'; falling back to auto")
+            chosen = ranked[0]["index"]
+            reason = "unparseable --gpu; fell back to the idlest"
+        else:
+            reason = f"--gpu {chosen} as requested"
+    row = next((r for r in ranked if r["index"] == chosen), None)
+    if row is None:
+        print(f"  !! no GPU with nvidia-smi index {chosen}; falling back to the idlest")
+        row = ranked[0]
+        chosen = row["index"]
+        reason = f"requested index not present; fell back to GPU {chosen}"
+
+    sel.update(index=chosen, uuid=row.get("uuid"), name=row.get("name"),
+               busy=row["busy"], busy_reasons=row["reasons"], reason=reason,
+               capacity_notes=row.get("capacity_notes") or [],
+               process_query_error=next((g.get("process_query_error") for g in gpus
+                                         if g.get("index") == chosen), None))
+    # Pin BEFORE torch is imported anywhere -- CUDA_VISIBLE_DEVICES is read once, at context
+    # creation, and setting it afterwards silently does nothing.
+    os.environ["CUDA_VISIBLE_DEVICES"] = str(chosen)
+    os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+    sel["pinned"] = True
+    print(f"\n  -> GPU {chosen} ({row.get('name')}) uuid {row.get('uuid')}")
+    print(f"     {reason}")
+    print(f"     CUDA_VISIBLE_DEVICES={chosen}  CUDA_DEVICE_ORDER=PCI_BUS_ID  "
+          f"(this process now sees exactly one device as cuda:0)")
+    if row["busy"]:
+        print("\n  " + "!" * 74)
+        print("  !! THE SELECTED GPU IS NOT IDLE: " + "; ".join(row["reasons"]))
+        print("  !! This is exactly what corrupted the previous probe: launch cost came back")
+        print("  !! at 8.9 us against a 40.55 us harness floor, and the CUDA-event tick")
+        print("  !! matched 3 % of samples instead of ~100 %. The bandwidth and GEMM numbers")
+        print("  !! below will probably still be usable; launch_us and timer_tick_us will not.")
+        print("  !! Re-run on an idle card:  python3 glm52_h200/preflight.py --gpu <idx>")
+        print("  " + "!" * 74)
+    if row.get("process_query_error"):
+        print(f"  .. process list unavailable ({row['process_query_error']}); this card is "
+              f"UNPROVEN idle, not proven idle.")
+    for note in row.get("capacity_notes") or []:
+        print(f"  .. {note} -- the capacity section below will say which benches fit.")
+    return sel
 
 
 # ======================================================================================
@@ -110,6 +389,21 @@ def probe_device() -> None:
         free, total = torch.cuda.mem_get_info()
         d["mem_free_bytes"], d["mem_total_bytes"] = free, total
         d["compute_capability"] = f"{d.get('major')}.{d.get('minor')}"
+        # Which PHYSICAL card this is. torch says "cuda:0" whatever we pinned, so the CUDA
+        # ordinal alone cannot identify a device on an eight-GPU node -- carry the nvidia-smi
+        # index and the UUID so a number in this file traces to one specific card.
+        sel = R.get("gpu_selection") or {}
+        d["nvidia_smi_index"] = sel.get("index")
+        d["cuda_visible_devices"] = os.environ.get("CUDA_VISIBLE_DEVICES")
+        d["cuda_device_order"] = os.environ.get("CUDA_DEVICE_ORDER")
+        if sel.get("uuid") and _norm_uuid(sel["uuid"]) != _norm_uuid(d.get("uuid")):
+            # The pin did not land where the enumeration said it would -- almost always
+            # CUDA_DEVICE_ORDER. Loud, because everything else in this file would be
+            # attributed to the wrong card.
+            msg = (f"pinned nvidia-smi GPU {sel.get('index')} (uuid {sel.get('uuid')}) but "
+                   f"torch opened uuid {d.get('uuid')}")
+            R["probe_errors"]["gpu_pin_mismatch"] = msg
+            print(f"\n  !! {msg}")
         R["device"] = d
         for k, v in d.items():
             print(f"  {k:<36} {v}")
@@ -128,8 +422,10 @@ def probe_smi() -> None:
     if not shutil.which("nvidia-smi"):
         print("  nvidia-smi not on PATH")
         return
+    # index and uuid first: without them a row in this list cannot be tied to the GPU the
+    # rest of the file describes, which on an eight-card node makes the whole block ambiguous.
     fields = [
-        "name", "driver_version", "vbios_version", "pstate",
+        "index", "uuid", "name", "driver_version", "vbios_version", "pstate",
         "clocks.sm", "clocks.mem", "clocks.gr", "clocks.max.sm", "clocks.max.mem",
         "clocks_throttle_reasons.active",
         "power.draw", "power.limit", "enforced.power.limit", "power.max_limit",
@@ -143,14 +439,19 @@ def probe_smi() -> None:
             capture_output=True, text=True, timeout=60,
         )
         rows = [r.strip() for r in out.stdout.strip().split("\n") if r.strip()]
+        chosen = (R.get("gpu_selection") or {}).get("index")
         gpus = []
         for i, row in enumerate(rows):
             vals = [v.strip() for v in row.split(",")]
             g = dict(zip(fields, vals))
+            g["_selected"] = (_first_num(g.get("index")) == chosen) if chosen is not None \
+                else None
             gpus.append(g)
-            print(f"  --- GPU {i} ---")
+            mark = "  <== THIS RUN" if g["_selected"] else ""
+            print(f"  --- GPU {g.get('index', i)} ---{mark}")
             for k, v in g.items():
-                print(f"    {k:<34} {v}")
+                if not k.startswith("_"):
+                    print(f"    {k:<34} {v}")
         R["nvidia_smi"] = gpus
         if out.stderr.strip():
             R["probe_errors"]["nvidia_smi_stderr"] = out.stderr.strip()[:500]
@@ -195,11 +496,20 @@ def k_ws_range(X, Y, N, BLOCK: tl.constexpr):
         acc += tl.load(X + i, mask=i < N, other=0.0)
     tl.store(Y + tl.arange(0, BLOCK), acc)
 
-# ---- device-side TMA descriptor  [tl.make_tensor_descriptor] ----
+# ---- TMA, form 1: HOST-side descriptor object, built by TensorDescriptor.from_tensor() and
+# passed in as an argument. Inside the kernel it is used directly -- desc.load(...) -- and is
+# NOT fed to tl.make_tensor_descriptor. Mixing the two is a CompilationError on any hardware,
+# which is how the previous run of this script reported a false negative for TMA on an H200.
 @triton.jit
-def k_tma_device(desc_ptr, Out, BM: tl.constexpr, BN: tl.constexpr):
-    d = tl.make_tensor_descriptor(desc_ptr, shape=[BM, BN], strides=[BN, 1],
-                                  block_shape=[BM, BN])
+def k_tma_host(desc, Out, BM: tl.constexpr, BN: tl.constexpr):
+    t = desc.load([0, 0])
+    tl.store(Out + tl.arange(0, BM)[:, None] * BN + tl.arange(0, BN)[None, :], t)
+
+# ---- TMA, form 2: DEVICE-side, descriptor constructed in the kernel from a raw pointer.
+# This is what tl.make_tensor_descriptor is for; shape and strides are runtime values.
+@triton.jit
+def k_tma_device(ptr, Out, M, N, BM: tl.constexpr, BN: tl.constexpr):
+    d = tl.make_tensor_descriptor(ptr, shape=[M, N], strides=[N, 1], block_shape=[BM, BN])
     t = d.load([0, 0])
     tl.store(Out + tl.arange(0, BM)[:, None] * BN + tl.arange(0, BN)[None, :], t)
 '''
@@ -264,11 +574,15 @@ def probe_triton_features(quick: bool) -> None:
     probes: dict = {}
 
     def run(name: str, fn) -> None:
+        """Compile, launch, synchronise. `fn` may return a dict of extra evidence."""
         try:
-            fn()
+            extra = fn()
             torch.cuda.synchronize()
             probes[name] = {"ok": True}
-            print(f"    OK    {name}")
+            if isinstance(extra, dict):
+                probes[name].update(extra)
+            print(f"    OK    {name}"
+                  + (f"  {extra}" if isinstance(extra, dict) and extra else ""))
         except Exception as e:  # noqa: BLE001
             probes[name] = {"ok": False, "error": f"{type(e).__name__}: {e}"[:400]}
             print(f"    FAIL  {name}: {type(e).__name__}: {str(e)[:150]}")
@@ -293,18 +607,54 @@ def probe_triton_features(quick: bool) -> None:
                                    num_buffers_warp_spec=2)
     run("warp_specialize_num_consumer_groups", _ws_kwargs)
 
-    # TMA: host-side descriptor object + device-side make_tensor_descriptor
-    def _tma():
-        from triton.tools.tensor_descriptor import TensorDescriptor  # noqa: F401
+    # --- TMA. Two DIFFERENT APIs, probed separately and named so the JSON is unambiguous.
+    #
+    # The previous run of this script reported `tma_tensor_descriptor: FAIL` on this H200.
+    # That was a bug in the probe, not a hardware or Triton limitation: it passed a HOST-side
+    # TensorDescriptor object into tl.make_tensor_descriptor(), which is the DEVICE-side
+    # constructor and expects a raw pointer. That combination is a CompilationError on every
+    # device. The old probe NAME is gone rather than fixed in place, so no reader can compare
+    # a new JSON against an old one and think the hardware changed.
+    #
+    # triton.set_allocator() is called once, first, for both forms. TMA descriptors need a
+    # scratch buffer that Triton asks the host for at launch; without an allocator the kernel
+    # compiles cleanly and then fails at launch. That is the classic silent TMA failure and it
+    # is why the allocator is installed here rather than inside either probe.
+    tma_ready, tma_err = False, None
+    try:
         if hasattr(triton, "set_allocator"):
             triton.set_allocator(
                 lambda size, align, stream: torch.empty(size, device="cuda", dtype=torch.int8)
             )
-        M2 = torch.randn(64, 64, device="cuda", dtype=torch.float32)
-        o = torch.empty(64, 64, device="cuda", dtype=torch.float32)
-        desc = TensorDescriptor.from_tensor(M2, [64, 64])
-        pk.k_tma_device[(1,)](desc, o, BM=64, BN=64)
-    run("tma_tensor_descriptor", _tma)
+            tma_ready = True
+        else:
+            tma_err = "triton.set_allocator missing; TMA descriptors cannot be given scratch"
+    except Exception as e:  # noqa: BLE001
+        tma_err = f"{type(e).__name__}: {e}"
+    feats["tma_allocator_installed"] = {"ok": tma_ready, "error": tma_err}
+    if tma_err:
+        print(f"    ..    tma allocator: {tma_err}")
+
+    # 64x64 fp32: the innermost block dimension is 256 B, comfortably over TMA's 16 B minimum.
+    # Values are checked, not just the launch: a descriptor that loads the wrong tile still
+    # "works" as far as an exception-based probe can tell.
+    def _tma_host():
+        from triton.tools.tensor_descriptor import TensorDescriptor
+        src = torch.randn(64, 64, device="cuda", dtype=torch.float32)
+        o = torch.zeros(64, 64, device="cuda", dtype=torch.float32)
+        desc = TensorDescriptor.from_tensor(src, [64, 64])
+        pk.k_tma_host[(1,)](desc, o, BM=64, BN=64)
+        torch.cuda.synchronize()
+        return {"values_correct": bool(torch.equal(o, src))}
+    run("tma_host_descriptor", _tma_host)
+
+    def _tma_device():
+        src = torch.randn(64, 64, device="cuda", dtype=torch.float32)
+        o = torch.zeros(64, 64, device="cuda", dtype=torch.float32)
+        pk.k_tma_device[(1,)](src, o, 64, 64, BM=64, BN=64)
+        torch.cuda.synchronize()
+        return {"values_correct": bool(torch.equal(o, src))}
+    run("tma_device_descriptor", _tma_device)
 
     # cluster / DSMEM launch attribute
     def _cluster():
@@ -312,6 +662,17 @@ def probe_triton_features(quick: bool) -> None:
     run("thread_block_cluster_num_ctas", _cluster)
 
     feats["compile_probes"] = probes
+    # Single place to ask "can this stack do TMA at all", so no consumer has to know that the
+    # host-side and device-side descriptors are two separate APIs with two separate probes.
+    def _ok(name: str) -> bool:
+        p = probes.get(name) or {}
+        return bool(p.get("ok")) and p.get("values_correct", True) is not False
+    feats["tma_available"] = _ok("tma_host_descriptor") or _ok("tma_device_descriptor")
+    feats["tma_forms"] = {"host_descriptor": _ok("tma_host_descriptor"),
+                          "device_descriptor": _ok("tma_device_descriptor")}
+    feats["warp_specialize_available"] = _ok("warp_specialize_tl_range")
+    feats["clusters_available"] = _ok("thread_block_cluster_num_ctas")
+    print(f"  tma usable: {feats['tma_available']}  {feats['tma_forms']}")
 
     # --- 4c. what the compiler reports it can do ---------------------------------------
     try:
@@ -495,7 +856,17 @@ def probe_calibration(quick: bool) -> None:
     cal["smem_probe"] = smem
 
     # --- launch cost + timer granularity ----------------------------------------------
+    # These two are the ONLY calibrations a neighbouring tenant can silently destroy, because
+    # they are the only ones short enough to be dominated by someone else's time slice. The
+    # previous H200 probe returned launch 8.89 us with a 40.55 us harness floor and a tick
+    # matching 3 % of samples; both are impossible on an idle card. So the tenancy of the GPU
+    # is captured on both sides of this measurement and a verdict is recorded next to it --
+    # the failure mode to avoid is not "wrong numbers", it is wrong numbers that no downstream
+    # consumer can tell are wrong.
     print("  -- launch cost and timer granularity --")
+    sel = R.get("gpu_selection") or {}
+    tenants_before, tenant_err = (foreign_processes(sel["index"])
+                                  if sel.get("index") is not None else ([], "no GPU pinned"))
     try:
         flush = torch.empty(256 * 2**20 // 4, device="cuda", dtype=torch.int32)
 
@@ -541,6 +912,51 @@ def probe_calibration(quick: bool) -> None:
     except Exception as e:  # noqa: BLE001
         _err("launch_timer", e)
 
+    # --- verdict on the two contaminable numbers --------------------------------------
+    tenants_after, _ = (foreign_processes(sel["index"])
+                        if sel.get("index") is not None else ([], ""))
+    doubts = []
+    if tenants_before or tenants_after:
+        doubts.append(f"{len(tenants_before)} foreign compute process(es) before and "
+                      f"{len(tenants_after)} after this measurement; the GPU was shared")
+    if tenant_err:
+        doubts.append(f"tenancy could not be verified ({tenant_err})")
+    frac = cal.get("timer_tick_match_frac")
+    if isinstance(frac, (int, float)) and frac < 0.98:
+        doubts.append(f"the winning tick quantum matches only {frac * 100:.0f}% of samples; "
+                      f"a real CUDA-event tick matches ~100%, so this is not a tick, it is "
+                      f"noise wide enough to hide one")
+    floor = cal.get("harness_floor_us")
+    launch = cal.get("launch_us")
+    if isinstance(floor, (int, float)) and isinstance(launch, (int, float)) \
+            and floor > 8 * max(launch, 1e-9):
+        doubts.append(f"harness floor {floor:.2f} us is {floor / launch:.0f}x the per-launch "
+                      f"cost {launch:.2f} us; on an idle device the two are the same order")
+    cal["timing_environment"] = {
+        "gpu_index": sel.get("index"), "gpu_uuid": sel.get("uuid"),
+        "foreign_processes_before": tenants_before,
+        "foreign_processes_after": tenants_after,
+        "tenancy_query_error": tenant_err or None,
+    }
+    # None, not True, when the measurement never happened: "no numbers" and "numbers we
+    # stand behind" must not look the same to a consumer that only reads this flag.
+    measured = isinstance(cal.get("launch_us"), (int, float))
+    cal["launch_timer_trustworthy"] = (not doubts) if measured else None
+    cal["launch_timer_doubts"] = doubts
+    if doubts and measured:
+        print("\n    " + "!" * 70)
+        print("    !! launch_us / harness_floor_us / timer_tick_us are NOT TRUSTWORTHY:")
+        for d in doubts:
+            print(f"    !!   - {d}")
+        print("    !! Downstream this decides which cells are printed as UNRESOLVED, so a")
+        print("    !! contaminated tick either hides real differences or invents them.")
+        print("    !! Re-run on an idle card: python3 glm52_h200/preflight.py --gpu <idx>")
+        print("    " + "!" * 70)
+    elif measured:
+        print("    launch/tick calibration taken on a GPU with no other compute processes.")
+    else:
+        print("    launch/tick calibration did not complete; nothing to trust or distrust.")
+
     R["calibration"] = cal
     try:
         src.unlink()
@@ -585,8 +1001,14 @@ def probe_capacity() -> None:
 
 # ======================================================================================
 def main() -> None:
-    ap = argparse.ArgumentParser()
+    ap = argparse.ArgumentParser(
+        description="H200 preflight probe -- run this first, send back the JSON.")
     ap.add_argument("--quick", action="store_true", help="skip the slower calibration sweeps")
+    ap.add_argument("--gpu", default="auto", metavar="N|auto|none",
+                    help="which nvidia-smi GPU to probe. 'auto' (default) enumerates all and "
+                         "picks the idlest; N pins that physical index; 'none' leaves the "
+                         "device to CUDA. Pinning also sets CUDA_DEVICE_ORDER=PCI_BUS_ID so "
+                         "the index means what nvidia-smi says it means.")
     a = ap.parse_args()
 
     print(textwrap.dedent(f"""
@@ -599,6 +1021,11 @@ def main() -> None:
     R["cwd"] = os.getcwd()
     R["timestamp"] = time.strftime("%Y-%m-%d %H:%M:%S")
 
+    # FIRST, before anything can import torch: CUDA_VISIBLE_DEVICES is consumed once, at
+    # context creation, and setting it after the first `import torch` that touches CUDA is a
+    # silent no-op that would leave this probe describing a card it never measured.
+    R["gpu_selection"] = select_gpu(str(a.gpu).strip().lower())
+
     probe_stack()
     probe_device()
     probe_smi()
@@ -606,8 +1033,51 @@ def main() -> None:
     probe_calibration(a.quick)
     probe_capacity()
 
+    # Device fence on the OUTPUT, not just on reads.
+    #
+    # This file is the suite's only record of what the H200 actually supports, and its
+    # default path is fixed -- so a probe run on any other machine silently overwrites it
+    # with that machine's device, feature table and calibration. That happened once here:
+    # a local sm_89 run replaced the real H200 probe, and every downstream consumer would
+    # then have sized H200 grids from a laptop GPU while the filename still said "h200".
+    #
+    # Same lesson as the checkpoint fence, one level up: isolating reads is not enough if
+    # writes are unguarded.
+    existing = None
+    try:
+        existing = json.loads(OUT_JSON.read_text())
+    except Exception:  # noqa: BLE001 -- absent or unreadable is the normal first run
+        pass
+    prev = ((existing or {}).get("device") or {}).get("name")
+    now = (R.get("device") or {}).get("name")
+    if prev and now and prev != now and "--force" not in sys.argv:
+        alt = OUT_JSON.with_name(
+            "preflight_" + "".join(
+                ch if ch.isalnum() else "_" for ch in str(now).lower()
+            ).strip("_") + ".json"
+        )
+        alt.write_text(json.dumps(R, indent=2, default=str))
+        print(f"\n  !! {OUT_JSON.name} already describes {prev!r}, but this probe ran on "
+              f"{now!r}.\n     REFUSING to overwrite it -- that file is what sizes the "
+              f"benchmark grids.\n     This probe was written to {alt.name} instead.\n"
+              f"     Pass --force if you really mean to replace it.")
+        return
     OUT_JSON.write_text(json.dumps(R, indent=2, default=str))
     section("DONE")
+    sel = R.get("gpu_selection") or {}
+    if sel.get("index") is not None:
+        print(f"  probed nvidia-smi GPU {sel['index']} ({sel.get('name')}) "
+              f"uuid {sel.get('uuid')}")
+        print(f"    selection: {sel.get('reason')}")
+        if sel.get("busy"):
+            print(f"  !! that GPU was NOT idle: {'; '.join(sel.get('busy_reasons') or [])}")
+    cal = R.get("calibration") or {}
+    if cal.get("launch_timer_trustworthy") is False:
+        print("  !! launch_us / harness_floor_us / timer_tick_us are flagged UNTRUSTWORTHY "
+              "in this file:")
+        for d in cal.get("launch_timer_doubts") or []:
+            print(f"       - {d}")
+        print("     Re-run on an idle card to replace them; everything else stands.")
     if R["probe_errors"]:
         print(f"  {len(R['probe_errors'])} probe(s) reported errors (recorded, not fatal):")
         for k, v in R["probe_errors"].items():

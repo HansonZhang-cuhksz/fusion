@@ -23,9 +23,18 @@ torch too old to expose NVML helpers -- each degrades to a recorded error and th
 collection continues. This module must never be the reason a benchmark run dies, because the
 H200 cannot be re-run cheaply: one crash costs a whole round trip.
 
+A fourth incident added GPU *selection* to the job. The H200 node has eight cards and other
+tenants; the first preflight landed on one with ~51 GB already allocated by someone else and
+came back with a 40.55 us "harness floor" and a CUDA-event tick that matched 3 % of its
+samples -- neither physical, both the signature of a time-sliced device. `enumerate_gpus()`,
+`pick_idle_gpu()` and `gpu_is_busy()` exist so a run can choose a clean card and *prove* it
+chose one, and every row is matched back to its UUID so a pinned child cannot file GPU 0's
+clocks against GPU 5's timings.
+
     from glm52_h200 import hwinfo
     print(hwinfo.banner())
     payload["_hw"] = hwinfo.collect()
+    best = hwinfo.pick_idle_gpu()      # {"index":…, "uuid":…, "ok":…, "ranking":[…]}
 
 Deliberately independent of `config.py`: nothing here initialises CUDA on its own (the NVML
 helpers are skipped when `torch.cuda.is_available()` is False), so it is safe to call before a
@@ -144,7 +153,11 @@ _STATIC_FIELDS = [
     "memory.total",
 ]
 _DYNAMIC_FIELDS = [
-    "index", "pstate",
+    # `uuid` is in BOTH field sets, and it is not redundant: the dynamic row is the one that
+    # carries clocks, temperature, power and throttle reasons, and under `--gpu 5` this
+    # process's CUDA ordinal is 0 while nvidia-smi still calls the card 5. Without a uuid to
+    # match on, the volatile half of every result file would describe GPU 0.
+    "index", "uuid", "pstate",
     "clocks.sm", "clocks.mem", "clocks.gr",
     "clocks.applications.graphics", "clocks.applications.memory",
     "clocks_throttle_reasons.active", "clocks_event_reasons.active",
@@ -383,6 +396,306 @@ def all_devices() -> list:
     return out
 
 
+# --------------------------------------------------------------------------------------
+# GPU selection -- WHICH of the eight devices a measurement is allowed to run on
+# --------------------------------------------------------------------------------------
+# This section exists because of one specific, expensive failure. The first H200 preflight
+# ran on whichever device CUDA happened to hand out, and that device already had ~51 GB
+# allocated by another tenant. The long measurements survived it -- bandwidth came back at
+# 4.2 TB/s and the bf16 GEMM at 821 TF/s, both plausible -- but the two SHORT ones did not:
+# launch cost read 8.9 us against a 40.55 us "harness floor", and the CUDA-event tick
+# detector matched 3 % of its samples where a real tick matches essentially 100 %. Neither
+# number is physical; they are the signature of a device being time-sliced with somebody
+# else's work. Every downstream "is this cell resolvable?" verdict is computed from those
+# two numbers, so picking an idle device is not hygiene, it is a precondition for the
+# study's central claim being measurable at all.
+#
+# Indices here are NVML / nvidia-smi indices, i.e. PHYSICAL ones. They are not CUDA
+# ordinals: CUDA renumbers devices under CUDA_VISIBLE_DEVICES and, by default, sorts them
+# FASTEST_FIRST rather than by bus id. Anything that pins a device from an index produced
+# here must therefore set CUDA_DEVICE_ORDER=PCI_BUS_ID as well, or the pin can silently
+# select a different card than the one that was inspected.
+_GPU_FIELDS = [
+    "index", "uuid", "name",
+    "utilization.gpu", "utilization.memory",
+    "memory.total", "memory.used", "memory.free",
+    "compute_mode", "mig.mode.current", "persistence_mode",
+    "pstate", "clocks.sm", "temperature.gpu", "power.draw",
+]
+_APP_FIELDS = ["gpu_uuid", "pid", "process_name", "used_gpu_memory"]
+
+_MIB = 1024 * 1024
+
+# Defaults chosen against the measured H200 node: an untouched card there reports 4 MiB used
+# (driver/ECC overhead), a card with a tenant reported 22-48 GB. 1 GiB is comfortably above
+# the former and far below the latter, so it separates them without tuning. The free-memory
+# floor is set by the study itself: the 256-expert weights are 19.3 GB before any activation.
+IDLE_MAX_USED_BYTES = 1 * 2 ** 30
+IDLE_MAX_UTIL_PCT = 5.0
+IDLE_MIN_FREE_BYTES = 32 * 2 ** 30
+
+
+def _norm_uuid(v) -> str:
+    """nvidia-smi says `GPU-b2318e71-...`, torch says `b2318e71-...`. Same device."""
+    s = str(v or "").strip().lower()
+    return s[4:] if s.startswith("gpu-") else s
+
+
+def compute_apps(timeout: int = 30) -> tuple:
+    """(rows, error) from `nvidia-smi --query-compute-apps` -- who else is on each GPU.
+
+    Kept separate from `--query-gpu` because it is a different table with a different failure
+    mode: inside containers, under MIG, and on some driver branches it returns nothing at all
+    even while processes are running. "No rows" therefore must never be reported as "no
+    tenants", which is why the error is returned rather than swallowed -- a caller that cannot
+    see the process list has to say so instead of certifying the GPU idle.
+    """
+    rc, out, err = _run(
+        ["nvidia-smi", f"--query-compute-apps={','.join(_APP_FIELDS)}", "--format=csv,noheader"],
+        timeout,
+    )
+    if rc is None:
+        return [], err
+    blob = f"{out}\n{err}".lower()
+    if "not supported" in blob or "n/a" == out.strip().lower():
+        return [], "compute-apps query not supported by this driver/configuration"
+    if rc != 0:
+        return [], (err or out).strip()[:200] or f"rc={rc}"
+    rows = []
+    for line in out.strip().splitlines():
+        line = line.strip()
+        if not line or "no running processes" in line.lower():
+            continue
+        vals = [v.strip() for v in line.split(",")]
+        if len(vals) < len(_APP_FIELDS):
+            continue
+        d = dict(zip(_APP_FIELDS, vals))
+        rows.append({
+            "gpu_uuid": d["gpu_uuid"],
+            "pid": int(_num(d["pid"]) or 0),
+            "name": d["process_name"],
+            "used_bytes": int((_num(d["used_gpu_memory"]) or 0) * _MIB),
+        })
+    return rows, ""
+
+
+def enumerate_gpus(with_processes: bool = True, timeout: int = 30) -> list:
+    """Every physical GPU on the host, with everything needed to judge it idle.
+
+    Returns [] when nvidia-smi is unavailable rather than raising -- the caller then knows it
+    cannot choose, which is a different and much better outcome than choosing wrongly.
+    """
+    gpus, errs = _smi_query(_GPU_FIELDS, timeout)
+    if not gpus:
+        return []
+    apps, app_err = compute_apps(timeout) if with_processes else ([], "not requested")
+    by_uuid: dict = {}
+    for a in apps:
+        by_uuid.setdefault(_norm_uuid(a["gpu_uuid"]), []).append(a)
+
+    out = []
+    for g in gpus:
+        idx = _num(g.get("index"))
+        uuid = str(g.get("uuid") or "").strip()
+        out.append({
+            "index": int(idx) if idx is not None else None,
+            "uuid": uuid or None,
+            "name": g.get("name"),
+            "utilization_pct": _num(g.get("utilization.gpu")),
+            "utilization_mem_pct": _num(g.get("utilization.memory")),
+            "memory_total_bytes": int((_num(g.get("memory.total")) or 0) * _MIB),
+            "memory_used_bytes": int((_num(g.get("memory.used")) or 0) * _MIB),
+            "memory_free_bytes": int((_num(g.get("memory.free")) or 0) * _MIB),
+            "compute_mode": g.get("compute_mode"),
+            "mig_mode": g.get("mig.mode.current"),
+            "persistence_mode": g.get("persistence_mode"),
+            "pstate": g.get("pstate"),
+            "sm_mhz": _num(g.get("clocks.sm")),
+            "temp_c": _num(g.get("temperature.gpu")),
+            "power_w": _num(g.get("power.draw")),
+            "processes": by_uuid.get(_norm_uuid(uuid), []),
+            # Non-null means the process list is UNKNOWN, not empty. Callers must treat that
+            # as "cannot certify idle", never as "certified idle".
+            "process_query_error": app_err or None,
+            "query_errors": errs or None,
+        })
+    return out
+
+
+def assess_gpu(g: dict,
+               min_free_bytes: int = IDLE_MIN_FREE_BYTES,
+               max_used_bytes: int = IDLE_MAX_USED_BYTES,
+               max_util: float = IDLE_MAX_UTIL_PCT) -> dict:
+    """Is this one row (from `enumerate_gpus`) clean enough to measure on?
+
+    Three buckets, kept apart on purpose:
+
+      `reasons`        someone else is on this card. These are what disqualify it, and only
+                       these -- `busy` means occupied, nothing else.
+      `capacity_notes` the card is free but too small for the study's 19.3 GB of expert
+                       weights. A real constraint, but not evidence of a neighbour, so it
+                       must not be reported as one (a 8 GB dev GPU is empty, not occupied).
+      `caveats`        things that could not be verified -- an unreadable process table, a
+                       driver that will not report utilisation. These never disqualify (on a
+                       host where the query is unsupported nothing ever would) but they are
+                       carried into the record, because "unproven idle" and "proven idle"
+                       are different claims and only one of them is worth trusting.
+    """
+    reasons: list = []
+    capacity: list = []
+    caveats: list = []
+    procs = g.get("processes") or []
+    if procs:
+        shown = ", ".join(f"pid {p['pid']} {p['name']} ({p['used_bytes'] / 2**30:.1f} GB)"
+                          for p in procs[:4])
+        more = f" (+{len(procs) - 4} more)" if len(procs) > 4 else ""
+        reasons.append(f"{len(procs)} other compute process(es): {shown}{more}")
+    used = g.get("memory_used_bytes")
+    if used is not None and used > max_used_bytes:
+        reasons.append(f"{used / 2**30:.1f} GB already allocated "
+                       f"(threshold {max_used_bytes / 2**30:.1f} GB)")
+    util = g.get("utilization_pct")
+    if util is not None and util > max_util:
+        reasons.append(f"utilization {util:.0f}% (threshold {max_util:.0f}%)")
+    cm = str(g.get("compute_mode") or "")
+    if cm and cm.lower() not in ("default", "[n/a]", "n/a"):
+        reasons.append(f"compute mode is {cm}, not Default")
+    mig = str(g.get("mig_mode") or "")
+    if mig.lower() == "enabled":
+        reasons.append("MIG is enabled; this suite assumes a whole, undivided GPU")
+
+    free = g.get("memory_free_bytes")
+    if free is not None and free < min_free_bytes:
+        capacity.append(f"only {free / 2**30:.1f} GB free; this study wants "
+                        f"{min_free_bytes / 2**30:.0f} GB (19.3 GB of expert weights alone)")
+
+    if g.get("process_query_error"):
+        caveats.append(f"process list unavailable ({g['process_query_error']}); "
+                       f"an idle-looking card here is unproven, not proven")
+    if util is None:
+        caveats.append("utilization not reported by this driver")
+    if str(g.get("persistence_mode") or "").lower() != "enabled":
+        caveats.append("persistence mode is off; the first launch on this card pays driver "
+                       "init and the clocks ramp late")
+    return {
+        "index": g.get("index"), "uuid": g.get("uuid"), "name": g.get("name"),
+        "busy": bool(reasons), "reasons": reasons,
+        "capacity_short": bool(capacity), "capacity_notes": capacity,
+        "caveats": caveats,
+    }
+
+
+def pick_idle_gpu(min_free_bytes: int = IDLE_MIN_FREE_BYTES,
+                  max_used_bytes: int = IDLE_MAX_USED_BYTES,
+                  max_util: float = IDLE_MAX_UTIL_PCT,
+                  gpus: "list | None" = None) -> dict:
+    """The idlest GPU, the full ranking, and why -- so the choice is auditable afterwards.
+
+    Ranked by (utilization, memory used) ascending with eligible cards ahead of ineligible
+    ones, and the WHOLE ranking is returned rather than just the winner: "GPU 3 was chosen"
+    is not reviewable six weeks later, "GPU 3 was chosen, 0 % / 0.0 GB, over GPU 0 at
+    0 % / 47.8 GB with two tenants" is.
+
+    Never raises and never returns a bogus index: on a host with no nvidia-smi, `index` is
+    None and `ok` is False, and the caller decides whether to proceed unpinned.
+    """
+    rows = enumerate_gpus() if gpus is None else gpus
+    thresholds = {"min_free_bytes": min_free_bytes, "max_used_bytes": max_used_bytes,
+                  "max_util_pct": max_util}
+    if not rows:
+        return {"index": None, "uuid": None, "ok": False, "ranking": [],
+                "thresholds": thresholds,
+                "reason": "nvidia-smi returned no GPUs (missing binary, or no driver); "
+                          "no device could be selected",
+                "error": "no nvidia-smi data"}
+
+    ranking = []
+    for g in rows:
+        a = assess_gpu(g, min_free_bytes, max_used_bytes, max_util)
+        ranking.append({
+            "index": g.get("index"), "uuid": g.get("uuid"), "name": g.get("name"),
+            "utilization_pct": g.get("utilization_pct"),
+            "memory_used_bytes": g.get("memory_used_bytes"),
+            "memory_free_bytes": g.get("memory_free_bytes"),
+            "memory_total_bytes": g.get("memory_total_bytes"),
+            "n_processes": len(g.get("processes") or []),
+            "processes": g.get("processes") or [],
+            "busy": a["busy"], "reasons": a["reasons"], "caveats": a["caveats"],
+            "capacity_short": a["capacity_short"], "capacity_notes": a["capacity_notes"],
+        })
+    # Occupied last, then too-small, then the requested (utilization, memory used) ascending;
+    # index breaks ties so the choice is deterministic across repeated calls on an idle node.
+    ranking.sort(key=lambda r: (r["busy"], r["capacity_short"],
+                                r["utilization_pct"] if r["utilization_pct"] is not None else 1e9,
+                                r["memory_used_bytes"] if r["memory_used_bytes"] is not None
+                                else 1 << 62,
+                                r["index"] if r["index"] is not None else 1 << 30))
+    for i, r in enumerate(ranking):
+        r["rank"] = i
+
+    best = ranking[0]
+    if best["busy"]:
+        return {"index": best["index"], "uuid": best["uuid"], "ok": False,
+                "ranking": ranking, "thresholds": thresholds, "error": None,
+                "reason": f"no idle GPU: the least-loaded is {best['index']} and even it is "
+                          f"busy ({'; '.join(best['reasons'])})"}
+    reason = (f"GPU {best['index']} is the idlest: "
+              f"{(best['utilization_pct'] or 0):.0f}% utilization, "
+              f"{(best['memory_used_bytes'] or 0) / 2**30:.1f} GB used, "
+              f"{best['n_processes']} other compute process(es)")
+    if best["capacity_short"]:
+        reason += f" -- but {'; '.join(best['capacity_notes'])}"
+    return {"index": best["index"], "uuid": best["uuid"], "ok": True,
+            "ranking": ranking, "thresholds": thresholds, "error": None,
+            "capacity_short": best["capacity_short"], "reason": reason}
+
+
+def gpu_busy_report(index: int, **kw) -> dict:
+    """Full verdict for one physical GPU: {busy, reasons, caveats, gpu}. Never raises."""
+    rows = enumerate_gpus()
+    if not rows:
+        return {"busy": False, "reasons": [], "gpu": None,
+                "caveats": ["nvidia-smi unavailable; the GPU's state is unknown"]}
+    for g in rows:
+        if g.get("index") == index:
+            out = assess_gpu(g, **kw)
+            out["gpu"] = g
+            return out
+    return {"busy": False, "reasons": [], "gpu": None,
+            "caveats": [f"nvidia-smi reports no GPU with index {index}"]}
+
+
+def gpu_is_busy(index: int, **kw) -> bool:
+    """Does physical GPU `index` have another tenant? False when it cannot be determined.
+
+    Deliberately a plain bool -- callers write `if gpu_is_busy(3):`. Use `gpu_busy_report`
+    when the reasons are needed (they are, for any message shown to an operator).
+    """
+    return bool(gpu_busy_report(index, **kw).get("busy"))
+
+
+def gpu_table(ranking: list) -> list:
+    """The ranking as printable lines. The point is that the choice can be second-guessed."""
+    if not ranking:
+        return ["  (no GPU data -- nvidia-smi unavailable)"]
+    head = (f"  {'rank':>4} {'idx':>3}  {'name':<14} {'util':>5} "
+            f"{'used GB':>9} {'free GB':>9} {'proc':>4}  state")
+    lines = [head, "  " + "-" * (len(head) - 2)]
+    for r in ranking:
+        util = "?" if r.get("utilization_pct") is None else f"{r['utilization_pct']:.0f}%"
+        used = (r.get("memory_used_bytes") or 0) / 2 ** 30
+        free = (r.get("memory_free_bytes") or 0) / 2 ** 30
+        state = "BUSY: " + "; ".join(r.get("reasons") or []) if r.get("busy") else "idle"
+        if r.get("capacity_short"):
+            state += ("  " if r.get("busy") else " -- ") + "; ".join(r["capacity_notes"])
+        lines.append(f"  {r.get('rank', '?'):>4} {r.get('index', '?'):>3}  "
+                     f"{str(r.get('name') or '?')[:14]:<14} {util:>5} "
+                     f"{used:9.1f} {free:9.1f} {r.get('n_processes', 0):>4}  {state[:120]}")
+        if r.get("uuid"):
+            lines.append(f"       {'':>3}  uuid {r['uuid']}")
+    return lines
+
+
 def nvml_via_torch(index: "int | None" = None) -> dict:
     """torch's NVML helpers -- a second opinion on the volatile state.
 
@@ -502,9 +815,23 @@ def collect(index: "int | None" = None, topology: bool = True, refresh: bool = T
 
     # Merge the static and dynamic rows for the GPU this process is actually using, then
     # decide the clock question once, here, so no caller has to re-derive it.
-    idx = info.get("torch_device_properties", {}).get("_index", 0)
-    merged = _merge_rows(info.get("nvidia_smi_static"), dyn_smi, idx)
+    tp = info.get("torch_device_properties", {}) or {}
+    idx = tp.get("_index", 0)
+    self_uuid = str(tp.get("uuid") or "") or current_gpu_uuid(index)
+    merged = _merge_rows(info.get("nvidia_smi_static"), dyn_smi, idx, uuid=self_uuid)
     info["gpu"] = merged
+    # Which PHYSICAL card produced these numbers, spelled out. On an eight-GPU node the CUDA
+    # ordinal alone is meaningless in a result file: under `--gpu 5` every child reports
+    # ordinal 0, and only the UUID and the nvidia-smi index identify the actual device.
+    smi_idx = _num(merged.get("index"))
+    info["physical_gpu"] = {
+        "cuda_ordinal": idx,
+        "uuid": self_uuid or None,
+        "nvidia_smi_index": int(smi_idx) if smi_idx is not None else None,
+        "matched_by": merged.get("_matched_by"),
+        "cuda_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES"),
+        "cuda_device_order": os.environ.get("CUDA_DEVICE_ORDER"),
+    }
     info["clocks"] = (
         clock_state(merged)
         if merged
@@ -514,25 +841,59 @@ def collect(index: "int | None" = None, topology: bool = True, refresh: bool = T
     return info
 
 
-def _merge_rows(static_rows, dyn_rows, idx: int) -> dict:
-    """Static+dynamic nvidia-smi rows for GPU `idx`, matched on the reported `index` field.
+def _merge_rows(static_rows, dyn_rows, idx: int, uuid: str = "") -> dict:
+    """Static+dynamic nvidia-smi rows for this process's GPU, matched by UUID then by index.
 
-    Matched on `index` rather than position because CUDA_DEVICE_ORDER, MIG and
-    CUDA_VISIBLE_DEVICES all make torch's ordinal and nvidia-smi's ordinal disagree; when they
-    cannot be matched we fall back to the single row if there is only one, and to nothing
-    otherwise. Attributing another GPU's clocks to this one would be worse than reporting none.
+    UUID first, and this is the whole point once a run is pinned with `--gpu N`: nvidia-smi
+    always numbers all eight cards physically, while torch inside a child with
+    CUDA_VISIBLE_DEVICES=5 calls that same card ordinal 0. Matching on the ordinal would file
+    GPU 0's clocks, temperature and throttle reasons against timings produced on GPU 5 --
+    precisely the "result file carried a device header from another GPU" failure this module
+    was written to stop. The index path remains as a fallback for unpinned runs and for
+    drivers that do not report a UUID; when neither matches we return the single row if there
+    is only one and nothing otherwise, because no data beats another GPU's data.
     """
+    want = _norm_uuid(uuid)
+
     def pick(rows):
         if not rows:
             return {}
+        if want:
+            for r in rows:
+                if _norm_uuid(r.get("uuid")) == want:
+                    return dict(r, _matched_by="uuid")
         for r in rows:
             if str(r.get("index", "")).strip() == str(idx):
-                return r
-        return rows[0] if len(rows) == 1 else {}
+                return dict(r, _matched_by="index")
+        return dict(rows[0], _matched_by="sole row") if len(rows) == 1 else {}
 
     out = dict(pick(static_rows))
     out.update(pick(dyn_rows))
     return out
+
+
+_UUID_CACHE: dict = {}
+
+
+def current_gpu_uuid(index: "int | None" = None) -> str:
+    """UUID of the GPU this process is actually using, or "" if it cannot be determined.
+
+    Cached: it cannot change under a running process, and the lookup touches torch's device
+    properties, which is not free.
+    """
+    if index in _UUID_CACHE:
+        return _UUID_CACHE[index]
+    val = ""
+    try:
+        import torch
+
+        if torch.cuda.is_available():
+            idx = torch.cuda.current_device() if index is None else index
+            val = str(getattr(torch.cuda.get_device_properties(idx), "uuid", "") or "")
+    except Exception:  # noqa: BLE001 -- absence is an answer, not an error
+        val = ""
+    _UUID_CACHE[index] = val
+    return val
 
 
 def snapshot(index: "int | None" = None) -> dict:
@@ -545,7 +906,7 @@ def snapshot(index: "int | None" = None) -> dict:
     # Short timeout on purpose: this may be called between two arms of a measurement, and a
     # wedged driver query must not become the thing that stalls (or dominates) the run.
     rows, err = _smi_query(
-        ["index", "clocks.sm", "clocks.mem", "temperature.gpu", "temperature.memory",
+        ["index", "uuid", "clocks.sm", "clocks.mem", "temperature.gpu", "temperature.memory",
          "power.draw", "utilization.gpu", "pstate", "clocks_throttle_reasons.active"],
         timeout=15,
     )
@@ -557,9 +918,15 @@ def snapshot(index: "int | None" = None) -> dict:
             idx = torch.cuda.current_device() if torch.cuda.is_available() else 0
         except Exception:  # noqa: BLE001
             idx = 0
-    g = _merge_rows(None, rows, idx)
+    # By UUID for the same reason `collect()` does it: under `--gpu N` this process's ordinal
+    # is 0 while nvidia-smi still calls the card N, and a drift check against the wrong card
+    # would silently certify that nothing moved.
+    g = _merge_rows(None, rows, idx, uuid=current_gpu_uuid(index))
     return {
         "t": time.time(),
+        "nvidia_smi_index": int(_num(g.get("index"))) if _num(g.get("index")) is not None
+                            else None,
+        "uuid": g.get("uuid"),
         "sm_mhz": _num(g.get("clocks.sm")),
         "mem_mhz": _num(g.get("clocks.mem")),
         "temp_c": _num(g.get("temperature.gpu")),
@@ -655,6 +1022,15 @@ def banner(info: "dict | None" = None) -> str:
         f"visible GPUs {st.get('device_count', '?')}  "
         f"CUDA_VISIBLE_DEVICES={os.environ.get('CUDA_VISIBLE_DEVICES', 'all')}",
     ]
+    # On an eight-GPU node "cuda:0" names nothing. Say which physical card this is, and how
+    # we know, so a number in a result file can be traced back to a specific device.
+    pg = info.get("physical_gpu") or {}
+    if pg:
+        how = pg.get("matched_by") or "NOTHING -- the clocks above may be another card"
+        order = pg.get("cuda_device_order") or "FASTEST_FIRST (default)"
+        lines.append(
+            f"[hw] physical GPU: nvidia-smi index {pg.get('nvidia_smi_index', '?')}  "
+            f"cuda ordinal {pg.get('cuda_ordinal', '?')}  matched by {how}  order={order}")
     if ck.get("throttle_reasons"):
         lines.append(f"[hw] throttle: {', '.join(ck['throttle_reasons'])}")
     for b in ck.get("basis", [])[:3]:
@@ -666,3 +1042,10 @@ def banner(info: "dict | None" = None) -> str:
 
 if __name__ == "__main__":  # `python3 -m glm52_h200.hwinfo` prints the block and exits
     print(banner())
+    _pick = pick_idle_gpu()
+    print("\n[gpu] host GPU ranking (idlest first):")
+    for _ln in gpu_table(_pick.get("ranking") or []):
+        print(_ln)
+    print(f"[gpu] {_pick.get('reason')}")
+    if _pick.get("ok"):
+        print(f"[gpu] suggested: python3 run_h200.py --gpu {_pick['index']}")

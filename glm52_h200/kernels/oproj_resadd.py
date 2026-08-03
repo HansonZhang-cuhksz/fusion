@@ -21,12 +21,38 @@ unfused side's also reads the residual (3 passes).
 --------------------------------------------------------------------------------------
 The H200 axes, and why every one of them is a RUNTIME choice
 --------------------------------------------------------------------------------------
-This file was written on a box with no sm_90 in it and cannot be tested against one, so
-nothing sm_90-specific is decided at authoring time.  `kernels/hopper.py` is the single
+Nothing sm_90-specific is decided at authoring time.  `kernels/hopper.py` is the single
 place that decides what this process may emit; this module only adapts.  The cfg keys it
 forwards are advertised in `H200_CFG_KEYS`, which is what `bench.widen()` reads before it
 adds any overlay -- so on a stack without these features the grids are byte-identical to
 the classic ones.
+
+The 2026-08-03 H200 preflight (`preflight_h200.json`) turned four of those runtime
+questions into measured answers.  They are recorded here because they decide which paths
+are worth carrying -- NOT because anything below now assumes them; every gate is still a
+`caps()` read at launch time:
+
+  * `tl.range(..., warp_specialize=True)` compiles on this stack.  The launch-kwarg
+    spelling does NOT: triton 3.6.0 answers "Keyword argument num_consumer_groups was
+    specified but unrecognised", and an unrecognised kwarg is a hard `KeyError`, not a
+    soft failure.  `_ws_launch` therefore emits that spelling only when
+    `hopper.ws_mode()` says the stack takes it, and RAISES when a cfg pins it anyway --
+    forwarding it blind would turn every warp-spec config on this device into an opaque
+    launch error rather than a measurement.
+  * `num_ctas > 1` compiles, so thread-block clusters are a real axis here.
+  * TMA's preflight probe was a FALSE NEGATIVE.  It fed a host-side `TensorDescriptor`
+    into `tl.make_tensor_descriptor()` -- the DEVICE-side constructor, which takes a raw
+    pointer -- and mixing the two APIs is a CompilationError on any hardware, so that
+    probe measured the probe.  Both spellings this file emits (a descriptor argument
+    consumed as `desc.load(...)`, and `tl.make_tensor_descriptor(ptr, shape=..., ...)`)
+    were verified to compile, launch and produce correct values on triton 3.6.0.  The
+    gate is still `hopper.caps().tma`, so a stale probe costs the TMA arm and nothing
+    else -- but it costs it silently, which is why `h200_report()` exists.
+  * The device's own best bf16 Triton GEMM is BM128 BN256 BK64 GM8 w8 s3 at 788 TF/s
+    (96 % of cuBLAS).  Nothing here caps BLOCK_*; the only ceiling is `smem_limit()`, and
+    under the corrected staging rule (see `smem_stage_bytes`) that shape models at
+    147456 B against a 232448 B opt-in ceiling, as does BM256 BN256 BK64 s3 at 196608 B.
+    Both are expressible and both fit.
 
   `USE_TMA` / `TMA_A` / `TMA_B`
       Fetch that operand through a tensor-descriptor box instead of a masked pointer tile.
@@ -43,7 +69,7 @@ the classic ones.
       device-side spelling (`tl.make_tensor_descriptor`) pays global scratch instead.  Both
       are offered; the tuner decides, which is the study's method.
   `warp_specialize` (+ `num_consumer_groups` / `num_buffers_warp_spec` on forks that use
-      the launch-kwarg spelling)
+      the launch-kwarg spelling -- measured DEAD on this H200's triton 3.6.0)
       `tl.range(..., warp_specialize=True)` on the k-loop.  The loop header is written out
       twice under a `tl.constexpr` `if` rather than forwarding the flag into the kwarg:
       `warp_specialize=` lowers to an MLIR attribute, some Triton builds reject a
@@ -140,20 +166,40 @@ def caps():
         return _NO_HOPPER
 
 
-def smem_limit() -> int:
-    """Per-block shared-memory ceiling in bytes, from the device probe -- never a literal.
+_CFG_MOD = None
+_CFG_TRIED = False
 
-    Hopper opts in to ~228 KB per SM, which is why nothing in this file caps BLOCK_*; this
-    number is the only ceiling.  If the probe cannot supply it we RAISE rather than
-    substitute a plausible constant: a grid built from the wrong ceiling prunes the two
-    arms unequally, and that is the one failure mode this study cannot detect afterwards.
-    """
-    n, err = 0, ""
-    try:
+
+def _config():
+    """`glm52_h200.config`, or None.  Cached -- this sits on the grid-construction path."""
+    global _CFG_MOD, _CFG_TRIED
+    if not _CFG_TRIED:
+        _CFG_TRIED = True
         try:
             from .. import config as _C  # type: ignore
         except Exception:  # noqa: BLE001 -- also importable as a top-level package
-            from glm52_h200 import config as _C  # type: ignore
+            try:
+                from glm52_h200 import config as _C  # type: ignore
+            except Exception:  # noqa: BLE001
+                _C = None
+        _CFG_MOD = _C
+    return _CFG_MOD
+
+
+def smem_limit() -> int:
+    """Per-block shared-memory ceiling in bytes, from the device probe -- never a literal.
+
+    The H200 opts in to 232448 B per block (233472 per SM), which is why nothing in this
+    file caps BLOCK_*; this number is the only ceiling.  If the probe cannot supply it we
+    RAISE rather than substitute a plausible constant: a grid built from the wrong ceiling
+    prunes the two arms unequally, and that is the one failure mode this study cannot
+    detect afterwards.
+    """
+    n, err = 0, ""
+    try:
+        _C = _config()
+        if _C is None:
+            raise ImportError("glm52_h200.config not importable")
         n = int(getattr(_C.env(), "smem_bytes", 0) or 0)
     except Exception as exc:  # noqa: BLE001
         err = f"{type(exc).__name__}: {exc}"
@@ -182,6 +228,9 @@ def ws_ok(cfg: dict) -> bool:
     )
 
 
+_WS_LAUNCH_KEYS = ("num_consumer_groups", "num_buffers_warp_spec")
+
+
 def _ws_launch(cfg: dict) -> tuple:
     """(constexpr flag, extra launch kwargs) for this config's warp-specialization request.
 
@@ -189,9 +238,29 @@ def _ws_launch(cfg: dict) -> tuple:
     compiler as a constexpr, the forked-Triton one must reach the launcher as kwargs -- so
     `hopper` answers both and this merges them.  A request neither can serve raises; see
     `HopperPathUnavailable`.
+
+    The launch-kwarg spelling is forwarded ONLY when `hopper.ws_mode()` reports that this
+    Triton takes it.  On the measured H200 (triton 3.6.0) it does not: the preflight probe
+    `warp_specialize_num_consumer_groups` fails with "Keyword argument num_consumer_groups
+    was specified but unrecognised", and Triton raises that as a `KeyError` at launch
+    rather than ignoring it.  Copying the key out of the cfg unconditionally -- which is
+    what this did -- would therefore turn any config carrying it into an opaque launch
+    failure on the device the suite is actually for, WS requested or not.  Note also that
+    on a launch-mode stack the kwargs ARE the enabling mechanism (there is no source flag
+    to pair them with), so they are forwarded there whether or not `warp_specialize` is
+    also set; that is why the gate is the stack's mode and not `want`.
     """
     want = bool(cfg.get("warp_specialize", cfg.get("WARP_SPECIALIZE", False)))
-    kw = {k: int(cfg[k]) for k in ("num_consumer_groups", "num_buffers_warp_spec") if k in cfg}
+    pinned = {k: int(cfg[k]) for k in _WS_LAUNCH_KEYS if k in cfg}
+    mode = str(getattr(caps(), "ws_mode", "none") or "none")
+    if pinned and mode != "launch":
+        raise HopperPathUnavailable(
+            f"cfg pins {'/'.join(sorted(pinned))} but this stack does not accept the "
+            f"consumer-group launch-kwarg spelling (ws_mode={mode!r}); Triton would raise "
+            "KeyError: 'Keyword argument num_consumer_groups was specified but "
+            "unrecognised'.  On this H200 the live spelling is tl.range(warp_specialize=True)."
+        )
+    kw = dict(pinned) if mode == "launch" else {}
     if not want:
         return False, kw
     flag = bool(_H.ws_source_flag(True)) if _H is not None else False
@@ -263,6 +332,25 @@ def _tma_check(t, block, build: bool) -> tuple:
     return hit
 
 
+def _ensure_allocator() -> None:
+    """Register Triton's global-scratch allocator before ANY descriptor kernel launches.
+
+    `triton.set_allocator(...)` is required by BOTH spellings on triton 3.6 -- the
+    device-side constructor builds its descriptor out of global scratch, and the host-side
+    form needs device memory for the tensormap the launcher fills.  Skipping it is the
+    classic silent TMA failure: the symptom is a launch error deep inside the driver that
+    never says "TMA", so it reads as a flaky config rather than a missing one-line setup.
+    `hopper.ensure_allocator()` is idempotent (a dict lookup after the first call), so this
+    is called on the TMA planning path unconditionally rather than only where it is
+    provably needed.
+    """
+    if _H is None or not _H.ensure_allocator():
+        raise TmaUnsupported(
+            "triton.set_allocator is unavailable, so no TMA descriptor kernel can launch "
+            f"(hopper.ensure_allocator() -> False, hopper_module={_H is not None})"
+        )
+
+
 def _tma_spelling(cfg: dict) -> int:
     """Host-side descriptor argument vs device-side `tl.make_tensor_descriptor`.
 
@@ -289,6 +377,12 @@ def _plan_tma(cfg: dict, a, b, bm: int, bn: int, bk: int) -> tuple:
     nothing.  An explicit `TMA_A`/`TMA_B` is a pin: if it cannot be honoured it raises
     rather than degrading.  And if NOTHING can be described, the config is a byte-identical
     duplicate of the classic one, so it raises rather than being timed and reported as TMA.
+
+    Every legality check and every descriptor build goes through the MEMOIZED `_tma_check`,
+    including the ones that only produce an error message.  This is the launch path, not
+    the setup path: autotuning replays the same (tensor, box) pair thousands of times, and
+    `TensorDescriptor.from_tensor` is tens of microseconds of python that would land inside
+    the timed window and be charged to the TMA arm alone.
     """
     both = bool(cfg.get("USE_TMA", False))
     want_a, want_b = bool(cfg.get("TMA_A", both)), bool(cfg.get("TMA_B", both))
@@ -303,36 +397,28 @@ def _plan_tma(cfg: dict, a, b, bm: int, bn: int, bk: int) -> tuple:
             f"host={getattr(c,'tma_host',False)}, device={getattr(c,'tma_device',False)}, "
             f"cc={getattr(c,'cc',(0,0))}, sources={getattr(c,'sources',{})})"
         )
+    # Before the first descriptor of either spelling is built OR launched.
+    _ensure_allocator()
+    build = mode == _TMA_HOST
 
-    def _usable(tag, t, block, pinned):
-        why = _tma_reject(t, block)
+    def _plan(tag, t, block, want, pinned):
+        if not want:
+            return False, None
+        desc, why = _tma_check(t, block, build)
         if why is None:
-            return True
+            return True, desc
         if pinned:
             raise TmaUnsupported(f"{tag} box {block}: {why}")
-        return False
+        return False, None
 
-    tma_a = want_a and _usable("A", a, [bm, bk], "TMA_A" in cfg)
-    tma_b = want_b and _usable("B", b, [bk, bn], "TMA_B" in cfg)
+    tma_a, a_desc = _plan("A", a, [bm, bk], want_a, "TMA_A" in cfg)
+    tma_b, b_desc = _plan("B", b, [bk, bn], want_b, "TMA_B" in cfg)
     if not (tma_a or tma_b):
         raise TmaUnsupported(
-            f"neither operand can be described (A box [{bm},{bk}]: {_tma_reject(a, [bm, bk])}; "
-            f"B box [{bk},{bn}]: {_tma_reject(b, [bk, bn])})"
+            f"neither operand can be described (A box [{bm},{bk}]: "
+            f"{_tma_check(a, [bm, bk], False)[1]}; "
+            f"B box [{bk},{bn}]: {_tma_check(b, [bk, bn], False)[1]})"
         )
-
-    a_desc = b_desc = None
-    if mode == _TMA_HOST:
-        if tma_a:
-            a_desc = _H.descriptor(a, [bm, bk])
-            if a_desc is None:
-                raise TmaUnsupported(f"hopper.descriptor declined A box [{bm},{bk}]")
-        if tma_b:
-            b_desc = _H.descriptor(b, [bk, bn])
-            if b_desc is None:
-                raise TmaUnsupported(f"hopper.descriptor declined B box [{bk},{bn}]")
-    elif _H is not None:
-        # device-side descriptors are built from global scratch, which needs the allocator
-        _H.ensure_allocator()
     return mode, tma_a, tma_b, a_desc, b_desc
 
 
@@ -352,6 +438,16 @@ def h200_report() -> dict:
             rep["tma_stats"] = _H.tma_stats()
         except Exception as exc:  # noqa: BLE001
             rep["tma_stats"] = f"{type(exc).__name__}: {exc}"
+    # The shared-memory model that pruned this run's grid, evaluated at the one shape
+    # preflight actually measured on this device (BM128 BN256 BK64 s3 -> 147456 B), next to
+    # the ceiling it was compared against.  A grid pruned by the wrong rule leaves NO trace
+    # -- the rejected configs are simply absent from the table -- so the rule has to travel
+    # in the result file alongside the numbers it shaped.
+    try:
+        rep["smem_model_bm128_bn256_bk64_s3"] = smem_stage_bytes(128, 256, 64, 3)
+        rep["smem_limit_bytes"] = smem_limit()
+    except Exception as exc:  # noqa: BLE001
+        rep["smem_model_error"] = f"{type(exc).__name__}: {exc}"
     return rep
 
 
@@ -503,7 +599,9 @@ def oproj_gemm_kernel(
 
     # The header is duplicated, not parameterised: `warp_specialize=` lowers to an MLIR
     # attribute and some Triton builds refuse a tl.constexpr there, which would break the
-    # WS=False path too.  A constexpr `if` has worked in every Triton ever shipped.
+    # WS=False path too.  A constexpr `if` has worked in every Triton ever shipped, and the
+    # LITERAL spelling below is the exact one preflight compiled on this H200
+    # (`warp_specialize_tl_range` OK) -- so the proven form is the one emitted.
     if WARP_SPECIALIZE:
         for k in tl.range(0, num_iters, warp_specialize=True):
             acc, a_ptrs, b_ptrs = _gemm_step(
@@ -566,23 +664,50 @@ def epilogue_kernel(
 # ======================================================================================
 # Launchers
 # ======================================================================================
+def _pipeline_buffers(num_stages: int) -> int:
+    """How many mainloop buffers Triton really allocates -- an ARCHITECTURE question.
+
+    sm_89 / triton 3.6 stages `max(2, num_stages - 1)`, measured by launching 68 configs
+    and reading `CompiledKernel.metadata.shared` (exact on 64, conservative on the 4 with
+    num_stages=2).  **The H200 stages `num_stages`.**  All five of
+    `preflight_h200.json`'s `smem_probe` trial compiles are matched EXACTLY by
+    `num_stages * 2 * BK * (BM + BN)`:
+
+        128/128/64 s3  ->  98304      128/256/64 s3 -> 147456
+        128/256/64 s4  -> 196608      256/256/64 s3 -> 196608
+        128/256/128 s3 -> 294912  (> the 232448 B opt-in ceiling; it is the one that fails)
+
+    so the sm_89 rule under-predicts Hopper by 1.5x at s3.  Under-prediction is the benign
+    direction -- the config is offered, fails to compile and lands in `n_failed` where the
+    fairness check can see it -- but the error is proportional to the tile, so it is larger
+    for whichever arm stages more (here the split-K/large-BN mappings).  It does not prune
+    the two arms equally, which is the failure this study cannot detect afterwards.  Hence
+    a runtime read of the device, never a literal.
+    """
+    return int(num_stages) if tuple(getattr(caps(), "cc", (0, 0))) >= (9, 0) \
+        else max(2, int(num_stages) - 1)
+
+
 def smem_stage_bytes(bm: int, bn: int, bk: int, num_stages: int, bn_mult: int = 1) -> int:
     """Shared memory a Triton GEMM mainloop stages, in bytes.
 
-    Triton 3.0 (the C500 stack) allocated `num_stages` buffers; Triton 3.6 allocates
-    `num_stages - 1` with a floor of 2 -- verified on sm89 by launching 68 configs and
-    reading `CompiledKernel.metadata.shared` (exact on 64, conservative on the 4 with
-    num_stages=2).  The old model over-predicts by 1.33-1.5x and therefore rejects configs
-    the hardware can run; every rejected-but-legal config narrows the search grid, and if
-    it narrows one arm more than the other it biases the ratio.
+    `glm52_h200.config.smem_stage_bytes` owns the canonical rule and `config.smem_model_check()`
+    audits it against preflight's measurements, so this DELEGATES there when the package is
+    importable; the local fallback (see `_pipeline_buffers`) exists only so a kernel module
+    stays usable standalone.  Two copies of a pruning rule that disagree would prune the
+    fused and unfused grids differently, which is worse than either rule being wrong.
 
     TMA stages the same tile bytes (plus a handful of mbarriers), so the model is unchanged
-    for the descriptor path.  This is an ESTIMATE: the authoritative number is
+    for the descriptor path.  This is an ESTIMATE either way: the authoritative number is
     `CompiledKernel.metadata.shared` after a trial compile, which the bench records.
-    `glm52_h200.config.smem_stage_bytes` is the same formula; this copy exists so a kernel
-    module stays usable standalone.
     """
-    return max(2, num_stages - 1) * 2 * bk * (bm + bn_mult * bn)
+    _C = _config()
+    if _C is not None and hasattr(_C, "smem_stage_bytes"):
+        try:
+            return int(_C.smem_stage_bytes(bm, bn, bk, num_stages, bn_mult))
+        except Exception:  # noqa: BLE001 -- fall through to the local copy
+            pass
+    return _pipeline_buffers(num_stages) * 2 * bk * (bm + bn_mult * bn)
 
 
 def smem_bytes(cfg: dict) -> int:

@@ -27,7 +27,11 @@ is whatever `kernels/norm_router.py` compiles to, and the search grid gains a sp
 variant only if the preflight proved the feature AND the kernel module advertises the knob.
 
 Run:
-    python3 glm52_h200/bench/bench_f04f05_norm_router.py [--regimes ...] [--only F5,F4]
+    python3 glm52_h200/bench/bench_f04f05_norm_router.py --gpu auto [--regimes ...] [--only F5,F4]
+
+`--gpu auto` picks the idlest of the host's GPUs and masks the process to it before
+CUDA initialises; on the 8-GPU measurement host that is the difference between timing an
+idle card and timing one another tenant is already using.
 """
 
 from __future__ import annotations
@@ -81,18 +85,27 @@ WARPS = B.warp_ladder(_ENV)
 #: pass-1 of the fused kernel holds a [BLOCK_M, NORM_BK] tile AND its running sum of
 #: squares, so its element budget is half a program's register-bounded tile.
 NORM_TILE_CAP = B.elems_per_program_cap(_ENV) // 2
-#: fp32 accumulator elements per lane a GEMM tile may hold before it certainly spills
-ACC_PER_LANE_MAX = 128
+#: fp32 accumulator elements per lane a GEMM tile may hold before it certainly spills,
+#: derived from the 256-entry per-thread register window rather than written down
+ACC_PER_LANE_MAX = B.MAX_ACC_ELEMS_PER_THREAD
+#: BLOCK_M / BLOCK_K ladders derived from THIS device's opt-in SMEM ceiling.  BLOCK_E is
+#: bounded by the problem (256 experts), not by the device, so it keeps its own list.
+TILES = B.tile_ladder(_ENV)
+BKS = B.bk_ladder(_ENV, hi=128)
+#: Trial budget for the GEMM grid AFTER any sm_90 overlays multiply it.  `fused_grid` then
+#: multiplies again by the NORM_BK ladder, which is why this is capped and that is not.
+COARSE_CAP = 240
 
 
 def _gemm_ok(cfg: dict) -> bool:
     bm, bk, be, w, s = (
         cfg["BLOCK_M"], cfg["BLOCK_K"], cfg["BLOCK_E"], cfg["num_warps"], cfg["num_stages"]
     )
-    # Triton's mainloop multi-buffer count is version-dependent (3.0 staged num_stages,
-    # 3.6 stages num_stages-1 with a floor of 2).  C.smem_stage_bytes owns that; the old
-    # formula over-predicts by 1.33-1.5x and rejects tiles this stack runs fine.
-    if C.smem_stage_bytes(bm, be, bk, s) > SMEM:
+    # Triton's mainloop multi-buffer count is version- AND stack-dependent (3.0 staged
+    # num_stages, 3.6/sm_89 stages num_stages-1 with a floor of 2, this H200 stack is back
+    # at num_stages).  `B.smem_predict` fits it to the preflight's own smem_probe rows; the
+    # old formula over-predicts by 1.33-1.5x and rejects tiles this stack runs fine.
+    if B.smem_predict(bm, be, bk, s) > SMEM:
         return False
     if bm * be > REGS:  # fp32 accumulator tile: BM*BE registers per program
         return False
@@ -109,16 +122,17 @@ def gemm_grid() -> list[dict]:
     router kernel).  The size is device-dependent -- the SMEM/register prefilter is a
     function of `C.env()` -- so `fairness.grids`, not a number in this docstring, is the
     count of record."""
+    bms = [t for t in TILES if t <= 128]
     out: list[dict] = []
     for bm, bk, be, (w, s) in itertools.product(
-        (16, 32, 64, 128), (32, 64, 128), (32, 64, 128, 256), ((4, 2), (8, 2))
+        bms, BKS, (32, 64, 128, 256), ((4, 2), (8, 2))
     ):
         cfg = dict(BLOCK_M=bm, BLOCK_K=bk, BLOCK_E=be, num_warps=w, num_stages=s)
         if _gemm_ok(cfg):
             out.append(cfg)
     # wider warps / deeper pipeline at the narrow k-tile
     for bm, be, (w, s) in itertools.product(
-        (16, 32, 64, 128), (128, 256), ((16, 2), (8, 3), (8, 4))
+        bms, (128, 256), ((16, 2), (8, 3), (8, 4))
     ):
         cfg = dict(BLOCK_M=bm, BLOCK_K=32, BLOCK_E=be, num_warps=w, num_stages=s)
         if _gemm_ok(cfg):
@@ -130,9 +144,9 @@ def gemm_grid() -> list[dict]:
     # BLOCK_K=64, and an H200's ceiling is whatever the probe says -- which is exactly why
     # this is not written as a literal.
     for bm, (w, s) in itertools.product(
-        (16, 32, 64), ((4, 1), (4, 3), (2, 2), (8, 4), (16, 3))
+        [t for t in TILES if t <= 64], ((4, 1), (4, 3), (2, 2), (8, 4), (16, 3))
     ):
-        for bk in (32, 64, 128):
+        for bk in BKS:
             cfg = dict(BLOCK_M=bm, BLOCK_K=bk, BLOCK_E=256, num_warps=w, num_stages=s)
             if _gemm_ok(cfg):
                 out.append(cfg)
@@ -142,7 +156,11 @@ def gemm_grid() -> list[dict]:
         for c in list(out)
         if c["BLOCK_E"] == 256 and c["num_stages"] == 2 and c["num_warps"] == 8
     ]
-    return B.widen(B.dedup(out), K)
+    # Widened with whatever sm_90 axes the kernel module advertises, then sampled back to a
+    # trial budget.  `cap_grid` is seeded and order-preserving, so the repeated calls this
+    # file makes (here, and again inside `fused_grid`) return the SAME list -- the fused and
+    # unfused sides cannot end up searching different samples of the same space.
+    return B.widen(B.dedup(out), K, cap=COARSE_CAP, tag="f04f05/gemm")
 
 
 def fused_grid() -> list[dict]:
@@ -307,7 +325,9 @@ def run_regime(regime, quick: bool, units: list[str], fair: B.Fairness) -> tuple
 
     def tune(tag, make_chain, grid, verify, prep=None):
         tr = B.screened_autotune(tag, make_chain, grid, verify, wt, rt, prep=prep)
-        fair.add(regime.name, tag, "tune", tr)
+        # `grid=` records the LIVE sm_90 axis counts this arm was handed, so a one-sided
+        # overlay would show up as a number rather than have to be inferred from prose.
+        fair.add(regime.name, tag, "tune", tr, grid=grid)
         return tr
 
     # ---- the eight independently tuned kernels ---------------------------------------
@@ -696,7 +716,17 @@ def main() -> None:
                        "chain -- this can only help the baseline",
         weight_layout="the router weight is transposed to [H, E] ONCE and both sides "
                       "consume that same layout (a load-time weight-prep choice)",
+        h200_axes=(
+            "gemm_grid() is widened with whatever sm_90 axes kernels/norm_router.py "
+            "advertises, and fused_grid() is built FROM gemm_grid(), so every axis offered "
+            "to the stand-alone router GEMM reaches the fused #4/#5 kernels unchanged and "
+            "vice versa. The norm-only kernels are pure vector passes with no GEMM "
+            "mainloop, so no axis applies to them on either side; their axis_counts are "
+            "legitimately zero. See fairness.h200_axes.per_family for what this stack and "
+            "this kernel module actually offered."
+        ),
     )
+    fair.axis("f04f05_norm_router", B.h200_axis_report(K))
 
     rows, tables, checks, timings, pair_meta = [], {}, {}, {}, None
 

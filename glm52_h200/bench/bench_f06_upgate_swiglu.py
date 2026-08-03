@@ -16,12 +16,17 @@ WHY THIS FAMILY EXISTS AGAIN.  On C500 the unfused winner's tile (BM128/BN128/BK
 needed 96 KB when fused against a hard 64 KB ceiling, so the fused arm was *uncompilable*
 at the shape that mattered and the family scored 0.553x at prefill.  That was a hard bar,
 not a performance effect, and it is a property of the ceiling -- which is why the ceiling
-here comes from the probe and the footprint model comes from `C.smem_stage_bytes` rather
-than from the kernel module's own (Triton-3.0-era) estimate.  The 4060 could not test it at
+here comes from the probe and the footprint model comes from `B.smem_predict` -- the staging
+rule fitted to this preflight's own measurements -- rather than from the kernel module's own
+(Triton-3.0-era) estimate.  The 4060 could not test it at
 all: w13 alone is 12.0 GB against 7.4 GB usable.  H200 can.
 
 Run:
-    python3 glm52_h200/bench/bench_f06_upgate_swiglu.py [--regimes ...] [--quick]
+    python3 glm52_h200/bench/bench_f06_upgate_swiglu.py --gpu auto [--regimes ...] [--quick]
+
+`--gpu auto` picks the idlest of the host's GPUs and masks the process to it before
+CUDA initialises; on the 8-GPU measurement host that is the difference between timing an
+idle card and timing one another tenant is already using.
 """
 
 from __future__ import annotations
@@ -61,8 +66,16 @@ SMEM_LIMIT = B.env_int(_ENV, "smem_bytes")
 WARP = B.env_int(_ENV, "warp_size")
 MAX_THREADS = B.max_threads_per_block(_ENV)
 WARPS = B.warp_ladder(_ENV, lo=2)
-ACC_PER_LANE_MAX = 128
+ACC_PER_LANE_MAX = B.MAX_ACC_ELEMS_PER_THREAD  # 128, from the per-thread register window
 ACC_PER_LANE_MIN = 2
+# Tile ladders derived from THIS device's SMEM ceiling.  This family is the one where that
+# matters most: on C500 the unfused winner's tile needed 96 KB once fused against a hard
+# 64 KB ceiling, so the fused arm was UNCOMPILABLE at the shape that mattered and the family
+# scored 0.553x. The H200's 232448 B is what makes that shape legal for both arms.
+TILES = B.tile_ladder(_ENV)
+BKS = B.bk_ladder(_ENV, hi=128)
+#: Coarse-grid trial budget AFTER the sm_90 overlays multiply the space.
+COARSE_CAP = 200
 
 
 # --------------------------------------------------------------------------------------
@@ -75,7 +88,11 @@ def _ok(cfg: dict, fused: bool, acc_lo: float = 4.0) -> bool:
     bm, bn, bk = cfg["BLOCK_M"], cfg["BLOCK_N"], cfg["BLOCK_K"]
     w, s = cfg["num_warps"], cfg["num_stages"]
     # `bn_mult=2` for the fused variant: it stages the gate tile AND the up tile.
-    if C.smem_stage_bytes(bm, bn, bk, s, bn_mult=2 if fused else 1) > SMEM_LIMIT:
+    # `B.smem_predict` fits the multi-buffer count to the H200 preflight's own smem_probe
+    # observations rather than assuming 3.0's or sm_89's; here that is not a nicety, because
+    # the fused arm's footprint is 1.5x the unfused arm's and a mis-modelled ceiling
+    # therefore prunes the two arms by DIFFERENT amounts.
+    if B.smem_predict(bm, bn, bk, s, bn_mult=2 if fused else 1) > SMEM_LIMIT:
         return False
     threads = w * WARP
     if threads > MAX_THREADS:
@@ -86,29 +103,39 @@ def _ok(cfg: dict, fused: bool, acc_lo: float = 4.0) -> bool:
 
 def gemm_grid(fused: bool, big: bool) -> list[dict]:
     if big:  # T >= 2048: drop mappings that are structurally hopeless for a big GEMM
-        bms, bns, bks = [32, 64, 128, 256], [64, 128, 256], [32, 64, 128]
+        bms = [t for t in TILES if t >= 32]
+        bns = [t for t in TILES if t >= 64]
     else:
-        bms, bns, bks = [16, 32, 64, 128], [32, 64, 128, 256], [32, 64, 128]
+        bms = [t for t in TILES if t <= 128]
+        bns = [t for t in TILES if t >= 32]
     out = []
-    for bm, bn, bk, w, s in itertools.product(bms, bns, bks, WARPS, [2, 3, 4]):
+    for bm, bn, bk, w, s in itertools.product(bms, bns, BKS, WARPS, [2, 3, 4]):
         cfg = dict(
             BLOCK_M=bm, BLOCK_N=bn, BLOCK_K=bk, num_warps=w, num_stages=s, GROUP_M=8
         )
         if _ok(cfg, fused):
             out.append(cfg)
-    return B.widen(out, KG)
+    return B.widen(out, KG, cap=COARSE_CAP,
+                   tag=f"f06/{'fused' if fused else 'unfused'}")
 
 
 def gemm_refine(best: dict, fused: bool) -> list[dict]:
     def nb(v, lo, hi):
         return sorted({max(lo, v // 2), v, min(hi, v * 2)})
 
+    # sm_90 overlay keys ride along, so a side whose coarse winner used TMA or warp
+    # specialization refines within that mapping instead of dropping back to the classic one.
+    overlay = {kk: vv for kk, vv in best.items()
+               if kk in ("USE_TMA", "TMA_A", "TMA_B", "TMA_MODE", "WARP_SPECIALIZE",
+                         "warp_specialize", "num_consumer_groups",
+                         "num_buffers_warp_spec", "num_ctas")}
+    tile_hi = TILES[-1]
     cands = []
-    for bm in nb(best["BLOCK_M"], 16, 256):
-        for bn in nb(best["BLOCK_N"], 32, 256):
+    for bm in nb(best["BLOCK_M"], TILES[0], tile_hi):
+        for bn in nb(best["BLOCK_N"], 32, tile_hi):
             for w in nb(best["num_warps"], 1, WARPS[-1]):
                 cands.append((bm, bn, best["BLOCK_K"], w, best["num_stages"], 8))
-    for bk in nb(best["BLOCK_K"], 32, 128):
+    for bk in nb(best["BLOCK_K"], BKS[0], BKS[-1]):
         for s in (2, 3, 4, 5):
             cands.append((best["BLOCK_M"], best["BLOCK_N"], bk, best["num_warps"], s, 8))
     for g in (1, 4, 8, 16):
@@ -117,9 +144,10 @@ def gemm_refine(best: dict, fused: bool) -> list[dict]:
     out, seen = [], set()
     for bm, bn, bk, w, s, g in cands:
         cfg = dict(
-            BLOCK_M=bm, BLOCK_N=bn, BLOCK_K=bk, num_warps=w, num_stages=s, GROUP_M=g
+            BLOCK_M=bm, BLOCK_N=bn, BLOCK_K=bk, num_warps=w, num_stages=s, GROUP_M=g,
+            **overlay,
         )
-        key = tuple(sorted(cfg.items()))
+        key = tuple(sorted((kk, str(vv)) for kk, vv in cfg.items()))
         if key in seen or not _ok(cfg, fused, acc_lo=ACC_PER_LANE_MIN):
             continue
         seen.add(key)
@@ -304,8 +332,8 @@ def run_regime(regime, w13, gate_w, quick: bool, fair: B.Fairness) -> tuple[dict
             "fused/refine", lambda c: [prob.fused_fn(c)], rg, v_fused, w_t, r_t
         )
         fused_cfg = tf_c.best_cfg if tf_c.best_ms <= tf_r.best_ms else tf_r.best_cfg
-        fair.add(regime.name, "fused", "coarse", tf_c)
-        fair.add(regime.name, "fused", "refine", tf_r)
+        fair.add(regime.name, "fused", "coarse", tf_c, grid=cg)
+        fair.add(regime.name, "fused", "refine", tf_r, grid=rg)
         print(f"  FUSED best {fused_cfg} {min(tf_c.best_ms, tf_r.best_ms):.4f} ms",
               flush=True)
 
@@ -325,8 +353,8 @@ def run_regime(regime, w13, gate_w, quick: bool, fair: B.Fairness) -> tuple[dict
         tu_r = B.screened_autotune(
             "unfusedGEMM/refine", lambda c: [prob.gemm_fn(c)], rg2, v_gemm, w_t, r_t
         )
-        fair.add(regime.name, "unfused_gemm", "coarse", tu_c)
-        fair.add(regime.name, "unfused_gemm", "refine", tu_r)
+        fair.add(regime.name, "unfused_gemm", "coarse", tu_c, grid=cg2)
+        fair.add(regime.name, "unfused_gemm", "refine", tu_r, grid=rg2)
 
         # ---------------- UNFUSED: silu_and_mul ----------------
         ag = act_grid()
@@ -338,7 +366,7 @@ def run_regime(regime, w13, gate_w, quick: bool, fair: B.Fairness) -> tuple[dict
         ta = B.screened_autotune(
             "unfusedACT", lambda c: [prob.act_fn(c)], ag, v_act, w_t, r_t
         )
-        fair.add(regime.name, "unfused_act", "tune", ta)
+        fair.add(regime.name, "unfused_act", "tune", ta, grid=ag)
         print(f"  ACT best {ta.best_cfg} {ta.best_ms:.4f} ms", flush=True)
 
         # top-3 x top-3 joint chain re-time (guards against a separately-tuned optimum that
@@ -425,13 +453,14 @@ def run_regime(regime, w13, gate_w, quick: bool, fair: B.Fairness) -> tuple[dict
             # the unfused winner even compile fused here?" is answerable from the JSON.
             "smem_model": {
                 "ceiling_bytes": SMEM_LIMIT,
-                "fused_winner_bytes": C.smem_stage_bytes(
+                "staging_rule": B.smem_stage_fit(),
+                "fused_winner_bytes": B.smem_predict(
                     fused_cfg["BLOCK_M"], fused_cfg["BLOCK_N"], fused_cfg["BLOCK_K"],
                     fused_cfg["num_stages"], bn_mult=2),
-                "unfused_winner_bytes": C.smem_stage_bytes(
+                "unfused_winner_bytes": B.smem_predict(
                     gemm_cfg["BLOCK_M"], gemm_cfg["BLOCK_N"], gemm_cfg["BLOCK_K"],
                     gemm_cfg["num_stages"]),
-                "unfused_winner_if_fused_bytes": C.smem_stage_bytes(
+                "unfused_winner_if_fused_bytes": B.smem_predict(
                     gemm_cfg["BLOCK_M"], gemm_cfg["BLOCK_N"], gemm_cfg["BLOCK_K"],
                     gemm_cfg["num_stages"], bn_mult=2),
             },
@@ -506,11 +535,25 @@ def main() -> None:
             "are tuned SEPARATELY and then the top-3 x top-3 combinations are re-timed AS "
             "A CHAIN, so the separately-tuned optimum cannot under-sell the unfused side."
         ),
-        smem_model="C.smem_stage_bytes (num_stages-1 buffers, floor 2) against the probed "
-                   "opt-in per-block ceiling -- NOT the kernel module's Triton-3.0-era "
+        smem_model="B.smem_predict -- the staging rule FITTED to this preflight's own "
+                   "smem_probe measurements (see fairness.smem_model), against the probed "
+                   "opt-in per-block ceiling. Not the kernel module's Triton-3.0-era "
                    "estimate, which over-predicts by 1.33-1.5x and would reject tiles this "
-                   "stack runs",
+                   "stack runs -- and here that matters asymmetrically, because the fused "
+                   "arm's staged footprint is 1.5x the unfused arm's",
+        h200_axes=(
+            "USE_TMA / warp_specialize / num_ctas are overlaid on BOTH arms' coarse grids "
+            "(the same generator, called twice with `fused` flipped). The one genuine "
+            "asymmetry in this family is not an axis but a footprint: the fused kernel "
+            "stages a SECOND B tile and holds a SECOND accumulator, so at equal BM/BN it "
+            "needs 1.5x the shared memory and 2x the registers, and the SMEM filter "
+            "therefore admits fewer configs on the fused side by construction. That is the "
+            "physical effect under study, not a search bias -- and the per-arm live counts "
+            "under grids.*.*.axis_counts plus n_tried/n_failed are what let a reader "
+            "separate the two."
+        ),
     )
+    fair.axis("f06_upgate_swiglu", B.h200_axis_report(KG))
 
     rows, tuning, pair_meta = [], {}, None
     for regime in regimes:

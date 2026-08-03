@@ -1,0 +1,296 @@
+{
+  "schema": 1,
+  "id": "glm52_h200_summary",
+  "_meta": {
+    "recorded_at": "2026-08-03 16:24:05",
+    "device": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "visible_devices": "all",
+    "gpu_index": null,
+    "gpu_uuid": null,
+    "gpu_pinned": false,
+    "gpu_was_idle": null
+  },
+  "driver": {
+    "argv": [
+      "run_h200.py",
+      "--dry-run",
+      "--force",
+      "--disable-features",
+      "tma,ws",
+      "--families",
+      "f03"
+    ],
+    "cwd": "/home/shuhan/fusion",
+    "repo": "/home/shuhan/fusion",
+    "results_dir": "/home/shuhan/fusion/results/h200",
+    "log_dir": "/home/shuhan/fusion/log/run_h200",
+    "started": "2026-08-03 16:23:33",
+    "finished": "2026-08-03 16:24:05",
+    "wall_s": 31.26660442352295,
+    "quick": false,
+    "regimes_requested": "(all)",
+    "disable_features": "tma,ws",
+    "flush_mb_override": null,
+    "force_rerun": false,
+    "device_fence": true,
+    "families_planned": [
+      "f03"
+    ],
+    "interrupted": false,
+    "summary_only": false,
+    "gpu_requested": null,
+    "allow_busy": false
+  },
+  "gpu": {
+    "requested": null,
+    "index": null,
+    "uuid": null,
+    "name": null,
+    "pinned": false,
+    "allow_busy": false,
+    "refuse": false,
+    "busy": null,
+    "busy_reasons": [],
+    "reason": "no --gpu given; CUDA_VISIBLE_DEVICES left as the environment set it",
+    "tenant_events": [],
+    "thresholds": {
+      "max_used_bytes": 1073741824,
+      "max_util_pct": 5.0,
+      "min_free_bytes": 34359738368
+    },
+    "ranking": [
+      {
+        "index": 0,
+        "uuid": "GPU-eea7f43b-18a7-4d88-ab28-f3db82f8ca4b",
+        "name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+        "utilization_pct": 1.0,
+        "memory_total_bytes": 8585740288,
+        "memory_used_bytes": 1761607680,
+        "memory_free_bytes": 6581911552,
+        "compute_mode": "Default",
+        "mig_mode": "[N/A]",
+        "persistence_mode": "Enabled",
+        "temp_c": 63.0,
+        "processes": [],
+        "process_query_error": null,
+        "reasons": [
+          "1.6 GB already allocated by someone"
+        ],
+        "busy": true,
+        "capacity_notes": [
+          "only 6.1 GB free; the whole-layer bench wants 32 GB (19.3 GB of expert weights before a single activation)"
+        ],
+        "capacity_short": true,
+        "n_processes": 0,
+        "rank": 0
+      }
+    ],
+    "env_CUDA_VISIBLE_DEVICES_before": null
+  },
+  "device": {
+    "name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "compute_capability": "8.9",
+    "sm90": false,
+    "forced": true,
+    "nvidia_smi_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "nvidia_smi_index": "0",
+    "uuid": "GPU-eea7f43b-18a7-4d88-ab28-f3db82f8ca4b"
+  },
+  "preflight": {
+    "timestamp": "2026-08-03 16:23:34",
+    "device_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "compute_capability": "8.9",
+    "sm_count": 24,
+    "warp_size": 32,
+    "smem_per_block_optin": 101376,
+    "regs_per_sm": 65536,
+    "l2_bytes": 33554432,
+    "total_memory": 8585216000,
+    "torch": "2.11.0+cu130",
+    "triton": "3.6.0",
+    "cuda": "13.0",
+    "compile_probes": {
+      "baseline_elementwise": true,
+      "tl_dot_bf16": true,
+      "warp_specialize_tl_range": true,
+      "warp_specialize_num_consumer_groups": false,
+      "tma_host_descriptor": true,
+      "tma_device_descriptor": true,
+      "thread_block_cluster_num_ctas": false
+    },
+    "bandwidth_GBs": {
+      "copy_1024MB_GBs": 142.96169124113308,
+      "rmw_1024MB_GBs": 143.9971736506192,
+      "read_1024MB_GBs": 166.09341300113365,
+      "copy_2048MB_GBs": 143.72845008165095,
+      "rmw_2048MB_GBs": 141.72504958795835,
+      "read_2048MB_GBs": 160.0883625904489
+    },
+    "gemm_TFs": {
+      "cublas_4096x16384x6144_TFs": 12.046001260545184,
+      "triton_4096x16384x6144_TFs": 11.966548355675185,
+      "cublas_8192x16384x6144_TFs": 12.235979396421639,
+      "triton_8192x16384x6144_TFs": 11.968650619937396
+    },
+    "launch_us": 3.949714358896017,
+    "harness_floor_us": 3.2182857394218445,
+    "timer_tick_us": 1.024,
+    "timer_tick_match_frac": 1.0,
+    "launch_timer_trustworthy": false,
+    "launch_timer_doubts": [
+      "tenancy could not be verified (no GPU pinned)"
+    ],
+    "gpu_selection": {
+      "index": null,
+      "uuid": null,
+      "reason": "--gpu none: CUDA_VISIBLE_DEVICES left as the caller set it"
+    },
+    "capacity": {
+      "w13_bytes": 12884901888,
+      "w2_bytes": 6442450944,
+      "expert_weights_bytes": 19327352832,
+      "free_bytes": 6815744000,
+      "total_bytes": 8585216000,
+      "expert_weights_fit": false,
+      "whole_layer_feasible": false
+    },
+    "probe_errors": [],
+    "path": "/home/shuhan/fusion/glm52_h200/preflight_h200.json"
+  },
+  "timer": {
+    "tick_us": 1.024,
+    "source": "measured by preflight",
+    "unresolved_ticks": 3,
+    "trusted": false,
+    "distrust_reasons": [
+      "tenancy could not be verified (no GPU pinned)"
+    ],
+    "match_frac": 1.0
+  },
+  "hwinfo_start": [
+    {
+      "index": "0",
+      "name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+      "uuid": "GPU-eea7f43b-18a7-4d88-ab28-f3db82f8ca4b",
+      "driver_version": "610.88",
+      "pstate": "P4",
+      "clocks.sm": "1020 MHz",
+      "clocks.mem": "5501 MHz",
+      "clocks.max.sm": "3105 MHz",
+      "clocks.max.mem": "8001 MHz",
+      "clocks_throttle_reasons.active": "0x0000000000000001",
+      "power.draw": "9.29 W",
+      "enforced.power.limit": "35.00 W",
+      "temperature.gpu": "63",
+      "temperature.memory": "N/A",
+      "memory.total": "8188 MiB",
+      "memory.used": "1680 MiB",
+      "memory.free": "6277 MiB",
+      "ecc.mode.current": "[N/A]",
+      "mig.mode.current": "[N/A]",
+      "persistence_mode": "Enabled",
+      "compute_mode": "Default",
+      "utilization.gpu": "1 %",
+      "utilization.memory": "3 %",
+      "_t": "2026-08-03 16:23:33"
+    }
+  ],
+  "hwinfo_end": [
+    {
+      "index": "0",
+      "name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+      "uuid": "GPU-eea7f43b-18a7-4d88-ab28-f3db82f8ca4b",
+      "driver_version": "610.88",
+      "pstate": "P4",
+      "clocks.sm": "1020 MHz",
+      "clocks.mem": "5501 MHz",
+      "clocks.max.sm": "3105 MHz",
+      "clocks.max.mem": "8001 MHz",
+      "clocks_throttle_reasons.active": "0x0000000000000001",
+      "power.draw": "10.18 W",
+      "enforced.power.limit": "35.00 W",
+      "temperature.gpu": "66",
+      "temperature.memory": "N/A",
+      "memory.total": "8188 MiB",
+      "memory.used": "1686 MiB",
+      "memory.free": "6271 MiB",
+      "ecc.mode.current": "[N/A]",
+      "mig.mode.current": "[N/A]",
+      "persistence_mode": "Enabled",
+      "compute_mode": "Default",
+      "utilization.gpu": "2 %",
+      "utilization.memory": "3 %",
+      "_t": "2026-08-03 16:24:05"
+    }
+  ],
+  "hwinfo_drift": [
+    {
+      "index": "0",
+      "name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+      "clocks.sm": {
+        "start": 1020.0,
+        "end": 1020.0,
+        "delta": 0.0,
+        "pct": 0.0
+      },
+      "clocks.mem": {
+        "start": 5501.0,
+        "end": 5501.0,
+        "delta": 0.0,
+        "pct": 0.0
+      },
+      "temperature.gpu": {
+        "start": 63.0,
+        "end": 66.0,
+        "delta": 3.0,
+        "pct": 4.761904761904762
+      },
+      "power.draw": {
+        "start": 9.29,
+        "end": 10.18,
+        "delta": 0.8900000000000006,
+        "pct": 9.580193756727672
+      },
+      "memory.used": {
+        "start": 1680.0,
+        "end": 1686.0,
+        "delta": 6.0,
+        "pct": 0.35714285714285715
+      },
+      "utilization.gpu": {
+        "start": 1.0,
+        "end": 2.0,
+        "delta": 1.0,
+        "pct": 100.0
+      },
+      "throttle_start": "0x0000000000000001",
+      "throttle_end": "0x0000000000000001"
+    }
+  ],
+  "quarantined": [],
+  "families": [
+    {
+      "family": "f03",
+      "title": "#3  ResAdd+RMSNorm",
+      "status": "dry_run",
+      "script": "/home/shuhan/fusion/glm52_h200/bench/bench_f03_resadd_rmsnorm.py"
+    }
+  ],
+  "missing_families": [
+    "f03"
+  ],
+  "cells": [],
+  "table": [
+    "(no speedup cells were produced -- every family is missing or unparsed)"
+  ],
+  "warnings": [
+    "the CUDA-event tick (1.024 us) used for every UNRESOLVED verdict is itself untrustworthy: tenancy could not be verified (no GPU pinned). Re-run the preflight on an idle GPU before quoting any decode_bs1 cell.",
+    "--force: proceeding on a NON-sm_90 device (compute capability 8.9 (NVIDIA GeForce RTX 4060 Laptop GPU)). Results are NOT an H200 measurement; do not file them as one.",
+    "Hopper paths disabled for this run: tma,ws. Both arms of every pair fall back to the classic path, so the ratios stay fair -- but they are no longer a measurement of the Hopper path."
+  ],
+  "what_is_measured": {
+    "cells": "fused/unfused speedup per fusion per regime, each arm independently autotuned from the same kernel source; see the per-family JSON for tuning tables, grid sizes and correctness checks",
+    "unresolved": "cells whose two arms differ by < 3 CUDA-event ticks (1.024 us, measured by preflight) carry speedup=null; their raw operands are still present as speedup_raw. THE TICK ITSELF IS NOT TRUSTWORTHY here (see timer.distrust_reasons): it was measured on a GPU shared with another tenant, so these verdicts are advisory until the preflight is re-run on an idle card",
+    "not_measured": "roofline ceilings are MODELLED (glm52_h200/traffic.py); the layer-level saving of a set of fusions is additive-estimated unless bench_layer measured that combination end to end"
+  }
+}

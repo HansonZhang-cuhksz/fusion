@@ -1,7 +1,11 @@
 """Fusion #1 benchmark: o_proj GEMM + residual add (dense GEMM epilogue fusion).
 
 Run:
-    python3 glm52_h200/bench/bench_f01_oproj_resadd.py [--regimes ...] [--quick] [--only ...]
+    python3 glm52_h200/bench/bench_f01_oproj_resadd.py --gpu auto [--regimes ...] [--quick]
+
+`--gpu auto` picks the idlest of the host's GPUs and masks the process to it before
+CUDA initialises; on the 8-GPU measurement host that is the difference between timing an
+idle card and timing one another tenant is already using.
 
 Reports FOUR numbers per regime:
   triton-fused    : oproj_gemm_kernel(FUSE_RESADD=True)
@@ -64,6 +68,13 @@ _ENV = C.env()
 SMEM_LIMIT = B.env_int(_ENV, "smem_bytes")  # per-block opt-in ceiling
 WARP = B.env_int(_ENV, "warp_size")
 MAX_THREADS = B.max_threads_per_block(_ENV)  # largest CTA a launch may request
+# Tile ladders derived from the SMEM ceiling, so the grid reaches every shape THIS device
+# can run: BM/BN up to 256 on an H200's 232448 B, up to 128 on sm_89's 101376 B, and
+# whatever C500's 65536 B allowed.  Written-down ladders are how a port silently
+# under-searches a bigger device -- in both arms, which hides it from the ratio.
+TILES = B.tile_ladder(_ENV)
+BKS = B.bk_ladder(_ENV, hi=128)
+ACC_CAP = B.MAX_ACC_ELEMS_PER_THREAD  # fp32 accumulator elements per lane
 
 
 # --------------------------------------------------------------------------------------
@@ -72,17 +83,24 @@ MAX_THREADS = B.max_threads_per_block(_ENV)  # largest CTA a launch may request
 def _valid_gemm(cfg: dict, M: int) -> bool:
     bm, bn, bk = cfg["BLOCK_M"], cfg["BLOCK_N"], cfg["BLOCK_K"]
     w, st = cfg["num_warps"], cfg["num_stages"]
-    # Triton's mainloop multi-buffering is version-dependent: 3.0 staged `num_stages`
-    # buffers, 3.6 stages `num_stages - 1` with a floor of 2.  `C.smem_stage_bytes` owns
-    # that choice; hardcoding either here would reject tiles this stack can actually run
-    # (BM128/BN256/BK64/s3 is modelled at 144 KB by the old formula and really uses 96 KB).
-    if C.smem_stage_bytes(bm, bn, bk, st) > SMEM_LIMIT:
+    # Triton's mainloop multi-buffering is version- AND stack-dependent: 3.0 staged
+    # `num_stages` buffers, 3.6/sm_89 stages `num_stages - 1` with a floor of 2, and the
+    # H200 preflight's own `smem_probe` block puts 3.6/sm_90 back at `num_stages` (all five
+    # observations, including the one that failed, reproduce to the byte).  `B.smem_predict`
+    # FITS that offset to those measurements instead of picking one, so this filter is exact
+    # rather than merely conservative -- it neither prunes a tile the device can run nor
+    # spends two arms' compile time on one it cannot.
+    if B.smem_predict(bm, bn, bk, st) > SMEM_LIMIT:
         return False
     threads = w * WARP
     if threads > MAX_THREADS:  # a CTA this wide cannot be launched on this device
         return False
     per_thread = (bm * bn) / threads  # fp32 accumulator elements per lane
-    if per_thread < B.MIN_ELEMS_PER_THREAD or per_thread > B.MAX_ELEMS_PER_THREAD:
+    # ACC_CAP is 128, derived from the 256-entry per-thread register window.  It used to be
+    # 64, and that rejected `BM128 BN256 num_warps=8` -- exactly the mapping the preflight
+    # measured at 788 TF/s, 96 % of cuBLAS.  A grid that cannot express the device's own
+    # peak cannot say how far a fused kernel is from it.
+    if per_thread < B.MIN_ELEMS_PER_THREAD or per_thread > ACC_CAP:
         return False
     # a/b tile fragments must be distributable over the lanes
     if (bm * bk) % threads or (bk * bn) % threads:
@@ -93,6 +111,12 @@ def _valid_gemm(cfg: dict, M: int) -> bool:
 
 
 COARSE_CAP = 120
+#: Trial budget for the coarse grid AFTER the sm_90 overlays multiply it.  Widening offers
+#: TMA / warp specialization / clusters / TMA+WS on top of every classic config, so the
+#: legal space is up to 5x what it was; spending the old 120 trials on the classic subset
+#: alone would leave the new axes tried only at whatever tiles a pre-widening cap happened
+#: to keep.  Both arms get the same widened, same-sampled list.
+COARSE_CAP_WIDENED = 220
 
 
 def coarse_grid(M: int) -> list[dict]:
@@ -103,16 +127,24 @@ def coarse_grid(M: int) -> list[dict]:
     same grid object is handed to the fused and the unfused search.
     """
     if M <= 1:
-        bms, bns, bks = [16], [64, 128, 256], [64, 128, 256]
+        bms = [TILES[0]]
+        bns = [t for t in TILES if t >= 64]
+        bks = [k for k in BKS if k >= 64]
         sks, ws, sts, gms = [1, 2, 4, 8, 16], [2, 4, 8], [2, 3], [8]
     elif M <= 32:
-        bms, bns, bks = [16, 32], [64, 128, 256], [64, 128, 256]
+        bms = [t for t in TILES if t <= 32]
+        bns = [t for t in TILES if t >= 64]
+        bks = [k for k in BKS if k >= 64]
         sks, ws, sts, gms = [1, 2, 4, 8, 16], [2, 4, 8], [2, 3], [8]
     elif M <= 256:
-        bms, bns, bks = [16, 32, 64, 128], [32, 64, 128, 256], [32, 64, 128]
+        bms = [t for t in TILES if t <= 128]
+        bns = [t for t in TILES if t >= 32]
+        bks = list(BKS)
         sks, ws, sts, gms = [1, 2, 4, 8], [4, 8], [2, 3], [8]
     else:
-        bms, bns, bks = [64, 128, 256], [64, 128, 256], [32, 64, 128]
+        bms = [t for t in TILES if t >= 64]
+        bns = [t for t in TILES if t >= 64]
+        bks = list(BKS)
         sks, ws, sts, gms = [1, 2], [4, 8, 16], [2, 3, 4], [1, 8]
 
     pool = []
@@ -151,18 +183,22 @@ def coarse_grid(M: int) -> list[dict]:
     rng = random.Random(20260727)
     if len(rest) > COARSE_CAP - len(seeds):
         rest = rng.sample(rest, COARSE_CAP - len(seeds))
-    # H200-only mapping axes (clusters / warp specialization / TMA) are added here, to BOTH
-    # arms' shared coarse grid, and only when the preflight proved them AND the kernel
-    # module advertises the cfg key.  On a stack without them this is the identity.
-    return B.widen(seeds + rest, K)
+    # H200-only mapping axes (clusters / warp specialization / TMA / TMA+WS) are added here,
+    # to BOTH arms' shared coarse grid, and only when a LIVE capability probe proved them
+    # AND the kernel module advertises the cfg key.  On a stack without them this is the
+    # identity.  The cap is applied AFTER widening so the trial budget is spent on the
+    # widened space, not on the classic subset with a few overlays bolted on.
+    return B.widen(seeds + rest, K, cap=COARSE_CAP_WIDENED, tag=f"f01/M{M}")
 
 
 _AXES = {
-    "BLOCK_M": [16, 32, 64, 128, 256],
-    "BLOCK_N": [16, 32, 64, 128, 256],
-    "BLOCK_K": [16, 32, 64, 128, 256],
+    # Tile axes come from the device ladder, so a bigger SMEM ceiling really is reachable by
+    # refinement and not just by the coarse grid.
+    "BLOCK_M": list(TILES),
+    "BLOCK_N": list(TILES),
+    "BLOCK_K": sorted({16, *B.bk_ladder(_ENV)}),
     "SPLIT_K": [1, 2, 3, 4, 6, 8, 12, 16, 24, 32],
-    "num_warps": [1, 2, 4, 8, 16, 32],
+    "num_warps": B.warp_ladder(_ENV),
     "num_stages": [1, 2, 3, 4, 5, 6],
     "GROUP_M": [1, 2, 4, 8, 16],
 }
@@ -309,8 +345,11 @@ def run_regime(regime, quick: bool, fair: B.Fairness) -> tuple[dict, dict]:
     t_u_coarse = B.screened_autotune(
         "unfused/coarse", unfused_chain, grid, _v_unfused, tw, tr
     )
-    fair.add(regime.name, "fused", "coarse", t_f_coarse)
-    fair.add(regime.name, "unfused", "coarse", t_u_coarse)
+    # `grid=` records the LIVE per-axis counts for this arm's stage. Both arms are handed
+    # the same object here, so the two counts must be identical -- and if a future edit ever
+    # makes them differ, the result file says so instead of the prose.
+    fair.add(regime.name, "fused", "coarse", t_f_coarse, grid=grid)
+    fair.add(regime.name, "unfused", "coarse", t_u_coarse, grid=grid)
 
     # ---------------- stage 2: refine, each side around its OWN winner ----------------
     seen_f = {tuple(sorted((k, str(v)) for k, v in c.items())) for c in grid}
@@ -326,8 +365,8 @@ def run_regime(regime, quick: bool, fair: B.Fairness) -> tuple[dict, dict]:
         B.screened_autotune("unfused/refine", unfused_chain, rg_u, _v_unfused, tw, tr)
         if rg_u else None
     )
-    fair.add(regime.name, "fused", "refine", t_f_ref, size=len(rg_f))
-    fair.add(regime.name, "unfused", "refine", t_u_ref, size=len(rg_u))
+    fair.add(regime.name, "fused", "refine", t_f_ref, size=len(rg_f), grid=rg_f)
+    fair.add(regime.name, "unfused", "refine", t_u_ref, size=len(rg_u), grid=rg_u)
 
     def merge(coarse, ref_t):
         if ref_t is None or ref_t.best_ms >= coarse.best_ms:
@@ -535,7 +574,15 @@ def main() -> None:
             "[zero, gemm, epilogue]. Both sides pay that identically; the fused epilogue is "
             "a cast, the unfused one is cast+add."
         ),
+        h200_axes=(
+            "USE_TMA / warp_specialize / num_ctas are overlaid on the SHARED coarse grid, so "
+            "both arms search them. They are structurally symmetric for this pair: the fused "
+            "and unfused arms are the same GEMM kernel with one constexpr flipped, consume "
+            "the same A and B, and therefore admit exactly the same descriptors and the same "
+            "mainloop specialization. Per-arm counts are under grids.*.*.axis_counts."
+        ),
     )
+    fair.axis("f01_oproj_resadd", B.h200_axis_report(K))
 
     rows, tune_log, pair_meta = [], [], None
     for regime in regimes:

@@ -3,6 +3,17 @@ writing: /home/shuhan/fusion/glm52_h200/preflight_h200.json
 This script only reads; it installs nothing and changes no device state.
 
 ==============================================================================
+0. GPU SELECTION (8-card node; the wrong card is how the last probe was ruined)
+==============================================================================
+  1 GPU(s) on this host:
+  rank idx   util   used GB   free GB proc   temp  state
+  ------------------------------------------------------
+     0   0     0%       1.6       6.1    0     63  BUSY: 1.6 GB already allocated  only 6.1 GB free (the whole-layer bench wants 32 GB)
+       gpu 0  NVIDIA GeForce RTX 4060 Laptop GPU  uuid GPU-eea7f43b-18a7-4d88-ab28-f3db82f8ca4b
+
+  --gpu none: not pinning. CUDA_VISIBLE_DEVICES=unset (all)
+
+==============================================================================
 1. STACK
 ==============================================================================
   python               3.13.12
@@ -37,6 +48,9 @@ This script only reads; it installs nothing and changes no device state.
   mem_free_bytes                       7440695296
   mem_total_bytes                      8585216000
   compute_capability                   8.9
+  nvidia_smi_index                     None
+  cuda_visible_devices                 None
+  cuda_device_order                    None
 
   !! expected sm_90 (Hopper/H200); got sm_89
 
@@ -44,6 +58,8 @@ This script only reads; it installs nothing and changes no device state.
 3. nvidia-smi (clocks / power / ECC / MIG)
 ==============================================================================
   --- GPU 0 ---
+    index                              0
+    uuid                               GPU-eea7f43b-18a7-4d88-ab28-f3db82f8ca4b
     name                               NVIDIA GeForce RTX 4060 Laptop GPU
     driver_version                     610.88
     vbios_version                      95.07.26.00.1b
@@ -54,19 +70,19 @@ This script only reads; it installs nothing and changes no device state.
     clocks.max.sm                      3105 MHz
     clocks.max.mem                     8001 MHz
     clocks_throttle_reasons.active     0x0000000000000001
-    power.draw                         9.77 W
+    power.draw                         9.35 W
     power.limit                        [N/A]
     enforced.power.limit               35.00 W
     power.max_limit                    60.00 W
-    temperature.gpu                    65
+    temperature.gpu                    63
     memory.total                       8188 MiB
-    memory.used                        1303 MiB
-    memory.free                        6654 MiB
+    memory.used                        1777 MiB
+    memory.free                        6180 MiB
     ecc.mode.current                   [N/A]
     mig.mode.current                   [N/A]
     persistence_mode                   Enabled
     compute_mode                       Default
-    utilization.gpu                    12 %
+    utilization.gpu                    1 %
     pcie.link.gen.current              4
     pcie.link.width.current            8
 
@@ -89,10 +105,10 @@ This script only reads; it installs nothing and changes no device state.
     OK    tl_dot_bf16
     OK    warp_specialize_tl_range
     FAIL  warp_specialize_num_consumer_groups: KeyError: 'Keyword argument num_consumer_groups was specified but unrecognised'
-    FAIL  tma_tensor_descriptor: CompilationError: at 2:8:
-def k_tma_device(desc_ptr, Out, BM: tl.constexpr, BN: tl.constexpr):
-    d = tl.make_tensor_descriptor(desc_ptr, shape=[BM, BN], strides=[BN, 
+    OK    tma_host_descriptor  {'values_correct': True}
+    OK    tma_device_descriptor  {'values_correct': True}
     FAIL  thread_block_cluster_num_ctas: ValueError: num_ctas > 1 requires NVIDIA SM90+ (Hopper). Current target is sm_89. This configuration will fail. Please set num_ctas=1 or target an SM90+ GPU.
+  tma usable: True  {'host_descriptor': True, 'device_descriptor': True}
   triton target: {'backend': 'cuda', 'arch': 89, 'warp_size': 32}
   triton device properties: {'max_shared_mem': 101376, 'max_num_regs': 65536, 'multiprocessor_count': 24, 'warpSize': 32, 'sm_clock_rate': 1470000, 'mem_clock_rate': 8001000, 'mem_bus_width': 128}
 
@@ -100,11 +116,15 @@ def k_tma_device(desc_ptr, Out, BM: tl.constexpr, BN: tl.constexpr):
 5. CALIBRATION (measured on this machine)
 ==============================================================================
   -- bandwidth (buffers >> L2) --
-    copy_1024MB_GBs             141.9 GB/s
-    rmw_1024MB_GBs              143.7 GB/s
-    read_1024MB_GBs             163.8 GB/s
+    copy_1024MB_GBs             143.0 GB/s
+    rmw_1024MB_GBs              144.0 GB/s
+    read_1024MB_GBs             166.1 GB/s
+    copy_2048MB_GBs             143.7 GB/s
+    rmw_2048MB_GBs              141.7 GB/s
+    read_2048MB_GBs             160.1 GB/s
   -- bf16 GEMM --
-    4096x16384x6144: cuBLAS   12.14 TF/s | Triton   11.96 TF/s (98% of vendor)
+    4096x16384x6144: cuBLAS   12.05 TF/s | Triton   11.97 TF/s (99% of vendor)
+    8192x16384x6144: cuBLAS   12.24 TF/s | Triton   11.97 TF/s (98% of vendor)
   -- reachable shared-memory ceiling --
     OK    BM128 BN128 BK64 s3 -> shared=65536
     OK    BM128 BN256 BK64 s3 -> shared=98304
@@ -112,9 +132,17 @@ def k_tma_device(desc_ptr, Out, BM: tl.constexpr, BN: tl.constexpr):
     FAIL  BM256 BN256 BK64 s3: out of resource: shared memory, Required: 131072, Hardware limit: 101376. Reducing block sizes or `num_stages`
     FAIL  BM128 BN256 BK128 s3: out of resource: shared memory, Required: 196608, Hardware limit: 101376. Reducing block sizes or `num_stages`
   -- launch cost and timer granularity --
-    launch cost         3.36 us
-    harness floor       2.78 us
+    launch cost         3.95 us
+    harness floor       3.22 us
     timer tick       1.024 us  (200/200 exact multiples)
+
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !! launch_us / harness_floor_us / timer_tick_us are NOT TRUSTWORTHY:
+    !!   - tenancy could not be verified (no GPU pinned)
+    !! Downstream this decides which cells are printed as UNRESOLVED, so a
+    !! contaminated tick either hides real differences or invents them.
+    !! Re-run on an idle card: python3 glm52_h200/preflight.py --gpu <idx>
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 ==============================================================================
 6. GLM-5.2 CAPACITY CHECK
@@ -122,7 +150,7 @@ def k_tma_device(desc_ptr, Out, BM: tl.constexpr, BN: tl.constexpr):
   w13 (256 experts)         12.00 GB
   w2  (256 experts)          6.00 GB
   expert weights total      18.00 GB
-  free / total VRAM          6.88 / 8.00 GB
+  free / total VRAM          6.35 / 8.00 GB
   expert weights fit     False
   whole-layer feasible   False
   !! #6/#8/#9/#11a and the whole-layer benchmark cannot run on this device.
@@ -130,6 +158,9 @@ def k_tma_device(desc_ptr, Out, BM: tl.constexpr, BN: tl.constexpr):
 ==============================================================================
 DONE
 ==============================================================================
+  !! launch_us / harness_floor_us / timer_tick_us are flagged UNTRUSTWORTHY in this file:
+       - tenancy could not be verified (no GPU pinned)
+     Re-run on an idle card to replace them; everything else stands.
   all probes completed without error
 
   -> send back: /home/shuhan/fusion/glm52_h200/preflight_h200.json

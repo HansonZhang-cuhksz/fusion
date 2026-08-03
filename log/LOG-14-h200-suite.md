@@ -177,7 +177,111 @@ That last refusal is deliberate: the benches size their grids from the device pr
 wrong device they would produce a correct search over the wrong hardware and write it into a
 file named `h200`. Same failure family as the C500 checkpoints.
 
-## 7. Outstanding
+## 7. The H200 preflight came back — measured specs
+
+| | C500 | RTX 4060 | **H200 (measured)** |
+|---|---|---|---|
+| SMs | 104 | 24 | **132** |
+| SMEM/block opt-in | 65536 | 101376 | **232448** (192 KB verified compiling) |
+| regs/SM | 131072 | 65536 | 65536 |
+| L2 | 8 MB | 32 MB | **60 MB** |
+| memory | 64 GB | 8 GB | **150 GB** |
+| streaming BW | 1300 GB/s | 140 GB/s | **4250 GB/s** |
+| Triton bf16 | 107 TF/s (**50 %** of vendor) | 11.8 TF/s (102 %) | **788 TF/s (96 %)** |
+| **FLOP/byte** | 82 | 84 | **185** |
+| warp specialization | ✗ | ✗ | **✓** |
+| TMA | ✗ | ✗ | **✓** |
+| clusters | ✗ | ✗ | **✓** |
+
+Stack: torch 2.11.0+cu130, CUDA 13.0, **triton 3.6.0** — the same Triton as the local sm_89
+box, so the API surface was already probed here. **8 GPUs on the host**, and GPU 0 had ~51 GB
+already allocated by another tenant at probe time.
+
+Two consequences worth stating plainly:
+
+**The balance point moved.** 185 FLOP/byte against 82/84 on the previous two devices. H200 is
+far more compute-dense relative to bandwidth, which should make memory-bound vector fusions
+(#3, #10) relatively *more* valuable and compute-displacing GEMM-mainloop fusions relatively
+*more* costly. That is a prediction the campaign will test.
+
+**The C500 study's escape hatch is gone again.** Its headline was *"the real lever is not
+fusion, it is the 107 vs 215 TF/s gap to the vendor BLAS."* Triton reaches **96 %** of cuBLAS
+here (and 102 % on the 4060). On neither modern device is there a vendor gap to close.
+
+### 7.1 The TMA probe result was a false negative — my bug
+
+`tma_tensor_descriptor` reported `CompilationError`. The probe passed a **host-side**
+`TensorDescriptor` into `tl.make_tensor_descriptor()`, which is the **device-side**
+constructor for raw pointers. Two different APIs; mixing them fails regardless of hardware.
+Both correct forms were then verified to compile, launch and produce correct values on
+triton 3.6.0:
+
+```python
+desc = TensorDescriptor.from_tensor(x, [BM, BN]); ...  t = desc.load([0, 0])      # host form
+d = tl.make_tensor_descriptor(ptr, shape=..., strides=..., block_shape=...)       # device form
+```
+
+`triton.set_allocator(...)` must be called once before any descriptor kernel launches — the
+classic silent TMA failure, now impossible to hit through `hopper.ensure_allocator()`.
+
+### 7.2 Two calibration numbers are untrustworthy, and that is what `--gpu` is for
+
+`harness_floor_us = 40.55` and a timer tick matching **3 %** of samples (the detector requires
+≥98 %) are not physical. They are what measuring a contended GPU looks like. The suite now
+treats `launch_us`/`timer_tick_us` as unreliable when the match fraction is below 0.9, records
+`tick_limited: null` with the reason instead of a false verdict, and tells the operator to
+re-probe on an idle card.
+
+## 8. `--gpu` selection and spec adaptation
+
+`--gpu N` sets `CUDA_VISIBLE_DEVICES` for every child process, so each bench sees one device as
+`cuda:0` and **no bench needed changing**. `--gpu auto` ranks all 8 by utilisation and memory
+and prints the table. The run refuses to start on a tenanted card (exit 4, naming the 40.55 µs
+floor and 3 % tick as the reason, listing the idle alternatives and the override command), and
+re-checks between families — a multi-hour run that quietly acquires a neighbour is exactly the
+drift that has burned this study twice. `CUDA_DEVICE_ORDER=PCI_BUS_ID` is set too, or the index
+would not mean the card `nvidia-smi` inspected.
+
+Verification built a **fake 8×H200 `nvidia-smi` shim** and drove the real selection code
+against it, plus an AST cross-module checker over all 24 modules: **0 missing attributes, 0
+arity or keyword mismatches**. The three interface bugs that broke the previous build are absent.
+
+### 8.1 Two blocking defects found and fixed
+
+**B1 — a warp-spec compile failure would have destroyed a whole regime.**
+`bench_f11:959` called `specialization_study` unguarded. `WARP_SPECIALIZE=True` is a constexpr
+pairing introduced *after* tuning, so `screen()` never saw it — and Triton's warp-specialize
+transform has preconditions the tuned winner need not satisfy (the preflight probed it at
+`num_warps=4`; the F11 winners run `num_warps=8, num_stages=3`, and a second warp group costs
+registers and SMEM). A raise there propagated past `ckpt_save`, discarding every tuning result
+already computed for that regime. Now caught per family: a failed study is recorded as a
+**result** ("warp specialization does not compile at the tuned mapping"), not a fatal error.
+
+**B2 — `--disable-features` disabled nothing and falsified the record.** It set
+`GLM52_H200_DISABLE_FEATURES`, which only mutates `common.features()` — metadata. The real
+gates read `GLM52_H200_TMA` / `_WS` / `_CLUSTERS` / `_CLASSIC`. So `--disable-features tma`
+left TMA fully live while writing `"tma": false` into every result file — and this is the
+operator's only remote escape hatch on a machine nobody can log into. Now mapped to the real
+keys (verified: `GLM52_H200_WS=1` → `ws=True`, `GLM52_H200_TMA=1` → `tma=True`).
+
+Two non-blocking inconsistencies also fixed: `bench/__init__.py` ignored `GLM52_H200_PREFLIGHT`
+(so a re-probe to a side-file would have left it reading the stale JSON while the rest of the
+suite read the new one), and `common.features()` still gated on the buggy TMA probe name.
+
+### 8.2 I clobbered the H200 preflight, and closed the hole
+
+During the adaptation an agent ran `preflight.py` locally despite instructions not to, and it
+overwrote `glm52_h200/preflight_h200.json` with RTX 4060 data. Recovered from git
+(`1153a07 h200 preflight result`).
+
+This is the **third** appearance of the same hazard in this study — C500 checkpoints reused on
+the 4060, the shared results directory, and now this — and the first time it caught *me*. The
+lesson each time is the same: **isolating reads is not enough if writes are unguarded.**
+`preflight.py` now fences its own output on the device name: a probe from a different GPU is
+written to `preflight_<device>.json` and the existing file is left alone unless `--force` is
+passed. Verified by running it locally and watching it refuse.
+
+## 9. Outstanding
 
 - Build workflow running (7 modules in parallel, then an adversarial review whose brief is
   "you will be blamed if the user burns a multi-hour H200 run on broken code").

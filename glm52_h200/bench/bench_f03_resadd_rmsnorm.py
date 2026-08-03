@@ -13,7 +13,11 @@ C500's 8 MB, so the L2-resident regimes move again: `h1_fits_l2` is recorded per
 a 1.0x where it is true is the model working, not the kernel failing.
 
 Run:
-    python3 glm52_h200/bench/bench_f03_resadd_rmsnorm.py [--regimes ...] [--quick]
+    python3 glm52_h200/bench/bench_f03_resadd_rmsnorm.py --gpu auto [--regimes ...] [--quick]
+
+`--gpu auto` picks the idlest of the host's GPUs and masks the process to it before
+CUDA initialises; on the 8-GPU measurement host that is the difference between timing an
+idle card and timing one another tenant is already using.
 """
 
 from __future__ import annotations
@@ -147,8 +151,8 @@ def _tune2(make_chain, tag: str, verify, warmup: int, rep: int, quick: bool, fai
         best_cfg, best_ms = tr.best_cfg, tr.best_ms
     else:
         best_cfg, best_ms = tc.best_cfg, tc.best_ms
-    fair.add(regime, tag, "coarse", tc)
-    fair.add(regime, tag, "refine", tr)
+    fair.add(regime, tag, "coarse", tc, grid=cg)
+    fair.add(regime, tag, "refine", tr, grid=rg)
     print(
         f"    [{tag}] coarse {tc.n_tried} cfgs ({tc.n_failed} rej) -> {tc.best_ms:.4f} ms"
         f" | refine {tr.n_tried} ({tr.n_failed} rej) -> {tr.best_ms:.4f} ms"
@@ -391,7 +395,18 @@ def main() -> None:
             "grids below -- the coarse grid size is a function of the probed warp width and "
             "CTA ceiling, so it is not a constant across devices."
         ),
+        h200_axes=(
+            "NONE of the sm_90 mapping axes apply to this family, on EITHER arm, and that "
+            "is a property of the kernel rather than of the search: add_rmsnorm_kernel is a "
+            "row-wise vector pass with no GEMM mainloop -- nothing for warp specialization "
+            "to split into producers and consumers, no k-loop for a descriptor to feed, and "
+            "no tile whose SMEM budget a cluster would enlarge. The fused and unfused arms "
+            "are the same kernel with DO_ADD/DO_NORM flipped, so both are offered exactly "
+            "the same (empty) set of axes; their axis_counts are legitimately zero on both "
+            "sides. See fairness.h200_axes.per_family for what the module advertises."
+        ),
     )
+    fair.axis("f03_resadd_rmsnorm", B.h200_axis_report(K))
 
     rows, tables, checks, timings, pair_meta = [], {}, {}, {}, None
 

@@ -27,9 +27,18 @@ What this module guarantees to the drivers:
 *  **Checkpoints are fenced on the device.**  A stale checkpoint from another GPU was one
    call away from being republished as a fresh measurement on the 4060 port.
 *  **H200-only mapping axes are opted into at runtime**, never at authoring time: a config
-   overlay is offered only when the preflight probe COMPILED AND LAUNCHED that feature *and*
-   the kernel module advertises the corresponding cfg key.  Absent either, the grids are
-   exactly the classic ones and the sm_90 path simply never appears.
+   overlay is offered only when a LIVE capability probe says the feature compiles and runs
+   *and* the kernel module advertises the corresponding cfg key.  Absent either, the grids
+   are exactly the classic ones and the sm_90 path simply never appears.  Every offered axis
+   goes to BOTH arms of every pair -- an axis offered to one arm only is precisely the
+   one-sided grid bias the fairness accounting exists to catch.
+*  **One GPU, chosen deliberately.**  The measured host has EIGHT H200s and other tenants:
+   at preflight time 51 GB of GPU 0 was already someone else's, and the launch/timer
+   calibration it produced is visibly contaminated (a 40 us harness floor, a tick that
+   matched 3 % of samples).  `--gpu N` / `--gpu auto` masks the process down to one device
+   before CUDA initialises, refuses a device that is already busy unless `--allow-busy`, and
+   records the chosen index AND UUID in every result file so a number can be traced to a
+   physical card.
 """
 
 from __future__ import annotations
@@ -37,22 +46,365 @@ from __future__ import annotations
 import argparse
 import inspect
 import json
-import math
 import os
+import shutil
 import statistics
+import subprocess
 import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Iterable, Sequence
 
-import torch
-
 HERE = Path(__file__).resolve().parent
 PKG = HERE.parent  # glm52_h200/
 ROOT = PKG.parent  # repository root
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
+
+
+# ======================================================================================
+# GPU selection.
+#
+# THIS BLOCK RUNS BEFORE `import torch` ON PURPOSE.  `CUDA_VISIBLE_DEVICES` is read by the
+# CUDA driver exactly once, at `cuInit`, and torch triggers that on its first
+# `torch.cuda.*` call.  Set the variable after that point and it is silently ignored --
+# the process keeps all eight devices, `cuda:0` is whatever it always was, and the operator
+# gets a result file that names a GPU nobody selected.  So the resolution happens at import
+# time of this package, which every driver imports before it touches the device.
+#
+# `--gpu` is parsed straight out of `sys.argv` here rather than through argparse, because
+# argparse cannot run until the driver's `main()`, which is long after CUDA is up.  The
+# driver still declares the flag (see `add_gpu_args`) so `--help` documents it and a typo is
+# rejected; by then this block has already acted on it.  Nothing happens at all unless
+# `--gpu` is literally present or `$GLM52_H200_GPU` is set, so importing this package from
+# an unrelated tool with an unrelated argv is inert.
+# ======================================================================================
+GPU_ENV_VAR = "GLM52_H200_GPU"  # alternative to --gpu, for wrappers that cannot pass argv
+_GPU_DECISION_VAR = "GLM52_H200_GPU_SELECTION"  # carries the parent's decision to a re-exec
+_GPU_REEXEC_VAR = "GLM52_H200_GPU_REEXEC"  # loop guard for the last-resort re-exec
+
+#: Fraction of a device's memory that may already be in use before it counts as busy, and
+#: the absolute floor below which "in use" is just the driver's own footprint.  Persistence
+#: mode alone shows ~4 MiB on the measured host; a second tenant showed 22-48 GB, so the
+#: separation is four orders of magnitude and the exact threshold is not delicate.
+GPU_BUSY_MEM_FRACTION = 0.01
+GPU_BUSY_MEM_FLOOR_MB = 1024
+
+_GPU_SELECTION: dict = {"requested": None, "applied": False}
+
+
+def _smi(query: str, entity: str = "gpu") -> list[list[str]]:
+    """One `nvidia-smi --query-<entity>` call, as rows of stripped fields.
+
+    Returns `[]` on any failure.  This runs before CUDA is initialised and must never be the
+    reason a run does not start: without it `--gpu auto` degrades to "cannot rank", which is
+    reported, and `--gpu N` still works because masking a device needs no inventory.
+    """
+    exe = shutil.which("nvidia-smi")
+    if not exe:
+        return []
+    try:
+        out = subprocess.run(
+            [exe, f"--query-{entity}={query}", "--format=csv,noheader,nounits"],
+            capture_output=True, text=True, timeout=20, check=False,
+        )
+    except Exception:  # noqa: BLE001 -- no smi, no ranking; not a reason to abort
+        return []
+    if out.returncode != 0:
+        return []
+    return [
+        [f.strip() for f in line.split(",")]
+        for line in out.stdout.splitlines() if line.strip()
+    ]
+
+
+def _as_num(s: str, default: float = -1.0) -> float:
+    try:
+        return float(s)
+    except (TypeError, ValueError):
+        return default  # "[N/A]" from a MIG or a driver that will not answer
+
+
+def gpu_inventory() -> list[dict]:
+    """Every GPU on the host with its utilisation, memory use and foreign compute processes.
+
+    The process list is the part that matters.  `memory.used` alone cannot distinguish a
+    tenant who has allocated 20 GB and is hammering the SMs from a leaked allocation nobody
+    is using, and `utilization.gpu` is a 1-second duty cycle that reads 0 % for a job between
+    kernels.  A live compute process is unambiguous.
+    """
+    rows = _smi("index,uuid,name,utilization.gpu,memory.used,memory.total")
+    apps = _smi("gpu_uuid,pid,used_memory", entity="compute-apps")
+    by_uuid: dict[str, list[dict]] = {}
+    for a in apps:
+        if len(a) >= 3:
+            by_uuid.setdefault(a[0], []).append(
+                {"pid": a[1], "used_mb": _as_num(a[2], 0.0)}
+            )
+    inv = []
+    for r in rows:
+        if len(r) < 6:
+            continue
+        uuid = r[1]
+        total = _as_num(r[5], 0.0)
+        used = _as_num(r[4], 0.0)
+        procs = by_uuid.get(uuid, [])
+        inv.append(
+            {
+                "index": int(_as_num(r[0], -1)),
+                "uuid": uuid,
+                "name": r[2],
+                "util_pct": _as_num(r[3]),
+                "mem_used_mb": used,
+                "mem_total_mb": total,
+                "n_procs": len(procs),
+                "procs": procs,
+                "busy_threshold_mb": max(
+                    GPU_BUSY_MEM_FLOOR_MB, GPU_BUSY_MEM_FRACTION * total
+                ),
+            }
+        )
+    for g in inv:
+        g["busy"] = bool(
+            g["n_procs"] > 0
+            or g["mem_used_mb"] > g["busy_threshold_mb"]
+            or g["util_pct"] > 5.0
+        )
+    return inv
+
+
+def _rank_gpus(inv: list[dict]) -> list[dict]:
+    """Idlest first: utilisation, then resident memory, then index for determinism."""
+    return sorted(
+        inv, key=lambda g: (g["n_procs"], g["util_pct"], g["mem_used_mb"], g["index"])
+    )
+
+
+def _render_ranking(ranked: list[dict], chosen: int | None) -> list[str]:
+    lines = [
+        f"[gpu] {'':2} {'idx':>3} {'util':>6} {'mem used':>12} {'procs':>6}  uuid",
+    ]
+    for g in ranked:
+        lines.append(
+            f"[gpu] {'->' if g['index'] == chosen else '  ':2} {g['index']:>3} "
+            f"{g['util_pct']:>5.0f}% {g['mem_used_mb']:>8.0f} MiB {g['n_procs']:>6}  "
+            f"{g['uuid']}"
+        )
+    return lines
+
+
+def select_gpu(spec: str, allow_busy: bool = False,
+               busy_mb: float | None = None) -> dict:
+    """Resolve `--gpu <spec>` to one physical device, with the full ranking for the record.
+
+    `spec` is an integer index or `auto`.  `auto` takes the idlest device by
+    (foreign processes, utilisation, resident memory) and refuses if even that one is busy;
+    an explicit index refuses if THAT one is busy.  `allow_busy` downgrades the refusal to a
+    warning, which is occasionally the right call and must always be a deliberate one: a
+    contended device is exactly what produced the preflight's 40 us harness floor and its
+    3 %-match timer tick, and neither is recoverable after the fact.
+    """
+    inv = gpu_inventory()
+    if busy_mb is not None:
+        for g in inv:
+            g["busy_threshold_mb"] = float(busy_mb)
+            g["busy"] = bool(
+                g["n_procs"] > 0 or g["mem_used_mb"] > busy_mb or g["util_pct"] > 5.0
+            )
+    ranked = _rank_gpus(inv)
+    sel: dict = {
+        "requested": spec,
+        "applied": False,
+        "allow_busy": bool(allow_busy),
+        "inventory": [{k: v for k, v in g.items() if k != "procs"} for g in ranked],
+        "ranking": [g["index"] for g in ranked],
+    }
+    if str(spec).strip().lower() == "auto":
+        if not ranked:
+            sel["error"] = (
+                "--gpu auto needs nvidia-smi to rank the devices and it did not answer; "
+                "pass an explicit --gpu N instead"
+            )
+            return sel
+        pick = ranked[0]
+    else:
+        try:
+            want = int(str(spec).strip())
+        except ValueError:
+            sel["error"] = f"--gpu {spec!r} is neither an integer index nor 'auto'"
+            return sel
+        by_idx = {g["index"]: g for g in inv}
+        if inv and want not in by_idx:
+            sel["error"] = (
+                f"--gpu {want} does not exist; this host reports "
+                f"{sorted(by_idx)} "
+            )
+            return sel
+        # No inventory (no nvidia-smi) is survivable for an explicit index: masking needs no
+        # inventory. The device then carries no busy verdict, and that is recorded as such.
+        pick = by_idx.get(want, {"index": want, "uuid": None, "name": None,
+                                 "busy": None, "util_pct": None, "mem_used_mb": None,
+                                 "n_procs": None,
+                                 "note": "nvidia-smi unavailable; not screened for tenants"})
+    sel.update(
+        {
+            "index": pick["index"],
+            "uuid": pick.get("uuid"),
+            "name": pick.get("name"),
+            "busy": pick.get("busy"),
+            "util_pct": pick.get("util_pct"),
+            "mem_used_mb": pick.get("mem_used_mb"),
+            "n_procs": pick.get("n_procs"),
+        }
+    )
+    if pick.get("busy"):
+        sel["busy_reason"] = (
+            f"GPU {pick['index']} has {pick.get('n_procs')} foreign compute process(es), "
+            f"{pick.get('mem_used_mb')} MiB resident and {pick.get('util_pct')}% "
+            f"utilisation"
+        )
+    return sel
+
+
+def _gpu_spec_from_argv(argv: Sequence[str]) -> tuple[str | None, bool, float | None]:
+    """`(spec, allow_busy, busy_mb)` scraped out of argv before argparse can run.
+
+    Deliberately literal-minded: only the exact spellings `--gpu N`, `--gpu=N`,
+    `--allow-busy` and `--gpu-busy-mb` are recognised.  Anything else -- including a bare
+    `--gpu` with no value -- leaves the spec None and lets the driver's own argparse produce
+    the error message, which is the one the operator can act on.
+    """
+    spec, allow_busy, busy_mb = None, False, None
+    args = list(argv)
+    for i, a in enumerate(args):
+        if a == "--gpu" and i + 1 < len(args):
+            spec = args[i + 1]
+        elif a.startswith("--gpu="):
+            spec = a.split("=", 1)[1]
+        elif a == "--allow-busy":
+            allow_busy = True
+        elif a == "--gpu-busy-mb" and i + 1 < len(args):
+            busy_mb = _as_num(args[i + 1], -1) or None
+        elif a.startswith("--gpu-busy-mb="):
+            busy_mb = _as_num(a.split("=", 1)[1], -1) or None
+    if spec is None:
+        spec = os.environ.get(GPU_ENV_VAR) or None
+    if busy_mb is not None and busy_mb < 0:
+        busy_mb = None
+    return spec, allow_busy, busy_mb
+
+
+def _bootstrap_gpu_selection() -> None:
+    """Mask this process to one GPU, at import time, before torch exists."""
+    global _GPU_SELECTION
+
+    carried = os.environ.get(_GPU_DECISION_VAR)
+    if carried:
+        # We are the re-exec'd child (or a subprocess of a selected run). Adopt the parent's
+        # decision verbatim rather than re-ranking: two rankings seconds apart can disagree,
+        # and a child that quietly moved to a different card is the worst possible outcome.
+        try:
+            _GPU_SELECTION = json.loads(carried)
+            return
+        except Exception:  # noqa: BLE001
+            pass
+
+    spec, allow_busy, busy_mb = _gpu_spec_from_argv(sys.argv[1:])
+    if spec is None:
+        _GPU_SELECTION = {
+            "requested": None,
+            "applied": False,
+            "cuda_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES", "(unset: all)"),
+            "note": "no --gpu given; the process sees whatever devices it inherited. On a "
+                    "multi-tenant host that is how a contended GPU gets measured -- see the "
+                    "preflight's 40 us harness floor.",
+        }
+        return
+
+    sel = select_gpu(spec, allow_busy=allow_busy, busy_mb=busy_mb)
+    for line in _render_ranking(
+        [dict(g) for g in sel.get("inventory", [])], sel.get("index")
+    ):
+        print(line, flush=True)
+    if sel.get("error"):
+        raise SystemExit(f"[gpu] {sel['error']}")
+    if sel.get("busy"):
+        msg = (
+            f"[gpu] !! {sel['busy_reason']}.\n"
+            f"[gpu] !! A contended device is what produced this suite's contaminated "
+            f"launch/tick calibration (harness floor 40 us, tick match 3 %). Pick another "
+            f"GPU, or pass --allow-busy to measure it anyway and label the result."
+        )
+        if not allow_busy:
+            raise SystemExit(msg)
+        print(msg, flush=True)
+        sel["busy_override"] = True
+
+    os.environ["CUDA_VISIBLE_DEVICES"] = str(sel["index"])
+    sel["applied"] = True
+    sel["cuda_visible_devices"] = str(sel["index"])
+    print(
+        f"[gpu] CUDA_VISIBLE_DEVICES={sel['index']} -> this process sees ONE device as "
+        f"cuda:0 ({sel.get('name') or '?'}, uuid {sel.get('uuid') or '?'})",
+        flush=True,
+    )
+    _GPU_SELECTION = sel
+    try:
+        os.environ[_GPU_DECISION_VAR] = json.dumps(sel)
+    except Exception:  # noqa: BLE001 -- the decision is already applied; carrying it is a bonus
+        pass
+
+
+_bootstrap_gpu_selection()
+
+import torch  # noqa: E402 -- MUST follow the CUDA_VISIBLE_DEVICES bootstrap above
+
+
+def _verify_gpu_mask() -> None:
+    """Confirm the mask actually bit, and re-exec once if some import beat us to `cuInit`.
+
+    The bootstrap above runs before this module imports torch, which is early enough in
+    every driver here.  It is not early enough in a process that had already touched CUDA
+    before importing this package, and in that case the mask is a no-op that no exception
+    reports.  `device_count() != 1` is the direct evidence, so it is checked rather than
+    assumed, and the repair is a single re-exec with the variable already in the
+    environment.  The guard variable makes that at most once.
+    """
+    sel = _GPU_SELECTION
+    if not sel.get("applied"):
+        return
+    try:
+        n = int(torch.cuda.device_count())
+    except Exception as exc:  # noqa: BLE001
+        sel["mask_verified"] = f"unknown: {type(exc).__name__}"
+        return
+    if n == 1:
+        sel["mask_verified"] = True
+        return
+    sel["mask_verified"] = False
+    if os.environ.get(_GPU_REEXEC_VAR):
+        raise SystemExit(
+            f"[gpu] CUDA_VISIBLE_DEVICES={sel['index']} did not take effect even after a "
+            f"re-exec (torch still sees {n} devices). Something initialised CUDA before "
+            f"this package was imported. Set CUDA_VISIBLE_DEVICES in the shell instead."
+        )
+    print(
+        f"[gpu] mask did not bite (torch sees {n} devices) -- CUDA was already initialised "
+        f"when this package was imported; re-exec'ing once with CUDA_VISIBLE_DEVICES="
+        f"{sel['index']}",
+        flush=True,
+    )
+    os.environ[_GPU_REEXEC_VAR] = "1"
+    os.execve(sys.executable, [sys.executable] + sys.argv, os.environ)
+
+
+_verify_gpu_mask()
+
+
+def gpu_selection() -> dict:
+    """The GPU decision this process made, for the `fairness` block of every result file."""
+    return dict(_GPU_SELECTION)
 
 from glm52_h200 import common as _common  # noqa: E402  -- hard dependency, by design
 
@@ -75,16 +427,52 @@ else:
 # they are applied to BOTH arms of every pair, so they cannot bias a ratio.  The hardware
 # half of each guard (lane count, register file, shared memory) comes from `config.env()`.
 # ======================================================================================
-MAX_ELEMS_PER_THREAD = 64  # fp32 values a lane may hold in a vector kernel's tile
+MAX_ELEMS_PER_THREAD = 64  # fp32 values a lane may hold in a VECTOR kernel's tile
 MIN_ELEMS_PER_THREAD = 1  # below this the CTA is mostly idle lanes
 CUDA_MAX_THREADS_PER_BLOCK = 1024  # CUDA *programming model* cap, not a device property
+
+#: Per-thread register window.  A thread addresses R0..R255, of which R255 is the reserved
+#: zero register, so 255 are usable -- an ISA constant on every NVIDIA generation from Kepler
+#: to Blackwell, not a device fact, so it does not belong in `config.env()` and needs no
+#: per-card probe.
+REG_WINDOW_PER_THREAD = 256
+#: Share of that window a GEMM's fp32 accumulator tile may claim.  The rest holds the operand
+#: fragments, the addressing and the pipeline's in-flight state.  A SEARCH POLICY number,
+#: applied to both arms of every pair.
+ACC_REG_FRACTION = 0.5
+
+
+def acc_elems_per_thread_cap() -> int:
+    """fp32 accumulator elements one lane may hold in a GEMM tile.
+
+    This used to be `MAX_ELEMS_PER_THREAD` (64), and on the H200 that single number threw
+    away the device's own best mapping: the preflight measured Triton at 788 TF/s -- 96 % of
+    cuBLAS -- with `BM128 BN256 BK64 num_warps=8`, which is 128 accumulator elements per
+    lane.  A grid that cannot express the calibrated peak cannot report a fused kernel's
+    distance from it, and a fused arm that is register-hungrier than its unfused twin is
+    exactly the arm a too-tight cap keeps out of the winner's circle.
+
+    Derived from the ISA window and the policy fraction above rather than written down, so
+    the reason survives next to the number.  On any current NVIDIA part that is 128, which
+    admits the calibrated winner exactly and still rejects `BM256 BN256` at 8 warps (256
+    elements per lane, a guaranteed spill) unless the config also widens the CTA.
+    """
+    return int(REG_WINDOW_PER_THREAD * ACC_REG_FRACTION)
+
+
+#: Convenience alias.  Vector kernels keep the tighter `MAX_ELEMS_PER_THREAD`; GEMM
+#: accumulator guards use this.
+MAX_ACC_ELEMS_PER_THREAD = acc_elems_per_thread_cap()
 
 
 # ======================================================================================
 # Preflight
 # ======================================================================================
 _PF_CACHE: dict | None = None
-_PF_PATH = PKG / "preflight_h200.json"
+# Honour the same override config.py / common.py / kernels.hopper use. Without it a
+# re-probe written to a side-file would leave THIS module reading the stale JSON while the
+# rest of the suite read the new one -- two different feature tables in one run.
+_PF_PATH = Path(os.environ.get("GLM52_H200_PREFLIGHT", str(PKG / "preflight_h200.json")))
 _PF_NOTICE_DONE = False
 
 
@@ -132,21 +520,117 @@ def feature(name: str) -> bool:
     return bool(pf_get("triton_features", "compile_probes", name, "ok", default=False))
 
 
-def timer_tick_us() -> float | None:
-    """CUDA-event granularity in microseconds, as measured, or None."""
-    v = pf_get("calibration", "timer_tick_us")
+def _pf_float(*path) -> float | None:
+    v = pf_get(*path)
     try:
-        return float(v) if v else None
+        return float(v) if v is not None else None
     except (TypeError, ValueError):
         return None
+
+
+def timer_tick_us() -> float | None:
+    """CUDA-event granularity in microseconds, as measured, or None.
+
+    Read `calibration_status()` before believing it -- see there.
+    """
+    v = _pf_float("calibration", "timer_tick_us")
+    return v if v else None
 
 
 def launch_cost_us() -> float | None:
-    v = pf_get("calibration", "launch_us")
-    try:
-        return float(v) if v else None
-    except (TypeError, ValueError):
-        return None
+    v = _pf_float("calibration", "launch_us")
+    return v if v else None
+
+
+def harness_floor_us() -> float | None:
+    v = _pf_float("calibration", "harness_floor_us")
+    return v if v else None
+
+
+def timer_tick_match_frac() -> float | None:
+    """Fraction of preflight samples that landed on an integer multiple of the tick."""
+    return _pf_float("calibration", "timer_tick_match_frac")
+
+
+#: Below this, the "tick" the preflight reported is not a tick.  The detector calls a
+#: quantum only at >= 0.98; anything under ~0.9 means the samples are dominated by something
+#: that is not the timer, and the only such something on this host is another tenant.
+TICK_MATCH_MIN = 0.9
+_CALIB_WARNED = False
+
+
+def calibration_status() -> dict:
+    """Is the preflight's launch/tick calibration usable, and if not, why not.
+
+    The H200 preflight reported `launch_us 8.89`, `harness_floor_us 40.55` and
+    `timer_tick_us 0.256` **with a match fraction of 0.03**.  A 40 us floor on a card whose
+    kernels resolve in single-digit microseconds is not physical, and a quantum that fits
+    3 % of samples is not a quantum; both are what measuring a shared GPU looks like.  The
+    device block of that same file says 98.8 GB free of 150 GB, i.e. ~51 GB belonged to
+    someone else while the probe ran.
+
+    So these two numbers are treated as UNKNOWN rather than as data.  The consequence that
+    matters is in `tick_report`: with an invented tick, a decode cell either gets flagged
+    `tick_limited` when it is not, or -- worse -- is silently NOT flagged when it is, and a
+    quantised ratio goes into the report at three decimal places.  `tick_limited: null` with
+    a reason is the honest answer, and it is what this returns.
+    """
+    frac = timer_tick_match_frac()
+    free = pf_get("device", "mem_free_bytes")
+    total = pf_get("device", "mem_total_bytes") or pf_get("device", "total_memory")
+    out = {
+        "timer_tick_us": _pf_float("calibration", "timer_tick_us"),
+        "timer_tick_match_frac": frac,
+        "launch_us": _pf_float("calibration", "launch_us"),
+        "harness_floor_us": _pf_float("calibration", "harness_floor_us"),
+        "match_frac_min": TICK_MATCH_MIN,
+        "trusted": None,
+        "reason": None,
+    }
+    if isinstance(free, (int, float)) and isinstance(total, (int, float)) and total:
+        out["mem_in_use_by_others_bytes"] = int(total) - int(free)
+        out["mem_in_use_by_others_frac"] = 1.0 - float(free) / float(total)
+    if not preflight():
+        out["reason"] = "no preflight_h200.json; nothing was calibrated"
+        return out
+    if frac is None:
+        out["reason"] = (
+            "preflight recorded no timer_tick_match_frac, so the tick cannot be validated"
+        )
+        return out
+    if frac < TICK_MATCH_MIN:
+        used = out.get("mem_in_use_by_others_bytes")
+        out["trusted"] = False
+        out["reason"] = (
+            f"timer_tick_match_frac={frac:.2f} < {TICK_MATCH_MIN}: the reported "
+            f"{out['timer_tick_us']} us 'tick' matches only {frac * 100:.0f}% of samples, "
+            f"and harness_floor_us={out['harness_floor_us']} is far above a launch. That is "
+            f"a contended GPU, not a timer"
+            + (
+                f" -- {used / 2**30:.0f} GB of this device was already allocated by another "
+                f"process when the preflight ran"
+                if isinstance(used, int) and used > 2**30 else ""
+            )
+            + ". Re-run the preflight on an IDLE device -- `CUDA_VISIBLE_DEVICES=<n> "
+              "python3 glm52_h200/preflight.py` works whatever flags that script grows -- "
+              "and every tick_limited verdict below becomes answerable."
+        )
+        return out
+    out["trusted"] = True
+    return out
+
+
+def warn_calibration_once() -> None:
+    """One line, once per process, when the tick/launch calibration cannot be believed."""
+    global _CALIB_WARNED
+    if _CALIB_WARNED:
+        return
+    _CALIB_WARNED = True
+    st = calibration_status()
+    if st.get("trusted") is False:
+        print(f"[calib] !! {st['reason']}", flush=True)
+    elif st.get("trusted") is None and st.get("reason"):
+        print(f"[calib] {st['reason']}", flush=True)
 
 
 def check_preflight_device(env) -> dict:
@@ -270,6 +754,141 @@ def elems_per_program_cap(env) -> int:
     return max_threads_per_block(env) * MAX_ELEMS_PER_THREAD
 
 
+# ======================================================================================
+# Shared memory: the model, CALIBRATED against what this stack actually reserved
+# ======================================================================================
+_SMEM_FIT: dict | None = None
+
+
+def smem_stage_fit() -> dict:
+    """How many `2*BK*(BM+BN)` buffers this stack really stages, fitted to the preflight.
+
+    `config.smem_stage_bytes` uses `max(2, num_stages - 1)`, measured on **triton 3.6 /
+    sm_89**.  The H200 preflight's own `smem_probe` block says that is one buffer short
+    here -- every observation is `num_stages` exactly:
+
+        BM128 BN128 BK64 s3 -> 98304  = 3 * 2*64*(128+128)
+        BM128 BN256 BK64 s3 -> 147456 = 3 * 2*64*(128+256)
+        BM128 BN256 BK64 s4 -> 196608 = 4 * 2*64*(128+256)
+        BM256 BN256 BK64 s3 -> 196608 = 3 * 2*64*(256+256)
+        BM128 BN256 BK128 s3 -> "Required: 294912" = 3 * 2*128*(128+256)   [did not fit]
+
+    Under-predicting is the benign direction (the config is offered, fails to compile, lands
+    in `n_failed` where the fairness check sees it) but it is not free: on a grid that now
+    reaches BK=128 at BN=256 it offers a whole tile family that cannot exist, and pays two
+    arms' compile time to find out.  Fitting the offset makes the prediction exact, so the
+    grids reach every shape the device can run and no shape it cannot.
+
+    The fit is only adopted when it reproduces EVERY observation exactly.  Otherwise this
+    returns the conservative `config` model, because a model that over-predicts prunes legal
+    configs silently, and silent pruning is the one failure this suite cannot detect later.
+    """
+    global _SMEM_FIT
+    if _SMEM_FIT is not None:
+        return _SMEM_FIT
+    obs = pf_get("calibration", "smem_probe", default={}) or {}
+    parsed = []
+    for key, rec in obs.items():
+        if not isinstance(rec, dict):
+            continue
+        try:
+            parts = dict(
+                (p[:2].lower(), int(p[2:])) if p[0] == "B" else ("s", int(p[1:]))
+                for p in key.split("_")
+            )
+            bm, bn, bk, st = parts["bm"], parts["bn"], parts["bk"], parts["s"]
+        except Exception:  # noqa: BLE001 -- an unparsable key is preflight's business
+            continue
+        actual = rec.get("shared_bytes")
+        if not (isinstance(actual, int) and actual > 0):
+            # A failed config still reports what it needed; that is an observation too.
+            import re
+
+            m = re.search(r"Required:\s*(\d+)", str(rec.get("error", "")))
+            actual = int(m.group(1)) if m else None
+        if not actual:
+            continue
+        unit = 2 * bk * (bm + bn)
+        if unit <= 0 or actual % unit:
+            parsed = []  # a non-integer buffer count means the shape of the model is wrong
+            break
+        parsed.append((st, actual // unit))
+    fit = {
+        "observations": len(parsed),
+        "source": "config.smem_stage_bytes (triton 3.6 / sm_89)",
+        "offset": None,
+        "formula": "max(2, num_stages - 1) * 2*BK*(BM+BN)",
+    }
+    offsets = {st - buffers for st, buffers in parsed}
+    if parsed and len(offsets) == 1:
+        off = offsets.pop()
+        if 0 <= off <= 1:
+            fit.update(
+                {
+                    "source": f"fitted to {len(parsed)} preflight smem_probe observations",
+                    "offset": off,
+                    "formula": f"max(2, num_stages - {off}) * 2*BK*(BM+BN)",
+                }
+            )
+    _SMEM_FIT = fit
+    return fit
+
+
+def smem_predict(bm: int, bn: int, bk: int, num_stages: int, bn_mult: int = 1) -> int:
+    """Bytes of shared memory a Triton GEMM mainloop stages, per `smem_stage_fit()`."""
+    fit = smem_stage_fit()
+    off = fit.get("offset")
+    if off is None:
+        from glm52_h200 import config as _C  # local: config is another agent's module
+
+        return _C.smem_stage_bytes(bm, bn, bk, num_stages, bn_mult=bn_mult)
+    return max(2, num_stages - int(off)) * 2 * bk * (bm + bn_mult * bn)
+
+
+def smem_fits(env, bm: int, bn: int, bk: int, num_stages: int, bn_mult: int = 1) -> bool:
+    """Does this tile fit THIS device's opt-in shared-memory ceiling?"""
+    return smem_predict(bm, bn, bk, num_stages, bn_mult) <= env_int(env, "smem_bytes")
+
+
+def tile_ladder(env, lo: int = 16, bk: int = 64, num_stages: int = 3,
+                bn_mult: int = 1) -> list[int]:
+    """Power-of-two BM/BN values a square tile can reach inside the SMEM ceiling.
+
+    Derived, never written down.  The two previous devices in this study had 64 KB (C500)
+    and 101 KB (sm_89) of opt-in shared memory and their grids topped out accordingly; the
+    H200 has 232448 B, which is why `BM256 BN256 BK64 s3` (196608 B) compiles here and
+    nowhere before.  A grid that still stops at the old ceiling would under-search the new
+    device -- symmetrically, so not a fairness bug, but it would leave the headline speedups
+    measured against a handicapped pair of arms.
+    """
+    out, t = [], lo
+    while t <= 1024 and smem_fits(env, t, t, bk, num_stages, bn_mult):
+        out.append(t)
+        t *= 2
+    return out or [lo]
+
+
+def bk_ladder(env, lo: int = 32, hi: int = 256, ref: int = 64,
+              num_stages: int = 2) -> list[int]:
+    """Power-of-two BLOCK_K values worth ENUMERATING on this device.
+
+    Referenced against a small square tile (`ref` x `ref`) at the shallowest useful pipeline
+    on purpose: this decides which values a grid generator *offers*, and the per-config SMEM
+    filter then rejects the (BM, BN, BK, stages) combinations that do not fit.  Referencing a
+    large tile instead would delete BK=128 from the enumeration entirely because it does not
+    fit at `BM128 BN256` -- and with it every legal BK=128 config at a smaller tile, in both
+    arms, invisibly.
+
+    `hi` is a search POLICY bound, not a hardware one: past a few hundred the k-loop trip
+    count collapses and there is nothing left for the mainloop to pipeline against.
+    """
+    out, k = [], lo
+    while k <= hi and smem_fits(env, ref, ref, k, num_stages):
+        out.append(k)
+        k *= 2
+    return out or [lo]
+
+
 def exact_fp32_matmul() -> dict:
     """Turn TF32 off so the fp32 reference is actually fp32.
 
@@ -327,12 +946,73 @@ def l2_flush_audit(env) -> dict:
 # ======================================================================================
 # H200 mapping axes -- runtime-gated, never authored in
 # ======================================================================================
+#: Cluster sizes worth offering.  `num_ctas` does NOT change the grid a launcher passes:
+#: Triton multiplies gridDimX internally, so one program becomes one cluster of this many
+#: CTAs.  Kept to a single rung by default because every overlay multiplies BOTH arms' coarse
+#: grid, and a 2-CTA cluster is where DSMEM first exists at all.
+CLUSTER_SIZES = (2,)
+
+_CAPS_CACHE: object | None = None
+#: One line per kernel module (or per-kernel axis view), so a driver that widens two
+#: different grids reports both instead of only the first.
+_AXIS_NOTICE_DONE: set = set()
+
+
+def hopper_caps():
+    """`kernels.hopper.caps()`, or None if that module cannot answer.
+
+    This is the LIVE verdict -- a trial compile-and-launch of each mechanism, run in a
+    subprocess -- and it outranks `preflight_h200.json` for exactly one reason that matters
+    here.  The preflight's `tma_tensor_descriptor` probe passes a HOST-side
+    `TensorDescriptor` object into `tl.make_tensor_descriptor()`, which is the DEVICE-side
+    constructor and wants a raw pointer.  Mixing the two APIs is a `CompilationError` on any
+    hardware, so that probe's `ok: false` on the H200 is a **false negative about the
+    device**.  Gating TMA on it would disable TMA on the one machine this suite exists to
+    measure, and the result file would still say "H200".
+    """
+    global _CAPS_CACHE
+    if _CAPS_CACHE is None:
+        try:
+            from glm52_h200.kernels import hopper as _hop
+
+            _CAPS_CACHE = _hop.caps()
+        except Exception as exc:  # noqa: BLE001 -- no caps module, no Hopper axes
+            _CAPS_CACHE = False
+            print(f"[h200] kernels/hopper.py unavailable ({type(exc).__name__}: {exc}); "
+                  f"no sm_90 mapping axis will be offered", flush=True)
+    return _CAPS_CACHE or None
+
+
+def axis_available(name: str) -> tuple[bool, str]:
+    """`(available, why)` for one sm_90 mapping axis, from the live probe then the preflight.
+
+    `name` is `tma`, `warp_specialize` or `clusters`.  The two sources disagree on TMA by
+    construction (see `hopper_caps`), so the disagreement is reported in the string rather
+    than resolved silently.
+    """
+    probe = {
+        "tma": "tma_tensor_descriptor",
+        "warp_specialize": "warp_specialize_tl_range",
+        "clusters": "thread_block_cluster_num_ctas",
+    }.get(name, "")
+    pf = feature(probe) if probe else False
+    c = hopper_caps()
+    if c is None:
+        return bool(pf), f"preflight probe {probe}={pf}; no live capability module"
+    live = bool(getattr(c, name, False))
+    src = (getattr(c, "sources", {}) or {}).get(name, "?")
+    why = f"hopper.caps().{name}={live} (source {src}); preflight probe {probe}={pf}"
+    if live and not pf:
+        why += " -- LIVE PROBE WINS: the preflight probe for this axis is inconclusive"
+    return live, why
+
+
 def h200_cfg_overlays(kernel_mod=None) -> list[dict]:
     """Extra config-dict overlays this device+stack+kernel actually supports.
 
     Two independent gates, both checked at RUNTIME:
 
-      1. the preflight COMPILED AND LAUNCHED the feature on this stack, and
+      1. a live trial compile+launch says the mechanism works on this stack, and
       2. the kernel module advertises the cfg key by exporting `H200_CFG_KEYS`
          (a tuple of strings its launcher forwards to the Triton launch).
 
@@ -341,31 +1021,156 @@ def h200_cfg_overlays(kernel_mod=None) -> list[dict]:
     it must be incapable of *requiring* sm_90.
 
     Overlays are applied to the coarse grid of BOTH arms of a pair, so they cannot bias a
-    ratio; they only widen the search for both.
+    ratio; they only widen the search for both.  `USE_TMA + warp specialization` is offered
+    as a combination as well as separately, because that pairing is the mechanism the
+    "free normalization" claim rests on -- descriptor loads issued by producer warps while
+    consumer warps run the MMA -- and neither half alone tests it.
     """
     keys = tuple(getattr(kernel_mod, "H200_CFG_KEYS", ()) or ())
+    if not keys:
+        return []
+
+    # The warp-specialization cfg key is spelled differently by different kernel modules
+    # (`warp_specialize` where the launcher forwards it, `WARP_SPECIALIZE` where it is a
+    # kernel constexpr). Emit the one the module actually advertises; emitting the other
+    # would be silently ignored, and a row labelled warp-specialized that ran the classic
+    # mainloop is a fabricated measurement.
+    ws_key = next((k for k in ("WARP_SPECIALIZE", "warp_specialize") if k in keys), None)
+    tma_key = "USE_TMA" if "USE_TMA" in keys else None
+
     out: list[dict] = []
-    if "num_ctas" in keys and feature("thread_block_cluster_num_ctas"):
-        out += [{"num_ctas": 2}]
-    if "warp_specialize" in keys and feature("warp_specialize_tl_range"):
-        out += [{"warp_specialize": True}]
-    if "num_consumer_groups" in keys and feature("warp_specialize_num_consumer_groups"):
-        out += [{"num_consumer_groups": 1, "num_buffers_warp_spec": 2}]
-    if "USE_TMA" in keys and feature("tma_tensor_descriptor"):
-        out += [{"USE_TMA": True}]
+    ws_ovl: dict | None = None
+    tma_ovl: dict | None = None
+
+    if "num_ctas" in keys and axis_available("clusters")[0]:
+        out += [{"num_ctas": int(n)} for n in CLUSTER_SIZES if int(n) > 1]
+    if ws_key and axis_available("warp_specialize")[0]:
+        ws_ovl = {ws_key: True}
+        out.append(ws_ovl)
+    elif ("num_consumer_groups" in keys
+          and feature("warp_specialize_num_consumer_groups")):
+        # The forked-Triton spelling. The measured H200 stack REJECTS it outright
+        # ("Keyword argument num_consumer_groups was specified but unrecognised"), so this
+        # branch exists only for a stack that has it and lacks tl.range(warp_specialize=).
+        ws_ovl = {"num_consumer_groups": 1, "num_buffers_warp_spec": 2}
+        out.append(ws_ovl)
+    if tma_key and axis_available("tma")[0]:
+        tma_ovl = {tma_key: True}
+        out.append(tma_ovl)
+    if ws_ovl and tma_ovl:
+        out.append({**tma_ovl, **ws_ovl})
     return out
 
 
-def widen(grid: list[dict], kernel_mod=None) -> list[dict]:
-    """`grid` plus every H200 overlay of every config in it, deduplicated."""
+def _mod_name(kernel_mod) -> str:
+    """A printable name for a kernel module OR for a per-kernel axis view object.
+
+    Some modules advertise DIFFERENT axes per kernel (`K.ROUTER_AXES` vs `K.MOE_AXES`) via a
+    small duck-type carrying only `H200_CFG_KEYS`.  Those have no `__name__`, and a report
+    that labels them all "?" cannot be traced back to the kernel it describes.
+    """
+    n = getattr(kernel_mod, "__name__", None)
+    if n:
+        return str(n)
+    if kernel_mod is None:
+        return "(no kernel module)"
+    return f"{type(kernel_mod).__module__}.{type(kernel_mod).__name__}"
+
+
+def h200_axis_report(kernel_mod=None) -> dict:
+    """What each sm_90 axis is, why, and which cfg key carries it -- for the result file."""
+    keys = tuple(getattr(kernel_mod, "H200_CFG_KEYS", ()) or ())
+    rep: dict = {
+        "advertised_by": _mod_name(kernel_mod),
+        "kernel_cfg_keys": list(keys) or "module advertises none",
+        "axes": {},
+        "overlays_offered": h200_cfg_overlays(kernel_mod),
+    }
+    for name, cfgkeys in (
+        ("tma", ("USE_TMA",)),
+        ("warp_specialize", ("WARP_SPECIALIZE", "warp_specialize",
+                             "num_consumer_groups")),
+        ("clusters", ("num_ctas",)),
+    ):
+        ok, why = axis_available(name)
+        carried = [k for k in cfgkeys if k in keys]
+        rep["axes"][name] = {
+            "available": ok,
+            "evidence": why,
+            "kernel_key": carried[0] if carried else None,
+            "offered": bool(ok and carried),
+            "not_offered_because": (
+                None if (ok and carried)
+                else ("this kernel module advertises no cfg key for it"
+                      if ok else "the live capability probe says it is unavailable")
+            ),
+        }
+    c = hopper_caps()
+    if c is not None:
+        rep["tma_form"] = c.tma_form() if hasattr(c, "tma_form") else None
+        rep["ws_mode"] = getattr(c, "ws_mode", None)
+        rep["probe_mode"] = getattr(c, "probe_mode", None)
+    return rep
+
+
+def widen(grid: list[dict], kernel_mod=None, cap: int = 0, tag: str = "") -> list[dict]:
+    """`grid` plus every H200 overlay of every config in it, deduplicated.
+
+    `cap`, when non-zero, samples the widened list back down to a trial budget.  Widening
+    multiplies a grid by `1 + len(overlays)` -- on the measured H200 that is 5x -- and the
+    budget has to be spent on the widened space rather than on the classic one, or the new
+    axes are only ever tried at whatever tiles happened to survive an earlier cap.  Both
+    arms are handed the same widened, same-sampled list, so this cannot bias a ratio.
+    """
     ovl = h200_cfg_overlays(kernel_mod)
+    seen_key = _mod_name(kernel_mod)
     if not ovl:
-        return grid
+        if seen_key not in _AXIS_NOTICE_DONE:
+            _AXIS_NOTICE_DONE.add(seen_key)
+            print(f"    [h200 axes] none offered for {seen_key}: grids are the classic ones",
+                  flush=True)
+        return cap_grid(list(grid), cap, tag) if cap else list(grid)
+    if seen_key not in _AXIS_NOTICE_DONE:
+        _AXIS_NOTICE_DONE.add(seen_key)
+        print(
+            f"    [h200 axes] {seen_key}: offering {len(ovl)} overlay(s) to BOTH arms: "
+            + ", ".join(
+                "+".join(f"{k}={v}" for k, v in o.items()) for o in ovl
+            ),
+            flush=True,
+        )
     out = list(grid)
     for c in grid:
         for o in ovl:
             out.append(dict(c, **o))
-    return dedup(out)
+    out = dedup(out)
+    return cap_grid(out, cap, tag) if cap else out
+
+
+def axis_counts(*grids) -> dict:
+    """Live per-axis counts over one or more config lists.
+
+    This is what turns "the fused arm was offered warp specialization" from a claim into a
+    number.  Where an axis is structurally meaningful for only one arm (a kernel with no
+    mainloop cannot be warp-specialized), the counts show it as a zero on the other side
+    instead of leaving the asymmetry to be inferred from prose.
+    """
+    axes = ("USE_TMA", "TMA_A", "TMA_B", "TMA_MODE", "WARP_SPECIALIZE",
+            "warp_specialize", "num_consumer_groups", "num_ctas")
+    out: dict = {}
+    for g in grids:
+        for cfg in g or ():
+            for a in axes:
+                if a not in cfg:
+                    continue
+                v = cfg[a]
+                if a == "num_ctas" and int(v or 1) <= 1:
+                    continue
+                if isinstance(v, bool) and not v:
+                    continue
+                out[a] = out.get(a, 0) + 1
+    out["_total_cfgs"] = sum(len(g or ()) for g in grids)
+    return out
 
 
 # ======================================================================================
@@ -782,6 +1587,83 @@ def bench_pair(fused_fns, unfused_fns, warmup: int, rep: int, label: str = "") -
     return a, b, _canonicalise_pair_meta(meta)
 
 
+def bench_multi(chains: dict, warmup: int, rep: int, baseline: str | None = None) -> tuple:
+    """N-way interleaved timing of several chains that share one config.
+
+    `bench_pair` cancels drift between TWO arms by timing them inside one round and taking
+    the median of the per-round ratios.  The F11 headline needs THREE (unfused,
+    fused-nonspecialized, fused-warp-specialized) and honestly four (the unfused arm with
+    specialization on, which is the control that stops warp specialization being credited to
+    fusion).  Timing those as three separate pairs would re-introduce exactly the drift
+    `bench_pair` exists to remove -- the arms would no longer share a round.
+
+    So: every round times every chain once, each behind its own L2 flush, and the ORDER
+    ROTATES by one position per round, so no arm systematically inherits another's cache or
+    clock state.  Ratios are formed within a round against `baseline` (the first key by
+    default) and reported as the median over rounds.
+
+    Returns `({name: Timing}, meta)`.
+    """
+    names = list(chains)
+    if not names:
+        return {}, {"error": "no chains"}
+    base = baseline if baseline in names else names[0]
+
+    for _ in range(max(1, warmup)):
+        for n in names:
+            _run(chains[n])
+    torch.cuda.synchronize()
+
+    ev = lambda: torch.cuda.Event(enable_timing=True)  # noqa: E731
+    starts = {n: [ev() for _ in range(rep)] for n in names}
+    ends = {n: [ev() for _ in range(rep)] for n in names}
+    for i in range(rep):
+        rot = names[i % len(names):] + names[: i % len(names)]
+        for n in rot:
+            _flush_l2()
+            starts[n][i].record()
+            _run(chains[n])
+            ends[n][i].record()
+    torch.cuda.synchronize()
+
+    samples = {
+        n: [s.elapsed_time(e) for s, e in zip(starts[n], ends[n])] for n in names
+    }
+    timings = {n: _mk_timing(samples[n]) for n in names}
+    ratios: dict[str, dict] = {}
+    for n in names:
+        if n == base:
+            continue
+        rs = sorted(
+            b / a for a, b in zip(samples[base], samples[n]) if a > 0
+        )
+        if not rs:
+            continue
+        k = len(rs)
+        ratios[n] = {
+            "vs": base,
+            "p50": rs[k // 2],
+            "p10": rs[max(0, int(0.1 * k))],
+            "p90": rs[min(k - 1, int(0.9 * k))],
+            # >1 means this chain is SLOWER than the baseline
+            "pct_slower_than_baseline": 100.0 * (rs[k // 2] - 1.0),
+        }
+    meta = {
+        "impl": "glm52_h200.bench.bench_multi",
+        "interleaved": True,
+        "order_rotated": True,
+        "rounds": rep,
+        "arms": names,
+        "baseline": base,
+        "per_round_ratios": ratios,
+        "protocol": "every arm is timed once per round behind its own L2 flush, with the "
+                    "order rotating one position each round; ratios are formed WITHIN a "
+                    "round and reported as the median over rounds, so monotone drift "
+                    "cancels the same way bench_pair makes it cancel",
+    }
+    return timings, meta
+
+
 def tick_report(fused_ms: float, unfused_ms: float) -> dict:
     """Flag a speedup whose two operands are only a few timer ticks apart.
 
@@ -789,11 +1671,31 @@ def tick_report(fused_ms: float, unfused_ms: float) -> dict:
     an H200 tick is measured by the preflight.  A ratio built from two integers that differ
     by 2 is quantised to tens of percent, and reporting it to three decimals is a lie of
     precision.  `tick_limited` is the flag the report must carry.
+
+    **`tick_limited` is `None`, not a verdict, when the tick itself is not trustworthy.**
+    The H200 preflight on file reports a 0.256 us tick that matches 3 % of its samples and a
+    40 us harness floor, both measured while another tenant held ~51 GB of the card.  Deriving
+    `tick_limited: false` from that would tell an operator a quantised decode ratio is
+    clean -- a stronger and more damaging claim than admitting the tick is unknown.  The
+    reason travels with the null so it lands in the result file, and the warning prints once.
     """
+    st = calibration_status()
     tick = timer_tick_us()
-    out = {"timer_tick_us": tick}
+    out = {
+        "timer_tick_us": tick,
+        "timer_tick_match_frac": st.get("timer_tick_match_frac"),
+        "calibration_trusted": st.get("trusted"),
+    }
+    if st.get("trusted") is not True:
+        warn_calibration_once()
+        out["tick_limited"] = None
+        out["tick_limited_reason"] = st.get("reason") or (
+            "the preflight's timer tick could not be validated"
+        )
+        return out
     if not tick or fused_ms <= 0 or unfused_ms <= 0:
         out["tick_limited"] = None
+        out["tick_limited_reason"] = "no timer tick recorded, or a non-positive timing"
         return out
     f_t, u_t = fused_ms * 1e3 / tick, unfused_ms * 1e3 / tick
     out.update(
@@ -948,8 +1850,10 @@ class Fairness:
     def __init__(self, **static):
         self.static = dict(static)
         self.grids: dict[str, dict[str, dict]] = {}
+        self.axes: dict[str, dict] = {}
 
-    def add(self, regime: str, arm: str, stage: str, tune=None, size: int | None = None):
+    def add(self, regime: str, arm: str, stage: str, tune=None, size: int | None = None,
+            grid: Sequence[dict] | None = None):
         node = self.grids.setdefault(regime, {}).setdefault(arm, {})
         if tune is not None:
             node[stage] = {
@@ -959,6 +1863,16 @@ class Fairness:
             }
         else:
             node[stage] = {"n_tried": size}
+        if grid is not None:
+            # LIVE counts, per arm: how many of the configs this arm was actually handed
+            # carry each sm_90 mapping axis. An axis offered to one arm only is the exact
+            # bias this whole class exists to make visible, and prose cannot show it.
+            node[stage]["axis_counts"] = axis_counts(grid)
+        return self
+
+    def axis(self, family: str, report: dict) -> "Fairness":
+        """Record which sm_90 axes were offered to a fusion family, and why not otherwise."""
+        self.axes[family] = report
         return self
 
     def totals(self, regime: str) -> dict:
@@ -987,13 +1901,34 @@ class Fairness:
         }
         out["l2_flush"] = l2_flush_audit(env)
         out["preflight"] = check_preflight_device(env)
-        out["h200_axes_offered"] = h200_cfg_overlays(None) or "none (kernel opt-in absent)"
+        # WHICH PHYSICAL CARD.  Eight H200s on this host and other tenants on several of
+        # them, so "NVIDIA H200" does not identify a device. The index is only meaningful
+        # together with the mask (under CUDA_VISIBLE_DEVICES the torch index is always 0),
+        # and the UUID is meaningful on its own -- so both are recorded.
+        out["gpu"] = {
+            "selection": gpu_selection(),
+            "torch_device_index": getattr(env, "device_index", None),
+            "torch_device_count": getattr(env, "device_count", None),
+            "uuid": getattr(env, "uuid", None) or gpu_selection().get("uuid"),
+            "cuda_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES", "(unset: all)"),
+        }
+        out["smem_model"] = smem_stage_fit()
+        out["h200_axes"] = {
+            "per_family": self.axes or "no family recorded an axis report",
+            "generic_overlays": h200_cfg_overlays(None)
+            or "none at module scope (overlays are per kernel module; see per_family)",
+            "policy": "every offered axis is applied to the coarse grid of BOTH arms; "
+                      "per-arm live counts are under grids.<regime>.<arm>.<stage>."
+                      "axis_counts",
+        }
         out["timing"] = {
             "protocol": "final per-regime timings are A/B interleaved within one loop with "
             "the order alternating each round; the reported speedup is the median of the "
             "per-round ratios, so monotone drift cancels",
             "timer_tick_us": timer_tick_us(),
             "launch_cost_us": launch_cost_us(),
+            "harness_floor_us": harness_floor_us(),
+            "calibration": calibration_status(),
         }
         if pair_meta:
             out["timing"]["pair_impl"] = pair_meta.get("impl")
@@ -1103,8 +2038,37 @@ def all_regimes(C) -> list:
     return out
 
 
+def add_gpu_args(ap: argparse.ArgumentParser) -> None:
+    """Declare `--gpu` / `--allow-busy` / `--gpu-busy-mb`.
+
+    They are declared here so `--help` documents them and a typo is rejected, but they were
+    ACTED ON at import time -- see the bootstrap at the top of this module.  argparse cannot
+    run early enough: by the time a driver's `main()` is entered, the driver has already
+    built its `config.env()` at module scope and CUDA is initialised, after which
+    `CUDA_VISIBLE_DEVICES` is inert.
+    """
+    ap.add_argument(
+        "--gpu", default=None, metavar="N|auto",
+        help="run on exactly one GPU: an index, or 'auto' to take the idlest. Sets "
+             "CUDA_VISIBLE_DEVICES before CUDA initialises, so every bench sees it as "
+             "cuda:0. Refuses a device with foreign processes or resident memory.",
+    )
+    ap.add_argument(
+        "--allow-busy", action="store_true",
+        help="measure the chosen GPU even if another tenant is on it. This is what "
+             "produced the preflight's 40 us harness floor; the result file records the "
+             "override.",
+    )
+    ap.add_argument(
+        "--gpu-busy-mb", type=float, default=None, metavar="MB",
+        help="resident-memory threshold above which a GPU counts as busy "
+             "(default: 1%% of the device, floor 1024 MiB)",
+    )
+
+
 def add_std_args(ap: argparse.ArgumentParser, units: Sequence[str] = ()) -> None:
-    """`--regimes`, `--quick`, `--only`, plus the switches every driver shares."""
+    """`--regimes`, `--quick`, `--only`, `--gpu`, plus the switches every driver shares."""
+    add_gpu_args(ap)
     ap.add_argument(
         "--regimes", default="",
         help="comma-separated subset of: " + ",".join(REGIME_NAMES) + " (default: all)",
@@ -1168,6 +2132,21 @@ def banner(env, extra: Sequence[str] = ()) -> None:
             f"smem {getattr(env, 'smem_bytes', '?')} B",
             flush=True,
         )
+    sel = gpu_selection()
+    if sel.get("applied"):
+        print(
+            f"[gpu] measuring physical GPU {sel.get('index')} "
+            f"(uuid {sel.get('uuid') or '?'}), mask verified={sel.get('mask_verified')}"
+            + ("  [--allow-busy OVERRIDE]" if sel.get("busy_override") else ""),
+            flush=True,
+        )
+    elif getattr(env, "device_count", 0) and int(getattr(env, "device_count", 0)) > 1:
+        print(
+            f"[gpu] !! this process sees {env.device_count} devices and no --gpu was given. "
+            f"On a shared host that means another tenant's kernels can land on the card "
+            f"being timed -- pass --gpu auto for a clean measurement.",
+            flush=True,
+        )
     pf = preflight()
     if pf:
         feats = ", ".join(
@@ -1181,6 +2160,21 @@ def banner(env, extra: Sequence[str] = ()) -> None:
             f"L2 {env_int(env, 'l2_bytes') >> 20} MB",
             flush=True,
         )
+    warn_calibration_once()
+    fit = smem_stage_fit()
+    print(
+        f"[smem] ceiling {env_int(env, 'smem_bytes')} B | staging model "
+        f"{fit['formula']} ({fit['source']})",
+        flush=True,
+    )
+    c = hopper_caps()
+    if c is not None:
+        try:
+            from glm52_h200.kernels import hopper as _hop
+
+            print(_hop.banner(), flush=True)
+        except Exception:  # noqa: BLE001 -- a banner must never be the thing that fails
+            pass
     for line in extra:
         print(line, flush=True)
 

@@ -40,10 +40,19 @@ Structure of the fused kernel (this is the "free normalization" shape):
             registers straight into `tl.dot` against the router weight tile.
 
 So the router's *read* of x2 disappears; x2 itself is still written because the expert
-GEMMs consume it.  The router weight is 6144*256*2 B = 3.0 MB against **~50 MB of L2 on
-H200** (it was 8 MB on C500 and 32 MB on the 4060), so its re-read by every CTA is an L2
-hit with a lot of room to spare -- the assumption this fusion rests on is *stronger* here
-than on either previous device, and it holds for both arms equally.
+GEMMs consume it.  The router weight is 6144*256*2 B = 3.0 MB against a **measured
+62 914 560 B (60 MB) of L2 on this H200** (it was 8 MB on C500 and 32 MB on the 4060), so
+its re-read by every CTA is an L2 hit with a lot of room to spare -- the assumption this
+fusion rests on is *stronger* here than on either previous device, and it holds for both
+arms equally.
+
+The device's balance point moved even more than its L2 did: 4.23-4.25 TB/s of copy
+bandwidth against 821.6 TF/s of bf16 cuBLAS is **~185 FLOP/byte**, where C500 was 82 and
+the 4060 was 84.  This fusion's entire product is *bytes removed* (one full activation read
+of the router's input), and bytes are 2.2x more expensive here per unit of compute than on
+either earlier device.  That is the strongest a-priori case any fusion in this study has on
+this machine -- and it is a case about the memory system, not about warp specialization, so
+the two effects must be reported separately rather than added up.
 
 Mapping knobs
 -------------
@@ -87,6 +96,28 @@ or the older forked `num_consumer_groups` launch kwargs -- is decided once by
 `kernels/hopper.py`, and the launcher passes whichever it reports.  Everything below
 applies to both: they reshape the warps the same way.
 
+Measured on this box (`preflight_h200.json`, triton 3.6.0, and these are facts, not
+expectations -- nothing here re-derives them):
+
+    warp_specialize_tl_range              OK     <- the spelling this kernel is written for
+    warp_specialize_num_consumer_groups   FAIL   "Keyword argument ... unrecognised"
+    thread_block_cluster_num_ctas         OK
+    tl.range(..., warp_specialize=False, disable_licm=False)   -- the kwarg exists
+
+so `hopper.ws_mode()` resolves to `"range"` here and `_ws()` returns `(True, {}, ...)`.
+The launch-kwarg branch is dead code on this stack and stays only because it is what a
+forked Triton would offer; it is never passed speculatively, since an unrecognised launch
+kwarg is a hard `KeyError` that would kill an entire autotune.
+
+**Three arms at one config.**  `arm_chains()` below hands back {`unfused`, `fused`,
+`fused_ws`} (plus `unfused_ws` when asked) as ready-to-time chains from ONE cfg, so the fused /
+unfused ratio and the specialized / classic ratio come from the same tiles, warps, stages
+and eviction hints and differ only in the flags named by the arm.  `WARP_SPECIALIZE` stays
+**default-off** for every other entry point: for #4/#5 warp specialization is a tuning
+knob, not the experiment, so the default must still reproduce the audited C500/4060 kernel
+exactly.  (In `lazy_prenorm.py`, where choosing the variant IS the experiment, the same
+default holds for the same reason.)
+
 This kernel contains **two unsynchronised same-thread handoffs** through memory.  Both
 are correct on a classic launch by the same argument -- one thread stores a value and the
 same thread loads it back, so program order alone orders them -- and warp specialization
@@ -98,22 +129,32 @@ warp executes which part of the loop.
    reads back its own element.  Under warp specialization the pass-2 load can be hoisted
    onto a *producer* warp that never executed pass 1, and it can run ahead of the
    consumer's stores.
-   **The safe option is taken: warp specialization force-disables REREAD_H1** (the
-   launcher clears it, and `launch_flags()` records that it did).  Pass 2 then re-adds
+   **The safe option is taken, unconditionally: warp specialization force-disables
+   REREAD_H1.**  It is enforced in TWO places on purpose -- the launcher clears it (and
+   `launch_flags()` records that it did), *and* the kernel re-ANDs `not WARP_SPECIALIZE`
+   into every use of the flag, so that a direct `norm_router_kernel[grid](...)` that
+   bypasses the launcher cannot resurrect the handoff.  Both are constexpr, so the belt and
+   the braces cost nothing: Triton emits only the taken side.  Pass 2 then re-adds
    `x + res` from its own loads: a self-contained per-thread computation with no handoff at
    all -- correct by construction, at the cost of one extra L2-resident read of `res`.
-   The alternative, a `tl.debug_barrier()` between the passes, was rejected: a full-CTA
-   `bar.sync` inside a kernel whose warps have been split into asymmetric partitions is a
-   *hang* risk, not an error risk, and a hang on a device nobody can test on costs the
-   whole round trip.  Since REREAD_H1 is itself a tuned knob, dropping the
-   (WS=True, REREAD_H1=True) combination removes nothing the tuner can reach by another
-   route -- (WS=True, REREAD_H1=False) is in the grid, and both arms get the same rule.
+   The alternative, a `tl.debug_barrier()` between the passes, was rejected and the reason
+   is specific to this transform, not general caution: `tl.debug_barrier()` lowers to a
+   CTA-wide `barrier` that every thread in the block must arrive at, and Triton's automatic
+   warp specialization parks the extra warp group outside the `ttg.warp_specialize` region
+   in a wait loop that will never arrive.  That is a *hang*, not an error, and a hang on a
+   device nobody can iterate on costs the whole round trip.  Since REREAD_H1 is itself a
+   tuned knob, dropping the (WS=True, REREAD_H1=True) combination removes nothing the tuner
+   can reach by another route -- (WS=True, REREAD_H1=False) is in the grid, and both arms
+   get the same rule.
 2. **The TOPW store/reload** in the top-k epilogue.  This one is *outside* the
    specialized loop -- `tl.range(warp_specialize=True)` partitions the loop body only;
    everything before and after it runs on the default warps -- so both the store and the
    reload execute on the same thread of the same warp, and the same-thread argument still
    holds verbatim.  No barrier is added and none is needed; this note exists so a future
-   reader does not have to re-derive it.
+   reader does not have to re-derive it.  The one way to break it would be to move the
+   epilogue *into* the loop, so: do not.  (Belt and braces here would have to be the
+   barrier, which as argued above can hang under this exact transform -- which is why the
+   two handoffs get opposite treatments rather than one uniform rule.)
 
 `num_ctas` (thread-block clusters) is offered because the 3 MB router weight is read by
 every CTA and cluster-level reuse is the one Hopper feature with a plausible story here.
@@ -124,6 +165,29 @@ one cluster.  No ceiling is invented; an over-large cluster is left to fail at l
 be recorded as a failed config, like any other tile parameter.  This kernel has no early
 `return`, which is why clusters are allowed here and not in `lazy_prenorm`'s grouped
 GEMM, where a partial-cluster exit would risk a hang rather than an error.
+
+Tiles, and the one thing that is NOT free about bigger ones
+-----------------------------------------------------------
+Nothing in this file caps a tile: BLOCK_M / BLOCK_K / BLOCK_E come from the config and the
+only ceiling is what the compiler will allocate (232 448 B per block on this device, opt-in;
+the preflight compiled a 196 608 B tile).  But this kernel walks the hidden dimension with
+`N_TILES = N // BLOCK_K` and splits the experts with `NSPLIT = E // BLOCK_E`, both integer
+divisions with no remainder handling anywhere -- a BLOCK_K that does not divide 6144, or a
+BLOCK_E that does not divide 256, silently normalizes over a PREFIX of the row and returns a
+plausible wrong answer rather than failing.  That was unreachable while the grids stopped at
+tiles a 4060 could hold; with 192 KB tiles now compiling it is one grid edit away.  `_resolve`
+therefore asserts both divisibilities, so the failure mode is an exception at launch instead
+of a quiet 2 % error in the router logits that no rel_err threshold would necessarily catch.
+
+A note on reading the small-T rows
+----------------------------------
+The preflight's `harness_floor_us` (40.55) and `timer_tick_us` (0.256, matching only 3 % of
+samples where the detector wants >= 98 %) were measured while another tenant was using the
+GPU -- `mem_free` was 98.8 GB of 150 GB.  Neither number is physical, and both are exactly
+what qualifies a decode-sized measurement as "tick-limited" or "below the launch floor".
+These kernels at T=1 are among the shortest in the suite, so those verdicts matter most
+precisely where they are least trustworthy.  Re-probe on an idle GPU (`--gpu`), and until
+then report the caveat rather than silently flagging or unflagging a cell.
 
 ======================================================================================
 MACA CODEGEN WORKAROUNDS -- retained deliberately, and why
@@ -184,6 +248,45 @@ def _ws(enable: bool) -> "tuple[bool, dict, str]":
     if flag or kw:
         return flag, kw, f"on (mode={hopper.ws_mode()})"
     return False, {}, f"refused: hopper says warp spec unusable (mode={hopper.ws_mode()})"
+
+
+# Every spelling of the knob a config dict may carry.  The lowercase one is not decoration:
+# `bench.h200_cfg_overlays()` widens a grid with `{"warp_specialize": True}`, so a resolver
+# that only recognised the SHOUTING name would tune a grid whose two halves are identical
+# code -- and then report the noise between them as a warp-specialization effect.
+_CFG_WS_KEYS = ("WARP_SPECIALIZE", "WS", "warp_specialize")
+
+# The H200 mapping axes this module's launcher forwards, for `bench.widen(grid, mod)`.
+# Both are honoured by `_resolve` for every variant that goes through `_launch`, which is
+# all of them -- there is one kernel here, so there is no per-kernel exception to make.
+H200_CFG_KEYS = ("warp_specialize", "num_ctas")
+
+
+def _caps_ws() -> bool:
+    """`caps().warp_specialize`, False whenever the feature layer cannot answer."""
+    if hopper is None:
+        return False
+    try:
+        return bool(hopper.caps().warp_specialize)
+    except Exception:  # noqa: BLE001 -- a detection bug costs the feature, not the run
+        return False
+
+
+def cfg_warp_specialize(cfg: "dict | None") -> bool:
+    """Warp specialization requested by a config dict.  **Default OFF**, `"auto"` asks caps.
+
+    Off by default on purpose: for #4/#5 warp specialization is a tuning knob, not the
+    experiment, so a config that never mentions it must produce the audited C500/4060
+    kernel.  A caps-driven default would have made every untouched call site measure a
+    different kernel than the cross-device tables it is compared against.
+    """
+    for k in _CFG_WS_KEYS:
+        if cfg and k in cfg:
+            v = cfg[k]
+            if isinstance(v, str):
+                return _caps_ws() if v.strip().lower() == "auto" else bool(v)
+            return bool(v)
+    return False
 
 
 def _clusters(cfg: dict) -> "tuple[int, dict, str]":
@@ -300,7 +403,15 @@ def norm_router_kernel(
     if DO_NORM or DO_GEMM:
         wp = W + ko
         op = X2 + rows[:, None] * stride_o + ko[None, :]
-        if DO_ADD and REREAD_H1:
+        # `and not WARP_SPECIALIZE` is the belt to the launcher's braces.  Re-reading H1
+        # here is a store-in-pass-1 / load-in-pass-2 handoff whose ONLY guarantee is that
+        # the same thread does both; warp specialization is precisely the transform that
+        # breaks that (the pass-2 load can land on a producer warp that never ran pass 1,
+        # and runs ahead of the consumer's stores).  `_resolve()` already clears the flag,
+        # but a direct kernel launch bypasses `_resolve()`, and a data race that only
+        # appears under a feature nobody can test on is not a bug anyone would find.  Both
+        # operands are constexpr, so this costs nothing: Triton emits only the taken side.
+        if DO_ADD and REREAD_H1 and not WARP_SPECIALIZE:
             sp = H1 + rows[:, None] * stride_h + ko[None, :]
         else:
             sp = X + rows[:, None] * stride_x + ko[None, :]
@@ -313,13 +424,16 @@ def norm_router_kernel(
         # shared @triton.jit helper would have perturbed the control arm's codegen, and
         # the control arm has to stay identical to the audited C500/4060 kernel for the
         # cross-device comparison to mean anything.  EDIT BOTH COPIES TOGETHER.
-        # (The launcher guarantees REREAD_H1 is False whenever warp specialization is
-        # on; see the module docstring, section "WARP SPECIALIZATION".)
+        # The one place the two copies deliberately DIFFER is the residual re-add: inside
+        # this `if` the handoff through H1 is off by construction (see the pointer setup
+        # above), so pass 2 re-adds `x + res` unconditionally.  Reading `REREAD_H1` here
+        # would be dead but misleading -- it would suggest the specialized path can still
+        # take the handoff, which is the exact race this file must not have.
         if WARP_SPECIALIZE:
             for _ in tl.range(0, N_TILES, 1, warp_specialize=True):
                 if DO_NORM:
                     s_ = tl.load(sp, mask=rmask[:, None], other=0.0, eviction_policy=EP)
-                    if DO_ADD and not REREAD_H1:
+                    if DO_ADD:
                         r2 = tl.load(r2p, mask=rmask[:, None], other=0.0,
                                      eviction_policy=EP)
                         s_ = (s_.to(tl.float32) + r2.to(tl.float32)).to(
@@ -431,7 +545,7 @@ def wgt_from_gate(gate_w: torch.Tensor) -> torch.Tensor:
 
 
 def _resolve(cfg: dict, do_norm: bool, do_gemm: bool, T: int,
-             E: int = NUM_EXPERTS) -> dict:
+             E: int = NUM_EXPERTS, N: int = HIDDEN) -> dict:
     """Everything derived from `cfg` that the kernel cannot re-derive, in one place.
 
     Used by `_launch` and exposed through `launch_flags()`, so the result JSON records the
@@ -439,22 +553,47 @@ def _resolve(cfg: dict, do_norm: bool, do_gemm: bool, T: int,
     downgraded -- WARP_SPECIALIZE (feature absent, or no GEMM to overlap), num_ctas (no
     cluster support) and REREAD_H1 (unsafe combination) -- and a config table on its own
     would not say which code actually ran.
+
+    It is also where the tile shape is checked for *divisibility*, which is the one way a
+    bigger tile can hurt here.  Nothing caps a tile below the device's SMEM ceiling (232 448
+    B opt-in on this H200, against 49 152 B default-visible), and nothing should; but the
+    kernel walks the hidden dimension with `N // BLOCK_K` and the experts with
+    `E // BLOCK_E`, neither of which handles a remainder.  An indivisible tile therefore
+    normalizes over a PREFIX of the row, or covers a subset of the experts, and returns a
+    plausible wrong answer.  Assert instead: a launch that raises costs one config, a
+    wrong-but-plausible router logit costs the credibility of every row it appears in.
     """
     bm = cfg["BLOCK_M"]
     bk = cfg["BLOCK_K"]
     # pass-1 k-tile; only meaningful when DO_NORM.  Defaults to the GEMM's k-tile.
     bkn = int(cfg.get("NORM_BK") or bk) if do_norm else bk
     be = cfg["BLOCK_E"] if do_gemm else E
+    if do_norm or do_gemm:
+        assert N % bk == 0, (
+            f"BLOCK_K={bk} does not divide N={N}: the k-loop would cover "
+            f"{N // bk * bk} of {N} columns and silently return a wrong answer"
+        )
+    if do_norm:
+        assert N % bkn == 0, (
+            f"NORM_BK={bkn} does not divide N={N}: the sum of squares would cover "
+            f"{N // bkn * bkn} of {N} columns, i.e. normalize by the wrong rstd"
+        )
+    if do_gemm:
+        assert E % be == 0, (
+            f"BLOCK_E={be} does not divide E={E}: {E - E // be * be} experts would get no "
+            f"logits at all"
+        )
     nsplit = E // be
     nblk = triton.cdiv(T, bm)
     grid = nblk * nsplit
 
     # Default OFF, deliberately: for #4/#5 warp specialization is a *tuning knob* the
     # bench may sweep, not the experiment, so the default must reproduce the audited
-    # C500/4060 kernel exactly.  (Auto-from-`caps()` belongs in lazy_prenorm.py, where
-    # picking the variant IS the experiment.)  Both arms of a pair must build this axis
-    # from `hopper.ws_choices()`, so it is pruned identically on the two sides.
-    ws_flag, ws_kw, ws_why = _ws(bool(cfg.get("WARP_SPECIALIZE", False)))
+    # C500/4060 kernel exactly.  (`lazy_prenorm.py`, where picking the variant IS the
+    # experiment, defaults off for the same reason and names its arms explicitly.)  Both
+    # arms of a pair must build this axis from `hopper.ws_choices()`, so it is pruned
+    # identically on the two sides.
+    ws_flag, ws_kw, ws_why = _ws(cfg_warp_specialize(cfg))
     # Warp specialization is a mainloop transform; with no `tl.dot` in pass 2 there is
     # nothing for a producer/consumer split to overlap with, and enabling it would only
     # duplicate the norm-only kernel's tuning grid with identical code.
@@ -480,7 +619,8 @@ def _resolve(cfg: dict, do_norm: bool, do_gemm: bool, T: int,
         "BLOCK_KN": bkn,
         "BLOCK_E": be,
         "NSPLIT": nsplit,
-        "N_TILES": None,  # filled by the caller, which knows N
+        "N_TILES": N // bk,
+        "N_TILES_N": N // bkn,
         "n_blocks": nblk,
         "grid": grid,
         "WARP_SPECIALIZE": ws_flag,
@@ -518,7 +658,7 @@ def _launch(
     E=NUM_EXPERTS,
     topk=TOP_K,
 ):
-    r = _resolve(cfg, do_norm, do_gemm, T, E)
+    r = _resolve(cfg, do_norm, do_gemm, T, E, N)
     if do_topk:
         assert r["BLOCK_E"] == E, "top-k fusion needs all E logits of a row in one program"
     dummy = x
@@ -553,8 +693,8 @@ def _launch(
         BLOCK_KN=r["BLOCK_KN"],
         BLOCK_E=r["BLOCK_E"],
         NSPLIT=r["NSPLIT"],
-        N_TILES=N // r["BLOCK_K"],
-        N_TILES_N=N // r["BLOCK_KN"],
+        N_TILES=r["N_TILES"],
+        N_TILES_N=r["N_TILES_N"],
         DO_ADD=do_add,
         DO_NORM=do_norm,
         DO_GEMM=do_gemm,
@@ -575,9 +715,7 @@ def _launch(
 def launch_flags(cfg: dict, T: int, do_add: bool, do_norm: bool, do_gemm: bool,
                  do_topk: bool, N: int = HIDDEN, E: int = NUM_EXPERTS) -> dict:
     """Effective flags for one variant, without launching -- for the result JSON."""
-    r = _resolve(cfg, do_norm, do_gemm, T, E)
-    r["N_TILES"] = N // r["BLOCK_K"]
-    r["N_TILES_N"] = N // r["BLOCK_KN"]
+    r = _resolve(cfg, do_norm, do_gemm, T, E, N)
     r.update({"DO_ADD": do_add, "DO_NORM": do_norm, "DO_GEMM": do_gemm,
               "DO_TOPK": do_topk})
     return r
@@ -637,3 +775,197 @@ def fused_add_norm_router_topk(x, res, w, h1, x2, wgt, topw, topi, cfg):
     """#4 fused + FUSE_TOPK."""
     return _launch(cfg, x.shape[0], x, res, w, h1, x2, wgt, None, topw, topi,
                    True, True, True, True, False)
+
+
+# ======================================================================================
+# THE ARMS: one config, one kernel source, one flag apart
+#
+# The bench must be able to time the unfused chain, the fused kernel, and the fused kernel
+# with warp specialization *at a single config*, because the whole question is whether the
+# specialized variant hides the normalization -- and a comparison across two independently
+# tuned configs cannot answer it (the tuner would be free to trade the effect away).  This
+# is the same isolation that produced `isolation_fuse_on_vs_off_same_cfg`, with one axis
+# added because H200 adds one.
+#
+#   unfused      norm kernel + router GEMM, two launches   (WS off)
+#   fused        one kernel                                (WS off)  <- C500 / sm_89 comparable
+#   fused_ws     one kernel                                (WS on)
+#   unfused_ws   the unfused chain with WS on              (opt-in)
+#
+# `unfused_ws` is off by default here, unlike in `lazy_prenorm.py`.  The reason is
+# structural, not stylistic: the unfused chain's GEMM is `DO_GEMM` with `DO_NORM=0`, and
+# `_resolve` keeps warp specialization for it (there IS a `tl.dot` to overlap), so the arm
+# is meaningful -- but the chain also contains a norm kernel that `_resolve` correctly
+# refuses to specialize, so the arm is only *partly* specialized and its ratio is not the
+# clean control that `lazy_prenorm`'s single-kernel `unfused_ws` is.  Ask for it when you
+# want it, and read it knowing which half of the chain moved.
+# ======================================================================================
+ARM_UNFUSED = "unfused"
+ARM_FUSED = "fused"
+ARM_FUSED_WS = "fused_ws"
+ARM_UNFUSED_WS = "unfused_ws"
+
+# name -> (fused?, warp specialization?).  Reporting order, control first.
+ARM_SPEC = {
+    ARM_UNFUSED: (False, False),
+    ARM_FUSED: (True, False),
+    ARM_FUSED_WS: (True, True),
+    ARM_UNFUSED_WS: (False, True),
+}
+
+
+def with_ws(cfg: dict, on: bool) -> dict:
+    """`cfg` with warp specialization forced on/off, every spelling of the key agreeing.
+
+    All three keys are set, not just one, because `cfg_warp_specialize()` takes the first
+    it finds: a cfg that arrived from a widened grid carrying `warp_specialize=True` would
+    otherwise keep it and quietly turn the control arm into a second specialized run.
+    """
+    return dict(cfg, **{k: bool(on) for k in _CFG_WS_KEYS})
+
+
+def warp_specialize_available() -> bool:
+    """True iff a warp-specialized launch is expected to work here.
+
+    Ask before building an arm set or a grid axis, so a run on a stack without the feature
+    *records* that the axis was dropped instead of tuning two identical halves of a grid.
+    """
+    if hopper is None:
+        return False
+    try:
+        return bool(hopper.caps().warp_specialize and hopper.ws_mode() in ("range", "launch"))
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def arms_available(include_ws: "bool | None" = None, include_unfused_ws: bool = False) -> tuple:
+    """Arm names this device can actually run, in reporting order.
+
+    Without warp specialization the WS arms are DROPPED, never aliased onto their controls:
+    an arm that is secretly its own control reports a ratio of 1.000, which in a table is
+    indistinguishable from a real measurement that found no effect.
+    """
+    if include_ws is None:
+        include_ws = warp_specialize_available()
+    out = [ARM_UNFUSED, ARM_FUSED]
+    if include_ws:
+        out.append(ARM_FUSED_WS)
+        if include_unfused_ws:
+            out.append(ARM_UNFUSED_WS)
+    return tuple(out)
+
+
+def arm_chains(x, w, x2, wgt, logits, cfg, res=None, h1=None, do_add: bool = False,
+               norm_cfg=None, arms=None, include_ws: "bool | None" = None,
+               include_unfused_ws: bool = False) -> dict:
+    """{arm name -> list of zero-arg callables} for #4/#5 at ONE config.
+
+    Values are chains, not single callables: the unfused arms are two launches, ready for
+    `common.bench_chain` / `bench.bench_pair`, which flush L2 once per chain rather than
+    between its links (rule 1: in the real layer the producer's output is still in L2 when
+    the consumer starts).  `do_add=False` is fusion #5 (rmsnorm + router GEMM);
+    `do_add=True` is #4 (residual add first), which needs `res` and `h1`.
+
+    The three fused-side arms differ ONLY in the flags their name declares: same BLOCK_M /
+    BLOCK_K / BLOCK_E / NORM_BK / warps / stages / eviction hints.  `_resolve` will still
+    force `REREAD_H1=False` on the WS arms -- a *correctness* requirement, not a mapping
+    choice (see the module docstring) -- and `launch_flags()` records that it did, so the
+    one remaining difference is visible in the result file rather than inferred.
+
+    **`norm_cfg` decides which question the unfused arms answer, so pass it deliberately.**
+
+      * `norm_cfg=<the norm kernel's own tuned config>` -- the unfused arm is the FAIR
+        baseline: each kernel in the chain runs at the mapping it was tuned for.  This is
+        the number a `fused vs unfused` speedup row may quote.
+      * `norm_cfg=None` -- the norm kernel inherits the fused kernel's config, which for the
+        GEMM-shaped configs here means a BLOCK_K of 32-64 where the stand-alone norm kernel
+        would have picked 2048, i.e. ~100 sequential cross-lane reductions per row instead
+        of 3.  That is a strict same-config ISOLATION, and it is a badly under-tuned
+        baseline: quoting it as a speedup would be the textbook "under-tuned unfused arm".
+
+    Either way the `fused_ws / fused` comparison is untouched by the choice -- the norm
+    kernel is byte-identical in both -- which is why the default is allowed to be the
+    isolation rather than the fair chain.
+    """
+    names = arms_available(include_ws, include_unfused_ws) if arms is None else tuple(arms)
+    bad = [a for a in names if a not in ARM_SPEC]
+    if bad:
+        raise KeyError(f"unknown arm(s) {bad}; known: {tuple(ARM_SPEC)}")
+    if do_add and (res is None or h1 is None):
+        raise ValueError("do_add=True (fusion #4) needs both `res` and `h1`")
+
+    out: dict = {}
+    for name in names:
+        fused, ws = ARM_SPEC[name]
+        c = with_ws(cfg, ws)
+        # The norm kernel gets no warp specialization either way (`_resolve` drops it with
+        # no GEMM to overlap), so `nc` differs between the two unfused arms in nothing.
+        nc = with_ws(cfg if norm_cfg is None else norm_cfg, ws)
+        if fused and do_add:
+            out[name] = [lambda c=c: fused_add_norm_router(x, res, w, h1, x2, wgt,
+                                                           logits, c)]
+        elif fused:
+            out[name] = [lambda c=c: fused_norm_router(x, w, x2, wgt, logits, c)]
+        elif do_add:
+            out[name] = [
+                lambda nc=nc: add_rmsnorm_only(x, res, w, h1, x2, nc),
+                lambda c=c: router_gemm(x2, wgt, logits, c),
+            ]
+        else:
+            out[name] = [
+                lambda nc=nc: rmsnorm_only(x, w, x2, nc),
+                lambda c=c: router_gemm(x2, wgt, logits, c),
+            ]
+    return out
+
+
+def arm_flags(cfg: dict, T: int, do_add: bool = False, norm_cfg=None, arms=None,
+              include_ws: "bool | None" = None, include_unfused_ws: bool = False,
+              N: int = HIDDEN, E: int = NUM_EXPERTS) -> dict:
+    """{arm name -> the effective flags of each kernel in that arm's chain}.
+
+    Belongs in the result file next to the timings.  "fused_ws was 3 % faster" is not a
+    claim about warp specialization unless the file also shows the fused_ws arm resolved
+    `WARP_SPECIALIZE` to True -- a refused feature degrades to the control path by design,
+    and then the two arms are the same kernel and the 3 % is drift.  It is also where a
+    reader sees which `norm_cfg` the unfused arms actually ran (see `arm_chains`).
+    """
+    names = arms_available(include_ws, include_unfused_ws) if arms is None else tuple(arms)
+    out: dict = {}
+    for name in names:
+        fused, ws = ARM_SPEC[name]
+        c = with_ws(cfg, ws)
+        nc = with_ws(cfg if norm_cfg is None else norm_cfg, ws)
+        if fused:
+            out[name] = [launch_flags(c, T, do_add, True, True, False, N, E)]
+        else:
+            out[name] = [
+                launch_flags(nc, T, do_add, True, False, False, N, E),
+                launch_flags(c, T, False, False, True, False, N, E),
+            ]
+    return out
+
+
+def arm_ratios(ms_by_arm: dict) -> dict:
+    """The derived numbers this experiment is about, from {arm -> milliseconds}.
+
+    Keys are omitted, never faked, when the arm they need was not run:
+
+      fusion_speedup_classic  unfused    / fused       the C500 / sm_89 comparable
+      fusion_speedup_ws       unfused_ws / fused_ws    the same, both sides specialized
+      ws_effect_fused         fused      / fused_ws    > 1 => specialization helped
+      ws_effect_unfused       unfused    / unfused_ws  how much of that was the GEMM alone
+    """
+    def r(num, den):
+        a, b = ms_by_arm.get(num), ms_by_arm.get(den)
+        if a is None or b is None or not b:
+            return None
+        return float(a) / float(b)
+
+    out = {
+        "fusion_speedup_classic": r(ARM_UNFUSED, ARM_FUSED),
+        "fusion_speedup_ws": r(ARM_UNFUSED_WS, ARM_FUSED_WS),
+        "ws_effect_fused": r(ARM_FUSED, ARM_FUSED_WS),
+        "ws_effect_unfused": r(ARM_UNFUSED, ARM_UNFUSED_WS),
+    }
+    return {k: v for k, v in out.items() if v is not None}

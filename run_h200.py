@@ -12,11 +12,24 @@ and to make every way the run can go wrong *visible* rather than silent.
 What that means concretely, and why each rule is here (each cost a real failure earlier in
 this study -- see log/LOG-08 for the fairness audit and log/LOG-13 for the RTX 4060 port):
 
+0.  **One GPU, chosen on purpose, and proven idle.** The node has eight H200s and other
+    users. `--gpu N` exports `CUDA_VISIBLE_DEVICES=N` (plus `CUDA_DEVICE_ORDER=PCI_BUS_ID`)
+    to every child, so each bench sees exactly that card as `cuda:0` and no bench needed a
+    line changed; `--gpu auto` ranks the cards by (utilization, memory used) and prints the
+    ranking that produced the choice. A card with another tenant is refused unless
+    `--allow-busy`, and it is re-checked between families. This is not fastidiousness: the
+    first preflight on this node ran on a card with ~51 GB already allocated by someone else
+    and returned a 40.55 us harness floor against an 8.89 us launch, with the CUDA-event tick
+    detector matching 3 samples in 100 where a real tick matches ~100. Those two numbers are
+    what decides which cells are printed as UNRESOLVED, so a shared card does not add noise,
+    it changes verdicts -- invisibly.
+
 1.  **Preflight first, and the device is gated.** `glm52_h200/preflight.py` writes the single
-    cached device probe every bench reads. If it is missing we run it; if it describes a
-    different GPU than the one present we re-run it. A run on a non-sm_90 device is refused
-    unless `--force`, because a C500- or Ada-shaped autotuning grid inside a file labelled
-    "H200" is worse than no file at all.
+    cached device probe every bench reads, and it is run on the SAME card the benches will
+    use. If it is missing we run it; if it describes a different GPU than the pinned one --
+    by model OR by UUID, because eight identical H200s all pass a name comparison -- we
+    re-run it. A run on a non-sm_90 device is refused unless `--force`, because a C500- or
+    Ada-shaped autotuning grid inside a file labelled "H200" is worse than no file at all.
 
 2.  **Serial, always.** Two benchmarks on one GPU corrupt every timing in both. The families
     run one at a time, in an order that surfaces cheap failures first (f03 is minutes; the
@@ -310,6 +323,410 @@ def _norm_dev(s: object) -> str:
     return re.sub(r"\s+", " ", str(s or "")).strip()
 
 
+def _norm_uuid(v: object) -> str:
+    """nvidia-smi writes `GPU-b2318e71-...`, torch writes `b2318e71-...`. Same card."""
+    s = str(v or "").strip().lower()
+    return s[4:] if s.startswith("gpu-") else s
+
+
+# ======================================================================================
+# GPU selection -- eight cards, other tenants, one campaign that must own its device
+# ======================================================================================
+# The node has 8 H200s and other users. The first preflight ran on whichever card CUDA
+# handed out; that card already had ~51 GB allocated by somebody else, and the two SHORT
+# calibrations came back impossible -- launch 8.89 us against a 40.55 us "harness floor",
+# and a CUDA-event tick that matched 3 of every 100 samples where a real tick matches
+# essentially all of them. Those two numbers decide which cells this driver prints as
+# UNRESOLVED, so a contaminated card does not just add noise, it changes the verdicts.
+#
+# Hence: choose a card explicitly, prove it was idle when we chose it, pin it for every
+# child, and keep checking it stays ours for the whole multi-hour campaign.
+#
+# Every index below is an nvidia-smi (physical) index. CUDA renumbers under
+# CUDA_VISIBLE_DEVICES and sorts FASTEST_FIRST unless told otherwise, so pinning always sets
+# CUDA_DEVICE_ORDER=PCI_BUS_ID too -- without it `--gpu 3` can hand a child a different card
+# than the one this driver inspected and vouched for.
+_MIB = 1024 * 1024
+# An untouched H200 on this node reports 4 MiB used; a card with a tenant reported 22-48 GB.
+# 1 GiB separates those without any tuning. The free-memory floor comes from the study: the
+# 256-expert weight set is 19.3 GB before a single activation is allocated.
+GPU_MAX_USED_BYTES = 1 * 2 ** 30
+GPU_MAX_UTIL_PCT = 5.0
+GPU_MIN_FREE_BYTES = 32 * 2 ** 30
+
+_APP_FIELDS = ["gpu_uuid", "pid", "process_name", "used_gpu_memory"]
+
+
+def compute_apps() -> tuple[list[dict], str]:
+    """(rows, error) from `nvidia-smi --query-compute-apps` -- who else is on each card.
+
+    The error is returned rather than swallowed because "no rows" and "cannot see the rows"
+    are different claims: under some container and MIG configurations this query is silently
+    empty, and certifying a busy GPU idle is the one mistake this whole section exists to
+    prevent.
+    """
+    if not shutil.which("nvidia-smi"):
+        return [], "nvidia-smi not on PATH"
+    try:
+        out = subprocess.run(
+            ["nvidia-smi", f"--query-compute-apps={','.join(_APP_FIELDS)}",
+             "--format=csv,noheader"], capture_output=True, text=True, timeout=30)
+    except Exception as exc:  # noqa: BLE001
+        return [], f"{type(exc).__name__}: {exc}"
+    blob = f"{out.stdout}\n{out.stderr}".lower()
+    if out.returncode != 0 or "not supported" in blob:
+        return [], (out.stderr or out.stdout).strip()[:200] or f"rc={out.returncode}"
+    rows = []
+    for line in out.stdout.strip().splitlines():
+        line = line.strip()
+        if not line or "no running processes" in line.lower():
+            continue
+        vals = [v.strip() for v in line.split(",")]
+        if len(vals) < len(_APP_FIELDS):
+            continue
+        d = dict(zip(_APP_FIELDS, vals))
+        rows.append({"gpu_uuid": d["gpu_uuid"], "pid": int(_num(d["pid"]) or 0),
+                     "name": d["process_name"],
+                     "used_bytes": int((_num(d["used_gpu_memory"]) or 0) * _MIB)})
+    return rows, ""
+
+
+def _is_descendant(pid: int) -> bool:
+    """Is `pid` inside this driver's own process tree?
+
+    Needed to tell "a neighbour appeared on our GPU" from "our own bench's per-regime worker
+    has not finished exiting". Conservative in the useful direction: a pid whose ancestry
+    cannot be read is treated as a stranger, because a false alarm costs one log line and a
+    missed tenant costs the campaign's short-kernel numbers.
+    """
+    me, cur, hops = os.getpid(), int(pid or 0), 0
+    while cur > 1 and hops < 64:
+        if cur == me:
+            return True
+        try:
+            with open(f"/proc/{cur}/stat", encoding="utf-8", errors="replace") as fh:
+                data = fh.read()
+            cur = int(data[data.rindex(")") + 1:].split()[1])  # comm may contain spaces
+        except (OSError, ValueError, IndexError):
+            return False
+        hops += 1
+    return False
+
+
+def gpu_rows(hw: list[dict] | None = None) -> list[dict]:
+    """Per-GPU state in bytes, with each card's compute processes attached."""
+    hw = hwinfo() if hw is None else hw
+    apps, app_err = compute_apps()
+    by_uuid: dict[str, list[dict]] = {}
+    for a in apps:
+        by_uuid.setdefault(_norm_uuid(a["gpu_uuid"]), []).append(a)
+    rows = []
+    for g in hw:
+        idx = _num(g.get("index"))
+        rows.append({
+            "index": int(idx) if idx is not None else None,
+            "uuid": g.get("uuid"), "name": g.get("name"),
+            "utilization_pct": _num(g.get("utilization.gpu")),
+            "memory_total_bytes": int((_num(g.get("memory.total")) or 0) * _MIB),
+            "memory_used_bytes": int((_num(g.get("memory.used")) or 0) * _MIB),
+            "memory_free_bytes": int((_num(g.get("memory.free")) or 0) * _MIB),
+            "compute_mode": g.get("compute_mode"), "mig_mode": g.get("mig.mode.current"),
+            "persistence_mode": g.get("persistence_mode"),
+            "temp_c": _num(g.get("temperature.gpu")),
+            "processes": by_uuid.get(_norm_uuid(g.get("uuid")), []),
+            # Non-null means this card's tenancy is UNKNOWN, never "proven empty".
+            "process_query_error": app_err or None,
+        })
+    return rows
+
+
+def gpu_busy_reasons(g: dict) -> list[str]:
+    """Facts about *other people's* use of this card. [] means nobody else is on it.
+
+    Tenancy only. "Not enough free VRAM" is deliberately NOT here: it is a capacity fact
+    about the study, not evidence of a neighbour, and conflating the two would let a small
+    development GPU be reported as occupied by a stranger who does not exist.
+    """
+    out: list[str] = []
+    procs = [p for p in (g.get("processes") or []) if not _is_descendant(p["pid"])]
+    if procs:
+        shown = ", ".join(f"pid {p['pid']} {p['name']} ({p['used_bytes'] / 2**30:.1f} GB)"
+                          for p in procs[:4])
+        extra = f" (+{len(procs) - 4} more)" if len(procs) > 4 else ""
+        out.append(f"{len(procs)} other compute process(es): {shown}{extra}")
+    if (g.get("memory_used_bytes") or 0) > GPU_MAX_USED_BYTES:
+        out.append(f"{g['memory_used_bytes'] / 2**30:.1f} GB already allocated by someone")
+    if (g.get("utilization_pct") or 0) > GPU_MAX_UTIL_PCT:
+        out.append(f"utilization {g['utilization_pct']:.0f}%")
+    if str(g.get("compute_mode") or "").lower() not in ("default", "", "[n/a]", "n/a"):
+        out.append(f"compute mode is {g['compute_mode']}, not Default")
+    if str(g.get("mig_mode") or "").lower() == "enabled":
+        out.append("MIG is enabled; this suite assumes a whole, undivided GPU")
+    return out
+
+
+def gpu_capacity_notes(g: dict) -> list[str]:
+    """Can the study physically fit here? Reported and ranked on, but never a refusal --
+    a bench that runs out of memory says so loudly and immediately, and blocking a
+    deliberately-forced dry run on a small card would help nobody."""
+    if (g.get("memory_free_bytes") or 0) < GPU_MIN_FREE_BYTES:
+        return [f"only {(g.get('memory_free_bytes') or 0) / 2**30:.1f} GB free; the "
+                f"whole-layer bench wants {GPU_MIN_FREE_BYTES / 2**30:.0f} GB (19.3 GB of "
+                f"expert weights before a single activation)"]
+    return []
+
+
+def rank_gpus(rows: list[dict]) -> list[dict]:
+    """Idlest first: unoccupied before occupied, roomy before cramped, then (utilization,
+    memory used) ascending. Index breaks ties so repeated calls on an idle node agree."""
+    ranked = []
+    for g in rows:
+        r = dict(g)
+        r["reasons"] = gpu_busy_reasons(g)
+        r["busy"] = bool(r["reasons"])
+        r["capacity_notes"] = gpu_capacity_notes(g)
+        r["capacity_short"] = bool(r["capacity_notes"])
+        r["n_processes"] = len(g.get("processes") or [])
+        ranked.append(r)
+    ranked.sort(key=lambda r: (r["busy"], r["capacity_short"],
+                               r.get("utilization_pct") or 0.0,
+                               r.get("memory_used_bytes") or 0,
+                               r["index"] if r["index"] is not None else 1 << 30))
+    for i, r in enumerate(ranked):
+        r["rank"] = i
+    return ranked
+
+
+def gpu_table(ranked: list[dict]) -> list[str]:
+    """The ranking as printable lines -- the choice has to be second-guessable later."""
+    if not ranked:
+        return ["  (no GPU data: nvidia-smi unavailable)"]
+    head = (f"  {'rank':>4} {'idx':>3}  {'util':>5} {'used GB':>9} {'free GB':>9} "
+            f"{'proc':>4} {'temp':>5}  state")
+    lines = [head, "  " + "-" * (len(head) - 2)]
+    for r in ranked:
+        util = "?" if r.get("utilization_pct") is None else f"{r['utilization_pct']:.0f}%"
+        state = ("BUSY: " + "; ".join(r["reasons"])) if r["busy"] else "idle"
+        if r.get("capacity_short"):
+            state += ("  " if r["busy"] else " -- ") + "; ".join(r["capacity_notes"])
+        lines.append(f"  {r['rank']:>4} {str(r['index']):>3}  {util:>5} "
+                     f"{(r.get('memory_used_bytes') or 0) / 2**30:9.1f} "
+                     f"{(r.get('memory_free_bytes') or 0) / 2**30:9.1f} "
+                     f"{r.get('n_processes', 0):>4} "
+                     f"{(r.get('temp_c') or 0):5.0f}  {state[:110]}")
+    for r in ranked:
+        lines.append(f"       gpu {r['index']}  {r.get('name')}  uuid {r.get('uuid')}")
+    return lines
+
+
+def pick_hw_row(hw: list[dict], index: int | None) -> dict:
+    """The nvidia-smi row for the pinned card. Falls back to the first row when unpinned --
+    but never silently to GPU 0 when a different one was pinned, because attributing GPU 0's
+    clocks to a run on GPU 5 is the exact provenance bug this driver is built to catch."""
+    if index is not None:
+        for g in hw:
+            if _num(g.get("index")) == index:
+                return g
+        return {}
+    return hw[0] if hw else {}
+
+
+def foreign_tenants(index: int, rows: list[dict] | None = None) -> tuple[list[dict], str]:
+    """Compute processes on GPU `index` that are not ours. (processes, query error)."""
+    rows = gpu_rows() if rows is None else rows
+    for g in rows:
+        if g.get("index") == index:
+            return ([p for p in (g.get("processes") or []) if not _is_descendant(p["pid"])],
+                    g.get("process_query_error") or "")
+    return [], f"nvidia-smi reports no GPU with index {index}"
+
+
+def resolve_gpu(log: Log, args: argparse.Namespace, hw: list[dict],
+                warnings: list[str], measuring: bool = True) -> dict:
+    """Turn --gpu into one physical card, and refuse to measure on somebody else's.
+
+    Returns the whole decision, not just an index: the ranking that produced it, the card's
+    tenancy at the moment it was chosen, and the baseline this driver will re-check against
+    between families. `refuse=True` means main() should stop -- deliberately a return value
+    rather than a raise, so the caller can still close its log.
+
+    `measuring=False` (--summary-only, --dry-run) keeps the busy check as a warning: nothing
+    is being timed, so a neighbour is a fact to record, not a reason to refuse. A bad index
+    or an unparseable --gpu is still fatal either way, because that is an operator error and
+    silently doing something else is how the wrong card gets used.
+    """
+    want = str(args.gpu or "").strip().lower()
+    rows = gpu_rows(hw)
+    ranked = rank_gpus(rows)
+    sel: dict = {
+        "requested": args.gpu, "index": None, "uuid": None, "name": None,
+        "pinned": False, "allow_busy": bool(args.allow_busy), "refuse": False,
+        "busy": None, "busy_reasons": [], "reason": "", "tenant_events": [],
+        "thresholds": {"max_used_bytes": GPU_MAX_USED_BYTES,
+                       "max_util_pct": GPU_MAX_UTIL_PCT,
+                       "min_free_bytes": GPU_MIN_FREE_BYTES},
+        "ranking": ranked,
+        "env_CUDA_VISIBLE_DEVICES_before": os.environ.get("CUDA_VISIBLE_DEVICES"),
+    }
+    if len(ranked) > 1 or want == "auto":
+        rule(log, f"GPU SELECTION -- {len(ranked)} card(s) on this host")
+        for ln in gpu_table(ranked):
+            log(ln)
+        log("")
+
+    if not ranked:
+        sel["reason"] = "nvidia-smi returned no GPUs; the device is whatever CUDA picks"
+        if want and want != "none":
+            warnings.append("--gpu was requested but no GPU list is available; nothing pinned")
+            log(f"!! --gpu {args.gpu} requested but nvidia-smi lists no GPUs -- not pinning.")
+        return sel
+
+    if not want or want == "none":
+        sel["reason"] = "no --gpu given; CUDA_VISIBLE_DEVICES left as the environment set it"
+        if len(ranked) > 1 and "CUDA_VISIBLE_DEVICES" not in os.environ:
+            # Not fatal, but on a shared 8-card node it is the single likeliest way for this
+            # campaign to end up incomparable with itself: families are only comparable if
+            # every one of them ran on the SAME card, and unpinned they need not.
+            idle = [r for r in ranked if not r["busy"]]
+            msg = (f"{len(ranked)} GPUs are visible and none is pinned. Every number in this "
+                   f"campaign is only comparable if every family ran on the SAME card, and "
+                   f"nothing here guarantees that. Pass --gpu auto"
+                   + (f" (GPU {idle[0]['index']} is idle right now)" if idle else ""))
+            warnings.append(msg)
+            log(f"!! {msg}")
+        return sel
+
+    if want == "auto":
+        chosen = ranked[0]
+        sel["reason"] = (f"idlest of {len(ranked)}: "
+                         f"{(chosen.get('utilization_pct') or 0):.0f}% utilization, "
+                         f"{(chosen.get('memory_used_bytes') or 0) / 2**30:.1f} GB used, "
+                         f"{chosen['n_processes']} other compute process(es)")
+    else:
+        try:
+            idx = int(want)
+        except ValueError:
+            log(f"!! --gpu {args.gpu!r} is neither an index, 'auto' nor 'none'.")
+            sel["refuse"] = True
+            sel["reason"] = f"unparseable --gpu {args.gpu!r}"
+            return sel
+        chosen = next((r for r in ranked if r["index"] == idx), None)
+        if chosen is None:
+            log(f"!! no GPU with nvidia-smi index {idx}; this host has "
+                f"{sorted(r['index'] for r in ranked)}.")
+            sel["refuse"] = True
+            sel["reason"] = f"--gpu {idx} does not exist on this host"
+            return sel
+        sel["reason"] = f"--gpu {idx} as requested"
+
+    sel.update(index=chosen["index"], uuid=chosen.get("uuid"), name=chosen.get("name"),
+               busy=chosen["busy"], busy_reasons=chosen["reasons"],
+               capacity_notes=chosen.get("capacity_notes") or [],
+               process_query_error=chosen.get("process_query_error"),
+               baseline_used_bytes=chosen.get("memory_used_bytes"),
+               baseline_pids=sorted(p["pid"] for p in (chosen.get("processes") or [])))
+    if chosen["busy"] and not args.allow_busy and measuring:
+        log("")
+        log("!" * 92)
+        log(f"!! REFUSING TO RUN: GPU {sel['index']} already has another tenant.")
+        for r in chosen["reasons"]:
+            log(f"!!   - {r}")
+        log("!!")
+        log("!! This is not fastidiousness. The preflight on this node was taken on a shared")
+        log("!! card and returned a 40.55 us harness floor against an 8.89 us launch, with")
+        log("!! the CUDA-event tick detector matching 3 samples in 100 where a real tick")
+        log("!! matches ~100. Neither number is physical. Those two numbers are what decides")
+        log("!! which cells this driver prints as UNRESOLVED, so a shared card does not")
+        log("!! merely add noise -- it changes the verdicts, and it does so invisibly.")
+        log("!!")
+        idle = [r for r in ranked if not r["busy"]]
+        if idle:
+            log(f"!! Idle right now: {', '.join(str(r['index']) for r in idle)}")
+            log(f"!!     python3 run_h200.py --gpu {idle[0]['index']}")
+        else:
+            log("!! No card on this host is idle right now; waiting is the cheap option.")
+        log("!! Or, accepting short-kernel numbers you will not be able to defend:")
+        log(f"!!     python3 run_h200.py --gpu {sel['index']} --allow-busy")
+        log("!" * 92)
+        sel["refuse"] = True
+        return sel
+
+    sel["pinned"] = True
+    log(f"  [gpu] pinning GPU {sel['index']} ({sel['name']}) uuid {sel['uuid']}")
+    log(f"  [gpu] {sel['reason']}")
+    log(f"  [gpu] every child gets CUDA_VISIBLE_DEVICES={sel['index']} and "
+        f"CUDA_DEVICE_ORDER=PCI_BUS_ID, so each one sees exactly this card as cuda:0 -- "
+        f"which is why no bench needed changing.")
+    pre = os.environ.get("CUDA_VISIBLE_DEVICES")
+    if pre is not None and pre.strip() != str(sel["index"]):
+        msg = (f"the environment already had CUDA_VISIBLE_DEVICES={pre!r}; --gpu "
+               f"{sel['index']} overrides it for every child")
+        warnings.append(msg)
+        log(f"  !! {msg}")
+    if chosen.get("process_query_error"):
+        msg = (f"the compute-process list is unavailable ({chosen['process_query_error']}), "
+               f"so GPU {sel['index']} is UNPROVEN idle rather than proven idle")
+        warnings.append(msg)
+        log(f"  !! {msg}")
+    for note in chosen.get("capacity_notes") or []:
+        warnings.append(f"GPU {sel['index']}: {note}")
+        log(f"  !! {note} -- the whole-layer family will fail here, the vector ones will not")
+    if chosen["busy"]:
+        why = "--allow-busy" if args.allow_busy else "nothing is being timed"
+        msg = (f"{why}: GPU {sel['index']} is NOT idle "
+               f"({'; '.join(chosen['reasons'])}). Short-kernel timings from this run "
+               f"(decode_bs1 above all) are not trustworthy, and neither is any UNRESOLVED "
+               f"verdict derived from a tick measured in the same conditions.")
+        warnings.append(msg)
+        log("")
+        log("!" * 92)
+        log(f"!! {msg}")
+        log("!" * 92)
+        log("")
+    return sel
+
+
+def check_tenants(log: Log, sel: dict, when: str, warnings: list[str]) -> None:
+    """Did a neighbour move onto our card mid-campaign?
+
+    Called between families. A multi-hour run that silently acquires a co-tenant in hour six
+    produces exactly the drift this study has already been burned by twice, and the only
+    thing worse than losing those numbers is not knowing which ones to lose. Descendants of
+    this driver are excluded, so a bench worker still exiting is not mistaken for a stranger.
+    """
+    idx = sel.get("index")
+    if idx is None:
+        return
+    rows = gpu_rows()  # one nvidia-smi pair per family boundary, reused for both checks
+    procs, err = foreign_tenants(idx, rows)
+    base = set(sel.get("baseline_pids") or [])
+    new = [p for p in procs if p["pid"] not in base]
+    row = next((r for r in rows if r["index"] == idx), {})
+    used = row.get("memory_used_bytes") or 0
+    grew = used - (sel.get("baseline_used_bytes") or 0)
+    if not new and grew <= 2 * 2 ** 30:
+        return
+    detail = []
+    if new:
+        detail.append("new compute process(es): " + ", ".join(
+            f"pid {p['pid']} {p['name']} ({p['used_bytes'] / 2**30:.1f} GB)" for p in new[:4]))
+    if grew > 2 * 2 ** 30:
+        detail.append(f"memory in use grew {grew / 2**30:+.1f} GB since the campaign started")
+    msg = (f"a co-tenant appeared on GPU {idx} {when}: {'; '.join(detail)}. Families measured "
+           f"from here on are not comparable with the earlier ones.")
+    sel["tenant_events"].append({"when": when, "at": time.strftime("%Y-%m-%d %H:%M:%S"),
+                                 "new_processes": new, "memory_growth_bytes": grew,
+                                 "query_error": err or None})
+    warnings.append(msg)
+    log("")
+    log("!" * 92)
+    log(f"!! {msg}")
+    log("!! Nothing is stopped -- an aborted campaign loses more than a flagged one -- but")
+    log("!! summary.json records when this happened so the affected families can be re-run.")
+    log("!" * 92)
+    log("")
+
+
 # ======================================================================================
 # preflight
 # ======================================================================================
@@ -323,17 +740,34 @@ def read_preflight() -> dict | None:
         return None
 
 
-def run_preflight(log: Log, python: str, logdir: Path, quick: bool) -> dict | None:
+def run_preflight(log: Log, python: str, logdir: Path, quick: bool,
+                  gpu: int | None = None) -> dict | None:
+    """Probe the device -- on the SAME card the campaign will use, or the probe is fiction.
+
+    The GPU is handed over as a flag when preflight advertises one and as CUDA_VISIBLE_DEVICES
+    otherwise, so an older copy of preflight.py still lands on the right card. Both must not
+    be left to chance: preflight's own default is to pick the idlest card, and if it picked a
+    different one than the benches run on, every constant the benches read would describe a
+    device that produced none of their timings.
+    """
     if not PREFLIGHT_PY.exists():
         log(f"!! {PREFLIGHT_PY} not found -- cannot probe the device.")
         return None
     cmd = [python, str(PREFLIGHT_PY)] + (["--quick"] if quick else [])
+    env = dict(os.environ)
+    flags = script_flags(PREFLIGHT_PY)
+    if "--gpu" in flags:
+        cmd += ["--gpu", str(gpu) if gpu is not None else "none"]
+    elif gpu is not None:
+        env["CUDA_VISIBLE_DEVICES"] = str(gpu)
+        env["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+        log("    (this preflight.py has no --gpu flag; pinning via CUDA_VISIBLE_DEVICES)")
     log(f"    running preflight: {' '.join(cmd)}")
     logpath = logdir / "preflight.log"
     try:
         with logpath.open("w", encoding="utf-8") as fh:
-            rc = subprocess.run(cmd, cwd=str(REPO), stdout=fh, stderr=subprocess.STDOUT,
-                                timeout=3600).returncode
+            rc = subprocess.run(cmd, cwd=str(REPO), env=env, stdout=fh,
+                                stderr=subprocess.STDOUT, timeout=3600).returncode
     except Exception as exc:  # noqa: BLE001
         log(f"!! preflight failed to launch: {type(exc).__name__}: {exc}")
         return None
@@ -368,17 +802,31 @@ def preflight_digest(pf: dict) -> dict:
         "bandwidth_GBs": {k: v for k, v in bw.items() if k.endswith("_GBs")},
         "gemm_TFs": {k: v for k, v in gemm.items() if k.endswith("_TFs")},
         "launch_us": cal.get("launch_us"),
+        "harness_floor_us": cal.get("harness_floor_us"),
         "timer_tick_us": cal.get("timer_tick_us"),
+        "timer_tick_match_frac": cal.get("timer_tick_match_frac"),
+        # The preflight now judges its own launch/tick numbers, because they are the only
+        # ones a co-tenant can silently ruin. Carried through so the driver can refuse to
+        # present a tick-based UNRESOLVED verdict as if it were solid.
+        "launch_timer_trustworthy": cal.get("launch_timer_trustworthy"),
+        "launch_timer_doubts": cal.get("launch_timer_doubts") or [],
+        "gpu_selection": {k: v for k, v in (pf.get("gpu_selection") or {}).items()
+                          if k in ("index", "uuid", "name", "reason", "busy", "busy_reasons")},
         "capacity": pf.get("capacity", {}),
         "probe_errors": list((pf.get("probe_errors") or {}).keys()),
     }
 
 
-def banner(log: Log, pf: dict | None, hw: list[dict], results: Path, tick: dict) -> None:
+def banner(log: Log, pf: dict | None, hw: list[dict], results: Path, tick: dict,
+           gpu: dict) -> None:
     rule(log, "GLM-5.2 MoE fusion study -- H200 campaign")
     log(f"  repo            {REPO}")
     log(f"  results dir     {results}")
     log(f"  driver started  {time.strftime('%Y-%m-%d %H:%M:%S')}")
+    if gpu.get("index") is not None:
+        log(f"  gpu             {gpu['index']}  uuid {gpu.get('uuid')}  ({gpu.get('reason')})")
+    else:
+        log(f"  gpu             not pinned ({gpu.get('reason') or 'no --gpu given'})")
     log("")
     if pf:
         d = preflight_digest(pf)
@@ -400,7 +848,16 @@ def banner(log: Log, pf: dict | None, hw: list[dict], results: Path, tick: dict)
             log(f"  [calib]  {bw}   {gm}")
         lu = f"{d['launch_us']:.2f}" if isinstance(d.get("launch_us"), (int, float)) else "n/a"
         log(f"  [calib]  launch {lu} us | timer tick "
-            f"{tick['tick_us']} us ({tick['source']})")
+            f"{tick['tick_us']} us ({tick['source']})"
+            + ("" if tick.get("trusted", True) else "  <== NOT TRUSTWORTHY"))
+        if not tick.get("trusted", True):
+            log("  [calib!] the preflight flagged its own launch/tick calibration as "
+                "contaminated:")
+            for reason in tick.get("distrust_reasons", []):
+                log(f"  [calib!]   - {reason}")
+            log("  [calib!] every UNRESOLVED verdict below is computed from that tick, so "
+                "treat them as advisory until the preflight is re-run on an idle GPU:")
+            log("  [calib!]     python3 glm52_h200/preflight.py --gpu <idle index>")
         cap = d.get("capacity") or {}
         if cap:
             log(f"  [capacity] expert weights "
@@ -425,7 +882,7 @@ def banner(log: Log, pf: dict | None, hw: list[dict], results: Path, tick: dict)
 # ======================================================================================
 # device gate
 # ======================================================================================
-def device_gate(log: Log, pf: dict | None, hw: list[dict], force: bool,
+def device_gate(log: Log, pf: dict | None, hw_row: dict, force: bool,
                 warnings: list[str]) -> dict:
     """Refuse to run a study labelled H200 on something that is not an H200.
 
@@ -438,9 +895,25 @@ def device_gate(log: Log, pf: dict | None, hw: list[dict], force: bool,
     dev = (pf or {}).get("device", {}) or {}
     cc = str(dev.get("compute_capability") or "")
     name = _norm_dev(dev.get("name"))
-    smi_name = _norm_dev(hw[0].get("name")) if hw else ""
+    # `hw_row` is the PINNED card's nvidia-smi row, not GPU 0's. On an eight-card node those
+    # differ, and comparing the probe against the wrong card is how a stale probe passes.
+    smi_name = _norm_dev((hw_row or {}).get("name"))
     info = {"name": name or smi_name, "compute_capability": cc or None,
-            "sm90": cc == "9.0", "forced": bool(force), "nvidia_smi_name": smi_name or None}
+            "sm90": cc == "9.0", "forced": bool(force), "nvidia_smi_name": smi_name or None,
+            "nvidia_smi_index": (hw_row or {}).get("index"),
+            "uuid": (hw_row or {}).get("uuid")}
+    # The probe must describe the card we pinned, not merely a card of the same model: eight
+    # identical H200s all pass a name comparison.
+    pf_uuid = _norm_uuid((pf or {}).get("gpu_selection", {}).get("uuid") or dev.get("uuid"))
+    row_uuid = _norm_uuid((hw_row or {}).get("uuid"))
+    if pf_uuid and row_uuid and pf_uuid != row_uuid:
+        msg = (f"the preflight probed GPU uuid {pf_uuid} but this campaign is pinned to "
+               f"{row_uuid} -- the device constants every bench reads were measured on a "
+               f"DIFFERENT card. Re-run the preflight with --gpu "
+               f"{(hw_row or {}).get('index')}.")
+        warnings.append(msg)
+        log(f"!! {msg}")
+        info["preflight_uuid_mismatch"] = True
 
     if smi_name and name and smi_name != name:
         msg = (f"preflight describes '{name}' but nvidia-smi reports '{smi_name}' -- "
@@ -641,7 +1114,7 @@ def tail(path: Path, n: int = 3, maxbytes: int = 262144) -> list[str]:
 
 
 def run_family(log: Log, fam: Family, script: Path, args: argparse.Namespace,
-               results: Path, logdir: Path, extra: list[str]) -> dict:
+               results: Path, logdir: Path, extra: list[str], gpu: dict) -> dict:
     """Launch one family, stream a heartbeat, and return a status record.
 
     Never raises for a benchmark failure. The whole point of an eight-hour campaign on a
@@ -687,11 +1160,44 @@ def run_family(log: Log, fam: Family, script: Path, args: argparse.Namespace,
         # those too, or "re-run" quietly means "re-print the cached numbers".
         env["GLM52_H200_FORCE"] = "1"
     if args.disable_features:
+        # `GLM52_H200_DISABLE_FEATURES` alone only reaches `common.features()`, which is
+        # METADATA -- it is written into the result file and gates nothing. The real
+        # capability switches live in `kernels/hopper.py` under per-feature keys. Setting
+        # only the former produced the worst possible outcome: the feature stayed live while
+        # every result file recorded it as disabled. And this flag is the operator's one
+        # remote escape hatch on a machine nobody can log into, so it has to actually work.
         env["GLM52_H200_DISABLE_FEATURES"] = args.disable_features
+        _FEATURE_ENV = {
+            "tma": "GLM52_H200_TMA",
+            "clusters": "GLM52_H200_CLUSTERS",
+            "cluster": "GLM52_H200_CLUSTERS",
+            "ws": "GLM52_H200_WS",
+            "warp_specialize": "GLM52_H200_WS",
+            "warp-specialize": "GLM52_H200_WS",
+            "wgmma": "GLM52_H200_WGMMA",
+        }
+        unknown = []
+        for name in (s.strip().lower() for s in args.disable_features.split(",")):
+            if not name:
+                continue
+            if name in ("all", "classic"):
+                env["GLM52_H200_CLASSIC"] = "1"
+            elif name in _FEATURE_ENV:
+                env[_FEATURE_ENV[name]] = "0"
+            else:
+                unknown.append(name)
+        if unknown:
+            print(f"!! --disable-features: unrecognised {unknown}; "
+                  f"known: tma, ws, clusters, wgmma, all", flush=True)
     if args.flush_mb:
         env["GLM52_H200_FLUSH_MB"] = str(args.flush_mb)
-    if args.gpu is not None:
-        env["CUDA_VISIBLE_DEVICES"] = str(args.gpu)
+    if gpu.get("index") is not None:
+        # This is the whole reason no bench needed changing: with one device visible, every
+        # child's `cuda:0` is this card and nothing downstream has to know about device
+        # selection. PCI_BUS_ID because the default FASTEST_FIRST ordering would let the
+        # index mean a different card than the one nvidia-smi (and this driver) inspected.
+        env["CUDA_VISIBLE_DEVICES"] = str(gpu["index"])
+        env["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 
     logpath = logdir / f"{fam.key}.log"
     timeout_s = args.timeout if args.timeout else fam.timeout_s
@@ -701,7 +1207,10 @@ def run_family(log: Log, fam: Family, script: Path, args: argparse.Namespace,
         "started": time.strftime("%Y-%m-%d %H:%M:%S"),
         # exactly what this child saw, so a surprising number can be traced to a flag
         "env_overrides": {k: env[k] for k in sorted(env)
-                          if k.startswith(("GLM52", "CUDA_VISIBLE"))},
+                          if k.startswith(("GLM52", "CUDA_"))},
+        # Which physical card produced this family, by index AND uuid: an index alone is
+        # meaningless once someone re-reads the file on another host.
+        "gpu_index": gpu.get("index"), "gpu_uuid": gpu.get("uuid"),
         "script_flags_detected": sorted(flags),
     }
     log(f"  cmd     {' '.join(cmd)}")
@@ -716,8 +1225,9 @@ def run_family(log: Log, fam: Family, script: Path, args: argparse.Namespace,
             f" and may be ignored by this bench.")
 
     hw_before = hwinfo()
-    if hw_before:
-        log(f"  [hw before] {hw_line(hw_before[0])}")
+    row_before = pick_hw_row(hw_before, gpu.get("index"))
+    if row_before:
+        log(f"  [hw before] {hw_line(row_before)}")
     rec["hw_before"] = hw_before
 
     t0 = time.time()
@@ -774,11 +1284,15 @@ def run_family(log: Log, fam: Family, script: Path, args: argparse.Namespace,
                finished=time.strftime("%Y-%m-%d %H:%M:%S"))
     hw_after = hwinfo()
     rec["hw_after"] = hw_after
-    if hw_after:
-        log(f"  [hw after ] {hw_line(hw_after[0])}")
+    row_after = pick_hw_row(hw_after, gpu.get("index"))
+    if row_after:
+        log(f"  [hw after ] {hw_line(row_after)}")
     if hw_before and hw_after:
         rec["hw_drift"] = hw_drift(hw_before, hw_after)
-        d = rec["hw_drift"][0] if rec["hw_drift"] else {}
+        # The drift that matters is the PINNED card's, not GPU 0's.
+        d = next((x for x in rec["hw_drift"]
+                  if gpu.get("index") is None or _num(x.get("index")) == gpu["index"]),
+                 rec["hw_drift"][0] if rec["hw_drift"] else {})
         sm, tmp = d.get("clocks.sm", {}), d.get("temperature.gpu", {})
         if sm.get("pct") is not None and abs(sm["pct"]) >= 5:
             log(f"  !! SM clock moved {sm['pct']:+.1f}% during this family "
@@ -1057,10 +1571,13 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description="GLM-5.2 MoE-layer fusion study -- serial H200 campaign driver.",
         epilog="Typical use:\n"
-               "  python3 run_h200.py                      # full campaign, resumable\n"
+               "  python3 run_h200.py --gpu auto           # pick the idlest card, then run\n"
+               "  python3 run_h200.py --gpu 3              # pin nvidia-smi GPU 3\n"
                "  python3 run_h200.py --quick              # short sweeps, stack smoke test\n"
                "  python3 run_h200.py --families f03,f10   # just these\n"
-               "  python3 run_h200.py --list               # show the plan, run nothing\n",
+               "  python3 run_h200.py --list               # show the plan, run nothing\n"
+               "\nOn a shared multi-GPU node ALWAYS pass --gpu: every number in a campaign\n"
+               "is only comparable if every family ran on the same, idle card.\n",
     )
     ap.add_argument("--families", default="",
                     help=f"comma-separated subset of {','.join(f.key for f in FAMILIES)}")
@@ -1081,8 +1598,19 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
                     help="seconds between progress lines (default 60)")
     ap.add_argument("--python", default=sys.executable,
                     help="interpreter used for the benches (default: this one)")
-    ap.add_argument("--gpu", type=int, default=None,
-                    help="pin CUDA_VISIBLE_DEVICES for every child")
+    ap.add_argument("--gpu", default=None, metavar="N|auto",
+                    help="which GPU the whole campaign runs on. N pins nvidia-smi index N "
+                         "(exported as CUDA_VISIBLE_DEVICES=N plus "
+                         "CUDA_DEVICE_ORDER=PCI_BUS_ID, so every child sees exactly that "
+                         "card as cuda:0 and no bench needs to know); 'auto' ranks the "
+                         "host's GPUs by (utilization, memory used) and takes the idlest, "
+                         "printing the full ranking. Omit to leave the choice to CUDA -- not "
+                         "recommended on a shared multi-GPU node.")
+    ap.add_argument("--allow-busy", action="store_true",
+                    help="run even though the chosen GPU already has another tenant. A "
+                         "shared card is what produced the preflight's impossible 40.55 us "
+                         "harness floor and a CUDA-event tick matching 3 samples in 100; "
+                         "short-kernel results from such a run are not defensible.")
     ap.add_argument("--unresolved-ticks", type=int, default=3,
                     help="cells whose arms differ by fewer than this many CUDA-event ticks "
                          "are reported UNRESOLVED (default 3)")
@@ -1179,20 +1707,43 @@ def main(argv: list[str] | None = None) -> int:
         log.close()
         return 0
 
-    # --- preflight -------------------------------------------------------------------
+    # --- GPU selection ----------------------------------------------------------------
+    # Before the preflight, because the preflight must probe the SAME card the benches will
+    # run on: it is where every hardware constant in the suite comes from, and a probe of
+    # GPU 1 governing kernels that run on GPU 5 is worse than no probe at all.
     hw_start = hwinfo()
+    gpu = resolve_gpu(log, args, hw_start, warnings,
+                      measuring=not (args.summary_only or args.dry_run))
+    if gpu.get("refuse"):
+        log.close()
+        return 4
+    hw_row = pick_hw_row(hw_start, gpu.get("index"))
+
+    # --- preflight -------------------------------------------------------------------
     pf = read_preflight()
     if pf is None and not args.skip_preflight:
         log(f"  no {PREFLIGHT_JSON.name}; running the preflight probe first "
             f"(it is what every bench reads its hardware constants from).")
-        pf = run_preflight(log, args.python, logdir, quick=args.quick)
-    elif pf is not None and hw_start:
-        # A cached probe from another box would build wrong-shaped grids under a correct
-        # device label. Cheapest possible check, run every time.
-        if _norm_dev((pf.get("device") or {}).get("name")) != _norm_dev(hw_start[0].get("name")):
-            log("!! cached preflight describes a different GPU than nvidia-smi reports -- "
-                "re-probing before anything is tuned.")
-            pf = run_preflight(log, args.python, logdir, quick=args.quick) or pf
+        pf = run_preflight(log, args.python, logdir, quick=args.quick, gpu=gpu.get("index"))
+    elif pf is not None and hw_row:
+        # A cached probe from another box -- or from another CARD in this box -- would build
+        # wrong-shaped grids under a correct-looking device label. Cheapest possible checks,
+        # run every time: model name, then UUID, because eight identical H200s all pass a
+        # name comparison and only one of them produced the cached numbers.
+        pf_name = _norm_dev((pf.get("device") or {}).get("name"))
+        pf_uuid = _norm_uuid((pf.get("gpu_selection") or {}).get("uuid")
+                             or (pf.get("device") or {}).get("uuid"))
+        row_uuid = _norm_uuid(hw_row.get("uuid"))
+        why = ""
+        if pf_name != _norm_dev(hw_row.get("name")):
+            why = f"model differs ({pf_name!r} vs {_norm_dev(hw_row.get('name'))!r})"
+        elif gpu.get("index") is not None and pf_uuid and row_uuid and pf_uuid != row_uuid:
+            why = f"same model but a different card (probe {pf_uuid}, pinned {row_uuid})"
+        if why:
+            log(f"!! cached preflight does not describe the pinned GPU: {why} -- re-probing "
+                f"before anything is tuned.")
+            pf = run_preflight(log, args.python, logdir, quick=args.quick,
+                               gpu=gpu.get("index")) or pf
 
     tick_us = None
     tick_src = "default (no preflight calibration)"
@@ -1210,8 +1761,32 @@ def main(argv: list[str] | None = None) -> int:
                         f"than under-flags)")
     tick = {"tick_us": tick_us, "source": tick_src, "unresolved_ticks": args.unresolved_ticks}
 
-    banner(log, pf, hw_start, results, tick)
-    dev = device_gate(log, pf, hw_start, args.force, warnings)
+    # A tick measured on a shared GPU is not a tick. The preflight now says so about its own
+    # numbers; carry that verdict into every place a tick-based judgement is printed, because
+    # a silently-wrong UNRESOLVED threshold either hides real differences or invents them --
+    # and unlike a missing tick, a contaminated one looks perfectly well-formed.
+    cal = (pf or {}).get("calibration") or {}
+    trusted, distrust = True, []
+    if cal.get("launch_timer_trustworthy") is False:
+        trusted = False
+        distrust = list(cal.get("launch_timer_doubts") or ["flagged by the preflight"])
+    else:
+        frac = cal.get("timer_tick_match_frac")
+        if isinstance(frac, (int, float)) and frac < 0.98:
+            trusted = False
+            distrust = [f"the preflight's winning tick quantum matched only "
+                        f"{frac * 100:.0f}% of its samples; a real tick matches ~100%"]
+    tick["trusted"] = trusted
+    tick["distrust_reasons"] = distrust
+    tick["match_frac"] = cal.get("timer_tick_match_frac")
+    if not trusted:
+        warnings.append(
+            f"the CUDA-event tick ({tick_us} us) used for every UNRESOLVED verdict is itself "
+            f"untrustworthy: {'; '.join(distrust)}. Re-run the preflight on an idle GPU "
+            f"before quoting any decode_bs1 cell.")
+
+    banner(log, pf, hw_start, results, tick, gpu)
+    dev = device_gate(log, pf, hw_row, args.force, warnings)
     device_name = dev.get("name") or ""
 
     if args.disable_features:
@@ -1227,18 +1802,6 @@ def main(argv: list[str] | None = None) -> int:
     if args.quick:
         log("  [quick] short sweeps: narrower autotuning grids and fewer reps. Fine for a "
             "stack smoke test, NOT a publishable measurement.")
-
-    # A multi-GPU box is the one configuration where "the device probe" and "the device the
-    # kernels ran on" can drift apart: the preflight probes index 0, but a bench that picks
-    # a device differently would be tuned against the wrong properties, and two families on
-    # two GPUs are no longer comparable to each other.
-    ndev = len(hw_start) or ((pf or {}).get("stack", {}) or {}).get("device_count") or 1
-    if ndev and int(ndev) > 1 and args.gpu is None and "CUDA_VISIBLE_DEVICES" not in os.environ:
-        msg = (f"{ndev} GPUs are visible and no device is pinned. Every number in this "
-               f"campaign is only comparable if every family ran on the SAME GPU -- pass "
-               f"--gpu N (or set CUDA_VISIBLE_DEVICES) and re-run.")
-        warnings.append(msg)
-        log(f"!! {msg}")
 
     if not args.summary_only:
         busy = another_bench_running()
@@ -1296,7 +1859,7 @@ def main(argv: list[str] | None = None) -> int:
                 continue
             try:
                 rec = run_family(log, fam, script, args, results, logdir,
-                                 extra_args.get(fam.key, []))
+                                 extra_args.get(fam.key, []), gpu)
             except KeyboardInterrupt:
                 rec = {"family": fam.key, "title": fam.title, "status": "interrupted"}
             except Exception as exc:  # noqa: BLE001 -- one family must never kill the run
@@ -1304,6 +1867,14 @@ def main(argv: list[str] | None = None) -> int:
                     f"{type(exc).__name__}: {exc}")
                 rec = {"family": fam.key, "title": fam.title, "status": "driver_error",
                        "error": f"{type(exc).__name__}: {exc}"}
+            # Between families, not during: a campaign is 20+ hours and a neighbour that
+            # arrives in hour six leaves the later families incomparable with the earlier
+            # ones. Silence here is what produced the drift this study has been burned by
+            # twice; the check costs one nvidia-smi call per family.
+            before_events = len(gpu.get("tenant_events") or [])
+            check_tenants(log, gpu, f"after {fam.key}", warnings)
+            if len(gpu.get("tenant_events") or []) > before_events:
+                rec["tenant_appeared_after"] = gpu["tenant_events"][-1]
             got = find_result(fam, results)
             rec["result"] = str(got) if got else None
             if rec.get("status") == "ok" and got is None:
@@ -1340,6 +1911,7 @@ def main(argv: list[str] | None = None) -> int:
 
     hw_end = hwinfo()
     drift = hw_drift(hw_start, hw_end)
+    check_tenants(log, gpu, "at the end of the campaign", warnings)
 
     rule(log, "SPEEDUP TABLE  (fused / unfused, per fusion per regime)")
     table = render_table(cells, tick, args.unresolved_ticks)
@@ -1362,10 +1934,23 @@ def main(argv: list[str] | None = None) -> int:
 
     log("")
     rule(log, "HWINFO -- START vs END (clock and thermal drift across the whole run)")
+    if gpu.get("index") is not None:
+        log(f"  (this campaign ran on GPU {gpu['index']}, uuid {gpu.get('uuid')}; the other "
+            f"rows are context, not this run)")
     for g in hw_start:
         log(f"  start {hw_line(g)}")
     for g in hw_end:
         log(f"  end   {hw_line(g)}")
+    if gpu.get("tenant_events"):
+        log("")
+        log(f"  !! {len(gpu['tenant_events'])} time(s) during this campaign another tenant "
+            f"appeared on GPU {gpu['index']}:")
+        for ev in gpu["tenant_events"]:
+            log(f"     {ev['at']}  {ev['when']}  "
+                f"{len(ev.get('new_processes') or [])} new process(es), "
+                f"memory {ev.get('memory_growth_bytes', 0) / 2**30:+.1f} GB")
+        log("     Families measured after the first of these are not comparable with the "
+            "ones before it; re-run them on a clean card before quoting the table above.")
     for d in drift:
         sm, tmp = d.get("clocks.sm", {}), d.get("temperature.gpu", {})
         pct = f"{sm['pct']:+.1f}%" if sm.get("pct") is not None else "n/a"
@@ -1390,6 +1975,13 @@ def main(argv: list[str] | None = None) -> int:
             "recorded_at": time.strftime("%Y-%m-%d %H:%M:%S"),
             "device": device_name,
             "visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES", "all"),
+            # Index AND uuid: on an eight-card node an index alone does not identify a
+            # device, and a number in this file has to be traceable to the card that
+            # produced it, not merely to the host.
+            "gpu_index": gpu.get("index"),
+            "gpu_uuid": gpu.get("uuid"),
+            "gpu_pinned": bool(gpu.get("pinned")),
+            "gpu_was_idle": (None if gpu.get("busy") is None else not gpu["busy"]),
         },
         "driver": {
             "argv": sys.argv,
@@ -1409,7 +2001,12 @@ def main(argv: list[str] | None = None) -> int:
             "families_planned": [f.key for f in plan],
             "interrupted": interrupted,
             "summary_only": bool(args.summary_only),
+            "gpu_requested": args.gpu,
+            "allow_busy": bool(args.allow_busy),
         },
+        # The whole selection decision, ranking included, so "why GPU 3?" is answerable from
+        # the record alone rather than from whoever happened to run the command.
+        "gpu": gpu,
         "device": dev,
         "preflight": (preflight_digest(pf) | {"path": str(PREFLIGHT_JSON)}) if pf
                      else {"path": str(PREFLIGHT_JSON), "present": False},
@@ -1429,7 +2026,12 @@ def main(argv: list[str] | None = None) -> int:
                      "tuning tables, grid sizes and correctness checks",
             "unresolved": f"cells whose two arms differ by < {args.unresolved_ticks} "
                           f"CUDA-event ticks ({tick_us} us, {tick_src}) carry speedup=null; "
-                          f"their raw operands are still present as speedup_raw",
+                          f"their raw operands are still present as speedup_raw"
+                          + ("" if tick.get("trusted")
+                             else ". THE TICK ITSELF IS NOT TRUSTWORTHY here (see "
+                                  "timer.distrust_reasons): it was measured on a GPU shared "
+                                  "with another tenant, so these verdicts are advisory until "
+                                  "the preflight is re-run on an idle card"),
             "not_measured": "roofline ceilings are MODELLED (glm52_h200/traffic.py); the "
                             "layer-level saving of a set of fusions is additive-estimated "
                             "unless bench_layer measured that combination end to end",

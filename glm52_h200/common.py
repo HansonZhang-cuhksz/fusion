@@ -418,9 +418,14 @@ def features() -> dict:
         # TMA and clusters are architecturally impossible below sm_90; AND-ing with the
         # live capability means a name-matching but otherwise wrong JSON still cannot
         # enable a path the silicon does not have.
-        "tma": ok("tma_tensor_descriptor") and sm90,
+        # The original probe name reported a FALSE NEGATIVE on the H200: it passed a
+        # host-side TensorDescriptor into tl.make_tensor_descriptor(), which is the
+        # device-side constructor for raw pointers. Gate on the corrected probe names and
+        # fall back to the architectural capability for JSONs written before the fix.
+        "tma": (ok("tma_host_descriptor") or ok("tma_device_descriptor")) and sm90,
         "clusters": ok("thread_block_cluster_num_ctas") and sm90,
         "warp_specialize": ok("warp_specialize_tl_range"),
+        "ws": ok("warp_specialize_tl_range"),  # alias: --disable-features ws
         "num_consumer_groups": ok("warp_specialize_num_consumer_groups"),
         "dot_bf16": ok("tl_dot_bf16"),
         "disabled": [],

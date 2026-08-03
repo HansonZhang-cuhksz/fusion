@@ -32,7 +32,11 @@ predicted threshold by 6x -- so `accum_bytes` / `accum_fits_l2` are recorded per
 decode_bs512 / decode_bs1024 are in scope precisely to locate it again.
 
 Run:
-    python3 glm52_h200/bench/bench_f08f09_down_merge_resadd.py [--regimes ...] [--only ...]
+    python3 glm52_h200/bench/bench_f08f09_down_merge_resadd.py --gpu auto [--regimes ...] [--only ...]
+
+`--gpu auto` picks the idlest of the host's GPUs and masks the process to it before
+CUDA initialises; on the 8-GPU measurement host that is the difference between timing an
+idle card and timing one another tenant is already using.
 """
 
 from __future__ import annotations
@@ -78,7 +82,15 @@ SMEM_LIMIT = B.env_int(_ENV, "smem_bytes")
 WARP = B.env_int(_ENV, "warp_size")
 MAX_THREADS = B.max_threads_per_block(_ENV)
 WARPS = B.warp_ladder(_ENV, lo=2)
-ACC_HI, ACC_LO = 64, 4
+#: fp32 accumulator elements per lane.  ACC_HI comes from the 256-entry per-thread register
+#: window (128); the old literal 64 excluded `BM128 BN256 num_warps=8`, which is exactly the
+#: mapping the H200 preflight measured at 96 % of cuBLAS.
+ACC_HI, ACC_LO = B.MAX_ACC_ELEMS_PER_THREAD, 4
+#: Tile ladders derived from THIS device's opt-in SMEM ceiling: [16..256] on the H200.
+TILES = B.tile_ladder(_ENV)
+BKS = B.bk_ladder(_ENV, hi=128)
+#: Coarse-grid trial budget AFTER the sm_90 overlays multiply the space.
+COARSE_CAP = 200
 
 
 # --------------------------------------------------------------------------------------
@@ -89,7 +101,9 @@ ACC_HI, ACC_LO = 64, 4
 def _gemm_ok(cfg: dict, acc_lo: float = ACC_LO, acc_hi: float = ACC_HI) -> bool:
     bm, bn, bk = cfg["BLOCK_M"], cfg["BLOCK_N"], cfg["BLOCK_K"]
     w, s = cfg["num_warps"], cfg["num_stages"]
-    if C.smem_stage_bytes(bm, bn, bk, s) > SMEM_LIMIT:
+    # `B.smem_predict` fits the multi-buffer count to the preflight's own smem_probe
+    # observations rather than assuming Triton 3.0's or sm_89's.
+    if B.smem_predict(bm, bn, bk, s) > SMEM_LIMIT:
         return False
     threads = w * WARP
     if threads > MAX_THREADS:
@@ -107,29 +121,39 @@ def gemm_grid(big: bool) -> list[dict]:
     SUBSET of the small one, so prefill regimes reuse the decode compile cache.
     """
     if big:
-        bms, bns, bks = [32, 64, 128, 256], [64, 128, 256], [32, 64, 128]
+        bms = [t for t in TILES if t >= 32]
+        bns = [t for t in TILES if t >= 64]
     else:
-        bms, bns, bks = [16, 32, 64, 128], [32, 64, 128, 256], [32, 64, 128]
+        bms = [t for t in TILES if t <= 128]
+        bns = [t for t in TILES if t >= 32]
     out = []
-    for bm, bn, bk, w, s in itertools.product(bms, bns, bks, WARPS, [2, 3, 4]):
+    for bm, bn, bk, w, s in itertools.product(bms, bns, BKS, WARPS, [2, 3, 4]):
         cfg = dict(
             BLOCK_M=bm, BLOCK_N=bn, BLOCK_K=bk, num_warps=w, num_stages=s, GROUP_M=8
         )
         if _gemm_ok(cfg):
             out.append(cfg)
-    return B.widen(out, KD)
+    # One generator, one widened list, handed to BOTH the FUSE_MERGE=off and FUSE_MERGE=on
+    # searches -- so the sm_90 axes reach both arms by construction, not by convention.
+    return B.widen(out, KD, cap=COARSE_CAP,
+                   tag=f"f08f09/{'big' if big else 'small'}")
 
 
 def gemm_refine(best: dict) -> list[dict]:
     def nb(v, lo, hi):
         return sorted({max(lo, v // 2), v, min(hi, v * 2)})
 
+    overlay = {kk: vv for kk, vv in best.items()
+               if kk in ("USE_TMA", "TMA_A", "TMA_B", "TMA_MODE", "WARP_SPECIALIZE",
+                         "warp_specialize", "num_consumer_groups",
+                         "num_buffers_warp_spec", "num_ctas")}
+    tile_hi = TILES[-1]
     cands = []
-    for bm in nb(best["BLOCK_M"], 16, 256):
-        for bn in nb(best["BLOCK_N"], 32, 256):
+    for bm in nb(best["BLOCK_M"], TILES[0], tile_hi):
+        for bn in nb(best["BLOCK_N"], 32, tile_hi):
             for w in nb(best["num_warps"], 1, WARPS[-1]):
                 cands.append((bm, bn, best["BLOCK_K"], w, best["num_stages"], 8))
-    for bk in nb(best["BLOCK_K"], 32, 128):
+    for bk in nb(best["BLOCK_K"], BKS[0], BKS[-1]):
         for s in (2, 3, 4, 5):
             cands.append((best["BLOCK_M"], best["BLOCK_N"], bk, best["num_warps"], s, 8))
     for g in (1, 4, 8, 16, 32):
@@ -138,10 +162,11 @@ def gemm_refine(best: dict) -> list[dict]:
     out, seen = [], set()
     for bm, bn, bk, w, s, g in cands:
         cfg = dict(
-            BLOCK_M=bm, BLOCK_N=bn, BLOCK_K=bk, num_warps=w, num_stages=s, GROUP_M=g
+            BLOCK_M=bm, BLOCK_N=bn, BLOCK_K=bk, num_warps=w, num_stages=s, GROUP_M=g,
+            **overlay,
         )
-        key = tuple(sorted(cfg.items()))
-        if key in seen or not _gemm_ok(cfg, acc_lo=2, acc_hi=128):
+        key = tuple(sorted((kk, str(vv)) for kk, vv in cfg.items()))
+        if key in seen or not _gemm_ok(cfg, acc_lo=2, acc_hi=ACC_HI):
             continue
         seen.add(key)
         out.append(cfg)
@@ -152,8 +177,8 @@ def _tokmaj_ok(cfg: dict, acc_lo: float, acc_hi: float) -> bool:
     bn, bk, w, s, ud = (cfg["BLOCK_N"], cfg["BLOCK_K"], cfg["num_warps"],
                         cfg["num_stages"], cfg["USE_DOT"])
     # token-major stages only the B tile (A is a single row / a masked M=16 tile), which is
-    # `smem_stage_bytes` with BLOCK_M = 0.
-    if C.smem_stage_bytes(0, bn, bk, s) > SMEM_LIMIT:
+    # the staging model with BLOCK_M = 0.
+    if B.smem_predict(0, bn, bk, s) > SMEM_LIMIT:
         return False
     threads = w * WARP
     if threads > MAX_THREADS:
@@ -469,8 +494,8 @@ def run_regime(regime, w2, gate_w, quick: bool, units: list[str],
         tu_r = B.screened_autotune(
             "unfusedGEMM/refine", lambda c: [prob.gemm_fn(c)], rg, v_gemm, w_t, r_t
         )
-        fair.add(regime.name, "unfused_gemm", "coarse", tu_c)
-        fair.add(regime.name, "unfused_gemm", "refine", tu_r)
+        fair.add(regime.name, "unfused_gemm", "coarse", tu_c, grid=cg)
+        fair.add(regime.name, "unfused_gemm", "refine", tu_r, grid=rg)
 
         # ============================= FUSED-atomic down GEMM =========================
         # IDENTICAL grid generator, tuned from scratch, with the seed inside the screen so
@@ -492,8 +517,8 @@ def run_regime(regime, w2, gate_w, quick: bool, units: list[str],
             lambda c: [prob.seed_fn({"impl": "torch"}, False), prob.atomic_fn(c)],
             rga, v_atomic_zero, w_t, r_t,
         )
-        fair.add(regime.name, "atomic_gemm", "coarse", ta_c)
-        fair.add(regime.name, "atomic_gemm", "refine", ta_r)
+        fair.add(regime.name, "atomic_gemm", "coarse", ta_c, grid=cga)
+        fair.add(regime.name, "atomic_gemm", "refine", ta_r, grid=rga)
 
         # ============================= merge / resadd / seed ==========================
         prob.gemm_fn(tu_c.best_cfg)()  # a valid c3 for the merge screens
@@ -574,7 +599,7 @@ def run_regime(regime, w2, gate_w, quick: bool, units: list[str],
         )
         tt8_tables = [tt8_c]
         best8, best8_ms = tt8_c.best_cfg, tt8_c.best_ms
-        fair.add(regime.name, "tokmaj8", "coarse", tt8_c)
+        fair.add(regime.name, "tokmaj8", "coarse", tt8_c, grid=tg)
         if do_refine:
             rtg = tokmaj_refine(tt8_c.best_cfg)
             if quick:
@@ -900,7 +925,19 @@ def main() -> None:
             "one loop; this replaces the C500 suite's separate --retime pass, which existed "
             "because one sequential end-of-run measurement drifted 55 %"
         ),
+        h200_axes=(
+            "USE_TMA / warp_specialize / num_ctas come from ONE call to gemm_grid(), whose "
+            "widened output is handed to the FUSE_MERGE=off and FUSE_MERGE=on searches "
+            "alike, so both arms search them by construction. The TOKEN-MAJOR variant is "
+            "the one place an axis is structurally one-sided: it has no grouped-GEMM "
+            "mainloop over a gathered A (one CTA walks a token's 8 experts and sums in "
+            "registers), so its own grid is generated separately and carries no sm_90 "
+            "overlay at all -- its axis_counts are legitimately zero, and that is a "
+            "property of the kernel, not of the search. It is compared against the same "
+            "baseline as the atomic variant, which DOES carry them."
+        ),
     )
+    fair.axis("f08f09_down_merge", B.h200_axis_report(KD))
 
     rows, tuning, pair_meta = [], {}, None
     for regime in regimes:

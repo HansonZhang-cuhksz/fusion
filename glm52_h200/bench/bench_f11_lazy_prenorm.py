@@ -30,17 +30,39 @@ H200 has 143 GB, so both families are in scope -- but the fast path still exists
 rather than emitting nulls), and if the free-memory probe says the weights do not fit, the
 same skip happens automatically with the reason recorded.
 
-**Why the H200 number here is not predictable from the two earlier ports.**  "Towards Free
-Normalization" relies on WARP SPECIALIZATION to put the reduction on dedicated warps so it
-overlaps the MMA pipeline.  Neither C500 (Triton 3.0/MACA) nor sm_89 has it, and on both
-the reduction *displaced* MMA work instead of hiding behind it.  Hopper does.  Nothing in
-this file assumes the mechanism is reachable: the search grid gains a warp-specialized
-variant only if the preflight COMPILED AND LAUNCHED it and `kernels/lazy_prenorm.py`
-advertises the knob, and the `isolation_fuse_on_vs_off_same_cfg` measurement -- one kernel,
-one config, only the FUSE_NORM constexpr flips -- is what actually answers the question.
+**Why the H200 number here is not predictable from the two earlier ports, and what this
+bench does about it.**  "Towards Free Normalization" relies on WARP SPECIALIZATION to put
+the reduction on dedicated warps so it overlaps the MMA pipeline.  Neither C500 (Triton
+3.0/MACA) nor sm_89 has it, and on both the reduction *displaced* MMA work instead of
+hiding behind it.  Hopper does have it -- the H200 preflight compiled
+`tl.range(..., warp_specialize=True)` -- so this is the first device in the study on which
+the paper's mechanism can be tested at all.
+
+That test is the headline experiment, and it is a 2x2 at ONE SHARED CONFIG
+(`specialization_study`, reported per regime under `rows[].headline`):
+
+    unfused                  FUSE_NORM=0  WARP_SPECIALIZE=0     the classic baseline
+    fused, nonspecialized    FUSE_NORM=1  WARP_SPECIALIZE=0     what C500 and sm_89 measured
+    fused, warp-specialized  FUSE_NORM=1  WARP_SPECIALIZE=1     the paper's configuration
+    unfused, warp-specialized FUSE_NORM=0 WARP_SPECIALIZE=1     the control
+
+The fourth arm is not padding.  Warp specialization speeds up a plain bf16 mainloop on its
+own, and without measuring that, every microsecond it saves would be booked as a fusion win.
+All four run on one kernel source, one tile, one launch shape and the same tensors -- only
+the two constexprs move -- and all four are timed inside a single rotating interleave, so
+thermal drift cancels the way it does in `bench_pair`.
+
+Nothing here assumes the mechanism is reachable.  The specialized arms are timed only when
+`kernels/lazy_prenorm.py` says its launcher can actually spell warp specialization on this
+stack; otherwise they are omitted with the reason recorded, because
+`resolve_warp_specialize` *refuses* an impossible request instead of raising -- and timing
+the classic mainloop twice under a "warp-specialized" label would be a fabricated result.
 
 Run:
-    python3 glm52_h200/bench/bench_f11_lazy_prenorm.py [--router-only] [--regimes ...]
+    python3 glm52_h200/bench/bench_f11_lazy_prenorm.py --gpu auto [--router-only] [--regimes ...]
+
+`--gpu` matters on this host: it has eight H200s and other tenants, and the preflight's own
+launch/timer calibration was measured on a card someone else was already using.
 """
 
 from __future__ import annotations
@@ -86,6 +108,14 @@ WARP = B.env_int(_ENV, "warp_size")  # every per-lane guard below uses THIS, nev
 MAX_THREADS = B.max_threads_per_block(_ENV)
 WARPS = B.warp_ladder(_ENV)
 ELEM_CAP = B.elems_per_program_cap(_ENV)
+# Derived from THIS device's shared-memory ceiling: [16..256] on the H200's 232448 B,
+# [16..128] on sm_89.  The measured Triton peak on this card is BM128/BN256/BK64/w8/s3
+# (788 TF/s, 96 % of cuBLAS) and the grid has to be able to express it.
+TILES = B.tile_ladder(_ENV)
+BKS = B.bk_ladder(_ENV, hi=128)
+ACC_CAP = B.MAX_ACC_ELEMS_PER_THREAD
+#: Coarse-grid trial budget AFTER the sm_90 overlays multiply the space.
+COARSE_CAP = 180
 
 
 # ======================================================================================
@@ -95,14 +125,16 @@ ELEM_CAP = B.elems_per_program_cap(_ENV)
 # *literally the same config list*; only the refine neighbourhoods differ, because they are
 # centred on each side's own coarse winner.
 # ======================================================================================
-def _ok(cfg: dict, max_bn: int, max_bm: int, acc_lo=2, acc_hi=128) -> bool:
+def _ok(cfg: dict, max_bn: int, max_bm: int, acc_lo=2, acc_hi=ACC_CAP) -> bool:
     if cfg["BLOCK_N"] > max_bn or cfg["BLOCK_M"] > max_bm:
         return False
-    # C.smem_stage_bytes owns the version-dependent multi-buffer count (3.0 staged
-    # num_stages, 3.6 stages num_stages-1); the kernel module's own estimate is the 3.0
-    # formula and over-predicts by 1.33-1.5x, rejecting tiles that do fit.
-    if C.smem_stage_bytes(cfg["BLOCK_M"], cfg["BLOCK_N"], cfg["BLOCK_K"],
-                          cfg["num_stages"]) > SMEM_LIMIT:
+    # `B.smem_predict` fits the multi-buffer count to the preflight's own smem_probe
+    # observations rather than assuming one (3.0 staged num_stages, 3.6/sm_89 stages
+    # num_stages-1, and this H200 stack is back at num_stages -- all five observations
+    # reproduce exactly).  The kernel module's own estimate is the 3.0 formula and
+    # over-predicts, rejecting tiles that do fit.
+    if B.smem_predict(cfg["BLOCK_M"], cfg["BLOCK_N"], cfg["BLOCK_K"],
+                      cfg["num_stages"]) > SMEM_LIMIT:
         return False
     threads = cfg["num_warps"] * WARP
     if threads > MAX_THREADS:
@@ -116,7 +148,7 @@ def router_grid(T: int) -> list[dict]:
     max_bm = max(16, 1 << (max(T, 1) - 1).bit_length())
     out = []
     for bm, bn, bk, w, s in itertools.product(
-        (16, 32, 64, 128), (32, 64, 128, 256), (32, 64, 128),
+        [t for t in TILES if t <= 128], [t for t in TILES if t >= 32], BKS,
         [w for w in WARPS if w >= 4], (2, 3, 4)
     ):
         cfg = dict(
@@ -124,40 +156,56 @@ def router_grid(T: int) -> list[dict]:
         )
         if _ok(cfg, max_bn=256, max_bm=max_bm):
             out.append(cfg)
-    return B.widen(out, K)
+    # `K.ROUTER_AXES` is the kernel module's per-kernel axis advertisement: the router GEMM
+    # may sweep clusters (its B is the 3 MB gate weight every CTA reads, the one place DSMEM
+    # could plausibly pay) while the w13 launcher refuses them.  Fall back to the module
+    # itself on a build that predates those objects.
+    return B.widen(out, getattr(K, "ROUTER_AXES", K), cap=COARSE_CAP, tag=f"f11b/T{T}")
 
 
 def moe_grid(big: bool) -> list[dict]:
     """w13 grouped GEMM: M=T*8 (padded), N=4096, K=6144.  Same shape rules F6 used."""
     if big:
-        bms, bns, bks = (32, 64, 128, 256), (64, 128, 256), (32, 64, 128)
+        bms = [t for t in TILES if t >= 32]
     else:
-        bms, bns, bks = (16, 32, 64, 128), (64, 128, 256), (32, 64, 128)
+        bms = [t for t in TILES if t <= 128]
+    bns = [t for t in TILES if t >= 64]
     out = []
     for bm, bn, bk, w, s in itertools.product(
-        bms, bns, bks, [w for w in WARPS if w >= 4], (2, 3, 4)
+        bms, bns, BKS, [w for w in WARPS if w >= 4], (2, 3, 4)
     ):
         cfg = dict(
             BLOCK_M=bm, BLOCK_N=bn, BLOCK_K=bk, num_warps=w, num_stages=s, GROUP_M=8
         )
         if _ok(cfg, max_bn=4096, max_bm=4096, acc_lo=4):
             out.append(cfg)
-    return B.widen(out, K)
+    return B.widen(out, getattr(K, "MOE_AXES", K), cap=COARSE_CAP,
+                   tag=f"f11a/{'big' if big else 'small'}")
 
 
 def refine(best: dict, max_bn: int, max_bm: int, acc_lo=2) -> list[dict]:
     """Same neighbourhood rule for both sides: half/same/double in BM, BN, warps at the
-    winning BK/stages; a BK x stages sweep at the winning shape; a GROUP_M sweep."""
+    winning BK/stages; a BK x stages sweep at the winning shape; a GROUP_M sweep.
+
+    Any sm_90 overlay keys on `best` (USE_TMA / WARP_SPECIALIZE / num_ctas) ride along
+    unchanged, so a side whose coarse winner was warp-specialized refines a warp-specialized
+    neighbourhood rather than falling back to the classic mainloop at the first refine step.
+    """
 
     def nb(v, lo, hi):
         return sorted({max(lo, v // 2), v, min(hi, v * 2)})
 
+    overlay = {kk: vv for kk, vv in best.items()
+               if kk in ("USE_TMA", "TMA_A", "TMA_B", "TMA_MODE", "WARP_SPECIALIZE",
+                         "warp_specialize", "num_consumer_groups",
+                         "num_buffers_warp_spec", "num_ctas")}
+    tile_hi = TILES[-1]
     cands = []
-    for bm in nb(best["BLOCK_M"], 16, 256):
-        for bn in nb(best["BLOCK_N"], 32, 256):
+    for bm in nb(best["BLOCK_M"], TILES[0], tile_hi):
+        for bn in nb(best["BLOCK_N"], 32, tile_hi):
             for w in nb(best["num_warps"], 2, WARPS[-1]):
                 cands.append((bm, bn, best["BLOCK_K"], w, best["num_stages"], 8))
-    for bk in nb(best["BLOCK_K"], 32, 128):
+    for bk in nb(best["BLOCK_K"], BKS[0], BKS[-1]):
         for s in (2, 3, 4, 5):
             cands.append((best["BLOCK_M"], best["BLOCK_N"], bk, best["num_warps"], s, 8))
     for g in (1, 4, 8, 16):
@@ -166,9 +214,10 @@ def refine(best: dict, max_bn: int, max_bm: int, acc_lo=2) -> list[dict]:
     out, seen = [], set()
     for bm, bn, bk, w, s, g in cands:
         cfg = dict(
-            BLOCK_M=bm, BLOCK_N=bn, BLOCK_K=bk, num_warps=w, num_stages=s, GROUP_M=g
+            BLOCK_M=bm, BLOCK_N=bn, BLOCK_K=bk, num_warps=w, num_stages=s, GROUP_M=g,
+            **overlay,
         )
-        key = tuple(sorted(cfg.items()))
+        key = tuple(sorted((kk, str(vv)) for kk, vv in cfg.items()))
         if key in seen or not _ok(cfg, max_bn, max_bm, acc_lo=acc_lo):
             continue
         seen.add(key)
@@ -338,6 +387,19 @@ class Problem:
             cfg, False, EPS,
         )
 
+    def router_unfused_same(self, cfg):
+        """The router GEMM at an ARBITRARY config with FUSE_NORM off (isolation control).
+
+        Reads `h1` and the FOLDED weight -- the same two tensors the fused arm reads -- so
+        the byte traffic, the tile shapes and the launch are identical and the only
+        difference in the k-loop is the sum-of-squares.  Its output is numerically wrong
+        (no rstd is ever applied) and is neither checked nor reported: this arm measures
+        instructions, not answers, which is exactly what makes it the right control.
+        """
+        return lambda: K.launch_router(
+            self.h1, self.b_fold, self.logits_f, cfg, False, EPS
+        )
+
 
 def reference_rows(prob: Problem, n_sample: int = 1024):
     """fp32 reference for the w13 GEMM on a sampled row subset (a full fp32 reference at
@@ -391,6 +453,156 @@ def vendor_moe_chain(prob: Problem):
 #   3  a re-loaded separately, then mode 0  (isolates the dot-operand layout hypothesis)
 # ======================================================================================
 SQ_NAMES = {0: "per-step tl.sum", 1: "tile-accum", 2: "tensor-core dot", 3: "2nd load"}
+
+
+# ======================================================================================
+# Warp specialization: availability, and the 2x2 that is this campaign's headline
+# ======================================================================================
+#: Every spelling `kernels/lazy_prenorm.py::cfg_warp_specialize` recognises, and the one
+#: this bench writes.  It reaches the compiler as a kernel CONSTEXPR
+#: (`tl.range(..., warp_specialize=WS)` is lowered at compile time), not as a launch kwarg
+#: -- the launch-kwarg spelling (`num_consumer_groups`) is rejected outright by the measured
+#: H200 stack with `KeyError: ... unrecognised`.
+WS_CFG_KEYS = ("WARP_SPECIALIZE", "WS", "warp_specialize")
+WS_CFG_KEY = "WARP_SPECIALIZE"
+
+
+def ws_offered() -> tuple:
+    """`(available, evidence)` for warp specialization, from the kernel module first.
+
+    `kernels/lazy_prenorm.py` owns the verdict: it knows both whether the capability layer
+    says the mechanism exists AND whether its own launcher can spell it.  Falling back to
+    `B.axis_available` covers the case where that module has not (yet) grown the helper.
+
+    This gate matters more than it looks.  `resolve_warp_specialize` REFUSES an impossible
+    request rather than raising -- it warns and runs the classic mainloop.  So an ungated
+    `WARP_SPECIALIZE=True` arm on a stack without the feature would time the classic loop
+    twice and report the difference as a warp-specialization effect.  That is a fabricated
+    result, and it is the specific fabrication `tl.range(warp_specialize=True)` invites,
+    because on sm_89 it compiles, runs, and silently is not the Hopper scheme.
+    """
+    fn = getattr(K, "warp_specialize_available", None)
+    if callable(fn):
+        try:
+            ok = bool(fn())
+            mode = getattr(K, "_ws_mode", lambda: "?")()
+            return ok, f"kernels.lazy_prenorm.warp_specialize_available()={ok} (mode {mode})"
+        except Exception:  # noqa: BLE001 -- fall through to the harness verdict
+            pass
+    return B.axis_available("warp_specialize")
+
+
+def _ws(cfg: dict, on: bool) -> dict:
+    """`cfg` with warp specialization pinned on or off.
+
+    EVERY recognised spelling is stripped first, then exactly one is written.  The tuned
+    winner reaching this function may already carry `warp_specialize=True` from the coarse
+    grid's sm_90 overlay, and leaving that in place would make the arms depend on which key
+    the kernel module happens to check first.  Pinning explicitly on BOTH sides matters for
+    the same reason: an unset flag means the module's own default decides, and an
+    auto-selected arm cannot be the control for a forced one.
+    """
+    out = {kk: vv for kk, vv in cfg.items() if kk not in WS_CFG_KEYS}
+    out[WS_CFG_KEY] = bool(on)
+    return out
+
+
+def specialization_study(tag: str, cfg: dict, mk_fused, mk_unfused, sq_mode: int,
+                         w_f: int, r_f: int) -> dict:
+    """ONE config, one kernel source, four launches: {FUSE_NORM on/off} x {WS on/off}.
+
+    This is the campaign's headline experiment, and the reason is a claim it can falsify.
+    "Towards Free Normalization" argues an RMSNorm reduction is free inside a GEMM because
+    WARP SPECIALIZATION puts it on producer warps that are not doing the MMA.  Neither C500
+    (Triton 3.0 / MACA) nor sm_89 has the mechanism, and on both the reduction DISPLACED
+    MMA work: the C500 study measured the fused arm slower at every regime.  The H200 has
+    it, and this suite's whole reason for existing on this device is to find out whether
+    that changes the sign.
+
+    Three arms answer the question as posed -- unfused, fused-nonspecialized,
+    fused-warp-specialized -- and the fourth (unfused-warp-specialized) is what keeps the
+    answer honest: warp specialization speeds up a plain bf16 mainloop too, and without the
+    control every microsecond it saves would be credited to the fusion.  All four run at the
+    SAME tile, the same warps, the same stages, the same tensors and the same launch, so the
+    only differences are the two constexprs.
+
+    They are timed by `B.bench_multi`, one round each with a rotating order, for the same
+    reason the pairs are interleaved: a 22 % thermal drift inside one run once produced a
+    4060 speedup above the cell's own physical ceiling, and per-round ratios cancel it.
+    """
+    ws_ok, ws_why = ws_offered()
+    chains = {
+        "unfused": [mk_unfused(_ws(cfg, False))],
+        "fused_ws_off": [mk_fused(_ws(cfg, False), sq_mode)],
+    }
+    if ws_ok:
+        chains["fused_ws_on"] = [mk_fused(_ws(cfg, True), sq_mode)]
+        chains["unfused_ws_on"] = [mk_unfused(_ws(cfg, True))]
+
+    tim, meta = B.bench_multi(chains, w_f, r_f, baseline="unfused")
+    ms = {k: v.p50_ms for k, v in tim.items()}
+    out = {
+        "config": cfg,
+        "sq_mode": sq_mode,
+        "warp_specialize_available": ws_ok,
+        "warp_specialize_evidence": ws_why,
+        "ms": ms,
+        "timings": {k: v.as_dict() for k, v in tim.items()},
+        "pair_meta": meta,
+        # The C500/Ada number: what fusing the reduction costs with a classic mainloop.
+        "instruction_cost_pct": 100.0 * (ms["fused_ws_off"] / ms["unfused"] - 1.0),
+        "interleaved": True,
+    }
+    if not ws_ok:
+        out["warp_specialize_skipped"] = (
+            "no warp-specialized arm was timed: " + ws_why + ". The fused/unfused numbers "
+            "above are the classic-mainloop result, directly comparable with C500 and "
+            "sm_89, and the paper's mechanism is simply not present to test."
+        )
+        return out
+    out.update(
+        {
+            # Like-for-like: what fusion costs once BOTH arms are specialized. This is the
+            # number the paper's claim is actually about.
+            "instruction_cost_ws_pct":
+                100.0 * (ms["fused_ws_on"] / ms["unfused_ws_on"] - 1.0),
+            # What a layer adopting both at once would pay against today's classic baseline.
+            "fused_ws_on_vs_classic_unfused_pct":
+                100.0 * (ms["fused_ws_on"] / ms["unfused"] - 1.0),
+            # What specialization bought each arm on its own.
+            "ws_gain_fused_pct": 100.0 * (1.0 - ms["fused_ws_on"] / ms["fused_ws_off"]),
+            "ws_gain_unfused_pct": 100.0 * (1.0 - ms["unfused_ws_on"] / ms["unfused"]),
+        }
+    )
+    # The headline sentence, computed rather than narrated, so it cannot drift from the
+    # numbers it describes.
+    cost_classic = out["instruction_cost_pct"]
+    cost_ws = out["instruction_cost_ws_pct"]
+    out["verdict"] = (
+        f"[{tag}] fusing the reduction costs {cost_classic:+.2f}% with a classic mainloop "
+        f"and {cost_ws:+.2f}% with warp specialization; specialization itself moved the "
+        f"fused arm {out['ws_gain_fused_pct']:+.2f}% and the unfused arm "
+        f"{out['ws_gain_unfused_pct']:+.2f}%. "
+        + (
+            "Specialization absorbs the reduction: the fusion is cheaper once the producer "
+            "warps carry it."
+            if cost_ws < cost_classic - 0.5 else
+            "Specialization does NOT absorb the reduction here -- the fused arm pays as "
+            "much or more with it as without, so the k-loop, not the memory traffic, is the "
+            "binding cost on this device too."
+        )
+    )
+    # Whether the compiler really emitted the producer/consumer scheme, not just whether the
+    # flag was accepted. A row labelled warp-specialized that ran the classic loop is worse
+    # than no row.
+    for helper in ("caps_report", "ws_evidence"):
+        fn = getattr(K, helper, None)
+        if callable(fn):
+            try:
+                out[f"kernel_{helper}"] = fn() if helper == "caps_report" else None
+            except Exception as exc:  # noqa: BLE001 -- provenance is a bonus, never fatal
+                out[f"kernel_{helper}"] = f"{type(exc).__name__}: {exc}"[:160]
+    return out
 
 
 def sq_study(prob: Problem) -> tuple[dict, list]:
@@ -505,9 +717,13 @@ def run_regime(prob: Problem, sq_mode: dict, quick: bool, fair: B.Fairness) -> t
     tu_r = B.screened_autotune(
         "routerU/refine", lambda c: [prob.router_unfused(c)], ru, v_rt_u, w_t, r_t
     )
-    for arm, (tc, tr) in (("router_fused", (tf_c, tf_r)), ("router_unfused", (tu_c, tu_r))):
-        fair.add(reg.name, arm, "coarse", tc)
-        fair.add(reg.name, arm, "refine", tr)
+    for arm, (tc, tr, rgrid) in (("router_fused", (tf_c, tf_r, rf)),
+                                 ("router_unfused", (tu_c, tu_r, ru))):
+        # `grid=` records live per-axis counts. The coarse list is the SAME object for both
+        # arms, so their USE_TMA / WARP_SPECIALIZE / num_ctas counts must match exactly; the
+        # refine lists differ only because each is centred on that arm's own winner.
+        fair.add(reg.name, arm, "coarse", tc, grid=rg)
+        fair.add(reg.name, arm, "refine", tr, grid=rgrid)
     rt_f_cfg = tf_c.best_cfg if tf_c.best_ms <= tf_r.best_ms else tf_r.best_cfg
     rt_u_cfg = tu_c.best_cfg if tu_c.best_ms <= tu_r.best_ms else tu_r.best_cfg
     print(
@@ -562,9 +778,10 @@ def run_regime(prob: Problem, sq_mode: dict, quick: bool, fair: B.Fairness) -> t
         mu_r = B.screened_autotune(
             "w13U/refine", lambda c: [prob.moe_unfused(c)], mru, v_moe_u, w_t, r_t
         )
-        for arm, (tc, tr) in (("w13_fused", (mf_c, mf_r)), ("w13_unfused", (mu_c, mu_r))):
-            fair.add(reg.name, arm, "coarse", tc)
-            fair.add(reg.name, arm, "refine", tr)
+        for arm, (tc, tr, rgrid) in (("w13_fused", (mf_c, mf_r, mrf)),
+                                     ("w13_unfused", (mu_c, mu_r, mru))):
+            fair.add(reg.name, arm, "coarse", tc, grid=mg)
+            fair.add(reg.name, arm, "refine", tr, grid=rgrid)
         mo_f_cfg = mf_c.best_cfg if mf_c.best_ms <= mf_r.best_ms else mf_r.best_cfg
         mo_u_cfg = mu_c.best_cfg if mu_c.best_ms <= mu_r.best_ms else mu_r.best_cfg
         print(
@@ -728,31 +945,42 @@ def run_regime(prob: Problem, sq_mode: dict, quick: bool, fair: B.Fairness) -> t
              prob.moe_half(half["moe"]["cfg"])], w_f, r_f,
         )
 
-    # ---- ISOLATION: same config, same buffers, FUSE_NORM on vs off.  There is NO extra
-    # input tensor in this fusion, so this is a pure instruction-cost measurement -- the
-    # single number that carried the C500-vs-Ada result, and the one that will say whether
-    # Hopper's warp specialization actually hides the reduction.
+    # ---- ISOLATION: same config, same buffers, FUSE_NORM on vs off, WARP_SPECIALIZE on vs
+    # off.  There is NO extra input tensor in this fusion, so this is a pure
+    # instruction-cost measurement -- the single number that carried the C500-vs-Ada result,
+    # and the one that says whether Hopper's warp specialization actually hides the
+    # reduction.  All four arms are timed inside one rotating interleave; see
+    # `specialization_study`.
     iso = {}
-    iso_fams = [("router", rt_f_cfg, prob.router_fused)]
+    iso_fams = [("router", rt_f_cfg, prob.router_fused, prob.router_unfused_same)]
     if w13:
-        iso_fams.append(("moe", mo_f_cfg, prob.moe_fused))
-    for tag, cfg, mk in iso_fams:
-        on, off, iso_pair = B.bench_pair(
-            [mk(cfg, sq_mode[tag])],
-            [
-                (lambda: K.launch_router(prob.h1, prob.b_fold, prob.logits_f, cfg,
-                                         False, EPS))
-                if tag == "router" else prob.moe_unfused_same(cfg)
-            ],
-            w_f, r_f, label=f"{reg.name}/iso_{tag}",
-        )
-        iso[tag] = {
-            "fuse_on_ms": on.p50_ms,
-            "fuse_off_same_cfg_ms": off.p50_ms,
-            "instruction_cost_pct": 100.0 * (on.p50_ms / off.p50_ms - 1.0),
-            "paired_ratio": iso_pair.get("paired_speedup_p50"),
-            "interleaved": True,
-        }
+        iso_fams.append(("moe", mo_f_cfg, prob.moe_fused, prob.moe_unfused_same))
+    for tag, cfg, mk_f, mk_u in iso_fams:
+        # The warp-specialized arm is a constexpr pairing introduced AFTER tuning, so
+        # `screen()` never saw it: WARP_SPECIALIZE=True is applied at the tuned winner's
+        # tile, and Triton's warp-specialize transform has preconditions the winner need not
+        # satisfy (the preflight probed it at num_warps=4; these winners run num_warps=8,
+        # num_stages=3, and a second warp group costs registers and SMEM).
+        #
+        # Letting that raise would propagate out of run_regime and skip ckpt_save, throwing
+        # away every tuning result already computed for this regime -- hours of work lost to
+        # the one arm that is allowed to fail. A failed specialization study is a RESULT
+        # ("warp specialization does not compile at the tuned mapping"), not a fatal error.
+        try:
+            iso[tag] = specialization_study(
+                f"{reg.name}/{tag}", cfg, mk_f, mk_u, sq_mode[tag], w_f, r_f
+            )
+        except Exception as exc:  # noqa: BLE001
+            iso[tag] = {
+                "failed": f"{type(exc).__name__}: {exc}"[:400],
+                "config": dict(cfg) if isinstance(cfg, dict) else repr(cfg),
+                "note": "specialization study aborted; tuning results for this regime kept",
+            }
+            print(f"  !! specialization_study[{tag}] failed: "
+                  f"{type(exc).__name__}: {str(exc)[:160]}", flush=True)
+            continue
+        print(f"  {iso[tag].get('verdict') or iso[tag].get('warp_specialize_skipped')}",
+              flush=True)
 
     # ---- register / SMEM report, cache cleared between compiles --------------------
     rk = getattr(K, "router_gemm_kernel", None)
@@ -835,7 +1063,27 @@ def run_regime(prob: Problem, sq_mode: dict, quick: bool, fair: B.Fairness) -> t
             "router_speedup_vs_unfused": t_rt_u.p50_ms / t_rt_h.p50_ms,
             "rel_err_router": chk["router_half"]["rel_err"],
         },
+        # The 2x2 at one shared config: {FUSE_NORM on/off} x {WARP_SPECIALIZE on/off}, all
+        # arms interleaved in one rotating loop. The key name predates the warp-specialized
+        # arms and is kept so existing readers do not break; `headline` below is the flat
+        # three-number summary the campaign is actually about.
         "isolation_fuse_on_vs_off_same_cfg": iso,
+        "headline": {
+            fam: {
+                "unfused_ms": s["ms"].get("unfused"),
+                "fused_nonspecialized_ms": s["ms"].get("fused_ws_off"),
+                "fused_warp_specialized_ms": s["ms"].get("fused_ws_on"),
+                "unfused_warp_specialized_ms": s["ms"].get("unfused_ws_on"),
+                "shared_config": s["config"],
+                "instruction_cost_pct": s.get("instruction_cost_pct"),
+                "instruction_cost_ws_pct": s.get("instruction_cost_ws_pct"),
+                "ws_gain_fused_pct": s.get("ws_gain_fused_pct"),
+                "ws_gain_unfused_pct": s.get("ws_gain_unfused_pct"),
+                "warp_specialize_available": s.get("warp_specialize_available"),
+                "verdict": s.get("verdict") or s.get("warp_specialize_skipped"),
+            }
+            for fam, s in iso.items()
+        },
         "kernel_stats": regs,
         "checks": chk,
         "grid_sizes": {
@@ -918,19 +1166,10 @@ def run_regime(prob: Problem, sq_mode: dict, quick: bool, fair: B.Fairness) -> t
             f"({t_mo_u.p50_ms / t_mo_h.p50_ms:.3f}x) | combined {t_comb_h.p50_ms:.4f} "
             f"({t_comb_u.p50_ms / t_comb_h.p50_ms:.3f}x)   [exploratory]", flush=True,
         )
-        print(
-            f"  isolation   : router +{iso['router']['instruction_cost_pct']:.2f}% | "
-            f"w13 +{iso['moe']['instruction_cost_pct']:.2f}%   (same cfg, FUSE_NORM on/off)",
-            flush=True,
-        )
     else:
         print(
             f"  half-fused  : router {t_rt_h.p50_ms:.4f} "
             f"({t_rt_u.p50_ms / t_rt_h.p50_ms:.3f}x)   [exploratory]", flush=True,
-        )
-        print(
-            f"  isolation   : router +{iso['router']['instruction_cost_pct']:.2f}%"
-            f"   (same cfg, FUSE_NORM on/off)", flush=True,
         )
     return row, tables, norm_cfg
 
@@ -1035,13 +1274,29 @@ def main() -> None:
             f"re-tune over top-3 GEMM x top-3 norm configs"
         ),
         isolation=(
-            "isolation_fuse_on_vs_off_same_cfg is the measurement that carries this family: "
-            "one kernel source, one config, one launch, same tensors, only the FUSE_NORM "
-            "constexpr flips -- it is a pure instruction-cost number, and it is what will "
-            "say whether Hopper's warp specialization hides the reduction the way the paper "
-            "assumes and neither previous device could"
+            "isolation_fuse_on_vs_off_same_cfg is the measurement that carries this family. "
+            "One kernel source, one config, one launch, the same tensors, and a 2x2 over the "
+            "two constexprs that matter: {FUSE_NORM on/off} x {WARP_SPECIALIZE on/off}, all "
+            "four arms timed inside ONE rotating interleave so drift cancels. Three of the "
+            "four are the campaign's headline (unfused, fused-nonspecialized, "
+            "fused-warp-specialized); the fourth -- unfused WITH specialization -- is the "
+            "control that stops warp specialization's own speedup being credited to the "
+            "fusion. Flat summary per regime under rows[].headline. When the stack cannot "
+            "spell warp specialization, the two specialized arms are NOT timed and say so, "
+            "rather than silently re-timing the classic mainloop under a specialized label."
+        ),
+        h200_axes=(
+            "USE_TMA / WARP_SPECIALIZE / num_ctas are overlaid on the SHARED coarse grid, so "
+            "both arms of both families search them. They are structurally symmetric here: "
+            "the fused and unfused arms are the same kernel with FUSE_NORM flipped, stage "
+            "the same SMEM (unlike F6, no extra tile) and read equal-sized operands, so "
+            "every axis that is meaningful for one is meaningful for the other. Live per-arm "
+            "counts are under grids.<regime>.<arm>.<stage>.axis_counts."
         ),
     )
+    fair.axis("f11b_router_gemm", B.h200_axis_report(getattr(K, "ROUTER_AXES", K)))
+    fair.axis("f11a_w13_gemm", B.h200_axis_report(getattr(K, "MOE_AXES", K)))
+    fair.axis("f11_norm_kernel", B.h200_axis_report(NK))
 
     rows, tables, sq_pick, sq_tab = [], {}, {}, []
 

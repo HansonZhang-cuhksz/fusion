@@ -16,7 +16,11 @@ tune to the same reduction order (recorded as `bitwise_identical`, not asserted 
 slab and the KVEC=0 loop sum the 8 experts in a different order).
 
 Run:
-    python3 glm52_h200/bench/bench_f10_merge_resadd.py [--regimes ...] [--quick]
+    python3 glm52_h200/bench/bench_f10_merge_resadd.py --gpu auto [--regimes ...] [--quick]
+
+`--gpu auto` picks the idlest of the host's GPUs and masks the process to it before
+CUDA initialises; on the 8-GPU measurement host that is the difference between timing an
+idle card and timing one another tenant is already using.
 """
 
 from __future__ import annotations
@@ -151,8 +155,8 @@ def _tune2(make_chain, tag, verify, warmup, rep, quick, fair, regime):
     best_cfg, best_ms = (
         (tr.best_cfg, tr.best_ms) if tr.best_ms <= tc.best_ms else (tc.best_cfg, tc.best_ms)
     )
-    fair.add(regime, tag, "coarse", tc)
-    fair.add(regime, tag, "refine", tr)
+    fair.add(regime, tag, "coarse", tc, grid=cg)
+    fair.add(regime, tag, "refine", tr, grid=rg)
     print(
         f"    [{tag}] coarse {tc.n_tried} cfgs ({tc.n_failed} rej) -> {tc.best_ms:.4f} ms"
         f" | refine {tr.n_tried} ({tr.n_failed} rej) -> {tr.best_ms:.4f} ms"
@@ -412,7 +416,18 @@ def main() -> None:
                 "the same reduction order -- recorded per regime as `bitwise_identical`, "
                 "not asserted; the fused side skips only the merged intermediate `m`, "
                 "which has no other consumer in the layer",
+        h200_axes=(
+            "NONE of the sm_90 mapping axes apply to this family, on EITHER arm. "
+            "merge_resadd_kernel is a weighted top-k reduction over [T,8,H] -- a strided "
+            "vector pass, not a GEMM: there is no MMA pipeline for warp specialization to "
+            "overlap against, no k-loop tile for a TMA descriptor, and no SMEM tile whose "
+            "budget a cluster would enlarge. Both arms are therefore offered the same empty "
+            "set, and their axis_counts are legitimately zero. What this family does gain "
+            "from the H200 is the 60 MB L2, which is a residency effect the traffic model "
+            "and the per-regime `*_fits_l2` fields already carry."
+        ),
     )
+    fair.axis("f10_merge_resadd", B.h200_axis_report(K))
 
     rows, tables, checks, timings, pair_meta = [], {}, {}, {}, None
 
