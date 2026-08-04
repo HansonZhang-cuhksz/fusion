@@ -1,0 +1,149 @@
+# split from f04f05.log (fusion #5 view) by tools/split_h200_log.py -- readable lines only.
+# Triton compiler assertions, MLIR reproducers and IR dumps live in f04f05_compiler.log.gz
+# /usr/bin/python /home/guancheng/zsh/fusion/glm52_h200/bench/bench_f04f05_norm_router.py
+# started 2026-08-04 10:29:26
+[harness] NVIDIA H200 sm9.0 | 132 SM | L2 60 MB | flush 256 MB | tick 3.2e-05 ms | hopper feats [tma,clusters,warp_specialize] | preflight ok | results -> /home/guancheng/zsh/fusion/results/h200
+[hw] NVIDIA H200  sm_90  132 SM  140 GB  uuid 6c4cc3d3-e0bc-949d-1
+[hw] driver 580.173.02  vbios 96.00.A5.00.03  cuda 13.0  torch 2.11.0+cu130  triton 3.6.0  python 3.10.12
+[hw] clocks SM 1980 MHz / 1980 MHz max (100%)  MEM 3201 MHz / 3201 MHz max (100%)  -> unlocked
+[hw] pstate P0  power 120.05 W of 700.00 W  temp 32 C (mem 30)  util 0 %
+[hw] ecc Enabled  mig Disabled  persistence Enabled  compute-mode Default  pcie gen5x16
+[hw] host hgx-h200-233  192 cpu  visible GPUs 1  CUDA_VISIBLE_DEVICES=3
+[hw] physical GPU: nvidia-smi index 3  cuda ordinal 0  matched by uuid  order=PCI_BUS_ID
+[hw] clock basis: application clocks equal their defaults
+[env] NVIDIA H200 (sm_90) | 132 SM | warp 32 | smem 232448 B | regs/SM 65536 | threads/SM 2048 | L2 60 MB | HBM 139 GB | torch 2.11.0+cu130 triton 3.6.0 cuda 13.0
+[preflight] 2026-08-04 10:29:18 | baseline_elementwise=ok, tl_dot_bf16=ok, warp_specialize_tl_range=ok, warp_specialize_num_consumer_groups=no, tma_host_descriptor=ok, tma_device_descriptor=ok, thread_block_cluster_num_ctas=ok
+[preflight] timer tick 0.032 us | launch 9.078857621976308 us | L2 60 MB
+[smem] ceiling 232448 B | staging model max(2, num_stages - 0) * 2*BK*(BM+BN) (fitted to 5 preflight smem_probe observations)
+[hopper] NVIDIA H200 (sm_90) gpu=6c4cc3d3 | tma=True(device) ws=True(range) clusters=True wgmma=True | src preflight | probe skipped
+    [h200 axes] glm52_h200.kernels.norm_router: offering 2 overlay(s) to BOTH arms: num_ctas=2, warp_specialize=True
+    [grid f04f05/gemm] 489 legal -> 240 sampled (budget 240)
+    [grid f04f05/gemm] 489 legal -> 240 sampled (budget 240)
+  == decode_bs1 (T=1) ==
+    [grid f04f05/gemm] 489 legal -> 240 sampled (budget 240)
+    [grid f04f05/gemm] 489 legal -> 240 sampled (budget 240)
+    grids: gemm=240 fused=557 fused(BE=256, FUSE_TOPK)=301 norm=83 topk=42
+    [screen norm        ]  83 offered ->  83 valid (0 compile-fail, 0 wrong-answer)
+    [norm        ]  83/83 cfgs timed -> 0.0218 ms  {'BLOCK_M': 2, 'BLOCK_K': 1024, 'BLOCK_E': 256, 'num_warps': 8, 'num_stages': 2}  [1s]
+    [screen add+norm    ]  83 offered ->  83 valid (0 compile-fail, 0 wrong-answer)
+    [add+norm    ]  83/83 cfgs timed -> 0.0220 ms  {'BLOCK_M': 4, 'BLOCK_K': 1024, 'BLOCK_E': 256, 'num_warps': 4, 'num_stages': 2}  [2s]
+    [screen router      ] 240 offered -> 226 valid (14 compile-fail, 0 wrong-answer)
+    [router      ] 226/240 cfgs timed -> 0.0327 ms  {'BLOCK_M': 16, 'BLOCK_K': 64, 'BLOCK_E': 128, 'num_warps': 8, 'num_stages': 4, 'num_ctas': 2}  [4s]
+    [screen topk        ]  42 offered ->  42 valid (0 compile-fail, 0 wrong-answer)
+    [topk        ]  42/42 cfgs timed -> 0.0217 ms  {'BLOCK_M': 2, 'BLOCK_K': 32, 'BLOCK_E': 256, 'num_warps': 2, 'num_stages': 2}  [1s]
+    [screen F5          ] 557 offered -> 349 valid (208 compile-fail, 0 wrong-answer)
+    [F5          ] 349/557 cfgs timed -> 0.0468 ms  {'BLOCK_M': 16, 'BLOCK_K': 128, 'BLOCK_E': 32, 'num_warps': 8, 'num_stages': 3, 'NORM_BK': 256}  [28s]
+    [screen F5+topk     ] 301 offered -> 200 valid (101 compile-fail, 0 wrong-answer)
+    [F5+topk     ] 200/301 cfgs timed -> 0.0720 ms  {'BLOCK_M': 16, 'BLOCK_K': 128, 'BLOCK_E': 256, 'num_warps': 8, 'num_stages': 3, 'warp_specialize': True, 'NORM_BK': 256}  [31s]
+    [U5        ] joint 9 combos -> 0.0396 ms [0s]
+    [U5+topk   ] joint 18 combos -> 0.0444 ms [0s]
+  == decode_bs32 (T=32) ==
+    [grid f04f05/gemm] 489 legal -> 240 sampled (budget 240)
+    [grid f04f05/gemm] 489 legal -> 240 sampled (budget 240)
+    grids: gemm=240 fused=557 fused(BE=256, FUSE_TOPK)=301 norm=83 topk=42
+    [screen norm        ]  83 offered ->  83 valid (0 compile-fail, 0 wrong-answer)
+    [norm        ]  83/83 cfgs timed -> 0.0079 ms  {'BLOCK_M': 1, 'BLOCK_K': 2048, 'BLOCK_E': 256, 'num_warps': 16, 'num_stages': 2, 'EVICT': 1}  [1s]
+    [screen add+norm    ]  83 offered ->  83 valid (0 compile-fail, 0 wrong-answer)
+    [add+norm    ]  83/83 cfgs timed -> 0.0080 ms  {'BLOCK_M': 1, 'BLOCK_K': 2048, 'BLOCK_E': 256, 'num_warps': 16, 'num_stages': 2}  [1s]
+    [screen router      ] 240 offered -> 226 valid (14 compile-fail, 0 wrong-answer)
+    [router      ] 226/240 cfgs timed -> 0.0315 ms  {'BLOCK_M': 16, 'BLOCK_K': 64, 'BLOCK_E': 128, 'num_warps': 8, 'num_stages': 4, 'num_ctas': 2}  [3s]
+    [screen topk        ]  42 offered ->  42 valid (0 compile-fail, 0 wrong-answer)
+    [topk        ]  42/42 cfgs timed -> 0.0072 ms  {'BLOCK_M': 1, 'BLOCK_K': 32, 'BLOCK_E': 256, 'num_warps': 1, 'num_stages': 2}  [0s]
+    [screen F5          ] 557 offered -> 349 valid (208 compile-fail, 0 wrong-answer)
+    [F5          ] 349/557 cfgs timed -> 0.0479 ms  {'BLOCK_M': 16, 'BLOCK_K': 128, 'BLOCK_E': 32, 'num_warps': 8, 'num_stages': 3, 'NORM_BK': 256}  [20s]
+    [screen F5+topk     ] 301 offered -> 200 valid (101 compile-fail, 0 wrong-answer)
+    [F5+topk     ] 200/301 cfgs timed -> 0.0748 ms  {'BLOCK_M': 16, 'BLOCK_K': 128, 'BLOCK_E': 256, 'num_warps': 8, 'num_stages': 3, 'NORM_BK': 256}  [26s]
+    [U5        ] joint 9 combos -> 0.0967 ms [0s]
+    [U5+topk   ] joint 18 combos -> 0.0439 ms [0s]
+  == decode_bs256 (T=256) ==
+    [grid f04f05/gemm] 489 legal -> 240 sampled (budget 240)
+    [grid f04f05/gemm] 489 legal -> 240 sampled (budget 240)
+    grids: gemm=240 fused=557 fused(BE=256, FUSE_TOPK)=301 norm=83 topk=42
+    [screen norm        ]  83 offered ->  83 valid (0 compile-fail, 0 wrong-answer)
+    [norm        ]  83/83 cfgs timed -> 0.0088 ms  {'BLOCK_M': 1, 'BLOCK_K': 2048, 'BLOCK_E': 256, 'num_warps': 8, 'num_stages': 2, 'EVICT': 1}  [0s]
+    [screen add+norm    ]  83 offered ->  83 valid (0 compile-fail, 0 wrong-answer)
+    [add+norm    ]  83/83 cfgs timed -> 0.0099 ms  {'BLOCK_M': 1, 'BLOCK_K': 2048, 'BLOCK_E': 256, 'num_warps': 8, 'num_stages': 2, 'EVICT': 1}  [1s]
+    [screen router      ] 240 offered -> 226 valid (14 compile-fail, 0 wrong-answer)
+    [router      ] 226/240 cfgs timed -> 0.0312 ms  {'BLOCK_M': 16, 'BLOCK_K': 64, 'BLOCK_E': 128, 'num_warps': 8, 'num_stages': 4, 'num_ctas': 2}  [2s]
+    [screen topk        ]  42 offered ->  42 valid (0 compile-fail, 0 wrong-answer)
+    [topk        ]  42/42 cfgs timed -> 0.0078 ms  {'BLOCK_M': 1, 'BLOCK_K': 32, 'BLOCK_E': 256, 'num_warps': 1, 'num_stages': 2}  [0s]
+    [screen F5          ] 557 offered -> 349 valid (208 compile-fail, 0 wrong-answer)
+    [F5          ] 349/557 cfgs timed -> 0.0501 ms  {'BLOCK_M': 16, 'BLOCK_K': 128, 'BLOCK_E': 64, 'num_warps': 8, 'num_stages': 3, 'warp_specialize': True, 'NORM_BK': 256}  [19s]
+    [screen F5+topk     ] 301 offered -> 200 valid (101 compile-fail, 0 wrong-answer)
+    [F5+topk     ] 200/301 cfgs timed -> 0.0888 ms  {'BLOCK_M': 16, 'BLOCK_K': 128, 'BLOCK_E': 256, 'num_warps': 16, 'num_stages': 3}  [26s]
+    [U5        ] joint 9 combos -> 0.0367 ms [0s]
+    [U5+topk   ] joint 18 combos -> 0.0417 ms [0s]
+  == decode_bs512 (T=512) ==
+    [grid f04f05/gemm] 489 legal -> 240 sampled (budget 240)
+    [grid f04f05/gemm] 489 legal -> 240 sampled (budget 240)
+    grids: gemm=240 fused=557 fused(BE=256, FUSE_TOPK)=301 norm=83 topk=42
+    [screen norm        ]  83 offered ->  83 valid (0 compile-fail, 0 wrong-answer)
+    [norm        ]  83/83 cfgs timed -> 0.0096 ms  {'BLOCK_M': 1, 'BLOCK_K': 2048, 'BLOCK_E': 256, 'num_warps': 8, 'num_stages': 2}  [0s]
+    [screen add+norm    ]  83 offered ->  83 valid (0 compile-fail, 0 wrong-answer)
+    [add+norm    ]  83/83 cfgs timed -> 0.0121 ms  {'BLOCK_M': 1, 'BLOCK_K': 2048, 'BLOCK_E': 256, 'num_warps': 8, 'num_stages': 2}  [0s]
+    [screen router      ] 240 offered -> 226 valid (14 compile-fail, 0 wrong-answer)
+    [router      ] 226/240 cfgs timed -> 0.0324 ms  {'BLOCK_M': 16, 'BLOCK_K': 64, 'BLOCK_E': 128, 'num_warps': 8, 'num_stages': 4, 'num_ctas': 2}  [2s]
+    [screen topk        ]  42 offered ->  42 valid (0 compile-fail, 0 wrong-answer)
+    [topk        ]  42/42 cfgs timed -> 0.0085 ms  {'BLOCK_M': 1, 'BLOCK_K': 32, 'BLOCK_E': 256, 'num_warps': 1, 'num_stages': 2}  [0s]
+    [screen F5          ] 557 offered -> 349 valid (208 compile-fail, 0 wrong-answer)
+    [F5          ] 349/557 cfgs timed -> 0.0507 ms  {'BLOCK_M': 16, 'BLOCK_K': 128, 'BLOCK_E': 64, 'num_warps': 8, 'num_stages': 3, 'warp_specialize': True, 'NORM_BK': 256}  [19s]
+    [screen F5+topk     ] 301 offered -> 200 valid (101 compile-fail, 0 wrong-answer)
+    [F5+topk     ] 200/301 cfgs timed -> 0.0756 ms  {'BLOCK_M': 16, 'BLOCK_K': 128, 'BLOCK_E': 256, 'num_warps': 8, 'num_stages': 3, 'warp_specialize': True, 'NORM_BK': 256}  [26s]
+    [U5        ] joint 9 combos -> 0.0379 ms [0s]
+    [U5+topk   ] joint 18 combos -> 0.0430 ms [0s]
+  == decode_bs1024 (T=1024) ==
+    [grid f04f05/gemm] 489 legal -> 240 sampled (budget 240)
+    [grid f04f05/gemm] 489 legal -> 240 sampled (budget 240)
+    grids: gemm=240 fused=557 fused(BE=256, FUSE_TOPK)=301 norm=83 topk=42
+    [screen norm        ]  83 offered ->  83 valid (0 compile-fail, 0 wrong-answer)
+    [norm        ]  83/83 cfgs timed -> 0.0216 ms  {'BLOCK_M': 8, 'BLOCK_K': 2048, 'BLOCK_E': 256, 'num_warps': 16, 'num_stages': 2}  [1s]
+    [screen add+norm    ]  83 offered ->  83 valid (0 compile-fail, 0 wrong-answer)
+    [add+norm    ]  83/83 cfgs timed -> 0.0239 ms  {'BLOCK_M': 4, 'BLOCK_K': 2048, 'BLOCK_E': 256, 'num_warps': 8, 'num_stages': 2, 'EVICT': 1}  [1s]
+    [screen router      ] 240 offered -> 226 valid (14 compile-fail, 0 wrong-answer)
+    [router      ] 226/240 cfgs timed -> 0.0356 ms  {'BLOCK_M': 16, 'BLOCK_K': 128, 'BLOCK_E': 256, 'num_warps': 8, 'num_stages': 4, 'num_ctas': 2}  [3s]
+    [screen topk        ]  42 offered ->  42 valid (0 compile-fail, 0 wrong-answer)
+    [topk        ]  42/42 cfgs timed -> 0.0211 ms  {'BLOCK_M': 4, 'BLOCK_K': 32, 'BLOCK_E': 256, 'num_warps': 1, 'num_stages': 2}  [0s]
+    [screen F5          ] 557 offered -> 349 valid (208 compile-fail, 0 wrong-answer)
+    [F5          ] 349/557 cfgs timed -> 0.0781 ms  {'BLOCK_M': 16, 'BLOCK_K': 128, 'BLOCK_E': 256, 'num_warps': 16, 'num_stages': 3, 'NORM_BK': 256}  [28s]
+    [screen F5+topk     ] 301 offered -> 200 valid (101 compile-fail, 0 wrong-answer)
+    [F5+topk     ] 200/301 cfgs timed -> 0.0766 ms  {'BLOCK_M': 16, 'BLOCK_K': 128, 'BLOCK_E': 256, 'num_warps': 8, 'num_stages': 3, 'NORM_BK': 256}  [25s]
+    [U5        ] joint 9 combos -> 0.0439 ms [0s]
+    [U5+topk   ] joint 18 combos -> 0.0526 ms [0s]
+  == prefill_t2048 (T=2048) ==
+    [grid f04f05/gemm] 489 legal -> 240 sampled (budget 240)
+    [grid f04f05/gemm] 489 legal -> 240 sampled (budget 240)
+    grids: gemm=240 fused=557 fused(BE=256, FUSE_TOPK)=301 norm=83 topk=42
+    [screen norm        ]  83 offered ->  83 valid (0 compile-fail, 0 wrong-answer)
+    [norm        ]  83/83 cfgs timed -> 0.0193 ms  {'BLOCK_M': 4, 'BLOCK_K': 2048, 'BLOCK_E': 256, 'num_warps': 8, 'num_stages': 2}  [1s]
+    [screen add+norm    ]  83 offered ->  83 valid (0 compile-fail, 0 wrong-answer)
+    [add+norm    ]  83/83 cfgs timed -> 0.0309 ms  {'BLOCK_M': 2, 'BLOCK_K': 2048, 'BLOCK_E': 256, 'num_warps': 4, 'num_stages': 2, 'EVICT': 1}  [1s]
+    [screen router      ] 240 offered -> 226 valid (14 compile-fail, 0 wrong-answer)
+    [router      ] 226/240 cfgs timed -> 0.0437 ms  {'BLOCK_M': 16, 'BLOCK_K': 128, 'BLOCK_E': 256, 'num_warps': 4, 'num_stages': 3}  [6s]
+    [screen topk        ]  42 offered ->  42 valid (0 compile-fail, 0 wrong-answer)
+    [topk        ]  42/42 cfgs timed -> 0.0106 ms  {'BLOCK_M': 2, 'BLOCK_K': 32, 'BLOCK_E': 256, 'num_warps': 1, 'num_stages': 2}  [0s]
+    [screen F5          ] 557 offered -> 349 valid (208 compile-fail, 0 wrong-answer)
+    [F5          ] 349/557 cfgs timed -> 0.0812 ms  {'BLOCK_M': 16, 'BLOCK_K': 128, 'BLOCK_E': 256, 'num_warps': 16, 'num_stages': 3, 'warp_specialize': True, 'NORM_BK': 256}  [22s]
+    [screen F5+topk     ] 301 offered -> 200 valid (101 compile-fail, 0 wrong-answer)
+    [F5+topk     ] 200/301 cfgs timed -> 0.0799 ms  {'BLOCK_M': 16, 'BLOCK_K': 128, 'BLOCK_E': 256, 'num_warps': 8, 'num_stages': 3, 'warp_specialize': True, 'NORM_BK': 256}  [25s]
+    [U5        ] joint 9 combos -> 0.0595 ms [0s]
+    [U5+topk   ] joint 18 combos -> 0.0657 ms [0s]
+  == prefill_t8192 (T=8192) ==
+    [grid f04f05/gemm] 489 legal -> 240 sampled (budget 240)
+    [grid f04f05/gemm] 489 legal -> 240 sampled (budget 240)
+    grids: gemm=240 fused=557 fused(BE=256, FUSE_TOPK)=301 norm=83 topk=42
+    [screen norm        ]  83 offered ->  83 valid (0 compile-fail, 0 wrong-answer)
+    [norm        ]  83/83 cfgs timed -> 0.0584 ms  {'BLOCK_M': 1, 'BLOCK_K': 2048, 'BLOCK_E': 256, 'num_warps': 8, 'num_stages': 2}  [0s]
+    [screen add+norm    ]  83 offered ->  83 valid (0 compile-fail, 0 wrong-answer)
+    [add+norm    ]  83/83 cfgs timed -> 0.1030 ms  {'BLOCK_M': 1, 'BLOCK_K': 2048, 'BLOCK_E': 256, 'num_warps': 8, 'num_stages': 2}  [1s]
+    [screen router      ] 240 offered -> 226 valid (14 compile-fail, 0 wrong-answer)
+    [router      ] 226/240 cfgs timed -> 0.0694 ms  {'BLOCK_M': 64, 'BLOCK_K': 128, 'BLOCK_E': 128, 'num_warps': 8, 'num_stages': 2, 'warp_specialize': True}  [8s]
+    [screen topk        ]  42 offered ->  42 valid (0 compile-fail, 0 wrong-answer)
+    [topk        ]  42/42 cfgs timed -> 0.0207 ms  {'BLOCK_M': 2, 'BLOCK_K': 32, 'BLOCK_E': 256, 'num_warps': 1, 'num_stages': 2}  [0s]
+    [screen F5          ] 557 offered -> 349 valid (208 compile-fail, 0 wrong-answer)
+    [F5          ] 349/557 cfgs timed -> 0.1563 ms  {'BLOCK_M': 32, 'BLOCK_K': 128, 'BLOCK_E': 256, 'num_warps': 8, 'num_stages': 2, 'EVICT': 1, 'warp_specialize': True}  [26s]
+    [screen F5+topk     ] 301 offered -> 200 valid (101 compile-fail, 0 wrong-answer)
+    [F5+topk     ] 200/301 cfgs timed -> 0.1669 ms  {'BLOCK_M': 32, 'BLOCK_K': 128, 'BLOCK_E': 256, 'num_warps': 8, 'num_stages': 2, 'EVICT': 1, 'warp_specialize': True}  [51s]
+    [U5        ] joint 9 combos -> 0.1895 ms [0s]
+    [U5+topk   ] joint 18 combos -> 0.1469 ms [0s]
+wrote f04f05_norm_router.json
+regime          variant       fused   unfused   paired  ceiling     torch

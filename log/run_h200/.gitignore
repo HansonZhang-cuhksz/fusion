@@ -1,1 +1,13 @@
+# The raw f04f05 log is 107.7 MB, over GitHub's 100 MiB limit, so it stays out of git.
+# It is not lost: `tools/split_h200_log.py` reproduces its entire content as three
+# committed files, and they concatenate back to the same information --
+#
+#   f04.log                  readable log, fusion #4 view   (147 lines)
+#   f05.log                  readable log, fusion #5 view   (147 lines)
+#   f04f05_compiler.log.gz   every Triton assertion, MLIR reproducer and IR dump (9.0 MB)
+#
+# The 1000:1 split is not an accident of formatting: only 189 of 1,240,800 lines are log.
+# The rest is Triton's warp-specialization pass failing to compile these kernels on sm_90
+# (`WSLowerToken.cpp:73 ... Assertion 'false' failed`, once per attempted config). That is a
+# RESULT, which is why it is archived rather than discarded -- see LOG-15.
 f04f05.log
