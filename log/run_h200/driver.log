@@ -962,3 +962,606 @@
 13:51:41   2. /home/guancheng/zsh/fusion/glm52_h200/preflight_h200.json
 13:51:41   3. /home/guancheng/zsh/fusion/log/run_h200             (driver.log + one log per family)
 13:51:41   total wall 3.37 h
+16:22:24 ============================================================================================
+16:22:24 GPU SELECTION -- 8 card(s) on this host
+16:22:24 ============================================================================================
+16:22:24   rank idx   util   used GB   free GB proc  temp  state
+16:22:24   -----------------------------------------------------
+16:22:24      0   1     0%       0.0     139.8    0    35  idle
+16:22:24      1   2     0%       0.0     139.8    0    32  idle
+16:22:24      2   3     0%       0.0     139.8    0    29  idle
+16:22:24      3   4     0%       0.0     139.8    0    32  idle
+16:22:24      4   5     0%       0.0     139.8    0    32  idle
+16:22:24      5   6     0%       0.0     139.8    0    33  idle
+16:22:24      6   7     0%       0.0     139.8    0    29  idle
+16:22:24      7   0     0%      47.2      92.6    2    32  BUSY: 2 other compute process(es): pid 3836753 VLLM::StageEngineCoreProc_DP0 (42.7 GB), pid 3838750 VLLM::Stag
+16:22:24        gpu 1  NVIDIA H200  uuid GPU-59aa5198-70aa-0e6f-16b9-a6d483af9c4e
+16:22:24        gpu 2  NVIDIA H200  uuid GPU-3eb2bc50-6290-2508-4dc5-e01f05c85e5f
+16:22:24        gpu 3  NVIDIA H200  uuid GPU-6c4cc3d3-e0bc-949d-16be-822af843e49f
+16:22:24        gpu 4  NVIDIA H200  uuid GPU-c20464a7-77aa-f6f2-9a70-207c42f6b4a1
+16:22:24        gpu 5  NVIDIA H200  uuid GPU-2c1d24fb-c9a6-9d6c-fa91-28ea2b50e17f
+16:22:24        gpu 6  NVIDIA H200  uuid GPU-338e7fe0-5ca6-f37f-b9b6-ea4ea6c5358b
+16:22:24        gpu 7  NVIDIA H200  uuid GPU-3aa19cef-f7a3-bd28-1b5e-2e6d8b8ca670
+16:22:24        gpu 0  NVIDIA H200  uuid GPU-b2318e71-edbf-aa1b-dcf3-3cc3e6ea7db0
+16:22:24 
+16:22:24   [gpu] pinning GPU 1 (NVIDIA H200) uuid GPU-59aa5198-70aa-0e6f-16b9-a6d483af9c4e
+16:22:24   [gpu] idlest of 8: 0% utilization, 0.0 GB used, 0 other compute process(es)
+16:22:24   [gpu] every child gets CUDA_VISIBLE_DEVICES=1 and CUDA_DEVICE_ORDER=PCI_BUS_ID, so each one sees exactly this card as cuda:0 -- which is why no bench needed changing.
+16:22:24 !! cached preflight does not describe the pinned GPU: same model but a different card (probe 6c4cc3d3-e0bc-949d-16be-822af843e49f, pinned 59aa5198-70aa-0e6f-16b9-a6d483af9c4e) -- re-probing before anything is tuned.
+16:22:24     running preflight: /usr/bin/python /home/guancheng/zsh/fusion/glm52_h200/preflight.py --gpu 1
+16:22:36     preflight exit=0, log -> /home/guancheng/zsh/fusion/log/run_h200/preflight.log
+16:22:36 ============================================================================================
+16:22:36 GLM-5.2 MoE fusion study -- H200 campaign
+16:22:36 ============================================================================================
+16:22:36   repo            /home/guancheng/zsh/fusion
+16:22:36   results dir     /home/guancheng/zsh/fusion/results/h200
+16:22:36   driver started  2026-08-04 16:22:36
+16:22:36   gpu             1  uuid GPU-59aa5198-70aa-0e6f-16b9-a6d483af9c4e  (idlest of 8: 0% utilization, 0.0 GB used, 0 other compute process(es))
+16:22:36 
+16:22:36   [device] NVIDIA H200  sm_90 | 132 SM | warp 32 | smem/block 232448 B | regs/SM 65536 | L2 60 MB | VRAM 139.8 GB
+16:22:36   [stack]  torch 2.11.0+cu130 (cuda 13.0) | triton 3.6.0
+16:22:36   [triton features, compiled AND launched] +baseline_elementwise +tl_dot_bf16 +warp_specialize_tl_range -warp_specialize_num_consumer_groups +tma_host_descriptor +tma_device_descriptor +thread_block_cluster_num_ctas
+16:22:36   [calib]  copy_1024MB_GBs=4239  rmw_1024MB_GBs=4239  read_1024MB_GBs=4591  copy_2048MB_GBs=4246  rmw_2048MB_GBs=4252  read_2048MB_GBs=4645   cublas_4096x16384x6144_TFs=825.3  triton_4096x16384x6144_TFs=735.0  cublas_8192x16384x6144_TFs=779.8  triton_8192x16384x6144_TFs=667.1
+16:22:36   [calib]  launch 9.44 us | timer tick 0.032 us (measured by preflight)
+16:22:36   [capacity] expert weights 18.0 GB | fit=True | whole layer feasible=True
+16:22:36 
+16:22:36   [hwinfo@start] GPU0 NVIDIA H200 | sm 1980/1980 MHz | mem 3201/3201 MHz | 32 C | 122.68/700 W | used 48377/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000000
+16:22:36   [hwinfo@start] GPU1 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 35 C | 78.9/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+16:22:36   [hwinfo@start] GPU2 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 32 C | 75.98/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+16:22:36   [hwinfo@start] GPU3 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 29 C | 77.26/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+16:22:36   [hwinfo@start] GPU4 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 32 C | 77.75/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+16:22:36   [hwinfo@start] GPU5 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 32 C | 75.18/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+16:22:36   [hwinfo@start] GPU6 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 33 C | 77.26/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+16:22:36   [hwinfo@start] GPU7 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 29 C | 77.54/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+16:22:36 
+16:22:36   [gate] sm_90 confirmed (NVIDIA H200). Hopper paths (TMA, clusters, warp specialisation) are eligible; each is still chosen at RUNTIME from the probe.
+16:22:37 !! quarantined _ckpt/f04f05_norm_router/decode_bs1.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260804_162237/_ckpt/f04f05_norm_router/decode_bs1.json
+16:22:37 !! quarantined _ckpt/f04f05_norm_router/decode_bs1024.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260804_162237/_ckpt/f04f05_norm_router/decode_bs1024.json
+16:22:37 !! quarantined _ckpt/f04f05_norm_router/decode_bs256.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260804_162237/_ckpt/f04f05_norm_router/decode_bs256.json
+16:22:37 !! quarantined _ckpt/f04f05_norm_router/decode_bs32.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260804_162237/_ckpt/f04f05_norm_router/decode_bs32.json
+16:22:37 !! quarantined _ckpt/f04f05_norm_router/decode_bs512.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260804_162237/_ckpt/f04f05_norm_router/decode_bs512.json
+16:22:37 !! quarantined _ckpt/f04f05_norm_router/prefill_t2048.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260804_162237/_ckpt/f04f05_norm_router/prefill_t2048.json
+16:22:37 !! quarantined _ckpt/f04f05_norm_router/prefill_t8192.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260804_162237/_ckpt/f04f05_norm_router/prefill_t8192.json
+16:22:37 !! quarantined _ckpt/f06_upgate_swiglu/decode_bs1.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260804_162237/_ckpt/f06_upgate_swiglu/decode_bs1.json
+16:22:37 !! quarantined _ckpt/f06_upgate_swiglu/decode_bs1024.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260804_162237/_ckpt/f06_upgate_swiglu/decode_bs1024.json
+16:22:37 !! quarantined _ckpt/f06_upgate_swiglu/decode_bs256.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260804_162237/_ckpt/f06_upgate_swiglu/decode_bs256.json
+16:22:37 !! quarantined _ckpt/f06_upgate_swiglu/decode_bs32.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260804_162237/_ckpt/f06_upgate_swiglu/decode_bs32.json
+16:22:37 !! quarantined _ckpt/f06_upgate_swiglu/decode_bs512.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260804_162237/_ckpt/f06_upgate_swiglu/decode_bs512.json
+16:22:37 !! quarantined _ckpt/f06_upgate_swiglu/prefill_t2048.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260804_162237/_ckpt/f06_upgate_swiglu/prefill_t2048.json
+16:22:37 !! quarantined _ckpt/f06_upgate_swiglu/prefill_t8192.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260804_162237/_ckpt/f06_upgate_swiglu/prefill_t8192.json
+16:22:37 !! quarantined _ckpt/f08f09_down_merge_resadd/decode_bs1.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260804_162237/_ckpt/f08f09_down_merge_resadd/decode_bs1.json
+16:22:37 !! quarantined _ckpt/f08f09_down_merge_resadd/decode_bs1024.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260804_162237/_ckpt/f08f09_down_merge_resadd/decode_bs1024.json
+16:22:37 !! quarantined _ckpt/f08f09_down_merge_resadd/decode_bs256.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260804_162237/_ckpt/f08f09_down_merge_resadd/decode_bs256.json
+16:22:37 !! quarantined _ckpt/f08f09_down_merge_resadd/decode_bs32.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260804_162237/_ckpt/f08f09_down_merge_resadd/decode_bs32.json
+16:22:37 !! quarantined _ckpt/f08f09_down_merge_resadd/decode_bs512.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260804_162237/_ckpt/f08f09_down_merge_resadd/decode_bs512.json
+16:22:37 !! quarantined _ckpt/f08f09_down_merge_resadd/prefill_t2048.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260804_162237/_ckpt/f08f09_down_merge_resadd/prefill_t2048.json
+16:22:37 !! quarantined _ckpt/f08f09_down_merge_resadd/prefill_t8192.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260804_162237/_ckpt/f08f09_down_merge_resadd/prefill_t8192.json
+16:22:37 !! quarantined _ckpt/f11_lazy_prenorm/decode_bs256.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260804_162237/_ckpt/f11_lazy_prenorm/decode_bs256.json
+16:22:37 !! quarantined _ckpt/f11_lazy_prenorm/decode_bs32.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260804_162237/_ckpt/f11_lazy_prenorm/decode_bs32.json
+16:22:37 !! quarantined _ckpt/layer_cfgs/decode_bs1.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260804_162237/_ckpt/layer_cfgs/decode_bs1.json
+16:22:37 !! quarantined _ckpt/layer_cfgs/decode_bs1024.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260804_162237/_ckpt/layer_cfgs/decode_bs1024.json
+16:22:37 !! quarantined _ckpt/layer_cfgs/decode_bs256.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260804_162237/_ckpt/layer_cfgs/decode_bs256.json
+16:22:37 !! quarantined _ckpt/layer_cfgs/decode_bs32.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260804_162237/_ckpt/layer_cfgs/decode_bs32.json
+16:22:37 !! quarantined _ckpt/layer_cfgs/decode_bs512.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260804_162237/_ckpt/layer_cfgs/decode_bs512.json
+16:22:37 !! quarantined _ckpt/layer_cfgs/prefill_t2048.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260804_162237/_ckpt/layer_cfgs/prefill_t2048.json
+16:22:37 !! quarantined _ckpt/layer_cfgs/prefill_t8192.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260804_162237/_ckpt/layer_cfgs/prefill_t8192.json
+16:22:37    (30 file(s) moved to _quarantine_foreign_20260804_162237 -- they will be re-measured)
+16:22:37 ============================================================================================
+16:22:37 RUNNING 8 FAMILIES SERIALLY (order = cheapest failure first; whole-layer last)
+16:22:37 ============================================================================================
+16:22:37 
+16:22:37 --- [1/8] f03: #3  ResAdd+RMSNorm ----------------------
+16:22:37   note    pure vector; smoke-tests the whole stack
+16:22:37   skip: f03_resadd_rmsnorm.json already exists on this device (complete). --force-rerun to redo it.
+16:22:37 
+16:22:37 --- [2/8] f10: #10 ExpertMerge+ResAdd ------------------
+16:22:37   note    needs the [T*topk, 6144] intermediate, not the expert weights
+16:22:37   skip: f10_merge_resadd.json already exists on this device (complete). --force-rerun to redo it.
+16:22:37 
+16:22:37 --- [3/8] f01: #1  o_proj+ResAdd -----------------------
+16:22:37   note    first GEMM family; K=16384 prefill / 32768 decode
+16:22:37   skip: f01_oproj_resadd.json already exists on this device (complete). --force-rerun to redo it.
+16:22:37 
+16:22:37 --- [4/8] f04f05: #4  ResAdd+RMSNorm+Router / #5 RMSNorm+Router 
+16:22:37   skip: f04f05_norm_router.json already exists on this device (complete). --force-rerun to redo it.
+16:22:37 
+16:22:37 --- [5/8] f11: #11a LazyPreNorm->w13 / #11b LazyPreNorm->router 
+16:22:37   note    #11a needs the 12 GB w13; fits here, unlike the 4060
+16:22:37   skip: f11_lazy_prenorm.json already exists on this device (complete). --force-rerun to redo it.
+16:22:37 
+16:22:37 --- [6/8] f06: #6  UpGate+SwiGLU -----------------------
+16:22:37   note    needs 256-expert w13 (12 GB)
+16:22:37   skip: f06_upgate_swiglu.json already exists on this device (complete). --force-rerun to redo it.
+16:22:37 
+16:22:37 --- [7/8] f08f09: #8  Down+ExpertMerge / #9 Down+Merge+ResAdd2 
+16:22:37   note    needs 256-expert w2 (6 GB); four variants x seven regimes
+16:22:37   skip: f08f09_down_merge_resadd.json already exists on this device (complete). --force-rerun to redo it.
+16:22:37 
+16:22:37 --- [8/8] layer: whole-layer combination benchmark -------
+16:22:37   note    LAST: most expensive; needs the whole 19.3 GB expert set resident
+16:22:37   skip: layer_configurations.json already exists on this device (complete). --force-rerun to redo it.
+16:22:37 ============================================================================================
+16:22:37 COLLECTING RESULTS
+16:22:37 ============================================================================================
+16:22:37   f03     f03_resadd_rmsnorm.json                  7 cells   ok
+16:22:37   f10     f10_merge_resadd.json                    7 cells   ok
+16:22:37   f01     f01_oproj_resadd.json                    7 cells   ok
+16:22:37   f04f05  f04f05_norm_router.json                 28 cells   ok
+16:22:37   f11     f11_lazy_prenorm.json                    6 cells   ok
+16:22:37   f06     f06_upgate_swiglu.json                   7 cells   ok
+16:22:37   f08f09  f08f09_down_merge_resadd.json           28 cells   ok
+16:22:37   layer   layer_configurations.json                0 cells   ok
+16:22:39 ============================================================================================
+16:22:39 SPEEDUP TABLE  (fused / unfused, per fusion per regime)
+16:22:39 ============================================================================================
+16:22:39 fusion / variant                                d1      d32     d256     d512    d1024    p2048    p8192
+16:22:39 --------------------------------------------------------------------------------------------------------
+16:22:39 #3  ResAdd+RMSNorm  [f3]                    2.305s   2.232s   2.037s   1.970s   2.085s   1.936s   1.312s
+16:22:39 #10 ExpertMerge+ResAdd  [f10]               2.132s   2.066s   2.042s   2.058s   2.011s   1.512s   1.195s
+16:22:39 #1  o_proj+ResAdd  [triton]                 1.004s   0.848s   0.997s   1.009s   0.987s   1.022s   1.018s
+16:22:39 #4  ResAdd+RMSNorm+Router  [F4]            1.678s!  1.593s!  1.679s!  1.534s!   1.336s   1.309s   0.829s
+16:22:39 #4  ResAdd+RMSNorm+Router  [F4_topk]       1.695s!  1.593s!  1.781s!  1.796s!  1.838s!  1.720s!   0.920s
+16:22:39 #5  RMSNorm+Router  [F5]                   1.785s!  1.787s!  1.672s!  1.692s!  1.512s!   1.329s   1.093s
+16:22:39 #5  RMSNorm+Router  [F5_topk]              1.882s!  1.976s!  1.882s!  1.960s!  2.112s!  1.981s!   1.302s
+16:22:39 #11a LazyPreNorm->w13  [f11a_w13]                -   0.988s   0.994s        -        -        -        -
+16:22:39 #11a+#11b combined  [combined]                   -   0.985s   0.989s        -        -        -        -
+16:22:39 #11b LazyPreNorm->router  [f11b_router]          -  2.211s!  2.085s!        -        -        -        -
+16:22:39 #6  UpGate+SwiGLU  [f6]                     1.020s   1.000s   1.007s   1.020s   1.002s   0.975s   1.012s
+16:22:39 #8  Down+ExpertMerge  [f8_atomic]           1.052s   1.003s   1.005s   0.999s   0.994s   0.969s   0.834s
+16:22:39 #8  Down+ExpertMerge  [f8_token_major]      1.670s   0.641s   0.134s   0.069s   0.036s   0.020s   0.010s
+16:22:39 #9  Down+Merge+ResAdd2  [f9_atomic]         1.319s   1.007s   1.009s   1.004s   1.004s   0.969s   0.852s
+16:22:39 #9  Down+Merge+ResAdd2  [f9_token_major]    2.149s   0.642s   0.134s   0.069s   0.036s   0.020s   0.010s
+16:22:39 --------------------------------------------------------------------------------------------------------
+16:22:39 columns: d1=decode_bs1  d32=decode_bs32  d256=decode_bs256  d512=decode_bs512  d1024=decode_bs1024  p2048=prefill_t2048  p8192=prefill_t8192
+16:22:39 UNRES = the two arms differ by < 3 CUDA-event ticks (tick = 0.032 us, measured by preflight); the ratio is not resolvable, so no ratio is printed.
+16:22:39 ~ = shorter arm is under 10 ticks, so the printed ratio is coarsely quantised.   * = paired and sequential ratios disagree by >2 % (the machine moved).
+16:22:39 s = arms were NOT interleaved A/B/A/B, so drift does not cancel.   ! = speedup exceeds its own modelled traffic ceiling: treat as suspect.
+16:22:39 flagged cells: ABOVE CEILING=23, SEQUENTIAL=90  (of 90 total)
+16:22:39 
+16:22:39 ============================================================================================
+16:22:39 FAMILY STATUS
+16:22:39 ============================================================================================
+16:22:39   f03     skipped_existing           0.0 min   /home/guancheng/zsh/fusion/results/h200/f03_resadd_rmsnorm.json
+16:22:39   f10     skipped_existing           0.0 min   /home/guancheng/zsh/fusion/results/h200/f10_merge_resadd.json
+16:22:39   f01     skipped_existing           0.0 min   /home/guancheng/zsh/fusion/results/h200/f01_oproj_resadd.json
+16:22:39   f04f05  skipped_existing           0.0 min   /home/guancheng/zsh/fusion/results/h200/f04f05_norm_router.json
+16:22:39   f11     skipped_existing           0.0 min   /home/guancheng/zsh/fusion/results/h200/f11_lazy_prenorm.json
+16:22:39   f06     skipped_existing           0.0 min   /home/guancheng/zsh/fusion/results/h200/f06_upgate_swiglu.json
+16:22:39   f08f09  skipped_existing           0.0 min   /home/guancheng/zsh/fusion/results/h200/f08f09_down_merge_resadd.json
+16:22:39   layer   skipped_existing           0.0 min   /home/guancheng/zsh/fusion/results/h200/layer_configurations.json
+16:22:39 
+16:22:39   every planned family produced a device-fenced result.
+16:22:39 
+16:22:39 ============================================================================================
+16:22:39 HWINFO -- START vs END (clock and thermal drift across the whole run)
+16:22:39 ============================================================================================
+16:22:39   (this campaign ran on GPU 1, uuid GPU-59aa5198-70aa-0e6f-16b9-a6d483af9c4e; the other rows are context, not this run)
+16:22:39   start GPU0 NVIDIA H200 | sm 1980/1980 MHz | mem 3201/3201 MHz | 32 C | 122.68/700 W | used 48377/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000000
+16:22:39   start GPU1 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 35 C | 78.9/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+16:22:39   start GPU2 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 32 C | 75.98/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+16:22:39   start GPU3 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 29 C | 77.26/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+16:22:39   start GPU4 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 32 C | 77.75/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+16:22:39   start GPU5 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 32 C | 75.18/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+16:22:39   start GPU6 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 33 C | 77.26/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+16:22:39   start GPU7 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 29 C | 77.54/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+16:22:39   end   GPU0 NVIDIA H200 | sm 1980/1980 MHz | mem 3201/3201 MHz | 32 C | 122.58/700 W | used 48377/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000000
+16:22:39   end   GPU1 NVIDIA H200 | sm 1980/1980 MHz | mem 3201/3201 MHz | 37 C | 128.14/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000000
+16:22:39   end   GPU2 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 32 C | 76.07/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+16:22:39   end   GPU3 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 29 C | 77.3/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+16:22:39   end   GPU4 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 32 C | 77.79/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+16:22:39   end   GPU5 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 32 C | 75.16/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+16:22:39   end   GPU6 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 33 C | 77.19/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+16:22:39   end   GPU7 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 29 C | 77.55/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+16:22:39   GPU0 SM clock +0.0%, temperature +0 C, throttle 0x0000000000000000 -> 0x0000000000000000
+16:22:39   GPU1 SM clock +473.9%, temperature +2 C, throttle 0x0000000000000001 -> 0x0000000000000000
+16:22:39   !! The GPU did not hold its clock across this run. Every final timing in this suite is interleaved A/B/A/B and reported as a paired statistic precisely so monotone drift cancels -- but any number NOT taken that way (coarse tuning passes, single-shot diagnostics) is suspect.
+16:22:39   GPU2 SM clock +0.0%, temperature +0 C, throttle 0x0000000000000001 -> 0x0000000000000001
+16:22:39   GPU3 SM clock +0.0%, temperature +0 C, throttle 0x0000000000000001 -> 0x0000000000000001
+16:22:39   GPU4 SM clock +0.0%, temperature +0 C, throttle 0x0000000000000001 -> 0x0000000000000001
+16:22:39   GPU5 SM clock +0.0%, temperature +0 C, throttle 0x0000000000000001 -> 0x0000000000000001
+16:22:39   GPU6 SM clock +0.0%, temperature +0 C, throttle 0x0000000000000001 -> 0x0000000000000001
+16:22:39   GPU7 SM clock +0.0%, temperature +0 C, throttle 0x0000000000000001 -> 0x0000000000000001
+16:22:39 
+16:22:39   wrote /home/guancheng/zsh/fusion/results/h200/summary.json
+16:22:39 
+16:22:39 ============================================================================================
+16:22:39 WARNINGS (also in summary.json)
+16:22:39 ============================================================================================
+16:22:39   - 30 pre-existing result file(s) were from another device and were quarantined under _quarantine_foreign_20260804_162237; they will be re-measured
+16:22:39 
+16:22:39 ============================================================================================
+16:22:39 SEND BACK
+16:22:39 ============================================================================================
+16:22:39   1. /home/guancheng/zsh/fusion/results/h200            (every result JSON + summary.json)
+16:22:39   2. /home/guancheng/zsh/fusion/glm52_h200/preflight_h200.json
+16:22:39   3. /home/guancheng/zsh/fusion/log/run_h200             (driver.log + one log per family)
+16:22:39   total wall 0.00 h
+16:22:49 ============================================================================================
+16:22:49 GPU SELECTION -- 8 card(s) on this host
+16:22:49 ============================================================================================
+16:22:49   rank idx   util   used GB   free GB proc  temp  state
+16:22:49   -----------------------------------------------------
+16:22:49      0   1     0%       0.0     139.8    0    36  idle
+16:22:49      1   2     0%       0.0     139.8    0    32  idle
+16:22:49      2   3     0%       0.0     139.8    0    29  idle
+16:22:49      3   4     0%       0.0     139.8    0    32  idle
+16:22:49      4   5     0%       0.0     139.8    0    32  idle
+16:22:49      5   6     0%       0.0     139.8    0    33  idle
+16:22:49      6   7     0%       0.0     139.8    0    29  idle
+16:22:49      7   0     0%      47.2      92.6    2    32  BUSY: 2 other compute process(es): pid 3836753 VLLM::StageEngineCoreProc_DP0 (42.7 GB), pid 3838750 VLLM::Stag
+16:22:49        gpu 1  NVIDIA H200  uuid GPU-59aa5198-70aa-0e6f-16b9-a6d483af9c4e
+16:22:49        gpu 2  NVIDIA H200  uuid GPU-3eb2bc50-6290-2508-4dc5-e01f05c85e5f
+16:22:49        gpu 3  NVIDIA H200  uuid GPU-6c4cc3d3-e0bc-949d-16be-822af843e49f
+16:22:49        gpu 4  NVIDIA H200  uuid GPU-c20464a7-77aa-f6f2-9a70-207c42f6b4a1
+16:22:49        gpu 5  NVIDIA H200  uuid GPU-2c1d24fb-c9a6-9d6c-fa91-28ea2b50e17f
+16:22:49        gpu 6  NVIDIA H200  uuid GPU-338e7fe0-5ca6-f37f-b9b6-ea4ea6c5358b
+16:22:49        gpu 7  NVIDIA H200  uuid GPU-3aa19cef-f7a3-bd28-1b5e-2e6d8b8ca670
+16:22:49        gpu 0  NVIDIA H200  uuid GPU-b2318e71-edbf-aa1b-dcf3-3cc3e6ea7db0
+16:22:49 
+16:22:49   [gpu] pinning GPU 1 (NVIDIA H200) uuid GPU-59aa5198-70aa-0e6f-16b9-a6d483af9c4e
+16:22:49   [gpu] idlest of 8: 0% utilization, 0.0 GB used, 0 other compute process(es)
+16:22:49   [gpu] every child gets CUDA_VISIBLE_DEVICES=1 and CUDA_DEVICE_ORDER=PCI_BUS_ID, so each one sees exactly this card as cuda:0 -- which is why no bench needed changing.
+16:22:49 ============================================================================================
+16:22:49 GLM-5.2 MoE fusion study -- H200 campaign
+16:22:49 ============================================================================================
+16:22:49   repo            /home/guancheng/zsh/fusion
+16:22:49   results dir     /home/guancheng/zsh/fusion/results/h200
+16:22:49   driver started  2026-08-04 16:22:49
+16:22:49   gpu             1  uuid GPU-59aa5198-70aa-0e6f-16b9-a6d483af9c4e  (idlest of 8: 0% utilization, 0.0 GB used, 0 other compute process(es))
+16:22:49 
+16:22:49   [device] NVIDIA H200  sm_90 | 132 SM | warp 32 | smem/block 232448 B | regs/SM 65536 | L2 60 MB | VRAM 139.8 GB
+16:22:49   [stack]  torch 2.11.0+cu130 (cuda 13.0) | triton 3.6.0
+16:22:49   [triton features, compiled AND launched] +baseline_elementwise +tl_dot_bf16 +warp_specialize_tl_range -warp_specialize_num_consumer_groups +tma_host_descriptor +tma_device_descriptor +thread_block_cluster_num_ctas
+16:22:49   [calib]  copy_1024MB_GBs=4239  rmw_1024MB_GBs=4239  read_1024MB_GBs=4591  copy_2048MB_GBs=4246  rmw_2048MB_GBs=4252  read_2048MB_GBs=4645   cublas_4096x16384x6144_TFs=825.3  triton_4096x16384x6144_TFs=735.0  cublas_8192x16384x6144_TFs=779.8  triton_8192x16384x6144_TFs=667.1
+16:22:49   [calib]  launch 9.44 us | timer tick 0.032 us (measured by preflight)
+16:22:49   [capacity] expert weights 18.0 GB | fit=True | whole layer feasible=True
+16:22:49 
+16:22:49   [hwinfo@start] GPU0 NVIDIA H200 | sm 1980/1980 MHz | mem 3201/3201 MHz | 32 C | 122.58/700 W | used 48377/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000000
+16:22:49   [hwinfo@start] GPU1 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 36 C | 79.19/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+16:22:49   [hwinfo@start] GPU2 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 32 C | 76.04/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+16:22:49   [hwinfo@start] GPU3 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 29 C | 77.27/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+16:22:49   [hwinfo@start] GPU4 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 32 C | 77.76/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+16:22:49   [hwinfo@start] GPU5 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 32 C | 75.08/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+16:22:49   [hwinfo@start] GPU6 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 33 C | 77.25/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+16:22:49   [hwinfo@start] GPU7 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 29 C | 77.63/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+16:22:49 
+16:22:49   [gate] sm_90 confirmed (NVIDIA H200). Hopper paths (TMA, clusters, warp specialisation) are eligible; each is still chosen at RUNTIME from the probe.
+16:22:49 ============================================================================================
+16:22:49 RUNNING 8 FAMILIES SERIALLY (order = cheapest failure first; whole-layer last)
+16:22:49 ============================================================================================
+16:22:49 
+16:22:49 --- [1/8] f03: #3  ResAdd+RMSNorm ----------------------
+16:22:49   note    pure vector; smoke-tests the whole stack
+16:22:49   cmd     /usr/bin/python /home/guancheng/zsh/fusion/glm52_h200/bench/bench_f03_resadd_rmsnorm.py
+16:22:49   log     /home/guancheng/zsh/fusion/log/run_h200/f03.log
+16:22:49   timeout 3.0 h
+16:22:50   [hw before] GPU1 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 36 C | 79.23/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+16:23:50     [f03]    1.0 min |     [norm/coarse ] 164/164 cfgs timed -> 0.0095 ms  {'ROWS': 2, 'BLOCK_N': 4096, 'num_warps': 4, 'num_stages':
+16:24:50     [f03]    2.0 min |     [screen norm/refine ]  66 offered ->  66 valid (0 compile-fail, 0 wrong-answer)
+16:25:50     [f03]    3.0 min |     [fused/coarse] 164/164 cfgs timed -> 0.1028 ms  {'ROWS': 1, 'BLOCK_N': 4096, 'num_warps': 8, 'num_stages':
+16:26:08   [hw after ] GPU1 NVIDIA H200 | sm 1980/1980 MHz | mem 3201/3201 MHz | 41 C | 129.58/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000000
+16:26:08   !! SM clock moved +473.9% during this family (345 -> 1980 MHz) -- interleaved A/B timing is what protects the ratio from this; check the bench recorded a paired statistic.
+16:26:08   exit=0 status=ok wall=3.3 min
+16:26:08     | decode_bs512        0.0713    0.1481    2.087    0.1609    0.0714    yes
+16:26:08     | decode_bs1024       0.0876    0.1779    2.031    0.1817    0.0863    yes
+16:26:08     | prefill_t2048       0.0968    0.1886    1.965    0.2176    0.1059    yes
+16:26:08     | prefill_t8192       0.1680    0.2168    1.336    0.7258    0.1047     no
+16:26:09 
+16:26:09 --- [2/8] f10: #10 ExpertMerge+ResAdd ------------------
+16:26:09   note    needs the [T*topk, 6144] intermediate, not the expert weights
+16:26:09   cmd     /usr/bin/python /home/guancheng/zsh/fusion/glm52_h200/bench/bench_f10_merge_resadd.py
+16:26:09   log     /home/guancheng/zsh/fusion/log/run_h200/f10.log
+16:26:09   timeout 4.0 h
+16:26:10   [hw before] GPU1 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 39 C | 100.06/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+16:27:10     [f10]    1.0 min |     [fused/coarse] 188/188 cfgs timed -> 0.0150 ms  {'ROWS': 2, 'BLOCK_N': 1024, 'num_warps': 4, 'num_stages':
+16:28:10     [f10]    2.0 min |     [fused] coarse 188 cfgs (0 rej) -> 0.0176 ms | refine 64 (0 rej) -> 0.0166 ms | best 0.0166 ms {'ROWS': 4,
+16:29:10     [f10]    3.0 min |     [chain] joint 16 pairs -> 0.0649 ms (independent-best sum would be 0.0356 ms)
+16:30:10     [f10]    4.0 min |     [fused] coarse 188 cfgs (0 rej) -> 0.2352 ms | refine 56 (0 rej) -> 0.2353 ms | best 0.2352 ms {'ROWS': 1,
+16:30:39   [hw after ] GPU1 NVIDIA H200 | sm 1980/1980 MHz | mem 3201/3201 MHz | 42 C | 128.02/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000000
+16:30:39   !! SM clock moved +473.9% during this family (345 -> 1980 MHz) -- interleaved A/B timing is what protects the ratio from this; check the bench recorded a paired statistic.
+16:30:39   exit=0 status=ok wall=4.5 min
+16:30:39     | decode_bs512        0.0758    0.1551    2.063    531%    0.2365    0.0639
+16:30:39     | decode_bs1024       0.1177    0.2201    1.890    445%    0.4644    0.0918
+16:30:39     | prefill_t2048       0.1279    0.1991    1.573    286%    0.9224    0.1534
+16:30:39     | prefill_t8192       0.2354    0.2820    1.197     99%    3.6274    0.6753
+16:30:40 
+16:30:40 --- [3/8] f01: #1  o_proj+ResAdd -----------------------
+16:30:40   note    first GEMM family; K=16384 prefill / 32768 decode
+16:30:40   cmd     /usr/bin/python /home/guancheng/zsh/fusion/glm52_h200/bench/bench_f01_oproj_resadd.py
+16:30:40   log     /home/guancheng/zsh/fusion/log/run_h200/f01.log
+16:30:40   timeout 8.0 h
+16:30:41   [hw before] GPU1 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 41 C | 81.18/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+16:31:41     [f01]    1.0 min |     [screen unfused/coarse] 220 offered -> 220 valid (0 compile-fail, 0 wrong-answer)
+16:32:41     [f01]    2.0 min |     [screen fused/refine]  22 offered ->  22 valid (0 compile-fail, 0 wrong-answer)
+16:33:41     [f01]    3.0 min |         wrong-answer: {'BLOCK_M': 128, 'BLOCK_N': 128, 'BLOCK_K': 128, 'GROUP_M': 1, 'SPLIT_K': 1, 'num_warps'
+16:34:41     [f01]    4.0 min |         wrong-answer: {'BLOCK_M': 128, 'BLOCK_N': 128, 'BLOCK_K': 128, 'GROUP_M': 1, 'SPLIT_K': 1, 'num_warps'
+16:35:41     [f01]    5.0 min |     [screen fused/extra ]  15 offered ->  15 valid (0 compile-fail, 0 wrong-answer)
+16:36:41     [f01]    6.0 min |         wrong-answer: {'BLOCK_M': 128, 'BLOCK_N': 128, 'BLOCK_K': 128, 'GROUP_M': 1, 'SPLIT_K': 1, 'num_warps'
+16:37:41   [hw after ] GPU1 NVIDIA H200 | sm 1980/1980 MHz | mem 3201/3201 MHz | 49 C | 135.56/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000000
+16:37:41   !! SM clock moved +473.9% during this family (345 -> 1980 MHz) -- interleaved A/B timing is what protects the ratio from this; check the bench recorded a paired statistic.
+16:37:41   exit=0 status=ok wall=7.0 min
+16:37:41     | decode_bs512        0.3558    0.3592   1.0095    0.2989    0.2992    1.0024  3.02e-03       
+16:37:41     | decode_bs1024       0.6392    0.6382   0.9984    0.6059    0.6049    0.9983  2.70e-03       
+16:37:41     | prefill_t2048       0.6123    0.6149   1.0063    0.5810    0.5839    1.0041  2.73e-03       
+16:37:41     | prefill_t8192       2.5080    2.5256   1.0069    2.4544    2.4664    1.0050  2.68e-03       
+16:37:41 
+16:37:41 --- [4/8] f04f05: #4  ResAdd+RMSNorm+Router / #5 RMSNorm+Router 
+16:37:41   cmd     /usr/bin/python /home/guancheng/zsh/fusion/glm52_h200/bench/bench_f04f05_norm_router.py
+16:37:41   log     /home/guancheng/zsh/fusion/log/run_h200/f04f05.log
+16:37:41   timeout 8.0 h
+16:37:42   [hw before] GPU1 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 47 C | 83.15/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+16:38:42     [f04f05]    1.0 min | /home/guancheng/zsh/fusion/glm52_h200/kernels/norm_router.py:317:0: note: Pipeline failed while executing [`Co
+16:39:42     [f04f05]    2.0 min | /home/guancheng/zsh/fusion/glm52_h200/kernels/norm_router.py:317:0: note: Pipeline failed while executing [`Tr
+16:40:42     [f04f05]    3.0 min |     [screen F4          ] 557 offered -> 349 valid (208 compile-fail, 0 wrong-answer)
+16:41:42     [f04f05]    4.0 min |     [screen F4+topk     ] 301 offered -> 200 valid (101 compile-fail, 0 wrong-answer)
+16:42:42     [f04f05]    5.0 min | /home/guancheng/zsh/fusion/glm52_h200/kernels/norm_router.py:317:0: note: Pipeline failed while executing [`Tr
+16:43:42     [f04f05]    6.0 min |     [U4+topk   ] joint 18 combos -> 0.0432 ms [0s]
+16:44:42     [f04f05]    7.0 min |     [screen F4          ] 557 offered -> 349 valid (208 compile-fail, 0 wrong-answer)
+16:45:42     [f04f05]    8.0 min |     [U4+topk   ] joint 18 combos -> 0.0487 ms [0s]
+16:46:42     [f04f05]    9.0 min | /home/guancheng/zsh/fusion/glm52_h200/kernels/norm_router.py:317:0: note: Pipeline failed while executing [`NV
+16:47:42     [f04f05]   10.0 min |     [screen topk        ]  42 offered ->  42 valid (0 compile-fail, 0 wrong-answer)
+16:48:42     [f04f05]   11.0 min | /home/guancheng/zsh/fusion/glm52_h200/kernels/norm_router.py:317:0: note: Pipeline failed while executing [`Co
+16:49:42     [f04f05]   12.0 min |     [screen F5          ] 557 offered -> 349 valid (208 compile-fail, 0 wrong-answer)
+16:50:42     [f04f05]   13.0 min | /home/guancheng/zsh/fusion/glm52_h200/kernels/norm_router.py:317:0: note: Pipeline failed while executing [`Co
+16:51:13   [hw after ] GPU1 NVIDIA H200 | sm 1980/1980 MHz | mem 3201/3201 MHz | 43 C | 128.28/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000000
+16:51:13   !! SM clock moved +473.9% during this family (345 -> 1980 MHz) -- interleaved A/B timing is what protects the ratio from this; check the bench recorded a paired statistic.
+16:51:13   exit=0 status=ok wall=13.5 min
+16:51:13     | prefill_t8192   F5           0.2362    0.2244    1.041     1.65    1.4604
+16:51:13     | prefill_t8192   F5_topk      0.2389    0.3259    1.401     1.65    1.4604
+16:51:13     | prefill_t8192   F4           0.2088    0.1559    0.746     1.58    1.9669
+16:51:13     | prefill_t8192   F4_topk      0.2905    0.2442    0.957     1.58    1.9669
+16:51:13 
+16:51:13 --- [5/8] f11: #11a LazyPreNorm->w13 / #11b LazyPreNorm->router 
+16:51:13   note    #11a needs the 12 GB w13; fits here, unlike the 4060
+16:51:13   cmd     /usr/bin/python /home/guancheng/zsh/fusion/glm52_h200/bench/bench_f11_lazy_prenorm.py
+16:51:13   log     /home/guancheng/zsh/fusion/log/run_h200/f11.log
+16:51:13   timeout 10.0 h
+16:51:14   [hw before] GPU1 NVIDIA H200 | sm 1980/1980 MHz | mem 3201/3201 MHz | 43 C | 131.15/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000000
+16:52:14     [f11]    1.0 min | /home/guancheng/zsh/fusion/glm52_h200/kernels/lazy_prenorm.py:798:0: note: Pipeline failed while executing [`C
+16:53:14     [f11]    2.0 min |     [grid f11a/small] 722 legal -> 180 sampled (budget 180)
+16:54:14     [f11]    3.0 min |     [screen w13F/refine ]  28 offered ->  28 valid (0 compile-fail, 0 wrong-answer)
+16:55:14     [f11]    4.0 min | /home/guancheng/zsh/fusion/glm52_h200/kernels/lazy_prenorm.py:798:0: note: Pipeline failed while executing [`C
+16:56:14     [f11]    5.0 min |     [routerF/refine]  28/28 cfgs timed -> 0.0459 ms  {'BLOCK_M': 32, 'BLOCK_N': 32, 'BLOCK_K': 128, 'num_warps
+16:57:14     [f11]    6.0 min | /home/guancheng/zsh/fusion/glm52_h200/kernels/lazy_prenorm.py:588:0: note: Pipeline failed while executing [`N
+16:58:14     [f11]    7.0 min | /home/guancheng/zsh/fusion/glm52_h200/kernels/lazy_prenorm.py:588:0: note: Pipeline failed while executing [`N
+16:59:14     [f11]    8.0 min |     [screen w13U/refine ]  28 offered ->  28 valid (0 compile-fail, 0 wrong-answer)
+17:00:14     [f11]    9.0 min | /home/guancheng/zsh/fusion/glm52_h200/kernels/lazy_prenorm.py:798:0: note: Pipeline failed while executing [`C
+17:01:14     [f11]   10.0 min |         wrong-answer: {'BLOCK_M': 64, 'BLOCK_N': 128, 'BLOCK_K': 32, 'num_warps': 4, 'num_stages': 4, 'GROUP_M
+17:02:14     [f11]   11.0 min |     [screen w13U/coarse ] 180 offered -> 153 valid (27 compile-fail, 0 wrong-answer)
+17:03:14     [f11]   12.0 min |   w13 unfused: coarse 180(27f) + refine 21(0f) -> 2.8182 ms {'BLOCK_M': 16, 'BLOCK_N': 128, 'BLOCK_K': 128, 'n
+17:04:14     [f11]   13.0 min |         wrong-answer: {'BLOCK_M': 64, 'BLOCK_N': 128, 'BLOCK_K': 32, 'num_warps': 4, 'num_stages': 4, 'GROUP_M
+17:05:14     [f11]   14.0 min |     [screen w13U/coarse ] 180 offered -> 153 valid (27 compile-fail, 0 wrong-answer)
+17:06:14     [f11]   15.0 min |         wrong-answer: {'BLOCK_M': 64, 'BLOCK_N': 128, 'BLOCK_K': 32, 'num_warps': 4, 'num_stages': 4, 'GROUP_M
+17:07:14     [f11]   16.0 min |     [screen w13U/coarse ] 180 offered -> 153 valid (27 compile-fail, 0 wrong-answer)
+17:08:14     [f11]   17.0 min | /home/guancheng/zsh/fusion/glm52_h200/kernels/lazy_prenorm.py:798:0: note: Pipeline failed while executing [`C
+17:09:14     [f11]   18.0 min | /home/guancheng/zsh/fusion/glm52_h200/kernels/lazy_prenorm.py:588:0: note: Pipeline failed while executing [`N
+17:10:14     [f11]   19.0 min |         wrong-answer: {'BLOCK_M': 64, 'BLOCK_N': 64, 'BLOCK_K': 128, 'num_warps': 16, 'num_stages': 3, 'GROUP_
+17:11:14     [f11]   20.0 min |     [screen w13U/coarse ] 180 offered -> 155 valid (25 compile-fail, 0 wrong-answer)
+17:12:14     [f11]   21.0 min | /home/guancheng/zsh/fusion/glm52_h200/kernels/lazy_prenorm.py:798:0: note: Pipeline failed while executing [`N
+17:13:14     [f11]   22.0 min |         wrong-answer: {'BLOCK_M': 64, 'BLOCK_N': 64, 'BLOCK_K': 128, 'num_warps': 16, 'num_stages': 2, 'GROUP_
+17:14:14     [f11]   23.0 min |         wrong-answer: {'BLOCK_M': 64, 'BLOCK_N': 64, 'BLOCK_K': 128, 'num_warps': 16, 'num_stages': 2, 'GROUP_
+17:15:14     [f11]   24.0 min |     [screen w13U/coarse ] 180 offered -> 155 valid (25 compile-fail, 0 wrong-answer)
+17:16:07   [hw after ] GPU1 NVIDIA H200 | sm 1980/1980 MHz | mem 3201/3201 MHz | 51 C | 140.17/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000000
+17:16:07   exit=0 status=ok wall=24.9 min
+17:16:07     |     raise RuntimeError(f"validation failed at {reg.name}: {kk} {chk[kk]}")
+17:16:07     | RuntimeError: validation failed at prefill_t8192: moe_fused {'label': 'moe_fused', 'rel_err': 0.7659460306167603, 'tol': 0.02, 'ok': False}
+17:16:07     | wrote f11_lazy_prenorm.json
+17:16:07     | regime            F11b rt   ceil  F11a w13   ceil  combined
+17:16:08 
+17:16:08 --- [6/8] f06: #6  UpGate+SwiGLU -----------------------
+17:16:08   note    needs 256-expert w13 (12 GB)
+17:16:08   cmd     /usr/bin/python /home/guancheng/zsh/fusion/glm52_h200/bench/bench_f06_upgate_swiglu.py
+17:16:08   log     /home/guancheng/zsh/fusion/log/run_h200/f06.log
+17:16:08   timeout 10.0 h
+17:16:08   [hw before] GPU1 NVIDIA H200 | sm 1980/1980 MHz | mem 3201/3201 MHz | 51 C | 138.54/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000000
+17:17:08     [f06]    1.0 min |     [screen fused/coarse] 200 offered -> 144 valid (56 compile-fail, 0 wrong-answer)
+17:18:08     [f06]    2.0 min |     [screen unfusedGEMM/coarse] 200 offered -> 174 valid (26 compile-fail, 0 wrong-answer)
+17:19:08     [f06]    3.0 min |     [screen fused/coarse] 200 offered -> 144 valid (56 compile-fail, 0 wrong-answer)
+17:20:08     [f06]    4.0 min |     [screen fused/refine]  19 offered ->  15 valid (4 compile-fail, 0 wrong-answer)
+17:21:08     [f06]    5.0 min |     [screen unfusedGEMM/coarse] 200 offered -> 174 valid (26 compile-fail, 0 wrong-answer)
+17:22:08     [f06]    6.0 min |     [screen fused/coarse] 200 offered -> 144 valid (56 compile-fail, 0 wrong-answer)
+17:23:08     [f06]    7.0 min |     [screen unfusedGEMM/coarse] 200 offered -> 174 valid (26 compile-fail, 0 wrong-answer)
+17:24:08     [f06]    8.0 min |     [screen fused/coarse] 200 offered -> 144 valid (56 compile-fail, 0 wrong-answer)
+17:25:08     [f06]    9.0 min |     [screen fused/refine]  25 offered ->  25 valid (0 compile-fail, 0 wrong-answer)
+17:26:08     [f06]   10.0 min |     [screen unfusedGEMM/coarse] 200 offered -> 174 valid (26 compile-fail, 0 wrong-answer)
+17:27:08     [f06]   11.0 min |     [screen fused/coarse] 200 offered -> 153 valid (47 compile-fail, 0 wrong-answer)
+17:28:08     [f06]   12.0 min |     [screen unfusedGEMM/coarse] 200 offered -> 178 valid (22 compile-fail, 0 wrong-answer)
+17:29:08     [f06]   13.0 min |     [screen unfusedGEMM/refine]  35 offered ->  33 valid (2 compile-fail, 0 wrong-answer)
+17:30:08     [f06]   14.0 min |     [screen fused/coarse] 200 offered -> 153 valid (47 compile-fail, 0 wrong-answer)
+17:31:08     [f06]   15.0 min |     [screen unfusedGEMM/coarse] 200 offered -> 178 valid (22 compile-fail, 0 wrong-answer)
+17:32:08     [f06]   16.0 min |     [screen unfusedGEMM/coarse] 200 offered -> 178 valid (22 compile-fail, 0 wrong-answer)
+17:33:08     [f06]   17.0 min |     [screen unfusedGEMM/refine]  24 offered ->  23 valid (1 compile-fail, 0 wrong-answer)
+17:33:24   [hw after ] GPU1 NVIDIA H200 | sm 1980/1980 MHz | mem 3201/3201 MHz | 56 C | 170.01/700 W | used 531/143771 MiB | util 100% | pstate P0 | throttle 0x0000000000000000
+17:33:24   exit=0 status=ok wall=17.3 min
+17:33:24     | decode_bs512         2.8464     2.8914    1.016     7.9061   1.99e-03
+17:33:24     | decode_bs1024        2.9220     2.9540    1.011    15.9342   2.29e-03
+17:33:24     | prefill_t2048        3.1992     3.2993    1.032     7.6302   2.68e-03
+17:33:24     | prefill_t8192       13.9834    13.6343    0.977    22.1206   2.23e-03
+17:33:24 
+17:33:24 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+17:33:24 !! a co-tenant appeared on GPU 1 after f06: new compute process(es): pid 4037698 ./scope_matrix_xgpu (0.5 GB). Families measured from here on are not comparable with the earlier ones.
+17:33:24 !! Nothing is stopped -- an aborted campaign loses more than a flagged one -- but
+17:33:24 !! summary.json records when this happened so the affected families can be re-run.
+17:33:24 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+17:33:24 
+17:33:24 
+17:33:24 --- [7/8] f08f09: #8  Down+ExpertMerge / #9 Down+Merge+ResAdd2 
+17:33:24   note    needs 256-expert w2 (6 GB); four variants x seven regimes
+17:33:24   cmd     /usr/bin/python /home/guancheng/zsh/fusion/glm52_h200/bench/bench_f08f09_down_merge_resadd.py
+17:33:24   log     /home/guancheng/zsh/fusion/log/run_h200/f08f09.log
+17:33:24   timeout 14.0 h
+17:33:24   [hw before] GPU1 NVIDIA H200 | sm 1980/1980 MHz | mem 3201/3201 MHz | 55 C | 168.35/700 W | used 531/143771 MiB | util 100% | pstate P0 | throttle 0x0000000000000000
+17:34:24     [f08f09]    1.0 min |     [screen unfusedGEMM/coarse] 200 offered -> 174 valid (26 compile-fail, 0 wrong-answer)
+17:35:24     [f08f09]    2.0 min |     [screen atomicGEMM/refine]  29 offered ->  29 valid (0 compile-fail, 0 wrong-answer)
+17:36:24     [f08f09]    3.0 min |     rel_err f9_token_major   3.206e-03 ok=True
+17:37:24     [f08f09]    4.0 min |     [screen atomicGEMM/coarse] 200 offered -> 160 valid (40 compile-fail, 0 wrong-answer)
+17:38:24     [f08f09]    5.0 min |     [screen tokmaj8/coarse] 243 offered -> 243 valid (0 compile-fail, 0 wrong-answer)
+17:39:24     [f08f09]    6.0 min |     [screen tokmaj8/coarse] 243 offered -> 243 valid (0 compile-fail, 0 wrong-answer)
+17:40:24     [f08f09]    7.0 min |     [screen tokmaj8/coarse] 243 offered -> 243 valid (0 compile-fail, 0 wrong-answer)
+17:41:24     [f08f09]    8.0 min |     [screen tokmaj8/refine]  28 offered ->  28 valid (0 compile-fail, 0 wrong-answer)
+17:42:24     [f08f09]    9.0 min |     JOINT unfused9_3k: {'gemm': {'BLOCK_M': 16, 'BLOCK_N': 128, 'BLOCK_K': 128, 'num_warps': 4, 'num_stages': 
+17:43:24     [f08f09]   10.0 min | /home/guancheng/zsh/fusion/glm52_h200/kernels/moe_down_merge.py:506:0: note: Pipeline failed while executing [
+17:44:24     [f08f09]   11.0 min |     JOINT unfused9_3k: {'gemm': {'BLOCK_M': 32, 'BLOCK_N': 256, 'BLOCK_K': 128, 'num_warps': 4, 'num_stages': 
+17:45:24     [f08f09]   12.0 min |     [screen unfusedGEMM/refine]  40 offered ->  32 valid (8 compile-fail, 0 wrong-answer)
+17:46:24     [f08f09]   13.0 min |     [screen tokmaj8/refine]  28 offered ->  28 valid (0 compile-fail, 0 wrong-answer)
+17:47:24     [f08f09]   14.0 min |     [screen unfusedGEMM/coarse] 200 offered -> 178 valid (22 compile-fail, 0 wrong-answer)
+17:48:24     [f08f09]   15.0 min |     using 30 cfgs (warmup=2 rep=5)
+17:49:24     [f08f09]   16.0 min |     [screen tokmaj8/refine]  28 offered ->  28 valid (0 compile-fail, 0 wrong-answer)
+17:50:24     [f08f09]   17.0 min |     [screen unfusedGEMM/coarse] 200 offered -> 178 valid (22 compile-fail, 0 wrong-answer)
+17:51:24     [f08f09]   18.0 min |     [screen unfusedGEMM/refine]  24 offered ->  24 valid (0 compile-fail, 0 wrong-answer)
+17:52:24     [f08f09]   19.0 min |     [screen resadd      ] 132 offered -> 132 valid (0 compile-fail, 0 wrong-answer)
+17:53:24     [f08f09]   20.0 min |     [screen tokmaj8/coarse]  30 offered ->  30 valid (0 compile-fail, 0 wrong-answer)
+17:54:24   [hw after ] GPU1 NVIDIA H200 | sm 1980/1980 MHz | mem 3201/3201 MHz | 55 C | 141.36/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000000
+17:54:24   exit=0 status=ok wall=21.0 min
+17:54:24     | prefill_t8192   f8_atomic            4.3894     4.1433    0.941    10.0633   8.17e-03
+17:54:24     | prefill_t8192   f8_token_major     347.5558     3.5973    0.010    10.0633   2.41e-03
+17:54:24     | prefill_t8192   f9_atomic            4.3839     4.2523    0.970    10.0633   9.02e-03
+17:54:24     | prefill_t8192   f9_token_major     347.6154     3.8251    0.011    10.0633   2.87e-03
+17:54:25 
+17:54:25 --- [8/8] layer: whole-layer combination benchmark -------
+17:54:25   note    LAST: most expensive; needs the whole 19.3 GB expert set resident
+17:54:25   cmd     /usr/bin/python /home/guancheng/zsh/fusion/glm52_h200/bench/bench_layer.py
+17:54:25   log     /home/guancheng/zsh/fusion/log/run_h200/layer.log
+17:54:25   timeout 16.0 h
+17:54:25   [hw before] GPU1 NVIDIA H200 | sm 1980/1980 MHz | mem 3201/3201 MHz | 54 C | 141.93/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000000
+17:55:25     [layer]    1.0 min |   [cfgs] w13 gemm           tile sweep    0.1051 ms (46 cfgs, 0 fail)
+17:56:25     [layer]    2.0 min |   [cfgs] w13 prenorm        tile sweep    0.1107 ms (46 cfgs, 0 fail)
+17:57:25     [layer]    3.0 min |   [cfgs] rmsnorm               0.0779 ms  (16 cfgs tried)  {'ROWS': 8, 'BLOCK_N': 256, 'num_warps': 16, 'num_s
+17:58:25     [layer]    4.0 min |   [cfgs] router prenorm        0.0339 ms  (37 cfgs tried)  {'BLOCK_M': 64, 'BLOCK_N': 32, 'BLOCK_K': 128, 'GRO
+17:59:25     [layer]    5.0 min |   [cfgs] oproj gemm+res     tile sweep    0.2167 ms (48 cfgs, 2 fail)
+18:00:25     [layer]    6.0 min |   [cfgs] router gemm           0.0219 ms  (30 cfgs tried)  {'BLOCK_M': 64, 'BLOCK_K': 128, 'BLOCK_E': 64, 'num
+18:01:25     [layer]    7.0 min |   [cfgs] router gemm           0.0219 ms  (30 cfgs tried)  {'BLOCK_M': 64, 'BLOCK_K': 128, 'BLOCK_E': 64, 'num
+18:02:25     [layer]    8.0 min |   [cfgs] router prenorm     tile sweep    0.0347 ms (46 cfgs, 0 fail)
+18:03:25     [layer]    9.0 min |   [cfgs] oproj gemm         tile sweep    0.4090 ms (47 cfgs, 1 fail)
+18:04:25     [layer]   10.0 min |   [cfgs] oproj gemm         tile sweep    0.4090 ms (47 cfgs, 1 fail)
+18:05:25     [layer]   11.0 min |   [cfgs] oproj gemm         tile sweep    0.4090 ms (47 cfgs, 1 fail)
+18:06:25     [layer]   12.0 min |   [cfgs] oproj gemm         tile sweep    0.4090 ms (47 cfgs, 1 fail)
+18:07:25     [layer]   13.0 min |   [cfgs] oproj gemm+res        0.3163 ms  (37 cfgs tried)  {'BLOCK_M': 128, 'BLOCK_N': 256, 'BLOCK_K': 64, 'GR
+18:08:25     [layer]   14.0 min | /home/guancheng/zsh/fusion/glm52_h200/kernels/moe_down_merge.py:506:0: note: Pipeline failed while executing [
+18:09:25     [layer]   15.0 min |   [cfgs] oproj gemm         tile sweep    0.7235 ms (47 cfgs, 1 fail)
+18:10:25     [layer]   16.0 min |   [cfgs] w13+swiglu         tile sweep    3.0647 ms (46 cfgs, 5 fail)
+18:11:25     [layer]   17.0 min |     pass1 round 7: A_all_unfused=5.5890  B_f3=5.5612  C_f1=5.5977  D_f6=5.6070  E_f10=5.5517  F_f8=5.5711  G_f
+18:12:25     [layer]   18.0 min |   [cfgs] oproj epi             0.0317 ms  (12 cfgs tried)  {'BLOCK': 2048, 'num_warps': 2, 'num_stages': 1}
+18:13:25     [layer]   19.0 min |   [cfgs] w13 gemm           tile sweep    3.4380 ms (48 cfgs, 2 fail)
+18:14:25     [layer]   20.0 min |   [cfgs] w2 gemm            tile sweep    1.7157 ms (47 cfgs, 1 fail)
+18:15:25     [layer]   21.0 min |   [cfgs] w13 prenorm        tile sweep    3.6716 ms (48 cfgs, 1 fail)
+18:16:25     [layer]   22.0 min | ===== prefill_t8192 =====
+18:17:25     [layer]   23.0 min |   [cfgs] oproj gemm         tile sweep    2.5544 ms (48 cfgs, 2 fail)
+18:18:25     [layer]   24.0 min |   [cfgs] oproj gemm         tile sweep    2.5544 ms (48 cfgs, 2 fail)
+18:19:25     [layer]   25.0 min |   [cfgs] oproj gemm+res     tile sweep    2.5423 ms (48 cfgs, 2 fail)
+18:20:25     [layer]   26.0 min |   [cfgs] w13 gemm           tile sweep    7.5724 ms (48 cfgs, 2 fail)
+18:21:25     [layer]   27.0 min |   [cfgs] w13 gemm           tile sweep    7.5724 ms (48 cfgs, 2 fail)
+18:22:25     [layer]   28.0 min |   [cfgs] w13 gemm           tile sweep    7.5724 ms (48 cfgs, 2 fail)
+18:23:25     [layer]   29.0 min |   [cfgs] w13 gemm           tile sweep    7.5724 ms (48 cfgs, 2 fail)
+18:24:25     [layer]   30.0 min |   [cfgs] w13 gemm           tile sweep    7.5724 ms (48 cfgs, 2 fail)
+18:25:25     [layer]   31.0 min |   [cfgs] w13 gemm           tile sweep    7.5724 ms (48 cfgs, 2 fail)
+18:26:25     [layer]   32.0 min |   [cfgs] w13+swiglu         tile sweep    8.4307 ms (45 cfgs, 4 fail)
+18:27:25     [layer]   33.0 min |   [cfgs] silu_and_mul          0.1904 ms  (17 cfgs tried)  {'BLOCK_M': 4, 'BLOCK_N': 1024, 'num_warps': 16, 'n
+18:28:25     [layer]   34.0 min |   [cfgs] w2 gemm            tile sweep    3.8822 ms (48 cfgs, 2 fail)
+18:29:25     [layer]   35.0 min |   [cfgs] router prenorm        0.0693 ms  (19 cfgs tried)  {'BLOCK_M': 64, 'BLOCK_N': 256, 'BLOCK_K': 128, 'GR
+18:30:25     [layer]   36.0 min |   [cfgs] w13 prenorm        tile sweep    9.2215 ms (48 cfgs, 1 fail)
+18:31:25     [layer]   37.0 min |     pass1 round 0: A_all_unfused=16.0312  B_f3=17.8458  C_f1=16.0252  D_f6=16.9031  E_f10=16.2929  F_f8=16.957
+18:32:25     [layer]   38.0 min |     pass2 round 0: A_all_unfused=16.4476  B_f3=16.5727  C_f1=16.5629  D_f6=16.8137  E_f10=16.5522  F_f8=17.207
+18:33:24   [hw after ] GPU1 NVIDIA H200 | sm 1980/1980 MHz | mem 3201/3201 MHz | 55 C | 142.59/700 W | used 0/143771 MiB | util 41% | pstate P0 | throttle 0x0000000000000000
+18:33:24   exit=0 status=ok wall=39.0 min
+18:33:24     | decode_bs512    TIED       D_f6, H_f3_f10, I_f3_f9 ...                     1.0113x
+18:33:24     | decode_bs1024   TIED       A_all_unfused, B_f3, C_f1 ...                   1.0000x
+18:33:24     | prefill_t2048   TIED       A_all_unfused, B_f3, C_f1 ...                   1.0000x
+18:33:24     | prefill_t8192   TIED       A_all_unfused, B_f3, C_f1 ...                   1.0000x
+18:33:24 ============================================================================================
+18:33:24 COLLECTING RESULTS
+18:33:24 ============================================================================================
+18:33:24   f03     f03_resadd_rmsnorm.json                  7 cells   ok
+18:33:24   f10     f10_merge_resadd.json                    7 cells   ok
+18:33:24   f01     f01_oproj_resadd.json                    7 cells   ok
+18:33:25   f04f05  f04f05_norm_router.json                 28 cells   ok
+18:33:25   f11     f11_lazy_prenorm.json                    0 cells   ok
+18:33:25   f06     f06_upgate_swiglu.json                   7 cells   ok
+18:33:25   f08f09  f08f09_down_merge_resadd.json           28 cells   ok
+18:33:25   layer   layer_configurations.json                0 cells   ok
+18:33:26 ============================================================================================
+18:33:26 SPEEDUP TABLE  (fused / unfused, per fusion per regime)
+18:33:26 ============================================================================================
+18:33:26 fusion / variant                                d1      d32     d256     d512    d1024    p2048    p8192
+18:33:26 --------------------------------------------------------------------------------------------------------
+18:33:26 #3  ResAdd+RMSNorm  [f3]                    2.138s   2.209s   2.056s   2.076s   2.031s   1.949s   1.291s
+18:33:26 #10 ExpertMerge+ResAdd  [f10]               2.252s   2.218s   2.020s   2.046s   1.870s   1.557s   1.198s
+18:33:26 #1  o_proj+ResAdd  [triton]                 0.982s   0.995s   0.996s   1.009s   0.998s   1.004s   1.007s
+18:33:26 #4  ResAdd+RMSNorm+Router  [F4]            1.667s!  1.628s!  1.489s!  1.577s!   1.435s   1.331s   0.747s
+18:33:26 #4  ResAdd+RMSNorm+Router  [F4_topk]        0.539s  1.776s!  1.766s!  1.951s!  1.817s!  1.757s!   0.841s
+18:33:26 #5  RMSNorm+Router  [F5]                   1.811s!  1.763s!  1.710s!  1.719s!  1.658s!   1.461s   0.950s
+18:33:26 #5  RMSNorm+Router  [F5_topk]              2.021s!  1.873s!  1.739s!  2.036s!  2.095s!  2.036s!   1.364s
+18:33:26 #6  UpGate+SwiGLU  [f6]                     1.023s   1.001s   1.007s   1.016s   1.011s   1.031s   0.975s
+18:33:26 #8  Down+ExpertMerge  [f8_atomic]           1.060s   1.004s   1.002s   0.999s   0.997s   0.922s   0.944s
+18:33:26 #8  Down+ExpertMerge  [f8_token_major]      1.658s   0.641s   0.133s   0.069s   0.036s   0.020s   0.010s
+18:33:26 #9  Down+Merge+ResAdd2  [f9_atomic]         1.367s   1.006s   1.005s   1.007s   1.001s   0.949s   0.970s
+18:33:26 #9  Down+Merge+ResAdd2  [f9_token_major]    2.245s   0.645s   0.134s   0.069s   0.036s   0.020s   0.011s
+18:33:26 --------------------------------------------------------------------------------------------------------
+18:33:26 columns: d1=decode_bs1  d32=decode_bs32  d256=decode_bs256  d512=decode_bs512  d1024=decode_bs1024  p2048=prefill_t2048  p8192=prefill_t8192
+18:33:26 UNRES = the two arms differ by < 3 CUDA-event ticks (tick = 0.032 us, measured by preflight); the ratio is not resolvable, so no ratio is printed.
+18:33:26 ~ = shorter arm is under 10 ticks, so the printed ratio is coarsely quantised.   * = paired and sequential ratios disagree by >2 % (the machine moved).
+18:33:26 s = arms were NOT interleaved A/B/A/B, so drift does not cancel.   ! = speedup exceeds its own modelled traffic ceiling: treat as suspect.
+18:33:26 flagged cells: ABOVE CEILING=20, SEQUENTIAL=84  (of 84 total)
+18:33:26 
+18:33:26 ============================================================================================
+18:33:26 FAMILY STATUS
+18:33:26 ============================================================================================
+18:33:26   f03     ok                         3.3 min   /home/guancheng/zsh/fusion/results/h200/f03_resadd_rmsnorm.json
+18:33:26   f10     ok                         4.5 min   /home/guancheng/zsh/fusion/results/h200/f10_merge_resadd.json
+18:33:26   f01     ok                         7.0 min   /home/guancheng/zsh/fusion/results/h200/f01_oproj_resadd.json
+18:33:26   f04f05  ok                        13.5 min   /home/guancheng/zsh/fusion/results/h200/f04f05_norm_router.json
+18:33:26   f11     ok                        24.9 min   /home/guancheng/zsh/fusion/results/h200/f11_lazy_prenorm.json
+18:33:26   f06     ok                        17.3 min   /home/guancheng/zsh/fusion/results/h200/f06_upgate_swiglu.json
+18:33:26   f08f09  ok                        21.0 min   /home/guancheng/zsh/fusion/results/h200/f08f09_down_merge_resadd.json
+18:33:26   layer   ok                        39.0 min   /home/guancheng/zsh/fusion/results/h200/layer_configurations.json
+18:33:26 
+18:33:26   every planned family produced a device-fenced result.
+18:33:26 
+18:33:26 ============================================================================================
+18:33:26 HWINFO -- START vs END (clock and thermal drift across the whole run)
+18:33:26 ============================================================================================
+18:33:26   (this campaign ran on GPU 1, uuid GPU-59aa5198-70aa-0e6f-16b9-a6d483af9c4e; the other rows are context, not this run)
+18:33:26   start GPU0 NVIDIA H200 | sm 1980/1980 MHz | mem 3201/3201 MHz | 32 C | 122.58/700 W | used 48377/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000000
+18:33:26   start GPU1 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 36 C | 79.19/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+18:33:26   start GPU2 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 32 C | 76.04/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+18:33:26   start GPU3 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 29 C | 77.27/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+18:33:26   start GPU4 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 32 C | 77.76/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+18:33:26   start GPU5 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 32 C | 75.08/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+18:33:26   start GPU6 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 33 C | 77.25/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+18:33:26   start GPU7 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 29 C | 77.63/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+18:33:26   end   GPU0 NVIDIA H200 | sm 1980/1980 MHz | mem 3201/3201 MHz | 30 C | 121.64/700 W | used 48377/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000000
+18:33:26   end   GPU1 NVIDIA H200 | sm 855/1980 MHz | mem 3201/3201 MHz | 52 C | 104.29/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+18:33:26   end   GPU2 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 30 C | 75.89/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+18:33:26   end   GPU3 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 28 C | 76.81/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+18:33:26   end   GPU4 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 31 C | 77.38/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+18:33:26   end   GPU5 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 30 C | 74.66/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+18:33:26   end   GPU6 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 31 C | 76.72/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+18:33:26   end   GPU7 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 28 C | 77.21/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+18:33:26 
+18:33:26   !! 1 time(s) during this campaign another tenant appeared on GPU 1:
+18:33:26      2026-08-04 17:33:24  after f06  1 new process(es), memory +0.5 GB
+18:33:26      Families measured after the first of these are not comparable with the ones before it; re-run them on a clean card before quoting the table above.
+18:33:26   GPU0 SM clock +0.0%, temperature -2 C, throttle 0x0000000000000000 -> 0x0000000000000000
+18:33:26   GPU1 SM clock +147.8%, temperature +16 C, throttle 0x0000000000000001 -> 0x0000000000000001
+18:33:26   !! The GPU did not hold its clock across this run. Every final timing in this suite is interleaved A/B/A/B and reported as a paired statistic precisely so monotone drift cancels -- but any number NOT taken that way (coarse tuning passes, single-shot diagnostics) is suspect.
+18:33:26   GPU2 SM clock +0.0%, temperature -2 C, throttle 0x0000000000000001 -> 0x0000000000000001
+18:33:26   GPU3 SM clock +0.0%, temperature -1 C, throttle 0x0000000000000001 -> 0x0000000000000001
+18:33:26   GPU4 SM clock +0.0%, temperature -1 C, throttle 0x0000000000000001 -> 0x0000000000000001
+18:33:26   GPU5 SM clock +0.0%, temperature -2 C, throttle 0x0000000000000001 -> 0x0000000000000001
+18:33:26   GPU6 SM clock +0.0%, temperature -2 C, throttle 0x0000000000000001 -> 0x0000000000000001
+18:33:26   GPU7 SM clock +0.0%, temperature -1 C, throttle 0x0000000000000001 -> 0x0000000000000001
+18:33:26 
+18:33:26   wrote /home/guancheng/zsh/fusion/results/h200/summary.json
+18:33:26 
+18:33:26 ============================================================================================
+18:33:26 WARNINGS (also in summary.json)
+18:33:26 ============================================================================================
+18:33:26   - a co-tenant appeared on GPU 1 after f06: new compute process(es): pid 4037698 ./scope_matrix_xgpu (0.5 GB). Families measured from here on are not comparable with the earlier ones.
+18:33:26 
+18:33:26 ============================================================================================
+18:33:26 SEND BACK
+18:33:26 ============================================================================================
+18:33:26   1. /home/guancheng/zsh/fusion/results/h200            (every result JSON + summary.json)
+18:33:26   2. /home/guancheng/zsh/fusion/glm52_h200/preflight_h200.json
+18:33:26   3. /home/guancheng/zsh/fusion/log/run_h200             (driver.log + one log per family)
+18:33:26   total wall 2.18 h

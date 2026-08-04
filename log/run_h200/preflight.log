@@ -8,26 +8,26 @@ This script only reads; it installs nothing and changes no device state.
   8 GPU(s) on this host:
   rank idx   util   used GB   free GB proc   temp  state
   ------------------------------------------------------
-     0   1     0%       0.0     139.8    0     36  idle
-     1   2     0%       0.0     139.8    0     33  idle
-     2   3     0%       0.0     139.8    0     30  idle
+     0   1     0%       0.0     139.8    0     35  idle
+     1   2     0%       0.0     139.8    0     32  idle
+     2   3     0%       0.0     139.8    0     29  idle
      3   4     0%       0.0     139.8    0     32  idle
-     4   5     0%       0.0     139.8    0     33  idle
-     5   7     0%       0.3     139.5    0     30  idle
-     6   6     0%       1.4     138.4    1     37  BUSY: 1 other compute process(es): pid 1009750 /usr/bin/python (1.4 GB); 1.4 GB already allocated
-     7   0     0%      47.2      92.6    2     33  BUSY: 2 other compute process(es): pid 3836753 VLLM::StageEngineCoreProc_DP0 (42.7 GB), pid 3838750 VLLM::Stag
+     4   5     0%       0.0     139.8    0     32  idle
+     5   6     0%       0.0     139.8    0     33  idle
+     6   7     0%       0.0     139.8    0     29  idle
+     7   0     0%      47.2      92.6    2     32  BUSY: 2 other compute process(es): pid 3836753 VLLM::StageEngineCoreProc_DP0 (42.7 GB), pid 3838750 VLLM::Stag
        gpu 1  NVIDIA H200  uuid GPU-59aa5198-70aa-0e6f-16b9-a6d483af9c4e
        gpu 2  NVIDIA H200  uuid GPU-3eb2bc50-6290-2508-4dc5-e01f05c85e5f
        gpu 3  NVIDIA H200  uuid GPU-6c4cc3d3-e0bc-949d-16be-822af843e49f
        gpu 4  NVIDIA H200  uuid GPU-c20464a7-77aa-f6f2-9a70-207c42f6b4a1
        gpu 5  NVIDIA H200  uuid GPU-2c1d24fb-c9a6-9d6c-fa91-28ea2b50e17f
-       gpu 7  NVIDIA H200  uuid GPU-3aa19cef-f7a3-bd28-1b5e-2e6d8b8ca670
        gpu 6  NVIDIA H200  uuid GPU-338e7fe0-5ca6-f37f-b9b6-ea4ea6c5358b
+       gpu 7  NVIDIA H200  uuid GPU-3aa19cef-f7a3-bd28-1b5e-2e6d8b8ca670
        gpu 0  NVIDIA H200  uuid GPU-b2318e71-edbf-aa1b-dcf3-3cc3e6ea7db0
 
-  -> GPU 3 (NVIDIA H200) uuid GPU-6c4cc3d3-e0bc-949d-16be-822af843e49f
-     --gpu 3 as requested
-     CUDA_VISIBLE_DEVICES=3  CUDA_DEVICE_ORDER=PCI_BUS_ID  (this process now sees exactly one device as cuda:0)
+  -> GPU 1 (NVIDIA H200) uuid GPU-59aa5198-70aa-0e6f-16b9-a6d483af9c4e
+     --gpu 1 as requested
+     CUDA_VISIBLE_DEVICES=1  CUDA_DEVICE_ORDER=PCI_BUS_ID  (this process now sees exactly one device as cuda:0)
 
 ==============================================================================
 1. STACK
@@ -60,12 +60,12 @@ This script only reads; it installs nothing and changes no device state.
   total_memory                         150109880320
   is_multi_gpu_board                   0
   gcnArchName                          NVIDIA H200
-  uuid                                 6c4cc3d3-e0bc-949d-16be-822af843e49f
+  uuid                                 59aa5198-70aa-0e6f-16b9-a6d483af9c4e
   mem_free_bytes                       149557411840
   mem_total_bytes                      150109880320
   compute_capability                   9.0
-  nvidia_smi_index                     3
-  cuda_visible_devices                 3
+  nvidia_smi_index                     1
+  cuda_visible_devices                 1
   cuda_device_order                    PCI_BUS_ID
 
 ==============================================================================
@@ -84,11 +84,11 @@ This script only reads; it installs nothing and changes no device state.
     clocks.max.sm                      1980 MHz
     clocks.max.mem                     3201 MHz
     clocks_throttle_reasons.active     0x0000000000000000
-    power.draw                         122.64 W
+    power.draw                         122.60 W
     power.limit                        700.00 W
     enforced.power.limit               700.00 W
     power.max_limit                    700.00 W
-    temperature.gpu                    33
+    temperature.gpu                    32
     memory.total                       143771 MiB
     memory.used                        48377 MiB
     memory.free                        94780 MiB
@@ -99,27 +99,27 @@ This script only reads; it installs nothing and changes no device state.
     utilization.gpu                    0 %
     pcie.link.gen.current              5
     pcie.link.width.current            16
-  --- GPU 1 ---
+  --- GPU 1 ---  <== THIS RUN
     index                              1
     uuid                               GPU-59aa5198-70aa-0e6f-16b9-a6d483af9c4e
     name                               NVIDIA H200
     driver_version                     580.173.02
     vbios_version                      96.00.A5.00.03
     pstate                             P0
-    clocks.sm                          345 MHz
+    clocks.sm                          1980 MHz
     clocks.mem                         3201 MHz
-    clocks.gr                          345 MHz
+    clocks.gr                          1980 MHz
     clocks.max.sm                      1980 MHz
     clocks.max.mem                     3201 MHz
-    clocks_throttle_reasons.active     0x0000000000000001
-    power.draw                         78.94 W
+    clocks_throttle_reasons.active     0x0000000000000000
+    power.draw                         114.39 W
     power.limit                        700.00 W
     enforced.power.limit               700.00 W
     power.max_limit                    700.00 W
     temperature.gpu                    36
     memory.total                       143771 MiB
-    memory.used                        0 MiB
-    memory.free                        143156 MiB
+    memory.used                        527 MiB
+    memory.free                        142630 MiB
     ecc.mode.current                   Enabled
     mig.mode.current                   Disabled
     persistence_mode                   Enabled
@@ -140,11 +140,11 @@ This script only reads; it installs nothing and changes no device state.
     clocks.max.sm                      1980 MHz
     clocks.max.mem                     3201 MHz
     clocks_throttle_reasons.active     0x0000000000000001
-    power.draw                         76.72 W
+    power.draw                         76.02 W
     power.limit                        700.00 W
     enforced.power.limit               700.00 W
     power.max_limit                    700.00 W
-    temperature.gpu                    33
+    temperature.gpu                    32
     memory.total                       143771 MiB
     memory.used                        0 MiB
     memory.free                        143156 MiB
@@ -155,27 +155,27 @@ This script only reads; it installs nothing and changes no device state.
     utilization.gpu                    0 %
     pcie.link.gen.current              5
     pcie.link.width.current            16
-  --- GPU 3 ---  <== THIS RUN
+  --- GPU 3 ---
     index                              3
     uuid                               GPU-6c4cc3d3-e0bc-949d-16be-822af843e49f
     name                               NVIDIA H200
     driver_version                     580.173.02
     vbios_version                      96.00.A5.00.03
     pstate                             P0
-    clocks.sm                          1980 MHz
+    clocks.sm                          345 MHz
     clocks.mem                         3201 MHz
-    clocks.gr                          1980 MHz
+    clocks.gr                          345 MHz
     clocks.max.sm                      1980 MHz
     clocks.max.mem                     3201 MHz
-    clocks_throttle_reasons.active     0x0000000000000000
-    power.draw                         94.23 W
+    clocks_throttle_reasons.active     0x0000000000000001
+    power.draw                         77.22 W
     power.limit                        700.00 W
     enforced.power.limit               700.00 W
     power.max_limit                    700.00 W
-    temperature.gpu                    31
+    temperature.gpu                    29
     memory.total                       143771 MiB
-    memory.used                        527 MiB
-    memory.free                        142630 MiB
+    memory.used                        0 MiB
+    memory.free                        143156 MiB
     ecc.mode.current                   Enabled
     mig.mode.current                   Disabled
     persistence_mode                   Enabled
@@ -196,7 +196,7 @@ This script only reads; it installs nothing and changes no device state.
     clocks.max.sm                      1980 MHz
     clocks.max.mem                     3201 MHz
     clocks_throttle_reasons.active     0x0000000000000001
-    power.draw                         77.84 W
+    power.draw                         77.73 W
     power.limit                        700.00 W
     enforced.power.limit               700.00 W
     power.max_limit                    700.00 W
@@ -224,11 +224,11 @@ This script only reads; it installs nothing and changes no device state.
     clocks.max.sm                      1980 MHz
     clocks.max.mem                     3201 MHz
     clocks_throttle_reasons.active     0x0000000000000001
-    power.draw                         74.77 W
+    power.draw                         75.21 W
     power.limit                        700.00 W
     enforced.power.limit               700.00 W
     power.max_limit                    700.00 W
-    temperature.gpu                    33
+    temperature.gpu                    32
     memory.total                       143771 MiB
     memory.used                        0 MiB
     memory.free                        143156 MiB
@@ -246,20 +246,20 @@ This script only reads; it installs nothing and changes no device state.
     driver_version                     580.173.02
     vbios_version                      96.00.A5.00.03
     pstate                             P0
-    clocks.sm                          1980 MHz
+    clocks.sm                          345 MHz
     clocks.mem                         3201 MHz
-    clocks.gr                          1980 MHz
+    clocks.gr                          345 MHz
     clocks.max.sm                      1980 MHz
     clocks.max.mem                     3201 MHz
-    clocks_throttle_reasons.active     0x0000000000000000
-    power.draw                         126.39 W
+    clocks_throttle_reasons.active     0x0000000000000001
+    power.draw                         77.28 W
     power.limit                        700.00 W
     enforced.power.limit               700.00 W
     power.max_limit                    700.00 W
-    temperature.gpu                    37
+    temperature.gpu                    33
     memory.total                       143771 MiB
-    memory.used                        1459 MiB
-    memory.free                        141697 MiB
+    memory.used                        0 MiB
+    memory.free                        143156 MiB
     ecc.mode.current                   Enabled
     mig.mode.current                   Disabled
     persistence_mode                   Enabled
@@ -280,14 +280,14 @@ This script only reads; it installs nothing and changes no device state.
     clocks.max.sm                      1980 MHz
     clocks.max.mem                     3201 MHz
     clocks_throttle_reasons.active     0x0000000000000001
-    power.draw                         77.80 W
+    power.draw                         77.56 W
     power.limit                        700.00 W
     enforced.power.limit               700.00 W
     power.max_limit                    700.00 W
-    temperature.gpu                    30
+    temperature.gpu                    29
     memory.total                       143771 MiB
-    memory.used                        292 MiB
-    memory.free                        142865 MiB
+    memory.used                        0 MiB
+    memory.free                        143156 MiB
     ecc.mode.current                   Enabled
     mig.mode.current                   Disabled
     persistence_mode                   Enabled
@@ -326,15 +326,15 @@ This script only reads; it installs nothing and changes no device state.
 5. CALIBRATION (measured on this machine)
 ==============================================================================
   -- bandwidth (buffers >> L2) --
-    copy_1024MB_GBs            4237.7 GB/s
-    rmw_1024MB_GBs             4238.5 GB/s
-    read_1024MB_GBs            4583.6 GB/s
-    copy_2048MB_GBs            4245.3 GB/s
-    rmw_2048MB_GBs             4253.9 GB/s
-    read_2048MB_GBs            4646.8 GB/s
+    copy_1024MB_GBs            4238.8 GB/s
+    rmw_1024MB_GBs             4239.2 GB/s
+    read_1024MB_GBs            4590.6 GB/s
+    copy_2048MB_GBs            4246.0 GB/s
+    rmw_2048MB_GBs             4251.8 GB/s
+    read_2048MB_GBs            4644.8 GB/s
   -- bf16 GEMM --
-    4096x16384x6144: cuBLAS  829.34 TF/s | Triton  782.86 TF/s (94% of vendor)
-    8192x16384x6144: cuBLAS  719.72 TF/s | Triton  669.95 TF/s (93% of vendor)
+    4096x16384x6144: cuBLAS  825.30 TF/s | Triton  735.00 TF/s (89% of vendor)
+    8192x16384x6144: cuBLAS  779.83 TF/s | Triton  667.08 TF/s (86% of vendor)
   -- reachable shared-memory ceiling --
     OK    BM128 BN128 BK64 s3 -> shared=98304
     OK    BM128 BN256 BK64 s3 -> shared=147456
@@ -342,8 +342,8 @@ This script only reads; it installs nothing and changes no device state.
     OK    BM256 BN256 BK64 s3 -> shared=196608
     FAIL  BM128 BN256 BK128 s3: out of resource: shared memory, Required: 294912, Hardware limit: 232448. Reducing block sizes or `num_stages`
   -- launch cost and timer granularity --
-    launch cost         9.08 us
-    harness floor      42.19 us
+    launch cost         9.44 us
+    harness floor      37.67 us
     timer tick       0.032 us  (200/200 exact multiples)
     launch/tick calibration taken on a GPU with no other compute processes.
 
@@ -360,8 +360,8 @@ This script only reads; it installs nothing and changes no device state.
 ==============================================================================
 DONE
 ==============================================================================
-  probed nvidia-smi GPU 3 (NVIDIA H200) uuid GPU-6c4cc3d3-e0bc-949d-16be-822af843e49f
-    selection: --gpu 3 as requested
+  probed nvidia-smi GPU 1 (NVIDIA H200) uuid GPU-59aa5198-70aa-0e6f-16b9-a6d483af9c4e
+    selection: --gpu 1 as requested
   all probes completed without error
 
   -> send back: /home/guancheng/zsh/fusion/glm52_h200/preflight_h200.json

@@ -1,16 +1,16 @@
 {
   "row": {
     "regime": "decode_bs512",
-    "fused_ms": 2.8473920822143555,
-    "unfused_ms": 2.9040000438690186,
-    "speedup": 1.0198806346369553,
+    "fused_ms": 2.8463680744171143,
+    "unfused_ms": 2.8913919925689697,
+    "speedup": 1.0158180238727823,
     "fused_p10_p90": [
-      2.8434879779815674,
-      2.922463893890381
+      2.842816114425659,
+      2.87939190864563
     ],
     "unfused_p10_p90": [
-      2.9004480838775635,
-      2.980128049850464
+      2.8874239921569824,
+      2.9286720752716064
     ],
     "paired": false,
     "T": 512,
@@ -28,7 +28,7 @@
     },
     "unfused_gemm_cfg": {
       "BLOCK_M": 32,
-      "BLOCK_N": 128,
+      "BLOCK_N": 256,
       "BLOCK_K": 128,
       "num_warps": 8,
       "num_stages": 3,
@@ -36,25 +36,25 @@
       "warp_specialize": true
     },
     "unfused_act_cfg": {
-      "BLOCK_M": 1,
-      "BLOCK_N": 1024,
-      "num_warps": 2,
-      "num_stages": 2
+      "BLOCK_M": 32,
+      "BLOCK_N": 128,
+      "num_warps": 16,
+      "num_stages": 1
     },
-    "paired_speedup": 1.0198825981831952,
-    "paired_speedup_trimmed": 1.0198306654845473,
+    "paired_speedup": 1.0158651321038146,
+    "paired_speedup_trimmed": 1.0159862940433027,
     "pair_meta": {
-      "drift_frac_fused": 0.00021358568272349386,
-      "drift_frac_unfused": -0.0006005619420736455,
+      "drift_frac_fused": 5.6216570357739714e-05,
+      "drift_frac_unfused": 0.000653250754585252,
       "frac_fused_faster": 0.99,
       "machine": {
         "compare": {
-          "elapsed_s": 1.758336067199707,
+          "elapsed_s": 1.6682453155517578,
           "d_sm_mhz": 0.0,
           "sm_rel": 0.0,
           "d_mem_mhz": 0.0,
-          "d_temp_c": -2.0,
-          "d_power_w": -57.81000000000006,
+          "d_temp_c": -3.0,
+          "d_power_w": -39.389999999999986,
           "new_throttle": [],
           "suspect": false,
           "reasons": []
@@ -63,48 +63,48 @@
       "n": 200,
       "n_discarded": 0,
       "noflush_ratio_p50": NaN,
-      "order_gap_frac": 0.0003175020509211703,
-      "ratio_of_medians": 1.0198806346369553,
-      "ratio_p10": 1.0168051262230695,
-      "ratio_p50": 1.0198825981831952,
-      "ratio_p50_first_half": 1.0201830676728112,
-      "ratio_p50_fused_first": 1.02001232032579,
-      "ratio_p50_second_half": 1.0196166886500584,
-      "ratio_p50_unfused_first": 1.019688515726434,
-      "ratio_p90": 1.0220651973804888,
-      "ratio_trimmed": 1.0198306654845473,
+      "order_gap_frac": 0.0002255649862201417,
+      "ratio_of_medians": 1.0158180238727823,
+      "ratio_p10": 1.0136700119390725,
+      "ratio_p50": 1.0158651321038146,
+      "ratio_p50_first_half": 1.0157211655398004,
+      "ratio_p50_fused_first": 1.0159887148543236,
+      "ratio_p50_second_half": 1.0167021524067845,
+      "ratio_p50_unfused_first": 1.015759569217474,
+      "ratio_p90": 1.0197553116765525,
+      "ratio_trimmed": 1.0159862940433027,
       "tick": {
         "tick_ms": 3.2e-05,
-        "fused_ticks": 88981.00256919861,
-        "unfused_ticks": 90750.00137090683,
-        "gap_ticks": 1768.9988017082214,
-        "ratio_quantisation_frac": 2.225763751100615e-05,
+        "fused_ticks": 88949.00232553482,
+        "unfused_ticks": 90355.9997677803,
+        "gap_ticks": 1406.9974422454834,
+        "ratio_quantisation_frac": 2.2309730721297326e-05,
         "flagged": false,
         "note": "well above timer granularity"
       },
       "impl": "common.bench_pair",
       "interleaved": true,
-      "paired_speedup_p50": 1.0198825981831952,
-      "paired_speedup_trimmed_mean": 1.0198306654845473,
-      "paired_speedup_p10": 1.0168051262230695,
-      "paired_speedup_p90": 1.0220651973804888
+      "paired_speedup_p50": 1.0158651321038146,
+      "paired_speedup_trimmed_mean": 1.0159862940433027,
+      "paired_speedup_p10": 1.0136700119390725,
+      "paired_speedup_p90": 1.0197553116765525
     },
     "tick": {
       "timer_tick_us": 0.032,
       "timer_tick_match_frac": 1.0,
       "calibration_trusted": true,
-      "fused_ticks": 88981.00256919861,
-      "unfused_ticks": 90750.00137090683,
-      "gap_ticks": 1768.9988017082214,
+      "fused_ticks": 88949.00232553482,
+      "unfused_ticks": 90355.9997677803,
+      "gap_ticks": 1406.9974422454834,
       "tick_limited": false,
-      "quantisation_pct": 0.0011238353930911507
+      "quantisation_pct": 0.0011242397034878573
     },
-    "unfused_gemm_ms": 2.88700795173645,
-    "unfused_act_ms": 0.019071999937295914,
-    "vendor_blas_ms": 15.50380802154541,
-    "vendor_tflops": 13.29727702519953,
-    "fused_tflops": 72.40254389120695,
-    "unfused_tflops": 70.99119390278443,
+    "unfused_gemm_ms": 2.8770558834075928,
+    "unfused_act_ms": 0.018751999363303185,
+    "vendor_blas_ms": 7.906112194061279,
+    "vendor_tflops": 26.075829073467624,
+    "fused_tflops": 72.42859139017627,
+    "unfused_tflops": 71.3007543556315,
     "rel_err": 0.001993623562157154,
     "rel_err_unfused": 0.004262174014002085,
     "fused_vs_unfused_rel_err": 0.0036496350076049566,
@@ -125,8 +125,8 @@
         "formula": "max(2, num_stages - 0) * 2*BK*(BM+BN)"
       },
       "fused_winner_bytes": 122880,
-      "unfused_winner_bytes": 122880,
-      "unfused_winner_if_fused_bytes": 221184
+      "unfused_winner_bytes": 221184,
+      "unfused_winner_if_fused_bytes": 417792
     },
     "fused_kernel_stats": {
       "n_regs": 246,
@@ -134,9 +134,9 @@
       "shared_bytes": 81952
     },
     "unfused_kernel_stats": {
-      "n_regs": 80,
+      "n_regs": 128,
       "n_spills": 0,
-      "shared_bytes": 81920
+      "shared_bytes": 147456
     }
   },
   "tuning": {
@@ -151,7 +151,7 @@
         "USE_TMA": true,
         "warp_specialize": true
       },
-      "best_ms": 2.8672640323638916,
+      "best_ms": 2.8693439960479736,
       "n_tried": 200,
       "n_failed": 61,
       "n_offered": 160,
@@ -172,7 +172,7 @@
             "num_stages": 4,
             "GROUP_M": 8
           },
-          5.937183856964111,
+          5.9721598625183105,
           null
         ],
         [
@@ -184,7 +184,7 @@
             "num_stages": 2,
             "GROUP_M": 8
           },
-          3.3881280422210693,
+          3.383392095565796,
           null
         ],
         [
@@ -196,7 +196,7 @@
             "num_stages": 4,
             "GROUP_M": 8
           },
-          3.4851200580596924,
+          3.477407932281494,
           null
         ],
         [
@@ -208,7 +208,7 @@
             "num_stages": 4,
             "GROUP_M": 8
           },
-          3.7024319171905518,
+          3.592031955718994,
           null
         ],
         [
@@ -220,7 +220,7 @@
             "num_stages": 4,
             "GROUP_M": 8
           },
-          5.680511951446533,
+          5.679488182067871,
           null
         ],
         [
@@ -232,7 +232,7 @@
             "num_stages": 2,
             "GROUP_M": 8
           },
-          5.397503852844238,
+          5.39631986618042,
           null
         ],
         [
@@ -244,7 +244,7 @@
             "num_stages": 4,
             "GROUP_M": 8
           },
-          13.877792358398438,
+          13.869824409484863,
           null
         ],
         [
@@ -256,7 +256,7 @@
             "num_stages": 3,
             "GROUP_M": 8
           },
-          3.419840097427368,
+          3.393120050430298,
           null
         ],
         [
@@ -268,7 +268,7 @@
             "num_stages": 4,
             "GROUP_M": 8
           },
-          5.571680068969727,
+          5.527040004730225,
           null
         ],
         [
@@ -280,7 +280,7 @@
             "num_stages": 3,
             "GROUP_M": 8
           },
-          5.060416221618652,
+          5.063456058502197,
           null
         ],
         [
@@ -292,7 +292,7 @@
             "num_stages": 2,
             "GROUP_M": 8
           },
-          3.1198079586029053,
+          3.121504068374634,
           null
         ],
         [
@@ -304,7 +304,7 @@
             "num_stages": 2,
             "GROUP_M": 8
           },
-          3.1698880195617676,
+          3.171776056289673,
           null
         ],
         [
@@ -316,7 +316,7 @@
             "num_stages": 2,
             "GROUP_M": 8
           },
-          2.8933119773864746,
+          2.89084792137146,
           null
         ],
         [
@@ -328,7 +328,7 @@
             "num_stages": 2,
             "GROUP_M": 8
           },
-          4.758880138397217,
+          4.773312091827393,
           null
         ],
         [
@@ -340,7 +340,7 @@
             "num_stages": 4,
             "GROUP_M": 8
           },
-          5.06496000289917,
+          5.074399948120117,
           null
         ],
         [
@@ -352,7 +352,7 @@
             "num_stages": 4,
             "GROUP_M": 8
           },
-          5.883200168609619,
+          5.881951808929443,
           null
         ],
         [
@@ -364,7 +364,7 @@
             "num_stages": 2,
             "GROUP_M": 8
           },
-          3.4050240516662598,
+          3.4072320461273193,
           null
         ],
         [
@@ -376,7 +376,7 @@
             "num_stages": 2,
             "GROUP_M": 8
           },
-          44.781856536865234,
+          44.681793212890625,
           null
         ],
         [
@@ -388,7 +388,7 @@
             "num_stages": 2,
             "GROUP_M": 8
           },
-          3.595968008041382,
+          3.6065919399261475,
           null
         ],
         [
@@ -400,7 +400,7 @@
             "num_stages": 3,
             "GROUP_M": 8
           },
-          3.3872640132904053,
+          3.3740479946136475,
           null
         ],
         [
@@ -412,7 +412,7 @@
             "num_stages": 4,
             "GROUP_M": 8
           },
-          12.364288330078125,
+          12.362367630004883,
           null
         ],
         [
@@ -424,7 +424,7 @@
             "num_stages": 2,
             "GROUP_M": 8
           },
-          3.249119997024536,
+          3.25052809715271,
           null
         ],
         [
@@ -436,7 +436,7 @@
             "num_stages": 2,
             "GROUP_M": 8
           },
-          5.20854377746582,
+          5.210879802703857,
           null
         ],
         [
@@ -448,7 +448,7 @@
             "num_stages": 3,
             "GROUP_M": 8
           },
-          4.909728050231934,
+          4.909152030944824,
           null
         ],
         [
@@ -460,7 +460,7 @@
             "num_stages": 3,
             "GROUP_M": 8
           },
-          10.773183822631836,
+          10.77462387084961,
           null
         ],
         [
@@ -472,7 +472,7 @@
             "num_stages": 4,
             "GROUP_M": 8
           },
-          5.007391929626465,
+          5.004191875457764,
           null
         ],
         [
@@ -484,7 +484,7 @@
             "num_stages": 2,
             "GROUP_M": 8
           },
-          3.063647985458374,
+          3.066431999206543,
           null
         ],
         [
@@ -496,7 +496,7 @@
             "num_stages": 3,
             "GROUP_M": 8
           },
-          3.067552089691162,
+          3.0722880363464355,
           null
         ],
         [
@@ -508,7 +508,7 @@
             "num_stages": 2,
             "GROUP_M": 8
           },
-          3.193631887435913,
+          3.194432020187378,
           null
         ],
         [
@@ -520,7 +520,7 @@
             "num_stages": 4,
             "GROUP_M": 8
           },
-          3.1010560989379883,
+          3.115648031234741,
           null
         ],
         [
@@ -532,7 +532,7 @@
             "num_stages": 3,
             "GROUP_M": 8
           },
-          3.050879955291748,
+          3.054111957550049,
           null
         ],
         [
@@ -544,7 +544,7 @@
             "num_stages": 2,
             "GROUP_M": 8
           },
-          4.9094719886779785,
+          4.909791946411133,
           null
         ],
         [
@@ -556,7 +556,7 @@
             "num_stages": 4,
             "GROUP_M": 8
           },
-          7.121024131774902,
+          7.120895862579346,
           null
         ],
         [
@@ -568,7 +568,7 @@
             "num_stages": 4,
             "GROUP_M": 8
           },
-          12.604640007019043,
+          12.605759620666504,
           null
         ],
         [
@@ -580,7 +580,7 @@
             "num_stages": 3,
             "GROUP_M": 8
           },
-          11.410943984985352,
+          11.415936470031738,
           null
         ],
         [
@@ -592,7 +592,7 @@
             "num_stages": 4,
             "GROUP_M": 8
           },
-          4.603871822357178,
+          4.603551864624023,
           null
         ],
         [
@@ -604,7 +604,7 @@
             "num_stages": 4,
             "GROUP_M": 8
           },
-          6.355135917663574,
+          6.356895923614502,
           null
         ],
         [
@@ -616,7 +616,7 @@
             "num_stages": 3,
             "GROUP_M": 8
           },
-          3.9779839515686035,
+          4.001760005950928,
           null
         ],
         [
@@ -628,7 +628,7 @@
             "num_stages": 2,
             "GROUP_M": 8
           },
-          9.88976001739502,
+          9.889311790466309,
           null
         ],
         [
@@ -640,7 +640,7 @@
             "num_stages": 4,
             "GROUP_M": 8
           },
-          4.902688026428223,
+          4.905216217041016,
           null
         ],
         [
@@ -652,7 +652,7 @@
             "num_stages": 2,
             "GROUP_M": 8
           },
-          5.825503826141357,
+          5.823359966278076,
           null
         ],
         [
@@ -664,7 +664,7 @@
             "num_stages": 2,
             "GROUP_M": 8
           },
-          23.343584060668945,
+          23.374847412109375,
           null
         ],
         [
@@ -676,7 +676,7 @@
             "num_stages": 3,
             "GROUP_M": 8
           },
-          23.474464416503906,
+          23.793760299682617,
           null
         ],
         [
@@ -688,7 +688,7 @@
             "num_stages": 4,
             "GROUP_M": 8
           },
-          31.65635108947754,
+          31.24723243713379,
           null
         ],
         [
@@ -701,7 +701,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          5.973696231842041,
+          5.971263885498047,
           null
         ],
         [
@@ -714,7 +714,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          3.2985920906066895,
+          3.294015884399414,
           null
         ],
         [
@@ -728,7 +728,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          3.360447883605957,
+          3.353663921356201,
           null
         ],
         [
@@ -741,7 +741,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          3.5881600379943848,
+          3.575392007827759,
           null
         ],
         [
@@ -754,7 +754,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          7.1848320960998535,
+          7.188896179199219,
           null
         ],
         [
@@ -767,7 +767,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          3.43286395072937,
+          3.4263360500335693,
           null
         ],
         [
@@ -780,7 +780,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          3.780992031097412,
+          3.7705600261688232,
           null
         ],
         [
@@ -793,7 +793,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          5.444896221160889,
+          5.443967819213867,
           null
         ],
         [
@@ -807,7 +807,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          6.7030720710754395,
+          6.712543964385986,
           null
         ],
         [
@@ -820,7 +820,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          3.408895969390869,
+          3.402400016784668,
           null
         ],
         [
@@ -833,7 +833,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          3.3376638889312744,
+          3.3438720703125,
           null
         ],
         [
@@ -846,7 +846,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          3.308095932006836,
+          3.3107519149780273,
           null
         ],
         [
@@ -859,7 +859,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          4.151616096496582,
+          4.115968227386475,
           null
         ],
         [
@@ -873,7 +873,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          5.530975818634033,
+          5.525760173797607,
           null
         ],
         [
@@ -887,7 +887,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          5.605440139770508,
+          5.6069440841674805,
           null
         ],
         [
@@ -900,7 +900,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          5.252992153167725,
+          5.25596809387207,
           null
         ],
         [
@@ -914,7 +914,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          5.531775951385498,
+          5.54582405090332,
           null
         ],
         [
@@ -927,7 +927,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          5.947360038757324,
+          6.095808029174805,
           null
         ],
         [
@@ -940,7 +940,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          3.3172800540924072,
+          3.324928045272827,
           null
         ],
         [
@@ -954,7 +954,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          3.3261120319366455,
+          3.321984052658081,
           null
         ],
         [
@@ -967,7 +967,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          3.31878399848938,
+          3.3118720054626465,
           null
         ],
         [
@@ -981,7 +981,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          3.325632095336914,
+          3.335808038711548,
           null
         ],
         [
@@ -994,7 +994,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          3.349247932434082,
+          3.3587839603424072,
           null
         ],
         [
@@ -1007,7 +1007,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          5.116511821746826,
+          5.11516809463501,
           null
         ],
         [
@@ -1021,7 +1021,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          4.90880012512207,
+          4.9148478507995605,
           null
         ],
         [
@@ -1034,7 +1034,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          5.276063919067383,
+          5.277088165283203,
           null
         ],
         [
@@ -1047,7 +1047,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          11.740447998046875,
+          11.733663558959961,
           null
         ],
         [
@@ -1060,7 +1060,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          5.649792194366455,
+          5.647647857666016,
           null
         ],
         [
@@ -1074,7 +1074,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          13.880800247192383,
+          13.883199691772461,
           null
         ],
         [
@@ -1088,7 +1088,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          13.911744117736816,
+          13.919808387756348,
           null
         ],
         [
@@ -1102,7 +1102,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          2.9719040393829346,
+          2.9714879989624023,
           null
         ],
         [
@@ -1115,7 +1115,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          4.510464191436768,
+          4.509215831756592,
           null
         ],
         [
@@ -1128,7 +1128,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          7.825503826141357,
+          7.816256046295166,
           null
         ],
         [
@@ -1142,7 +1142,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          2.8672640323638916,
+          2.8693439960479736,
           null
         ],
         [
@@ -1155,7 +1155,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          6.442592144012451,
+          6.442624092102051,
           null
         ],
         [
@@ -1168,7 +1168,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          5.068640232086182,
+          5.076352119445801,
           null
         ],
         [
@@ -1181,7 +1181,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          5.0359039306640625,
+          5.037856101989746,
           null
         ],
         [
@@ -1195,7 +1195,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          5.586207866668701,
+          5.579360008239746,
           null
         ],
         [
@@ -1209,7 +1209,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          3.0697920322418213,
+          3.0727360248565674,
           null
         ],
         [
@@ -1223,7 +1223,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          2.8858559131622314,
+          2.888672113418579,
           null
         ],
         [
@@ -1237,7 +1237,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          2.8916800022125244,
+          2.8922879695892334,
           null
         ],
         [
@@ -1251,7 +1251,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          5.764095783233643,
+          5.769824028015137,
           null
         ],
         [
@@ -1264,7 +1264,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          3.1995840072631836,
+          3.1993279457092285,
           null
         ],
         [
@@ -1277,7 +1277,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          4.782559871673584,
+          4.777408123016357,
           null
         ],
         [
@@ -1291,7 +1291,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          4.785984039306641,
+          4.785344123840332,
           null
         ],
         [
@@ -1304,7 +1304,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          11.982815742492676,
+          11.982208251953125,
           null
         ],
         [
@@ -1317,7 +1317,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          3.516767978668213,
+          3.5293760299682617,
           null
         ],
         [
@@ -1330,7 +1330,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          3.288640022277832,
+          3.2876479625701904,
           null
         ],
         [
@@ -1343,7 +1343,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          3.6190080642700195,
+          3.617568016052246,
           null
         ],
         [
@@ -1356,7 +1356,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          10.20035171508789,
+          10.201120376586914,
           null
         ],
         [
@@ -1369,7 +1369,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          5.123871803283691,
+          5.123744010925293,
           null
         ],
         [
@@ -1382,7 +1382,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          5.360159873962402,
+          5.357471942901611,
           null
         ],
         [
@@ -1396,7 +1396,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          4.803232192993164,
+          4.804351806640625,
           null
         ],
         [
@@ -1409,7 +1409,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          3.091423988342285,
+          3.096224069595337,
           null
         ],
         [
@@ -1423,7 +1423,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          3.1416640281677246,
+          3.139552116394043,
           null
         ],
         [
@@ -1437,7 +1437,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          4.724736213684082,
+          4.724768161773682,
           null
         ],
         [
@@ -1451,7 +1451,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          3.0430400371551514,
+          3.0301759243011475,
           null
         ],
         [
@@ -1464,7 +1464,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          4.731200218200684,
+          4.738592147827148,
           null
         ],
         [
@@ -1477,7 +1477,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          5.474559783935547,
+          5.476287841796875,
           null
         ],
         [
@@ -1491,7 +1491,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          5.475103855133057,
+          5.475232124328613,
           null
         ],
         [
@@ -1504,7 +1504,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          4.982304096221924,
+          4.983136177062988,
           null
         ],
         [
@@ -1517,7 +1517,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          5.624639987945557,
+          5.619935989379883,
           null
         ],
         [
@@ -1530,7 +1530,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          6.863264083862305,
+          6.872384071350098,
           null
         ],
         [
@@ -1544,7 +1544,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          5.511616230010986,
+          5.512479782104492,
           null
         ],
         [
@@ -1557,7 +1557,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          2.9433279037475586,
+          2.944511890411377,
           null
         ],
         [
@@ -1571,7 +1571,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          2.9426560401916504,
+          2.944927930831909,
           null
         ],
         [
@@ -1584,7 +1584,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          3.2999680042266846,
+          3.300544023513794,
           null
         ],
         [
@@ -1598,7 +1598,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          3.276992082595825,
+          3.2782399654388428,
           null
         ],
         [
@@ -1611,7 +1611,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          5.226240158081055,
+          5.226143836975098,
           null
         ],
         [
@@ -1624,7 +1624,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          5.693120002746582,
+          5.698912143707275,
           null
         ],
         [
@@ -1637,7 +1637,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          5.143904209136963,
+          5.145088195800781,
           null
         ],
         [
@@ -1651,7 +1651,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          3.231328010559082,
+          3.234879970550537,
           null
         ],
         [
@@ -1664,7 +1664,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          3.3917438983917236,
+          3.3947839736938477,
           null
         ],
         [
@@ -1677,7 +1677,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          3.032032012939453,
+          3.0301759243011475,
           null
         ],
         [
@@ -1690,7 +1690,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          4.9449920654296875,
+          4.955647945404053,
           null
         ],
         [
@@ -1703,7 +1703,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          6.101215839385986,
+          6.149759769439697,
           null
         ],
         [
@@ -1717,7 +1717,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          7.981344223022461,
+          7.981823921203613,
           null
         ],
         [
@@ -1731,7 +1731,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          16.33091163635254,
+          16.33296012878418,
           null
         ],
         [
@@ -1745,7 +1745,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          5.544320106506348,
+          5.540287971496582,
           null
         ],
         [
@@ -1758,7 +1758,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          7.841407775878906,
+          7.840223789215088,
           null
         ],
         [
@@ -1771,7 +1771,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          6.3278398513793945,
+          6.325664043426514,
           null
         ],
         [
@@ -1784,7 +1784,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          12.604767799377441,
+          12.608063697814941,
           null
         ],
         [
@@ -1798,7 +1798,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          12.968095779418945,
+          12.930368423461914,
           null
         ],
         [
@@ -1811,7 +1811,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          5.397088050842285,
+          5.39785623550415,
           null
         ],
         [
@@ -1825,7 +1825,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          10.989472389221191,
+          10.990015983581543,
           null
         ],
         [
@@ -1838,7 +1838,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          11.030879974365234,
+          11.031328201293945,
           null
         ],
         [
@@ -1852,7 +1852,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          11.031519889831543,
+          11.031776428222656,
           null
         ],
         [
@@ -1865,7 +1865,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          6.702047824859619,
+          6.69708776473999,
           null
         ],
         [
@@ -1878,7 +1878,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          3.392416000366211,
+          3.3751039505004883,
           null
         ],
         [
@@ -1892,7 +1892,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          3.846112012863159,
+          3.8461759090423584,
           null
         ],
         [
@@ -1906,7 +1906,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          4.906527996063232,
+          4.905055999755859,
           null
         ],
         [
@@ -1919,7 +1919,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          4.654784202575684,
+          4.657760143280029,
           null
         ],
         [
@@ -1932,7 +1932,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          7.632544040679932,
+          7.6354241371154785,
           null
         ],
         [
@@ -1946,7 +1946,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          5.669087886810303,
+          5.67142391204834,
           null
         ],
         [
@@ -1959,7 +1959,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          4.417215824127197,
+          4.416639804840088,
           null
         ],
         [
@@ -1973,7 +1973,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          5.685503959655762,
+          5.6826558113098145,
           null
         ],
         [
@@ -1986,7 +1986,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          4.066112041473389,
+          4.065408229827881,
           null
         ],
         [
@@ -1999,7 +1999,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          3.7397119998931885,
+          3.7404799461364746,
           null
         ],
         [
@@ -2013,7 +2013,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          3.738784074783325,
+          3.7415359020233154,
           null
         ],
         [
@@ -2027,7 +2027,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          17.914464950561523,
+          18.233375549316406,
           null
         ],
         [
@@ -2041,7 +2041,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          2.9879679679870605,
+          2.9920639991760254,
           null
         ],
         [
@@ -2055,7 +2055,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          3.380703926086426,
+          3.3815040588378906,
           null
         ],
         [
@@ -2069,7 +2069,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          3.401535987854004,
+          3.400991916656494,
           null
         ],
         [
@@ -2083,7 +2083,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          2.887455940246582,
+          2.8892478942871094,
           null
         ],
         [
@@ -2097,7 +2097,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          2.901344060897827,
+          2.9033920764923096,
           null
         ],
         [
@@ -2111,40 +2111,12 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          2.9402880668640137,
+          2.9447999000549316,
           null
         ],
         [
           {
             "BLOCK_M": 32,
-            "BLOCK_N": 64,
-            "BLOCK_K": 128,
-            "num_warps": 4,
-            "num_stages": 3,
-            "GROUP_M": 8,
-            "USE_TMA": true,
-            "warp_specialize": true
-          },
-          null,
-          "RuntimeError: PassManager::run failed"
-        ],
-        [
-          {
-            "BLOCK_M": 16,
-            "BLOCK_N": 64,
-            "BLOCK_K": 128,
-            "num_warps": 4,
-            "num_stages": 3,
-            "GROUP_M": 8,
-            "USE_TMA": true,
-            "warp_specialize": true
-          },
-          null,
-          "RuntimeError: PassManager::run failed"
-        ],
-        [
-          {
-            "BLOCK_M": 64,
             "BLOCK_N": 64,
             "BLOCK_K": 128,
             "num_warps": 4,
@@ -2159,6 +2131,34 @@
         [
           {
             "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 128,
+            "num_warps": 4,
+            "num_stages": 3,
+            "GROUP_M": 8,
+            "USE_TMA": true,
+            "warp_specialize": true
+          },
+          null,
+          "RuntimeError: PassManager::run failed"
+        ],
+        [
+          {
+            "BLOCK_M": 64,
+            "BLOCK_N": 64,
+            "BLOCK_K": 128,
+            "num_warps": 4,
+            "num_stages": 3,
+            "GROUP_M": 8,
+            "USE_TMA": true,
+            "warp_specialize": true
+          },
+          null,
+          "RuntimeError: PassManager::run failed"
+        ],
+        [
+          {
+            "BLOCK_M": 16,
             "BLOCK_N": 32,
             "BLOCK_K": 128,
             "num_warps": 2,
@@ -2167,7 +2167,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          3.411776065826416,
+          3.407968044281006,
           null
         ],
         [
@@ -2181,7 +2181,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          3.30403208732605,
+          3.3028481006622314,
           null
         ],
         [
@@ -2195,7 +2195,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          3.0008320808410645,
+          3.016223907470703,
           null
         ],
         [
@@ -2209,7 +2209,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          208.6326446533203,
+          207.89369201660156,
           null
         ],
         [
@@ -2987,7 +2987,7 @@
         "USE_TMA": true,
         "warp_specialize": true
       },
-      "best_ms": 2.8455679416656494,
+      "best_ms": 2.845855951309204,
       "n_tried": 32,
       "n_failed": 8,
       "n_offered": 41,
@@ -3008,7 +3008,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          3.4228479862213135,
+          3.4166719913482666,
           null
         ],
         [
@@ -3022,7 +3022,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          3.4133760929107666,
+          3.4121599197387695,
           null
         ],
         [
@@ -3036,7 +3036,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          3.374880075454712,
+          3.3762240409851074,
           null
         ],
         [
@@ -3050,7 +3050,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          3.3850560188293457,
+          3.383455991744995,
           null
         ],
         [
@@ -3064,7 +3064,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          3.470367908477783,
+          3.6528639793395996,
           null
         ],
         [
@@ -3078,7 +3078,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          3.3005759716033936,
+          3.3036160469055176,
           null
         ],
         [
@@ -3092,7 +3092,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          2.8839681148529053,
+          2.8893439769744873,
           null
         ],
         [
@@ -3106,7 +3106,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          2.889024019241333,
+          2.8904318809509277,
           null
         ],
         [
@@ -3120,7 +3120,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          3.4714879989624023,
+          3.4751040935516357,
           null
         ],
         [
@@ -3134,7 +3134,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          2.867647886276245,
+          2.8703041076660156,
           null
         ],
         [
@@ -3148,7 +3148,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          2.8908801078796387,
+          2.9009599685668945,
           null
         ],
         [
@@ -3162,7 +3162,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          8.308511734008789,
+          8.337759971618652,
           null
         ],
         [
@@ -3176,7 +3176,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          3.012223958969116,
+          3.0130560398101807,
           null
         ],
         [
@@ -3190,7 +3190,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          3.427135944366455,
+          3.4311039447784424,
           null
         ],
         [
@@ -3204,7 +3204,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          3.0591039657592773,
+          3.06060791015625,
           null
         ],
         [
@@ -3218,7 +3218,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          2.9911038875579834,
+          2.993760108947754,
           null
         ],
         [
@@ -3232,7 +3232,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          3.0001919269561768,
+          3.007200002670288,
           null
         ],
         [
@@ -3246,7 +3246,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          2.954240083694458,
+          2.9519999027252197,
           null
         ],
         [
@@ -3260,7 +3260,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          2.862623929977417,
+          2.863071918487549,
           null
         ],
         [
@@ -3274,7 +3274,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          2.9117119312286377,
+          2.911263942718506,
           null
         ],
         [
@@ -3288,7 +3288,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          2.8836159706115723,
+          2.8860158920288086,
           null
         ],
         [
@@ -3302,7 +3302,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          2.8455679416656494,
+          2.845855951309204,
           null
         ],
         [
@@ -3316,7 +3316,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          2.8682239055633545,
+          2.8696320056915283,
           null
         ],
         [
@@ -3330,7 +3330,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          2.8990719318389893,
+          2.8940799236297607,
           null
         ],
         [
@@ -3344,7 +3344,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          2.9738240242004395,
+          2.9771840572357178,
           null
         ],
         [
@@ -3358,7 +3358,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          3.504096031188965,
+          3.493664026260376,
           null
         ],
         [
@@ -3372,7 +3372,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          3.400576114654541,
+          3.425920009613037,
           null
         ],
         [
@@ -3386,7 +3386,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          2.864448070526123,
+          2.8681280612945557,
           null
         ],
         [
@@ -3400,7 +3400,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          2.872767925262451,
+          2.886176109313965,
           null
         ],
         [
@@ -3414,7 +3414,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          2.8508479595184326,
+          2.850048065185547,
           null
         ],
         [
@@ -3428,7 +3428,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          2.8791680335998535,
+          2.8845438957214355,
           null
         ],
         [
@@ -3442,7 +3442,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          3.471679925918579,
+          3.4709761142730713,
           null
         ],
         [
@@ -3456,7 +3456,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          2.854048013687134,
+          2.854304075241089,
           null
         ],
         [
@@ -3470,7 +3470,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          2.895263910293579,
+          2.894752025604248,
           null
         ],
         [
@@ -3484,7 +3484,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          3.4274239540100098,
+          3.4265921115875244,
           null
         ],
         [
@@ -3498,7 +3498,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          3.403007984161377,
+          3.4803519248962402,
           null
         ],
         [
@@ -3512,7 +3512,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          3.403520107269287,
+          3.390687942504883,
           null
         ],
         [
@@ -3526,7 +3526,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          3.544095993041992,
+          3.552544116973877,
           null
         ],
         [
@@ -3540,7 +3540,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          3.0080320835113525,
+          3.1257920265197754,
           null
         ],
         [
@@ -3554,7 +3554,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          6.507199764251709,
+          6.506271839141846,
           null
         ],
         [
@@ -3681,7 +3681,7 @@
         "GROUP_M": 8,
         "warp_specialize": true
       },
-      "best_ms": 2.888223886489868,
+      "best_ms": 2.887648105621338,
       "n_tried": 200,
       "n_failed": 36,
       "n_offered": 194,
@@ -3703,7 +3703,7 @@
             "num_stages": 2,
             "GROUP_M": 8
           },
-          5.622176170349121,
+          5.619103908538818,
           null
         ],
         [
@@ -3715,7 +3715,7 @@
             "num_stages": 4,
             "GROUP_M": 8
           },
-          5.8691840171813965,
+          5.86624002456665,
           null
         ],
         [
@@ -3727,7 +3727,7 @@
             "num_stages": 4,
             "GROUP_M": 8
           },
-          3.378495931625366,
+          3.3826560974121094,
           null
         ],
         [
@@ -3739,7 +3739,7 @@
             "num_stages": 4,
             "GROUP_M": 8
           },
-          3.4060161113739014,
+          3.401632070541382,
           null
         ],
         [
@@ -3751,7 +3751,7 @@
             "num_stages": 2,
             "GROUP_M": 8
           },
-          2.958911895751953,
+          2.958847999572754,
           null
         ],
         [
@@ -3763,7 +3763,7 @@
             "num_stages": 4,
             "GROUP_M": 8
           },
-          3.275424003601074,
+          3.382848024368286,
           null
         ],
         [
@@ -3775,7 +3775,7 @@
             "num_stages": 2,
             "GROUP_M": 8
           },
-          5.1528639793396,
+          5.146048069000244,
           null
         ],
         [
@@ -3787,7 +3787,7 @@
             "num_stages": 4,
             "GROUP_M": 8
           },
-          3.0566720962524414,
+          3.0557758808135986,
           null
         ],
         [
@@ -3799,7 +3799,7 @@
             "num_stages": 3,
             "GROUP_M": 8
           },
-          2.916287899017334,
+          2.91759991645813,
           null
         ],
         [
@@ -3811,7 +3811,7 @@
             "num_stages": 3,
             "GROUP_M": 8
           },
-          3.7821760177612305,
+          3.784032106399536,
           null
         ],
         [
@@ -3823,7 +3823,7 @@
             "num_stages": 4,
             "GROUP_M": 8
           },
-          7.478752136230469,
+          7.479519844055176,
           null
         ],
         [
@@ -3835,7 +3835,7 @@
             "num_stages": 2,
             "GROUP_M": 8
           },
-          3.223520040512085,
+          3.220736026763916,
           null
         ],
         [
@@ -3847,7 +3847,7 @@
             "num_stages": 3,
             "GROUP_M": 8
           },
-          3.0172479152679443,
+          3.0129919052124023,
           null
         ],
         [
@@ -3859,7 +3859,7 @@
             "num_stages": 3,
             "GROUP_M": 8
           },
-          6.691743850708008,
+          6.678463935852051,
           null
         ],
         [
@@ -3871,7 +3871,7 @@
             "num_stages": 2,
             "GROUP_M": 8
           },
-          3.5577280521392822,
+          3.563807964324951,
           null
         ],
         [
@@ -3883,7 +3883,7 @@
             "num_stages": 2,
             "GROUP_M": 8
           },
-          4.368512153625488,
+          4.365600109100342,
           null
         ],
         [
@@ -3895,7 +3895,7 @@
             "num_stages": 2,
             "GROUP_M": 8
           },
-          7.3515520095825195,
+          7.352672100067139,
           null
         ],
         [
@@ -3907,7 +3907,7 @@
             "num_stages": 3,
             "GROUP_M": 8
           },
-          6.931424140930176,
+          6.932991981506348,
           null
         ],
         [
@@ -3919,7 +3919,7 @@
             "num_stages": 4,
             "GROUP_M": 8
           },
-          3.3665919303894043,
+          3.37391996383667,
           null
         ],
         [
@@ -3931,7 +3931,7 @@
             "num_stages": 2,
             "GROUP_M": 8
           },
-          6.156447887420654,
+          6.155712127685547,
           null
         ],
         [
@@ -3943,7 +3943,7 @@
             "num_stages": 2,
             "GROUP_M": 8
           },
-          5.200575828552246,
+          5.187808036804199,
           null
         ],
         [
@@ -3955,7 +3955,7 @@
             "num_stages": 3,
             "GROUP_M": 8
           },
-          4.214784145355225,
+          4.211423873901367,
           null
         ],
         [
@@ -3967,7 +3967,7 @@
             "num_stages": 4,
             "GROUP_M": 8
           },
-          3.0772480964660645,
+          3.072000026702881,
           null
         ],
         [
@@ -3979,7 +3979,7 @@
             "num_stages": 2,
             "GROUP_M": 8
           },
-          6.71884822845459,
+          6.720032215118408,
           null
         ],
         [
@@ -3991,7 +3991,7 @@
             "num_stages": 3,
             "GROUP_M": 8
           },
-          5.014048099517822,
+          5.0043840408325195,
           null
         ],
         [
@@ -4003,7 +4003,7 @@
             "num_stages": 2,
             "GROUP_M": 8
           },
-          4.041376113891602,
+          4.040256023406982,
           null
         ],
         [
@@ -4015,7 +4015,7 @@
             "num_stages": 4,
             "GROUP_M": 8
           },
-          3.9028480052948,
+          3.902048110961914,
           null
         ],
         [
@@ -4027,7 +4027,7 @@
             "num_stages": 4,
             "GROUP_M": 8
           },
-          4.914976119995117,
+          4.905888080596924,
           null
         ],
         [
@@ -4039,7 +4039,7 @@
             "num_stages": 2,
             "GROUP_M": 8
           },
-          3.237056016921997,
+          3.233599901199341,
           null
         ],
         [
@@ -4051,7 +4051,7 @@
             "num_stages": 4,
             "GROUP_M": 8
           },
-          5.822879791259766,
+          5.823264122009277,
           null
         ],
         [
@@ -4063,7 +4063,7 @@
             "num_stages": 4,
             "GROUP_M": 8
           },
-          7.705567836761475,
+          7.706399917602539,
           null
         ],
         [
@@ -4075,7 +4075,7 @@
             "num_stages": 3,
             "GROUP_M": 8
           },
-          5.607264041900635,
+          5.614463806152344,
           null
         ],
         [
@@ -4087,7 +4087,7 @@
             "num_stages": 4,
             "GROUP_M": 8
           },
-          8.575231552124023,
+          8.576383590698242,
           null
         ],
         [
@@ -4099,7 +4099,7 @@
             "num_stages": 4,
             "GROUP_M": 8
           },
-          14.6178560256958,
+          14.620960235595703,
           null
         ],
         [
@@ -4111,7 +4111,7 @@
             "num_stages": 3,
             "GROUP_M": 8
           },
-          12.838111877441406,
+          12.839584350585938,
           null
         ],
         [
@@ -4123,7 +4123,7 @@
             "num_stages": 2,
             "GROUP_M": 8
           },
-          6.803455829620361,
+          6.803391933441162,
           null
         ],
         [
@@ -4135,7 +4135,7 @@
             "num_stages": 4,
             "GROUP_M": 8
           },
-          4.524320125579834,
+          4.558591842651367,
           null
         ],
         [
@@ -4147,7 +4147,7 @@
             "num_stages": 4,
             "GROUP_M": 8
           },
-          13.260704040527344,
+          13.265888214111328,
           null
         ],
         [
@@ -4159,7 +4159,7 @@
             "num_stages": 2,
             "GROUP_M": 8
           },
-          4.966015815734863,
+          4.9640960693359375,
           null
         ],
         [
@@ -4171,7 +4171,7 @@
             "num_stages": 3,
             "GROUP_M": 8
           },
-          4.216447830200195,
+          4.212287902832031,
           null
         ],
         [
@@ -4183,7 +4183,7 @@
             "num_stages": 2,
             "GROUP_M": 8
           },
-          4.989759922027588,
+          4.993824005126953,
           null
         ],
         [
@@ -4195,7 +4195,7 @@
             "num_stages": 2,
             "GROUP_M": 8
           },
-          4.098368167877197,
+          4.100992202758789,
           null
         ],
         [
@@ -4208,7 +4208,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          5.149983882904053,
+          5.150400161743164,
           null
         ],
         [
@@ -4221,7 +4221,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          3.4279680252075195,
+          3.426624059677124,
           null
         ],
         [
@@ -4234,7 +4234,7 @@
             "GROUP_M": 8,
             "num_ctas": 2
           },
-          6.974495887756348,
+          6.978367805480957,
           null
         ],
         [
@@ -4247,7 +4247,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          3.4931840896606445,
+          3.4953598976135254,
           null
         ],
         [
@@ -4260,7 +4260,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          5.287839889526367,
+          5.276639938354492,
           null
         ],
         [
@@ -4274,7 +4274,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          5.411200046539307,
+          5.408512115478516,
           null
         ],
         [
@@ -4288,7 +4288,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          5.582111835479736,
+          5.570687770843506,
           null
         ],
         [
@@ -4301,7 +4301,7 @@
             "GROUP_M": 8,
             "num_ctas": 2
           },
-          10.186176300048828,
+          10.188511848449707,
           null
         ],
         [
@@ -4314,7 +4314,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          3.364351987838745,
+          3.365247964859009,
           null
         ],
         [
@@ -4328,7 +4328,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          3.4254720211029053,
+          3.4221439361572266,
           null
         ],
         [
@@ -4341,7 +4341,7 @@
             "GROUP_M": 8,
             "num_ctas": 2
           },
-          6.748991966247559,
+          6.745567798614502,
           null
         ],
         [
@@ -4354,7 +4354,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          3.6184000968933105,
+          3.666879892349243,
           null
         ],
         [
@@ -4367,7 +4367,7 @@
             "GROUP_M": 8,
             "num_ctas": 2
           },
-          3.408479928970337,
+          3.405600070953369,
           null
         ],
         [
@@ -4380,7 +4380,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          5.492063999176025,
+          5.483615875244141,
           null
         ],
         [
@@ -4393,7 +4393,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          5.48524808883667,
+          5.470623970031738,
           null
         ],
         [
@@ -4407,7 +4407,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          5.353663921356201,
+          5.3440961837768555,
           null
         ],
         [
@@ -4420,7 +4420,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          5.6724162101745605,
+          5.672287940979004,
           null
         ],
         [
@@ -4433,7 +4433,7 @@
             "GROUP_M": 8,
             "num_ctas": 2
           },
-          9.666815757751465,
+          9.667679786682129,
           null
         ],
         [
@@ -4446,7 +4446,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          3.346911907196045,
+          3.3475520610809326,
           null
         ],
         [
@@ -4459,7 +4459,7 @@
             "GROUP_M": 8,
             "num_ctas": 2
           },
-          5.056511878967285,
+          5.053247928619385,
           null
         ],
         [
@@ -4472,7 +4472,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          3.6943039894104004,
+          3.6919360160827637,
           null
         ],
         [
@@ -4485,7 +4485,7 @@
             "GROUP_M": 8,
             "num_ctas": 2
           },
-          4.0768961906433105,
+          4.078048229217529,
           null
         ],
         [
@@ -4498,7 +4498,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          5.826240062713623,
+          5.848576068878174,
           null
         ],
         [
@@ -4512,7 +4512,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          4.01961612701416,
+          4.016384124755859,
           null
         ],
         [
@@ -4525,7 +4525,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          3.345439910888672,
+          3.331007957458496,
           null
         ],
         [
@@ -4538,7 +4538,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          3.318272113800049,
+          3.3148159980773926,
           null
         ],
         [
@@ -4551,7 +4551,7 @@
             "GROUP_M": 8,
             "num_ctas": 2
           },
-          3.8359360694885254,
+          3.814784049987793,
           null
         ],
         [
@@ -4564,7 +4564,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          4.856832027435303,
+          4.871071815490723,
           null
         ],
         [
@@ -4577,7 +4577,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          4.236959934234619,
+          4.237599849700928,
           null
         ],
         [
@@ -4590,7 +4590,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          5.1735358238220215,
+          5.159776210784912,
           null
         ],
         [
@@ -4604,7 +4604,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          4.846271991729736,
+          4.847743988037109,
           null
         ],
         [
@@ -4617,7 +4617,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          3.0215680599212646,
+          3.025631904602051,
           null
         ],
         [
@@ -4630,7 +4630,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          4.744192123413086,
+          4.741407871246338,
           null
         ],
         [
@@ -4644,7 +4644,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          5.558207988739014,
+          5.554304122924805,
           null
         ],
         [
@@ -4657,7 +4657,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          3.0715200901031494,
+          3.0874240398406982,
           null
         ],
         [
@@ -4670,7 +4670,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          4.323999881744385,
+          4.32425594329834,
           null
         ],
         [
@@ -4684,7 +4684,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          4.770847797393799,
+          4.762303829193115,
           null
         ],
         [
@@ -4697,7 +4697,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          7.397823810577393,
+          7.39734411239624,
           null
         ],
         [
@@ -4711,7 +4711,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          7.398015975952148,
+          7.397119998931885,
           null
         ],
         [
@@ -4724,7 +4724,7 @@
             "GROUP_M": 8,
             "num_ctas": 2
           },
-          12.3274564743042,
+          12.330240249633789,
           null
         ],
         [
@@ -4737,7 +4737,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          3.295743942260742,
+          3.2886719703674316,
           null
         ],
         [
@@ -4751,7 +4751,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          5.28166389465332,
+          5.279200077056885,
           null
         ],
         [
@@ -4764,7 +4764,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          2.9732160568237305,
+          2.9768640995025635,
           null
         ],
         [
@@ -4777,7 +4777,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          5.695519924163818,
+          5.695903778076172,
           null
         ],
         [
@@ -4790,7 +4790,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          3.752448081970215,
+          3.7514240741729736,
           null
         ],
         [
@@ -4804,7 +4804,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          3.9414401054382324,
+          3.937407970428467,
           null
         ],
         [
@@ -4817,7 +4817,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          4.816959857940674,
+          4.813888072967529,
           null
         ],
         [
@@ -4830,7 +4830,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          4.945312023162842,
+          4.945055961608887,
           null
         ],
         [
@@ -4843,7 +4843,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          5.0273919105529785,
+          5.026559829711914,
           null
         ],
         [
@@ -4856,7 +4856,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          7.516128063201904,
+          7.516575813293457,
           null
         ],
         [
@@ -4869,7 +4869,7 @@
             "GROUP_M": 8,
             "num_ctas": 2
           },
-          3.2669119834899902,
+          3.2739200592041016,
           null
         ],
         [
@@ -4882,7 +4882,7 @@
             "GROUP_M": 8,
             "num_ctas": 2
           },
-          2.9205119609832764,
+          2.9073920249938965,
           null
         ],
         [
@@ -4896,7 +4896,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          5.83846378326416,
+          5.839903831481934,
           null
         ],
         [
@@ -4909,7 +4909,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          3.6289279460906982,
+          3.640768051147461,
           null
         ],
         [
@@ -4922,7 +4922,7 @@
             "GROUP_M": 8,
             "num_ctas": 2
           },
-          6.970848083496094,
+          6.971776008605957,
           null
         ],
         [
@@ -4936,7 +4936,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          3.7911040782928467,
+          3.763551950454712,
           null
         ],
         [
@@ -4950,7 +4950,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          5.628159999847412,
+          5.617824077606201,
           null
         ],
         [
@@ -4963,7 +4963,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          4.879392147064209,
+          4.8788161277771,
           null
         ],
         [
@@ -4976,7 +4976,7 @@
             "GROUP_M": 8,
             "num_ctas": 2
           },
-          10.720640182495117,
+          10.719584465026855,
           null
         ],
         [
@@ -4989,7 +4989,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          3.2459518909454346,
+          3.2554879188537598,
           null
         ],
         [
@@ -5002,7 +5002,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          3.0976641178131104,
+          3.0880000591278076,
           null
         ],
         [
@@ -5015,7 +5015,7 @@
             "GROUP_M": 8,
             "num_ctas": 2
           },
-          5.691167831420898,
+          5.692351818084717,
           null
         ],
         [
@@ -5028,7 +5028,7 @@
             "GROUP_M": 8,
             "num_ctas": 2
           },
-          11.431872367858887,
+          11.432415962219238,
           null
         ],
         [
@@ -5041,7 +5041,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          5.216864109039307,
+          5.216224193572998,
           null
         ],
         [
@@ -5069,7 +5069,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          5.407167911529541,
+          5.391232013702393,
           null
         ],
         [
@@ -5082,7 +5082,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          5.340511798858643,
+          5.329696178436279,
           null
         ],
         [
@@ -5095,7 +5095,7 @@
             "GROUP_M": 8,
             "num_ctas": 2
           },
-          14.26358413696289,
+          14.266207695007324,
           null
         ],
         [
@@ -5108,7 +5108,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          12.276288032531738,
+          12.28006362915039,
           null
         ],
         [
@@ -5121,7 +5121,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          6.067488193511963,
+          6.067264080047607,
           null
         ],
         [
@@ -5135,7 +5135,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          2.9833600521087646,
+          2.9763519763946533,
           null
         ],
         [
@@ -5149,7 +5149,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          5.366432189941406,
+          5.396543979644775,
           null
         ],
         [
@@ -5162,7 +5162,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          6.613344192504883,
+          6.5977277755737305,
           null
         ],
         [
@@ -5175,7 +5175,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          2.891808032989502,
+          2.8944320678710938,
           null
         ],
         [
@@ -5188,7 +5188,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          3.0757761001586914,
+          3.08022403717041,
           null
         ],
         [
@@ -5202,7 +5202,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          3.1152639389038086,
+          3.1215999126434326,
           null
         ],
         [
@@ -5215,7 +5215,7 @@
             "GROUP_M": 8,
             "num_ctas": 2
           },
-          6.891007900238037,
+          6.888095855712891,
           null
         ],
         [
@@ -5229,7 +5229,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          5.703296184539795,
+          5.701280117034912,
           null
         ],
         [
@@ -5242,7 +5242,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          4.601568222045898,
+          4.597663879394531,
           null
         ],
         [
@@ -5255,7 +5255,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          4.81660795211792,
+          4.804287910461426,
           null
         ],
         [
@@ -5268,7 +5268,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          4.889984130859375,
+          4.878431797027588,
           null
         ],
         [
@@ -5281,7 +5281,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          5.071328163146973,
+          5.063968181610107,
           null
         ],
         [
@@ -5295,7 +5295,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          5.121856212615967,
+          5.1129279136657715,
           null
         ],
         [
@@ -5308,7 +5308,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          2.9475200176239014,
+          2.944256067276001,
           null
         ],
         [
@@ -5322,7 +5322,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          3.010080099105835,
+          3.001055955886841,
           null
         ],
         [
@@ -5335,7 +5335,7 @@
             "GROUP_M": 8,
             "num_ctas": 2
           },
-          4.040448188781738,
+          4.037407875061035,
           null
         ],
         [
@@ -5348,7 +5348,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          3.1880640983581543,
+          3.180543899536133,
           null
         ],
         [
@@ -5361,7 +5361,7 @@
             "GROUP_M": 8,
             "num_ctas": 2
           },
-          3.2830400466918945,
+          3.2674560546875,
           null
         ],
         [
@@ -5375,7 +5375,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          3.2807040214538574,
+          3.278559923171997,
           null
         ],
         [
@@ -5388,7 +5388,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          7.704959869384766,
+          7.706560134887695,
           null
         ],
         [
@@ -5401,7 +5401,7 @@
             "GROUP_M": 8,
             "num_ctas": 2
           },
-          28.858047485351562,
+          28.86150360107422,
           null
         ],
         [
@@ -5414,7 +5414,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          10.823583602905273,
+          10.823776245117188,
           null
         ],
         [
@@ -5428,7 +5428,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          5.841055870056152,
+          5.8375678062438965,
           null
         ],
         [
@@ -5441,7 +5441,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          7.420447826385498,
+          7.4191999435424805,
           null
         ],
         [
@@ -5454,7 +5454,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          13.40988826751709,
+          13.41049575805664,
           null
         ],
         [
@@ -5467,7 +5467,7 @@
             "GROUP_M": 8,
             "num_ctas": 2
           },
-          6.845632076263428,
+          6.844287872314453,
           null
         ],
         [
@@ -5480,7 +5480,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          8.192895889282227,
+          8.19382381439209,
           null
         ],
         [
@@ -5494,7 +5494,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          7.457888126373291,
+          7.459199905395508,
           null
         ],
         [
@@ -5507,7 +5507,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          6.425727844238281,
+          6.4269118309021,
           null
         ],
         [
@@ -5520,7 +5520,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          9.162367820739746,
+          9.163392066955566,
           null
         ],
         [
@@ -5533,7 +5533,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          9.436736106872559,
+          9.438752174377441,
           null
         ],
         [
@@ -5546,7 +5546,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          8.791775703430176,
+          8.792767524719238,
           null
         ],
         [
@@ -5560,7 +5560,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          13.574432373046875,
+          13.576160430908203,
           null
         ],
         [
@@ -5574,7 +5574,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          13.601056098937988,
+          13.602144241333008,
           null
         ],
         [
@@ -5587,7 +5587,7 @@
             "GROUP_M": 8,
             "num_ctas": 2
           },
-          8.902432441711426,
+          8.901823997497559,
           null
         ],
         [
@@ -5600,7 +5600,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          23.002975463867188,
+          23.009248733520508,
           null
         ],
         [
@@ -5613,7 +5613,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          13.29145622253418,
+          13.293120384216309,
           null
         ],
         [
@@ -5627,7 +5627,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          13.193984031677246,
+          13.193599700927734,
           null
         ],
         [
@@ -5640,7 +5640,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          4.611936092376709,
+          4.607583999633789,
           null
         ],
         [
@@ -5653,7 +5653,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          14.449312210083008,
+          14.450495719909668,
           null
         ],
         [
@@ -5667,7 +5667,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          14.448575973510742,
+          14.450112342834473,
           null
         ],
         [
@@ -5680,7 +5680,7 @@
             "GROUP_M": 8,
             "num_ctas": 2
           },
-          5.005760192871094,
+          5.002399921417236,
           null
         ],
         [
@@ -5693,7 +5693,7 @@
             "GROUP_M": 8,
             "num_ctas": 2
           },
-          5.559455871582031,
+          5.557248115539551,
           null
         ],
         [
@@ -5706,7 +5706,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          4.7106242179870605,
+          4.711071968078613,
           null
         ],
         [
@@ -5719,7 +5719,7 @@
             "GROUP_M": 8,
             "num_ctas": 2
           },
-          12.985983848571777,
+          12.984864234924316,
           null
         ],
         [
@@ -5732,7 +5732,7 @@
             "GROUP_M": 8,
             "num_ctas": 2
           },
-          7.345280170440674,
+          7.3440961837768555,
           null
         ],
         [
@@ -5745,7 +5745,7 @@
             "GROUP_M": 8,
             "num_ctas": 2
           },
-          23.317888259887695,
+          23.326335906982422,
           null
         ],
         [
@@ -5758,7 +5758,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          13.20025634765625,
+          13.20076847076416,
           null
         ],
         [
@@ -5771,7 +5771,7 @@
             "GROUP_M": 8,
             "num_ctas": 2
           },
-          11.96230411529541,
+          11.965215682983398,
           null
         ],
         [
@@ -5785,7 +5785,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          3.9432640075683594,
+          3.9386560916900635,
           null
         ],
         [
@@ -5798,7 +5798,7 @@
             "GROUP_M": 8,
             "num_ctas": 2
           },
-          3.819391965866089,
+          3.801503896713257,
           null
         ],
         [
@@ -5811,7 +5811,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          4.195712089538574,
+          4.194015979766846,
           null
         ],
         [
@@ -5824,7 +5824,7 @@
             "GROUP_M": 8,
             "num_ctas": 2
           },
-          14.254303932189941,
+          14.252191543579102,
           null
         ],
         [
@@ -5837,7 +5837,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          8.090463638305664,
+          8.090944290161133,
           null
         ],
         [
@@ -5850,7 +5850,7 @@
             "GROUP_M": 8,
             "num_ctas": 2
           },
-          4.773280143737793,
+          4.773856163024902,
           null
         ],
         [
@@ -5864,7 +5864,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          3.3227200508117676,
+          3.327967882156372,
           null
         ],
         [
@@ -5877,7 +5877,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          5.817535877227783,
+          5.810111999511719,
           null
         ],
         [
@@ -5890,7 +5890,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          5.214655876159668,
+          5.205215930938721,
           null
         ],
         [
@@ -5903,7 +5903,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          4.272416114807129,
+          4.269951820373535,
           null
         ],
         [
@@ -5916,7 +5916,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          3.295520067214966,
+          3.2954559326171875,
           null
         ],
         [
@@ -5929,7 +5929,7 @@
             "GROUP_M": 8,
             "USE_TMA": true
           },
-          5.064671993255615,
+          5.0649919509887695,
           null
         ],
         [
@@ -5943,7 +5943,7 @@
             "USE_TMA": true,
             "warp_specialize": true
           },
-          3.26198410987854,
+          3.273279905319214,
           null
         ],
         [
@@ -5956,7 +5956,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          2.964416027069092,
+          2.9636800289154053,
           null
         ],
         [
@@ -5969,7 +5969,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          2.9144959449768066,
+          2.937056064605713,
           null
         ],
         [
@@ -5995,7 +5995,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          3.2252159118652344,
+          3.2788479328155518,
           null
         ],
         [
@@ -6021,7 +6021,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          3.0134079456329346,
+          3.095968008041382,
           null
         ],
         [
@@ -6047,7 +6047,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          2.9199678897857666,
+          2.926815986633301,
           null
         ],
         [
@@ -6099,7 +6099,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          2.9114561080932617,
+          2.914720058441162,
           null
         ],
         [
@@ -6112,7 +6112,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          2.888223886489868,
+          2.887648105621338,
           null
         ],
         [
@@ -6125,7 +6125,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          3.805311918258667,
+          3.8248000144958496,
           null
         ],
         [
@@ -6164,7 +6164,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          3.6702721118927,
+          3.6717119216918945,
           null
         ],
         [
@@ -6548,17 +6548,17 @@
         "BLOCK_N": 128,
         "BLOCK_K": 128,
         "num_warps": 8,
-        "num_stages": 5,
+        "num_stages": 3,
         "GROUP_M": 8,
         "warp_specialize": true
       },
-      "best_ms": 2.887295961380005,
+      "best_ms": 2.8851840496063232,
       "n_tried": 15,
       "n_failed": 5,
-      "n_offered": 23,
+      "n_offered": 27,
       "n_guard_rejected": 0,
       "n_coarse": 12,
-      "n_refine": 9,
+      "n_refine": 11,
       "best_stage": "refine",
       "failure_summary": {
         "OutOfResources": 2
@@ -6574,7 +6574,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          3.380703926086426,
+          3.382175922393799,
           null
         ],
         [
@@ -6587,7 +6587,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          3.3616960048675537,
+          3.352031946182251,
           null
         ],
         [
@@ -6600,7 +6600,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          2.918911933898926,
+          2.922719955444336,
           null
         ],
         [
@@ -6613,7 +6613,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          2.96345591545105,
+          2.9789440631866455,
           null
         ],
         [
@@ -6626,7 +6626,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          2.8959999084472656,
+          2.973759889602661,
           null
         ],
         [
@@ -6639,7 +6639,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          3.10479998588562,
+          2.962143898010254,
           null
         ],
         [
@@ -6652,7 +6652,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          3.227008104324341,
+          3.248512029647827,
           null
         ],
         [
@@ -6665,7 +6665,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          3.0187840461730957,
+          3.015007972717285,
           null
         ],
         [
@@ -6678,7 +6678,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          3.0401599407196045,
+          3.034463882446289,
           null
         ],
         [
@@ -6691,7 +6691,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          2.9719040393829346,
+          2.974976062774658,
           null
         ],
         [
@@ -6704,7 +6704,7 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          2.9517440795898438,
+          2.9232640266418457,
           null
         ],
         [
@@ -6717,20 +6717,111 @@
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          2.9112319946289062,
+          2.8919999599456787,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 128,
+            "num_warps": 8,
+            "num_stages": 3,
+            "GROUP_M": 8,
+            "warp_specialize": true
+          },
+          3.3051838874816895,
           null
         ],
         [
           {
             "BLOCK_M": 64,
+            "BLOCK_N": 256,
+            "BLOCK_K": 128,
+            "num_warps": 8,
+            "num_stages": 3,
+            "GROUP_M": 8,
+            "warp_specialize": true
+          },
+          null,
+          "OutOfResources: out of resource: shared memory, Required: 245760, Hardware limit: 232448. Reducing block sizes or `num_stages` may help."
+        ],
+        [
+          {
+            "BLOCK_M": 32,
             "BLOCK_N": 128,
-            "BLOCK_K": 64,
+            "BLOCK_K": 128,
+            "num_warps": 8,
+            "num_stages": 3,
+            "GROUP_M": 8,
+            "warp_specialize": true
+          },
+          2.8851840496063232,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 32,
+            "BLOCK_N": 256,
+            "BLOCK_K": 128,
             "num_warps": 8,
             "num_stages": 4,
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          2.9771199226379395,
+          2.888223886489868,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 32,
+            "BLOCK_N": 256,
+            "BLOCK_K": 128,
+            "num_warps": 16,
+            "num_stages": 3,
+            "GROUP_M": 8,
+            "warp_specialize": true
+          },
+          2.895904064178467,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 128,
+            "num_warps": 8,
+            "num_stages": 2,
+            "GROUP_M": 8,
+            "warp_specialize": true
+          },
+          3.320096015930176,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 128,
+            "num_warps": 8,
+            "num_stages": 4,
+            "GROUP_M": 8,
+            "warp_specialize": true
+          },
+          3.33404803276062,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 64,
+            "BLOCK_N": 256,
+            "BLOCK_K": 128,
+            "num_warps": 8,
+            "num_stages": 2,
+            "GROUP_M": 8,
+            "warp_specialize": true
+          },
+          3.232800006866455,
           null
         ],
         [
@@ -6748,93 +6839,28 @@
         ],
         [
           {
-            "BLOCK_M": 64,
-            "BLOCK_N": 128,
-            "BLOCK_K": 128,
-            "num_warps": 8,
-            "num_stages": 3,
-            "GROUP_M": 8,
-            "warp_specialize": true
-          },
-          3.0145280361175537,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 64,
-            "BLOCK_N": 128,
-            "BLOCK_K": 128,
-            "num_warps": 8,
-            "num_stages": 5,
-            "GROUP_M": 8,
-            "warp_specialize": true
-          },
-          null,
-          "OutOfResources: out of resource: shared memory, Required: 245760, Hardware limit: 232448. Reducing block sizes or `num_stages` may help."
-        ],
-        [
-          {
-            "BLOCK_M": 32,
-            "BLOCK_N": 128,
-            "BLOCK_K": 128,
-            "num_warps": 8,
-            "num_stages": 3,
-            "GROUP_M": 8,
-            "warp_specialize": true
-          },
-          2.8901119232177734,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 32,
-            "BLOCK_N": 128,
-            "BLOCK_K": 128,
-            "num_warps": 8,
-            "num_stages": 5,
-            "GROUP_M": 8,
-            "warp_specialize": true
-          },
-          2.887295961380005,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 64,
-            "BLOCK_N": 128,
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
             "BLOCK_K": 64,
             "num_warps": 8,
             "num_stages": 3,
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          2.99564790725708,
+          3.460383892059326,
           null
         ],
         [
           {
             "BLOCK_M": 64,
-            "BLOCK_N": 128,
+            "BLOCK_N": 256,
             "BLOCK_K": 64,
             "num_warps": 8,
-            "num_stages": 5,
+            "num_stages": 3,
             "GROUP_M": 8,
             "warp_specialize": true
           },
-          2.9750399589538574,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 32,
-            "BLOCK_N": 128,
-            "BLOCK_K": 64,
-            "num_warps": 8,
-            "num_stages": 4,
-            "GROUP_M": 8,
-            "warp_specialize": true
-          },
-          3.0217599868774414,
+          3.1486399173736572,
           null
         ],
         [
@@ -6880,15 +6906,15 @@
     },
     "unfused_act": {
       "best_cfg": {
-        "BLOCK_M": 2,
-        "BLOCK_N": 512,
-        "num_warps": 2,
-        "num_stages": 2
+        "BLOCK_M": 8,
+        "BLOCK_N": 128,
+        "num_warps": 4,
+        "num_stages": 1
       },
-      "best_ms": 0.018880000337958336,
+      "best_ms": 0.01849599927663803,
       "n_tried": 270,
       "n_failed": 0,
-      "n_offered": 284,
+      "n_offered": 289,
       "n_guard_rejected": 0,
       "n_coarse": 270,
       "n_refine": 0,
@@ -6902,7 +6928,7 @@
             "num_warps": 2,
             "num_stages": 1
           },
-          0.025919999927282333,
+          0.02550400048494339,
           null
         ],
         [
@@ -6912,7 +6938,7 @@
             "num_warps": 2,
             "num_stages": 2
           },
-          0.025696000084280968,
+          0.025760000571608543,
           null
         ],
         [
@@ -6922,7 +6948,7 @@
             "num_warps": 4,
             "num_stages": 1
           },
-          0.025887999683618546,
+          0.025472000241279602,
           null
         ],
         [
@@ -6932,7 +6958,7 @@
             "num_warps": 4,
             "num_stages": 2
           },
-          0.025696000084280968,
+          0.02566399984061718,
           null
         ],
         [
@@ -6942,7 +6968,7 @@
             "num_warps": 8,
             "num_stages": 1
           },
-          0.038784001022577286,
+          0.037087999284267426,
           null
         ],
         [
@@ -6952,7 +6978,7 @@
             "num_warps": 8,
             "num_stages": 2
           },
-          0.03750399872660637,
+          0.03731200098991394,
           null
         ],
         [
@@ -6962,7 +6988,7 @@
             "num_warps": 2,
             "num_stages": 1
           },
-          0.019680000841617584,
+          0.019071999937295914,
           null
         ],
         [
@@ -6972,193 +6998,13 @@
             "num_warps": 2,
             "num_stages": 2
           },
-          0.01942400075495243,
+          0.019328000023961067,
           null
         ],
         [
           {
             "BLOCK_M": 1,
             "BLOCK_N": 512,
-            "num_warps": 4,
-            "num_stages": 1
-          },
-          0.019807999953627586,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 1,
-            "BLOCK_N": 512,
-            "num_warps": 4,
-            "num_stages": 2
-          },
-          0.01958400011062622,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 1,
-            "BLOCK_N": 512,
-            "num_warps": 8,
-            "num_stages": 1
-          },
-          0.02473600022494793,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 1,
-            "BLOCK_N": 512,
-            "num_warps": 8,
-            "num_stages": 2
-          },
-          0.02457600086927414,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 1,
-            "BLOCK_N": 512,
-            "num_warps": 16,
-            "num_stages": 1
-          },
-          0.040383998304605484,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 1,
-            "BLOCK_N": 512,
-            "num_warps": 16,
-            "num_stages": 2
-          },
-          0.03999999910593033,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 1,
-            "BLOCK_N": 1024,
-            "num_warps": 2,
-            "num_stages": 1
-          },
-          0.019231999292969704,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 1,
-            "BLOCK_N": 1024,
-            "num_warps": 2,
-            "num_stages": 2
-          },
-          0.018912000581622124,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 1,
-            "BLOCK_N": 1024,
-            "num_warps": 4,
-            "num_stages": 1
-          },
-          0.0197759997099638,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 1,
-            "BLOCK_N": 1024,
-            "num_warps": 4,
-            "num_stages": 2
-          },
-          0.019487999379634857,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 1,
-            "BLOCK_N": 1024,
-            "num_warps": 8,
-            "num_stages": 1
-          },
-          0.020160000771284103,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 1,
-            "BLOCK_N": 1024,
-            "num_warps": 8,
-            "num_stages": 2
-          },
-          0.019936000928282738,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 1,
-            "BLOCK_N": 1024,
-            "num_warps": 16,
-            "num_stages": 1
-          },
-          0.026176000013947487,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 1,
-            "BLOCK_N": 1024,
-            "num_warps": 16,
-            "num_stages": 2
-          },
-          0.02595200017094612,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 1,
-            "BLOCK_N": 1024,
-            "num_warps": 32,
-            "num_stages": 1
-          },
-          0.04572800174355507,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 1,
-            "BLOCK_N": 1024,
-            "num_warps": 32,
-            "num_stages": 2
-          },
-          0.045632001012563705,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 1,
-            "BLOCK_N": 2048,
-            "num_warps": 2,
-            "num_stages": 1
-          },
-          0.02163200080394745,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 1,
-            "BLOCK_N": 2048,
-            "num_warps": 2,
-            "num_stages": 2
-          },
-          0.021376000717282295,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 1,
-            "BLOCK_N": 2048,
             "num_warps": 4,
             "num_stages": 1
           },
@@ -7168,11 +7014,191 @@
         [
           {
             "BLOCK_M": 1,
+            "BLOCK_N": 512,
+            "num_warps": 4,
+            "num_stages": 2
+          },
+          0.019519999623298645,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 1,
+            "BLOCK_N": 512,
+            "num_warps": 8,
+            "num_stages": 1
+          },
+          0.024159999564290047,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 1,
+            "BLOCK_N": 512,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.024320000782608986,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 1,
+            "BLOCK_N": 512,
+            "num_warps": 16,
+            "num_stages": 1
+          },
+          0.0398080013692379,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 1,
+            "BLOCK_N": 512,
+            "num_warps": 16,
+            "num_stages": 2
+          },
+          0.04057599976658821,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 1,
+            "BLOCK_N": 1024,
+            "num_warps": 2,
+            "num_stages": 1
+          },
+          0.01881599985063076,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 1,
+            "BLOCK_N": 1024,
+            "num_warps": 2,
+            "num_stages": 2
+          },
+          0.01897599920630455,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 1,
+            "BLOCK_N": 1024,
+            "num_warps": 4,
+            "num_stages": 1
+          },
+          0.019071999937295914,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 1,
+            "BLOCK_N": 1024,
+            "num_warps": 4,
+            "num_stages": 2
+          },
+          0.019392000511288643,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 1,
+            "BLOCK_N": 1024,
+            "num_warps": 8,
+            "num_stages": 1
+          },
+          0.019711999222636223,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 1,
+            "BLOCK_N": 1024,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.019807999953627586,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 1,
+            "BLOCK_N": 1024,
+            "num_warps": 16,
+            "num_stages": 1
+          },
+          0.025696000084280968,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 1,
+            "BLOCK_N": 1024,
+            "num_warps": 16,
+            "num_stages": 2
+          },
+          0.02582399919629097,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 1,
+            "BLOCK_N": 1024,
+            "num_warps": 32,
+            "num_stages": 1
+          },
+          0.045024000108242035,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 1,
+            "BLOCK_N": 1024,
+            "num_warps": 32,
+            "num_stages": 2
+          },
+          0.04527999833226204,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 1,
+            "BLOCK_N": 2048,
+            "num_warps": 2,
+            "num_stages": 1
+          },
+          0.021023999899625778,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 1,
+            "BLOCK_N": 2048,
+            "num_warps": 2,
+            "num_stages": 2
+          },
+          0.02127999998629093,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 1,
+            "BLOCK_N": 2048,
+            "num_warps": 4,
+            "num_stages": 1
+          },
+          0.018848000094294548,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 1,
             "BLOCK_N": 2048,
             "num_warps": 4,
             "num_stages": 2
           },
-          0.0191040001809597,
+          0.019039999693632126,
           null
         ],
         [
@@ -7182,7 +7208,7 @@
             "num_warps": 8,
             "num_stages": 1
           },
-          0.01961600035429001,
+          0.019231999292969704,
           null
         ],
         [
@@ -7192,7 +7218,7 @@
             "num_warps": 8,
             "num_stages": 2
           },
-          0.019487999379634857,
+          0.01926399953663349,
           null
         ],
         [
@@ -7202,7 +7228,7 @@
             "num_warps": 16,
             "num_stages": 1
           },
-          0.021023999899625778,
+          0.02054399996995926,
           null
         ],
         [
@@ -7222,7 +7248,7 @@
             "num_warps": 32,
             "num_stages": 1
           },
-          0.02879999950528145,
+          0.02831999957561493,
           null
         ],
         [
@@ -7232,7 +7258,7 @@
             "num_warps": 32,
             "num_stages": 2
           },
-          0.028575999662280083,
+          0.028511999174952507,
           null
         ],
         [
@@ -7242,7 +7268,7 @@
             "num_warps": 2,
             "num_stages": 1
           },
-          0.02595200017094612,
+          0.025407999753952026,
           null
         ],
         [
@@ -7252,7 +7278,7 @@
             "num_warps": 2,
             "num_stages": 2
           },
-          0.02566399984061718,
+          0.025567999109625816,
           null
         ],
         [
@@ -7262,7 +7288,7 @@
             "num_warps": 4,
             "num_stages": 1
           },
-          0.02582399919629097,
+          0.02537599951028824,
           null
         ],
         [
@@ -7272,7 +7298,7 @@
             "num_warps": 4,
             "num_stages": 2
           },
-          0.02566399984061718,
+          0.02550400048494339,
           null
         ],
         [
@@ -7282,7 +7308,7 @@
             "num_warps": 8,
             "num_stages": 1
           },
-          0.038047999143600464,
+          0.03868800029158592,
           null
         ],
         [
@@ -7292,7 +7318,7 @@
             "num_warps": 8,
             "num_stages": 2
           },
-          0.03766399994492531,
+          0.03779200091958046,
           null
         ],
         [
@@ -7302,7 +7328,7 @@
             "num_warps": 2,
             "num_stages": 1
           },
-          0.019680000841617584,
+          0.01913600042462349,
           null
         ],
         [
@@ -7322,7 +7348,7 @@
             "num_warps": 4,
             "num_stages": 1
           },
-          0.019840000197291374,
+          0.01929599978029728,
           null
         ],
         [
@@ -7332,7 +7358,7 @@
             "num_warps": 4,
             "num_stages": 2
           },
-          0.01974399946630001,
+          0.01945599913597107,
           null
         ],
         [
@@ -7342,7 +7368,7 @@
             "num_warps": 8,
             "num_stages": 1
           },
-          0.024831999093294144,
+          0.024383999407291412,
           null
         ],
         [
@@ -7352,7 +7378,7 @@
             "num_warps": 8,
             "num_stages": 2
           },
-          0.02470399998128414,
+          0.02457600086927414,
           null
         ],
         [
@@ -7362,7 +7388,7 @@
             "num_warps": 16,
             "num_stages": 1
           },
-          0.04102399945259094,
+          0.040672000497579575,
           null
         ],
         [
@@ -7372,7 +7398,7 @@
             "num_warps": 16,
             "num_stages": 2
           },
-          0.040832001715898514,
+          0.040800001472234726,
           null
         ],
         [
@@ -7382,7 +7408,7 @@
             "num_warps": 2,
             "num_stages": 1
           },
-          0.01913600042462349,
+          0.018624000251293182,
           null
         ],
         [
@@ -7392,7 +7418,7 @@
             "num_warps": 2,
             "num_stages": 2
           },
-          0.018880000337958336,
+          0.01881599985063076,
           null
         ],
         [
@@ -7402,7 +7428,7 @@
             "num_warps": 4,
             "num_stages": 1
           },
-          0.01974399946630001,
+          0.01894400082528591,
           null
         ],
         [
@@ -7412,113 +7438,13 @@
             "num_warps": 4,
             "num_stages": 2
           },
-          0.019487999379634857,
+          0.019328000023961067,
           null
         ],
         [
           {
             "BLOCK_M": 2,
             "BLOCK_N": 512,
-            "num_warps": 8,
-            "num_stages": 1
-          },
-          0.020255999639630318,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 2,
-            "BLOCK_N": 512,
-            "num_warps": 8,
-            "num_stages": 2
-          },
-          0.020031999796628952,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 2,
-            "BLOCK_N": 512,
-            "num_warps": 16,
-            "num_stages": 1
-          },
-          0.02630399912595749,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 2,
-            "BLOCK_N": 512,
-            "num_warps": 16,
-            "num_stages": 2
-          },
-          0.026079999282956123,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 2,
-            "BLOCK_N": 512,
-            "num_warps": 32,
-            "num_stages": 1
-          },
-          0.04598399996757507,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 2,
-            "BLOCK_N": 512,
-            "num_warps": 32,
-            "num_stages": 2
-          },
-          0.04588799923658371,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 2,
-            "BLOCK_N": 1024,
-            "num_warps": 2,
-            "num_stages": 1
-          },
-          0.021183999255299568,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 2,
-            "BLOCK_N": 1024,
-            "num_warps": 2,
-            "num_stages": 2
-          },
-          0.020959999412298203,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 2,
-            "BLOCK_N": 1024,
-            "num_warps": 4,
-            "num_stages": 1
-          },
-          0.019231999292969704,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 2,
-            "BLOCK_N": 1024,
-            "num_warps": 4,
-            "num_stages": 2
-          },
-          0.019039999693632126,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 2,
-            "BLOCK_N": 1024,
             "num_warps": 8,
             "num_stages": 1
           },
@@ -7528,11 +7454,111 @@
         [
           {
             "BLOCK_M": 2,
+            "BLOCK_N": 512,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.019840000197291374,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 2,
+            "BLOCK_N": 512,
+            "num_warps": 16,
+            "num_stages": 1
+          },
+          0.025855999439954758,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 2,
+            "BLOCK_N": 512,
+            "num_warps": 16,
+            "num_stages": 2
+          },
+          0.026016000658273697,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 2,
+            "BLOCK_N": 512,
+            "num_warps": 32,
+            "num_stages": 1
+          },
+          0.04556800052523613,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 2,
+            "BLOCK_N": 512,
+            "num_warps": 32,
+            "num_stages": 2
+          },
+          0.04560000076889992,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 2,
+            "BLOCK_N": 1024,
+            "num_warps": 2,
+            "num_stages": 1
+          },
+          0.02070399932563305,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 2,
+            "BLOCK_N": 1024,
+            "num_warps": 2,
+            "num_stages": 2
+          },
+          0.020864000543951988,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 2,
+            "BLOCK_N": 1024,
+            "num_warps": 4,
+            "num_stages": 1
+          },
+          0.01865600049495697,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 2,
+            "BLOCK_N": 1024,
+            "num_warps": 4,
+            "num_stages": 2
+          },
+          0.01881599985063076,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 2,
+            "BLOCK_N": 1024,
+            "num_warps": 8,
+            "num_stages": 1
+          },
+          0.019071999937295914,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 2,
             "BLOCK_N": 1024,
             "num_warps": 8,
             "num_stages": 2
           },
-          0.01942400075495243,
+          0.019328000023961067,
           null
         ],
         [
@@ -7542,7 +7568,7 @@
             "num_warps": 16,
             "num_stages": 1
           },
-          0.02099199965596199,
+          0.020416000857949257,
           null
         ],
         [
@@ -7552,7 +7578,7 @@
             "num_warps": 16,
             "num_stages": 2
           },
-          0.02099199965596199,
+          0.020640000700950623,
           null
         ],
         [
@@ -7562,7 +7588,7 @@
             "num_warps": 32,
             "num_stages": 1
           },
-          0.029279999434947968,
+          0.028672000393271446,
           null
         ],
         [
@@ -7572,7 +7598,7 @@
             "num_warps": 32,
             "num_stages": 2
           },
-          0.029055999591946602,
+          0.028831999748945236,
           null
         ],
         [
@@ -7582,7 +7608,7 @@
             "num_warps": 2,
             "num_stages": 1
           },
-          0.02054399996995926,
+          0.020128000527620316,
           null
         ],
         [
@@ -7592,7 +7618,7 @@
             "num_warps": 2,
             "num_stages": 2
           },
-          0.020160000771284103,
+          0.020255999639630318,
           null
         ],
         [
@@ -7602,7 +7628,7 @@
             "num_warps": 4,
             "num_stages": 1
           },
-          0.02112000063061714,
+          0.02067199908196926,
           null
         ],
         [
@@ -7612,7 +7638,7 @@
             "num_warps": 4,
             "num_stages": 2
           },
-          0.021088000386953354,
+          0.020959999412298203,
           null
         ],
         [
@@ -7622,7 +7648,7 @@
             "num_warps": 8,
             "num_stages": 1
           },
-          0.019168000668287277,
+          0.018688000738620758,
           null
         ],
         [
@@ -7632,7 +7658,7 @@
             "num_warps": 8,
             "num_stages": 2
           },
-          0.019007999449968338,
+          0.01894400082528591,
           null
         ],
         [
@@ -7642,7 +7668,7 @@
             "num_warps": 16,
             "num_stages": 1
           },
-          0.019711999222636223,
+          0.019039999693632126,
           null
         ],
         [
@@ -7652,7 +7678,7 @@
             "num_warps": 16,
             "num_stages": 2
           },
-          0.01942400075495243,
+          0.0191040001809597,
           null
         ],
         [
@@ -7662,7 +7688,7 @@
             "num_warps": 32,
             "num_stages": 1
           },
-          0.02208000048995018,
+          0.021663999184966087,
           null
         ],
         [
@@ -7682,7 +7708,7 @@
             "num_warps": 2,
             "num_stages": 1
           },
-          0.02611199952661991,
+          0.025599999353289604,
           null
         ],
         [
@@ -7690,26 +7716,6 @@
             "BLOCK_M": 4,
             "BLOCK_N": 64,
             "num_warps": 2,
-            "num_stages": 2
-          },
-          0.02595200017094612,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 4,
-            "BLOCK_N": 64,
-            "num_warps": 4,
-            "num_stages": 1
-          },
-          0.025855999439954758,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 4,
-            "BLOCK_N": 64,
-            "num_warps": 4,
             "num_stages": 2
           },
           0.025728000327944756,
@@ -7719,10 +7725,30 @@
           {
             "BLOCK_M": 4,
             "BLOCK_N": 64,
+            "num_warps": 4,
+            "num_stages": 1
+          },
+          0.025536000728607178,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 4,
+            "BLOCK_N": 64,
+            "num_warps": 4,
+            "num_stages": 2
+          },
+          0.02566399984061718,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 4,
+            "BLOCK_N": 64,
             "num_warps": 8,
             "num_stages": 1
           },
-          0.038943998515605927,
+          0.03846399858593941,
           null
         ],
         [
@@ -7732,7 +7758,7 @@
             "num_warps": 8,
             "num_stages": 2
           },
-          0.0387520007789135,
+          0.03868800029158592,
           null
         ],
         [
@@ -7742,7 +7768,7 @@
             "num_warps": 2,
             "num_stages": 1
           },
-          0.0191040001809597,
+          0.01852799952030182,
           null
         ],
         [
@@ -7752,7 +7778,7 @@
             "num_warps": 2,
             "num_stages": 2
           },
-          0.019007999449968338,
+          0.018751999363303185,
           null
         ],
         [
@@ -7762,7 +7788,7 @@
             "num_warps": 4,
             "num_stages": 1
           },
-          0.019840000197291374,
+          0.01929599978029728,
           null
         ],
         [
@@ -7772,7 +7798,7 @@
             "num_warps": 4,
             "num_stages": 2
           },
-          0.019680000841617584,
+          0.01945599913597107,
           null
         ],
         [
@@ -7782,7 +7808,7 @@
             "num_warps": 8,
             "num_stages": 1
           },
-          0.024927999824285507,
+          0.024383999407291412,
           null
         ],
         [
@@ -7792,7 +7818,7 @@
             "num_warps": 8,
             "num_stages": 2
           },
-          0.02470399998128414,
+          0.02454400062561035,
           null
         ],
         [
@@ -7802,7 +7828,7 @@
             "num_warps": 16,
             "num_stages": 1
           },
-          0.04095999896526337,
+          0.04057599976658821,
           null
         ],
         [
@@ -7812,7 +7838,7 @@
             "num_warps": 16,
             "num_stages": 2
           },
-          0.04092799872159958,
+          0.040800001472234726,
           null
         ],
         [
@@ -7820,6 +7846,26 @@
             "BLOCK_M": 4,
             "BLOCK_N": 256,
             "num_warps": 2,
+            "num_stages": 1
+          },
+          0.01865600049495697,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 4,
+            "BLOCK_N": 256,
+            "num_warps": 2,
+            "num_stages": 2
+          },
+          0.018848000094294548,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 4,
+            "BLOCK_N": 256,
+            "num_warps": 4,
             "num_stages": 1
           },
           0.01913600042462349,
@@ -7829,30 +7875,10 @@
           {
             "BLOCK_M": 4,
             "BLOCK_N": 256,
-            "num_warps": 2,
-            "num_stages": 2
-          },
-          0.018880000337958336,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 4,
-            "BLOCK_N": 256,
-            "num_warps": 4,
-            "num_stages": 1
-          },
-          0.01974399946630001,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 4,
-            "BLOCK_N": 256,
             "num_warps": 4,
             "num_stages": 2
           },
-          0.019519999623298645,
+          0.019360000267624855,
           null
         ],
         [
@@ -7862,7 +7888,7 @@
             "num_warps": 8,
             "num_stages": 1
           },
-          0.020255999639630318,
+          0.019711999222636223,
           null
         ],
         [
@@ -7872,7 +7898,7 @@
             "num_warps": 8,
             "num_stages": 2
           },
-          0.019999999552965164,
+          0.019872000440955162,
           null
         ],
         [
@@ -7882,7 +7908,7 @@
             "num_warps": 16,
             "num_stages": 1
           },
-          0.02627200074493885,
+          0.025887999683618546,
           null
         ],
         [
@@ -7892,7 +7918,7 @@
             "num_warps": 16,
             "num_stages": 2
           },
-          0.026240000501275063,
+          0.026079999282956123,
           null
         ],
         [
@@ -7902,7 +7928,7 @@
             "num_warps": 32,
             "num_stages": 1
           },
-          0.04604800045490265,
+          0.04566400125622749,
           null
         ],
         [
@@ -7912,7 +7938,7 @@
             "num_warps": 32,
             "num_stages": 2
           },
-          0.04588799923658371,
+          0.04572800174355507,
           null
         ],
         [
@@ -7922,7 +7948,7 @@
             "num_warps": 2,
             "num_stages": 1
           },
-          0.021088000386953354,
+          0.02067199908196926,
           null
         ],
         [
@@ -7930,66 +7956,6 @@
             "BLOCK_M": 4,
             "BLOCK_N": 512,
             "num_warps": 2,
-            "num_stages": 2
-          },
-          0.02099199965596199,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 4,
-            "BLOCK_N": 512,
-            "num_warps": 4,
-            "num_stages": 1
-          },
-          0.019231999292969704,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 4,
-            "BLOCK_N": 512,
-            "num_warps": 4,
-            "num_stages": 2
-          },
-          0.019071999937295914,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 4,
-            "BLOCK_N": 512,
-            "num_warps": 8,
-            "num_stages": 1
-          },
-          0.01974399946630001,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 4,
-            "BLOCK_N": 512,
-            "num_warps": 8,
-            "num_stages": 2
-          },
-          0.019519999623298645,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 4,
-            "BLOCK_N": 512,
-            "num_warps": 16,
-            "num_stages": 1
-          },
-          0.020959999412298203,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 4,
-            "BLOCK_N": 512,
-            "num_warps": 16,
             "num_stages": 2
           },
           0.020896000787615776,
@@ -7999,10 +7965,70 @@
           {
             "BLOCK_M": 4,
             "BLOCK_N": 512,
+            "num_warps": 4,
+            "num_stages": 1
+          },
+          0.018688000738620758,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 4,
+            "BLOCK_N": 512,
+            "num_warps": 4,
+            "num_stages": 2
+          },
+          0.01897599920630455,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 4,
+            "BLOCK_N": 512,
+            "num_warps": 8,
+            "num_stages": 1
+          },
+          0.0191040001809597,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 4,
+            "BLOCK_N": 512,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.019168000668287277,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 4,
+            "BLOCK_N": 512,
+            "num_warps": 16,
+            "num_stages": 1
+          },
+          0.02054399996995926,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 4,
+            "BLOCK_N": 512,
+            "num_warps": 16,
+            "num_stages": 2
+          },
+          0.020735999569296837,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 4,
+            "BLOCK_N": 512,
             "num_warps": 32,
             "num_stages": 1
           },
-          0.02908799983561039,
+          0.028575999662280083,
           null
         ],
         [
@@ -8012,7 +8038,7 @@
             "num_warps": 32,
             "num_stages": 2
           },
-          0.029055999591946602,
+          0.028704000636935234,
           null
         ],
         [
@@ -8022,7 +8048,7 @@
             "num_warps": 2,
             "num_stages": 1
           },
-          0.020576000213623047,
+          0.020096000283956528,
           null
         ],
         [
@@ -8032,7 +8058,7 @@
             "num_warps": 2,
             "num_stages": 2
           },
-          0.020320000126957893,
+          0.02038400061428547,
           null
         ],
         [
@@ -8042,7 +8068,7 @@
             "num_warps": 4,
             "num_stages": 1
           },
-          0.021215999498963356,
+          0.020735999569296837,
           null
         ],
         [
@@ -8051,6 +8077,116 @@
             "BLOCK_N": 1024,
             "num_warps": 4,
             "num_stages": 2
+          },
+          0.021023999899625778,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 4,
+            "BLOCK_N": 1024,
+            "num_warps": 8,
+            "num_stages": 1
+          },
+          0.018912000581622124,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 4,
+            "BLOCK_N": 1024,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.019071999937295914,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 4,
+            "BLOCK_N": 1024,
+            "num_warps": 16,
+            "num_stages": 1
+          },
+          0.019007999449968338,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 4,
+            "BLOCK_N": 1024,
+            "num_warps": 16,
+            "num_stages": 2
+          },
+          0.019200000911951065,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 4,
+            "BLOCK_N": 1024,
+            "num_warps": 32,
+            "num_stages": 1
+          },
+          0.02160000056028366,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 4,
+            "BLOCK_N": 1024,
+            "num_warps": 32,
+            "num_stages": 2
+          },
+          0.02179200015962124,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 4,
+            "BLOCK_N": 2048,
+            "num_warps": 2,
+            "num_stages": 1
+          },
+          0.02364799939095974,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 4,
+            "BLOCK_N": 2048,
+            "num_warps": 2,
+            "num_stages": 2
+          },
+          0.023871999233961105,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 4,
+            "BLOCK_N": 2048,
+            "num_warps": 4,
+            "num_stages": 1
+          },
+          0.02022399939596653,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 4,
+            "BLOCK_N": 2048,
+            "num_warps": 4,
+            "num_stages": 2
+          },
+          0.020447999238967896,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 4,
+            "BLOCK_N": 2048,
+            "num_warps": 8,
+            "num_stages": 1
           },
           0.020959999412298203,
           null
@@ -8058,121 +8194,11 @@
         [
           {
             "BLOCK_M": 4,
-            "BLOCK_N": 1024,
-            "num_warps": 8,
-            "num_stages": 1
-          },
-          0.019328000023961067,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 4,
-            "BLOCK_N": 1024,
-            "num_warps": 8,
-            "num_stages": 2
-          },
-          0.0191040001809597,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 4,
-            "BLOCK_N": 1024,
-            "num_warps": 16,
-            "num_stages": 1
-          },
-          0.019680000841617584,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 4,
-            "BLOCK_N": 1024,
-            "num_warps": 16,
-            "num_stages": 2
-          },
-          0.019360000267624855,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 4,
-            "BLOCK_N": 1024,
-            "num_warps": 32,
-            "num_stages": 1
-          },
-          0.022016000002622604,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 4,
-            "BLOCK_N": 1024,
-            "num_warps": 32,
-            "num_stages": 2
-          },
-          0.021856000646948814,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 4,
-            "BLOCK_N": 2048,
-            "num_warps": 2,
-            "num_stages": 1
-          },
-          0.02412799932062626,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 4,
-            "BLOCK_N": 2048,
-            "num_warps": 2,
-            "num_stages": 2
-          },
-          0.02393599972128868,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 4,
-            "BLOCK_N": 2048,
-            "num_warps": 4,
-            "num_stages": 1
-          },
-          0.020576000213623047,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 4,
-            "BLOCK_N": 2048,
-            "num_warps": 4,
-            "num_stages": 2
-          },
-          0.02054399996995926,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 4,
-            "BLOCK_N": 2048,
-            "num_warps": 8,
-            "num_stages": 1
-          },
-          0.021344000473618507,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 4,
             "BLOCK_N": 2048,
             "num_warps": 8,
             "num_stages": 2
           },
-          0.021247999742627144,
+          0.021056000143289566,
           null
         ],
         [
@@ -8181,16 +8207,6 @@
             "BLOCK_N": 2048,
             "num_warps": 16,
             "num_stages": 1
-          },
-          0.01958400011062622,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 4,
-            "BLOCK_N": 2048,
-            "num_warps": 16,
-            "num_stages": 2
           },
           0.019231999292969704,
           null
@@ -8199,10 +8215,20 @@
           {
             "BLOCK_M": 4,
             "BLOCK_N": 2048,
+            "num_warps": 16,
+            "num_stages": 2
+          },
+          0.01942400075495243,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 4,
+            "BLOCK_N": 2048,
             "num_warps": 32,
             "num_stages": 1
           },
-          0.019680000841617584,
+          0.01894400082528591,
           null
         ],
         [
@@ -8212,107 +8238,107 @@
             "num_warps": 32,
             "num_stages": 2
           },
-          0.019487999379634857,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 8,
-            "BLOCK_N": 64,
-            "num_warps": 2,
-            "num_stages": 1
-          },
-          0.01929599978029728,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 8,
-            "BLOCK_N": 64,
-            "num_warps": 2,
-            "num_stages": 2
-          },
-          0.01897599920630455,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 8,
-            "BLOCK_N": 64,
-            "num_warps": 4,
-            "num_stages": 1
-          },
-          0.02038400061428547,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 8,
-            "BLOCK_N": 64,
-            "num_warps": 4,
-            "num_stages": 2
-          },
-          0.020287999883294106,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 8,
-            "BLOCK_N": 64,
-            "num_warps": 8,
-            "num_stages": 1
-          },
-          0.025312000885605812,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 8,
-            "BLOCK_N": 64,
-            "num_warps": 8,
-            "num_stages": 2
-          },
-          0.025087999179959297,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 8,
-            "BLOCK_N": 64,
-            "num_warps": 16,
-            "num_stages": 1
-          },
-          0.04211200028657913,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 8,
-            "BLOCK_N": 64,
-            "num_warps": 16,
-            "num_stages": 2
-          },
-          0.04217600077390671,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 8,
-            "BLOCK_N": 128,
-            "num_warps": 2,
-            "num_stages": 1
-          },
           0.019168000668287277,
           null
         ],
         [
           {
             "BLOCK_M": 8,
+            "BLOCK_N": 64,
+            "num_warps": 2,
+            "num_stages": 1
+          },
+          0.01865600049495697,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 8,
+            "BLOCK_N": 64,
+            "num_warps": 2,
+            "num_stages": 2
+          },
+          0.018880000337958336,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 8,
+            "BLOCK_N": 64,
+            "num_warps": 4,
+            "num_stages": 1
+          },
+          0.019840000197291374,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 8,
+            "BLOCK_N": 64,
+            "num_warps": 4,
+            "num_stages": 2
+          },
+          0.019999999552965164,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 8,
+            "BLOCK_N": 64,
+            "num_warps": 8,
+            "num_stages": 1
+          },
+          0.02489599958062172,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 8,
+            "BLOCK_N": 64,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.024992000311613083,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 8,
+            "BLOCK_N": 64,
+            "num_warps": 16,
+            "num_stages": 1
+          },
+          0.04188799858093262,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 8,
+            "BLOCK_N": 64,
+            "num_warps": 16,
+            "num_stages": 2
+          },
+          0.042208001017570496,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 8,
+            "BLOCK_N": 128,
+            "num_warps": 2,
+            "num_stages": 1
+          },
+          0.01865600049495697,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 8,
             "BLOCK_N": 128,
             "num_warps": 2,
             "num_stages": 2
           },
-          0.019007999449968338,
+          0.018880000337958336,
           null
         ],
         [
@@ -8320,6 +8346,126 @@
             "BLOCK_M": 8,
             "BLOCK_N": 128,
             "num_warps": 4,
+            "num_stages": 1
+          },
+          0.01849599927663803,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 8,
+            "BLOCK_N": 128,
+            "num_warps": 4,
+            "num_stages": 2
+          },
+          0.018688000738620758,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 8,
+            "BLOCK_N": 128,
+            "num_warps": 8,
+            "num_stages": 1
+          },
+          0.019711999222636223,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 8,
+            "BLOCK_N": 128,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.019936000928282738,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 8,
+            "BLOCK_N": 128,
+            "num_warps": 16,
+            "num_stages": 1
+          },
+          0.02598400041460991,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 8,
+            "BLOCK_N": 128,
+            "num_warps": 16,
+            "num_stages": 2
+          },
+          0.026176000013947487,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 8,
+            "BLOCK_N": 128,
+            "num_warps": 32,
+            "num_stages": 1
+          },
+          0.04566400125622749,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 8,
+            "BLOCK_N": 128,
+            "num_warps": 32,
+            "num_stages": 2
+          },
+          0.04575999826192856,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 8,
+            "BLOCK_N": 256,
+            "num_warps": 2,
+            "num_stages": 1
+          },
+          0.02112000063061714,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 8,
+            "BLOCK_N": 256,
+            "num_warps": 2,
+            "num_stages": 2
+          },
+          0.021536000072956085,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 8,
+            "BLOCK_N": 256,
+            "num_warps": 4,
+            "num_stages": 1
+          },
+          0.018719999119639397,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 8,
+            "BLOCK_N": 256,
+            "num_warps": 4,
+            "num_stages": 2
+          },
+          0.01894400082528591,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 8,
+            "BLOCK_N": 256,
+            "num_warps": 8,
             "num_stages": 1
           },
           0.0191040001809597,
@@ -8328,131 +8474,11 @@
         [
           {
             "BLOCK_M": 8,
-            "BLOCK_N": 128,
-            "num_warps": 4,
-            "num_stages": 2
-          },
-          0.018912000581622124,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 8,
-            "BLOCK_N": 128,
-            "num_warps": 8,
-            "num_stages": 1
-          },
-          0.020255999639630318,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 8,
-            "BLOCK_N": 128,
-            "num_warps": 8,
-            "num_stages": 2
-          },
-          0.020031999796628952,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 8,
-            "BLOCK_N": 128,
-            "num_warps": 16,
-            "num_stages": 1
-          },
-          0.026399999856948853,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 8,
-            "BLOCK_N": 128,
-            "num_warps": 16,
-            "num_stages": 2
-          },
-          0.026208000257611275,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 8,
-            "BLOCK_N": 128,
-            "num_warps": 32,
-            "num_stages": 1
-          },
-          0.04608000069856644,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 8,
-            "BLOCK_N": 128,
-            "num_warps": 32,
-            "num_stages": 2
-          },
-          0.04585599899291992,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 8,
-            "BLOCK_N": 256,
-            "num_warps": 2,
-            "num_stages": 1
-          },
-          0.02143999934196472,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 8,
-            "BLOCK_N": 256,
-            "num_warps": 2,
-            "num_stages": 2
-          },
-          0.02127999998629093,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 8,
-            "BLOCK_N": 256,
-            "num_warps": 4,
-            "num_stages": 1
-          },
-          0.01926399953663349,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 8,
-            "BLOCK_N": 256,
-            "num_warps": 4,
-            "num_stages": 2
-          },
-          0.01913600042462349,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 8,
-            "BLOCK_N": 256,
-            "num_warps": 8,
-            "num_stages": 1
-          },
-          0.01958400011062622,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 8,
             "BLOCK_N": 256,
             "num_warps": 8,
             "num_stages": 2
           },
-          0.019519999623298645,
+          0.01929599978029728,
           null
         ],
         [
@@ -8462,7 +8488,7 @@
             "num_warps": 16,
             "num_stages": 1
           },
-          0.020959999412298203,
+          0.02054399996995926,
           null
         ],
         [
@@ -8482,7 +8508,7 @@
             "num_warps": 32,
             "num_stages": 1
           },
-          0.029152000322937965,
+          0.028543999418616295,
           null
         ],
         [
@@ -8492,7 +8518,7 @@
             "num_warps": 32,
             "num_stages": 2
           },
-          0.0289280004799366,
+          0.028704000636935234,
           null
         ],
         [
@@ -8501,6 +8527,36 @@
             "BLOCK_N": 512,
             "num_warps": 2,
             "num_stages": 1
+          },
+          0.021023999899625778,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 8,
+            "BLOCK_N": 512,
+            "num_warps": 2,
+            "num_stages": 2
+          },
+          0.02115200087428093,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 8,
+            "BLOCK_N": 512,
+            "num_warps": 4,
+            "num_stages": 1
+          },
+          0.021344000473618507,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 8,
+            "BLOCK_N": 512,
+            "num_warps": 4,
+            "num_stages": 2
           },
           0.02147199958562851,
           null
@@ -8509,40 +8565,10 @@
           {
             "BLOCK_M": 8,
             "BLOCK_N": 512,
-            "num_warps": 2,
-            "num_stages": 2
-          },
-          0.02127999998629093,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 8,
-            "BLOCK_N": 512,
-            "num_warps": 4,
-            "num_stages": 1
-          },
-          0.021568000316619873,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 8,
-            "BLOCK_N": 512,
-            "num_warps": 4,
-            "num_stages": 2
-          },
-          0.021344000473618507,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 8,
-            "BLOCK_N": 512,
             "num_warps": 8,
             "num_stages": 1
           },
-          0.019328000023961067,
+          0.018880000337958336,
           null
         ],
         [
@@ -8552,7 +8578,7 @@
             "num_warps": 8,
             "num_stages": 2
           },
-          0.0191040001809597,
+          0.019039999693632126,
           null
         ],
         [
@@ -8562,7 +8588,7 @@
             "num_warps": 16,
             "num_stages": 1
           },
-          0.019711999222636223,
+          0.019007999449968338,
           null
         ],
         [
@@ -8572,7 +8598,7 @@
             "num_warps": 16,
             "num_stages": 2
           },
-          0.01942400075495243,
+          0.019168000668287277,
           null
         ],
         [
@@ -8580,66 +8606,6 @@
             "BLOCK_M": 8,
             "BLOCK_N": 512,
             "num_warps": 32,
-            "num_stages": 1
-          },
-          0.022048000246286392,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 8,
-            "BLOCK_N": 512,
-            "num_warps": 32,
-            "num_stages": 2
-          },
-          0.021856000646948814,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 8,
-            "BLOCK_N": 1024,
-            "num_warps": 2,
-            "num_stages": 1
-          },
-          0.0244159996509552,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 8,
-            "BLOCK_N": 1024,
-            "num_warps": 2,
-            "num_stages": 2
-          },
-          0.024064000695943832,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 8,
-            "BLOCK_N": 1024,
-            "num_warps": 4,
-            "num_stages": 1
-          },
-          0.021376000717282295,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 8,
-            "BLOCK_N": 1024,
-            "num_warps": 4,
-            "num_stages": 2
-          },
-          0.021344000473618507,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 8,
-            "BLOCK_N": 1024,
-            "num_warps": 8,
             "num_stages": 1
           },
           0.021663999184966087,
@@ -8648,9 +8614,59 @@
         [
           {
             "BLOCK_M": 8,
+            "BLOCK_N": 512,
+            "num_warps": 32,
+            "num_stages": 2
+          },
+          0.02179200015962124,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 8,
+            "BLOCK_N": 1024,
+            "num_warps": 2,
+            "num_stages": 1
+          },
+          0.023903999477624893,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 8,
+            "BLOCK_N": 1024,
+            "num_warps": 2,
+            "num_stages": 2
+          },
+          0.02396799996495247,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 8,
+            "BLOCK_N": 1024,
+            "num_warps": 4,
+            "num_stages": 1
+          },
+          0.02115200087428093,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 8,
+            "BLOCK_N": 1024,
+            "num_warps": 4,
+            "num_stages": 2
+          },
+          0.02127999998629093,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 8,
             "BLOCK_N": 1024,
             "num_warps": 8,
-            "num_stages": 2
+            "num_stages": 1
           },
           0.021376000717282295,
           null
@@ -8659,10 +8675,20 @@
           {
             "BLOCK_M": 8,
             "BLOCK_N": 1024,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.021503999829292297,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 8,
+            "BLOCK_N": 1024,
             "num_warps": 16,
             "num_stages": 1
           },
-          0.019519999623298645,
+          0.019168000668287277,
           null
         ],
         [
@@ -8672,7 +8698,7 @@
             "num_warps": 16,
             "num_stages": 2
           },
-          0.019360000267624855,
+          0.01958400011062622,
           null
         ],
         [
@@ -8682,7 +8708,7 @@
             "num_warps": 32,
             "num_stages": 1
           },
-          0.019711999222636223,
+          0.01894400082528591,
           null
         ],
         [
@@ -8690,26 +8716,6 @@
             "BLOCK_M": 8,
             "BLOCK_N": 1024,
             "num_warps": 32,
-            "num_stages": 2
-          },
-          0.019328000023961067,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 16,
-            "BLOCK_N": 64,
-            "num_warps": 2,
-            "num_stages": 1
-          },
-          0.01929599978029728,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 16,
-            "BLOCK_N": 64,
-            "num_warps": 2,
             "num_stages": 2
           },
           0.01913600042462349,
@@ -8719,117 +8725,17 @@
           {
             "BLOCK_M": 16,
             "BLOCK_N": 64,
-            "num_warps": 4,
-            "num_stages": 1
-          },
-          0.019200000911951065,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 16,
-            "BLOCK_N": 64,
-            "num_warps": 4,
-            "num_stages": 2
-          },
-          0.019039999693632126,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 16,
-            "BLOCK_N": 64,
-            "num_warps": 8,
-            "num_stages": 1
-          },
-          0.020927999168634415,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 16,
-            "BLOCK_N": 64,
-            "num_warps": 8,
-            "num_stages": 2
-          },
-          0.020735999569296837,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 16,
-            "BLOCK_N": 64,
-            "num_warps": 16,
-            "num_stages": 1
-          },
-          0.026944000273942947,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 16,
-            "BLOCK_N": 64,
-            "num_warps": 16,
-            "num_stages": 2
-          },
-          0.026784000918269157,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 16,
-            "BLOCK_N": 64,
-            "num_warps": 32,
-            "num_stages": 1
-          },
-          0.04700800031423569,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 16,
-            "BLOCK_N": 64,
-            "num_warps": 32,
-            "num_stages": 2
-          },
-          0.04678399860858917,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 16,
-            "BLOCK_N": 128,
             "num_warps": 2,
             "num_stages": 1
           },
-          0.02127999998629093,
+          0.018880000337958336,
           null
         ],
         [
           {
             "BLOCK_M": 16,
-            "BLOCK_N": 128,
+            "BLOCK_N": 64,
             "num_warps": 2,
-            "num_stages": 2
-          },
-          0.021088000386953354,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 16,
-            "BLOCK_N": 128,
-            "num_warps": 4,
-            "num_stages": 1
-          },
-          0.019231999292969704,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 16,
-            "BLOCK_N": 128,
-            "num_warps": 4,
             "num_stages": 2
           },
           0.019007999449968338,
@@ -8838,17 +8744,237 @@
         [
           {
             "BLOCK_M": 16,
-            "BLOCK_N": 128,
+            "BLOCK_N": 64,
+            "num_warps": 4,
+            "num_stages": 1
+          },
+          0.01865600049495697,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "num_warps": 4,
+            "num_stages": 2
+          },
+          0.018880000337958336,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
             "num_warps": 8,
             "num_stages": 1
           },
-          0.01926399953663349,
+          0.02038400061428547,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.02054399996995926,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "num_warps": 16,
+            "num_stages": 1
+          },
+          0.026464000344276428,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "num_warps": 16,
+            "num_stages": 2
+          },
+          0.026688000187277794,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "num_warps": 32,
+            "num_stages": 1
+          },
+          0.04649600014090538,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "num_warps": 32,
+            "num_stages": 2
+          },
+          0.04652800038456917,
           null
         ],
         [
           {
             "BLOCK_M": 16,
             "BLOCK_N": 128,
+            "num_warps": 2,
+            "num_stages": 1
+          },
+          0.020800000056624413,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "num_warps": 2,
+            "num_stages": 2
+          },
+          0.021023999899625778,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "num_warps": 4,
+            "num_stages": 1
+          },
+          0.018719999119639397,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "num_warps": 4,
+            "num_stages": 2
+          },
+          0.018912000581622124,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "num_warps": 8,
+            "num_stages": 1
+          },
+          0.01849599927663803,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.01881599985063076,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "num_warps": 16,
+            "num_stages": 1
+          },
+          0.020608000457286835,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "num_warps": 16,
+            "num_stages": 2
+          },
+          0.020735999569296837,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "num_warps": 32,
+            "num_stages": 1
+          },
+          0.02864000014960766,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "num_warps": 32,
+            "num_stages": 2
+          },
+          0.02879999950528145,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "num_warps": 2,
+            "num_stages": 1
+          },
+          0.021056000143289566,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "num_warps": 2,
+            "num_stages": 2
+          },
+          0.021215999498963356,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "num_warps": 4,
+            "num_stages": 1
+          },
+          0.020927999168634415,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "num_warps": 4,
+            "num_stages": 2
+          },
+          0.021088000386953354,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "num_warps": 8,
+            "num_stages": 1
+          },
+          0.018751999363303185,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
             "num_warps": 8,
             "num_stages": 2
           },
@@ -8858,8 +8984,68 @@
         [
           {
             "BLOCK_M": 16,
-            "BLOCK_N": 128,
+            "BLOCK_N": 256,
             "num_warps": 16,
+            "num_stages": 1
+          },
+          0.01894400082528591,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "num_warps": 16,
+            "num_stages": 2
+          },
+          0.0191040001809597,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "num_warps": 32,
+            "num_stages": 1
+          },
+          0.021663999184966087,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "num_warps": 32,
+            "num_stages": 2
+          },
+          0.021824000403285027,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 512,
+            "num_warps": 2,
+            "num_stages": 1
+          },
+          0.025312000885605812,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 512,
+            "num_warps": 2,
+            "num_stages": 2
+          },
+          0.025599999353289604,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 512,
+            "num_warps": 4,
             "num_stages": 1
           },
           0.02099199965596199,
@@ -8868,166 +9054,6 @@
         [
           {
             "BLOCK_M": 16,
-            "BLOCK_N": 128,
-            "num_warps": 16,
-            "num_stages": 2
-          },
-          0.02070399932563305,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 16,
-            "BLOCK_N": 128,
-            "num_warps": 32,
-            "num_stages": 1
-          },
-          0.029055999591946602,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 16,
-            "BLOCK_N": 128,
-            "num_warps": 32,
-            "num_stages": 2
-          },
-          0.028960000723600388,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 16,
-            "BLOCK_N": 256,
-            "num_warps": 2,
-            "num_stages": 1
-          },
-          0.021568000316619873,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 16,
-            "BLOCK_N": 256,
-            "num_warps": 2,
-            "num_stages": 2
-          },
-          0.021247999742627144,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 16,
-            "BLOCK_N": 256,
-            "num_warps": 4,
-            "num_stages": 1
-          },
-          0.021344000473618507,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 16,
-            "BLOCK_N": 256,
-            "num_warps": 4,
-            "num_stages": 2
-          },
-          0.021056000143289566,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 16,
-            "BLOCK_N": 256,
-            "num_warps": 8,
-            "num_stages": 1
-          },
-          0.019231999292969704,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 16,
-            "BLOCK_N": 256,
-            "num_warps": 8,
-            "num_stages": 2
-          },
-          0.019007999449968338,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 16,
-            "BLOCK_N": 256,
-            "num_warps": 16,
-            "num_stages": 1
-          },
-          0.0197759997099638,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 16,
-            "BLOCK_N": 256,
-            "num_warps": 16,
-            "num_stages": 2
-          },
-          0.019487999379634857,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 16,
-            "BLOCK_N": 256,
-            "num_warps": 32,
-            "num_stages": 1
-          },
-          0.022112000733613968,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 16,
-            "BLOCK_N": 256,
-            "num_warps": 32,
-            "num_stages": 2
-          },
-          0.021856000646948814,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 16,
-            "BLOCK_N": 512,
-            "num_warps": 2,
-            "num_stages": 1
-          },
-          0.02582399919629097,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 16,
-            "BLOCK_N": 512,
-            "num_warps": 2,
-            "num_stages": 2
-          },
-          0.025631999596953392,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 16,
-            "BLOCK_N": 512,
-            "num_warps": 4,
-            "num_stages": 1
-          },
-          0.02143999934196472,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 16,
             "BLOCK_N": 512,
             "num_warps": 4,
             "num_stages": 2
@@ -9041,6 +9067,16 @@
             "BLOCK_N": 512,
             "num_warps": 8,
             "num_stages": 1
+          },
+          0.02099199965596199,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 512,
+            "num_warps": 8,
+            "num_stages": 2
           },
           0.02127999998629093,
           null
@@ -9049,20 +9085,10 @@
           {
             "BLOCK_M": 16,
             "BLOCK_N": 512,
-            "num_warps": 8,
-            "num_stages": 2
-          },
-          0.021215999498963356,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 16,
-            "BLOCK_N": 512,
             "num_warps": 16,
             "num_stages": 1
           },
-          0.01945599913597107,
+          0.01897599920630455,
           null
         ],
         [
@@ -9072,7 +9098,7 @@
             "num_warps": 16,
             "num_stages": 2
           },
-          0.01929599978029728,
+          0.019200000911951065,
           null
         ],
         [
@@ -9082,7 +9108,7 @@
             "num_warps": 32,
             "num_stages": 1
           },
-          0.01974399946630001,
+          0.019039999693632126,
           null
         ],
         [
@@ -9090,46 +9116,6 @@
             "BLOCK_M": 16,
             "BLOCK_N": 512,
             "num_warps": 32,
-            "num_stages": 2
-          },
-          0.01958400011062622,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 32,
-            "BLOCK_N": 64,
-            "num_warps": 2,
-            "num_stages": 1
-          },
-          0.022016000002622604,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 32,
-            "BLOCK_N": 64,
-            "num_warps": 2,
-            "num_stages": 2
-          },
-          0.02179200015962124,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 32,
-            "BLOCK_N": 64,
-            "num_warps": 4,
-            "num_stages": 1
-          },
-          0.019392000511288643,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 32,
-            "BLOCK_N": 64,
-            "num_warps": 4,
             "num_stages": 2
           },
           0.019168000668287277,
@@ -9139,10 +9125,50 @@
           {
             "BLOCK_M": 32,
             "BLOCK_N": 64,
+            "num_warps": 2,
+            "num_stages": 1
+          },
+          0.02163200080394745,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 32,
+            "BLOCK_N": 64,
+            "num_warps": 2,
+            "num_stages": 2
+          },
+          0.02175999991595745,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 32,
+            "BLOCK_N": 64,
+            "num_warps": 4,
+            "num_stages": 1
+          },
+          0.01897599920630455,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 32,
+            "BLOCK_N": 64,
+            "num_warps": 4,
+            "num_stages": 2
+          },
+          0.019071999937295914,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 32,
+            "BLOCK_N": 64,
             "num_warps": 8,
             "num_stages": 1
           },
-          0.01942400075495243,
+          0.018688000738620758,
           null
         ],
         [
@@ -9152,7 +9178,7 @@
             "num_warps": 8,
             "num_stages": 2
           },
-          0.0191040001809597,
+          0.01894400082528591,
           null
         ],
         [
@@ -9162,7 +9188,7 @@
             "num_warps": 16,
             "num_stages": 1
           },
-          0.021824000403285027,
+          0.021344000473618507,
           null
         ],
         [
@@ -9170,46 +9196,6 @@
             "BLOCK_M": 32,
             "BLOCK_N": 64,
             "num_warps": 16,
-            "num_stages": 2
-          },
-          0.021503999829292297,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 32,
-            "BLOCK_N": 64,
-            "num_warps": 32,
-            "num_stages": 1
-          },
-          0.0297279991209507,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 32,
-            "BLOCK_N": 64,
-            "num_warps": 32,
-            "num_stages": 2
-          },
-          0.02956799976527691,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 32,
-            "BLOCK_N": 128,
-            "num_warps": 2,
-            "num_stages": 1
-          },
-          0.021695999428629875,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 32,
-            "BLOCK_N": 128,
-            "num_warps": 2,
             "num_stages": 2
           },
           0.02147199958562851,
@@ -9218,11 +9204,51 @@
         [
           {
             "BLOCK_M": 32,
+            "BLOCK_N": 64,
+            "num_warps": 32,
+            "num_stages": 1
+          },
+          0.029279999434947968,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 32,
+            "BLOCK_N": 64,
+            "num_warps": 32,
+            "num_stages": 2
+          },
+          0.029440000653266907,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 32,
+            "BLOCK_N": 128,
+            "num_warps": 2,
+            "num_stages": 1
+          },
+          0.021247999742627144,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 32,
+            "BLOCK_N": 128,
+            "num_warps": 2,
+            "num_stages": 2
+          },
+          0.02143999934196472,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 32,
             "BLOCK_N": 128,
             "num_warps": 4,
             "num_stages": 1
           },
-          0.021503999829292297,
+          0.021088000386953354,
           null
         ],
         [
@@ -9232,7 +9258,7 @@
             "num_warps": 4,
             "num_stages": 2
           },
-          0.021215999498963356,
+          0.021344000473618507,
           null
         ],
         [
@@ -9242,7 +9268,7 @@
             "num_warps": 8,
             "num_stages": 1
           },
-          0.019200000911951065,
+          0.018719999119639397,
           null
         ],
         [
@@ -9252,7 +9278,7 @@
             "num_warps": 8,
             "num_stages": 2
           },
-          0.01897599920630455,
+          0.018848000094294548,
           null
         ],
         [
@@ -9262,7 +9288,7 @@
             "num_warps": 16,
             "num_stages": 1
           },
-          0.019200000911951065,
+          0.01849599927663803,
           null
         ],
         [
@@ -9272,7 +9298,7 @@
             "num_warps": 16,
             "num_stages": 2
           },
-          0.01897599920630455,
+          0.01865600049495697,
           null
         ],
         [
@@ -9282,7 +9308,7 @@
             "num_warps": 32,
             "num_stages": 1
           },
-          0.022016000002622604,
+          0.021695999428629875,
           null
         ],
         [
@@ -9302,7 +9328,7 @@
             "num_warps": 2,
             "num_stages": 1
           },
-          0.026528000831604004,
+          0.026176000013947487,
           null
         ],
         [
@@ -9322,7 +9348,7 @@
             "num_warps": 4,
             "num_stages": 1
           },
-          0.021568000316619873,
+          0.021183999255299568,
           null
         ],
         [
@@ -9332,7 +9358,7 @@
             "num_warps": 4,
             "num_stages": 2
           },
-          0.021376000717282295,
+          0.021407999098300934,
           null
         ],
         [
@@ -9342,7 +9368,7 @@
             "num_warps": 8,
             "num_stages": 1
           },
-          0.021376000717282295,
+          0.021183999255299568,
           null
         ],
         [
@@ -9352,7 +9378,7 @@
             "num_warps": 8,
             "num_stages": 2
           },
-          0.021344000473618507,
+          0.02131200022995472,
           null
         ],
         [
@@ -9361,6 +9387,16 @@
             "BLOCK_N": 256,
             "num_warps": 16,
             "num_stages": 1
+          },
+          0.019168000668287277,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 32,
+            "BLOCK_N": 256,
+            "num_warps": 16,
+            "num_stages": 2
           },
           0.01958400011062622,
           null
@@ -9369,20 +9405,10 @@
           {
             "BLOCK_M": 32,
             "BLOCK_N": 256,
-            "num_warps": 16,
-            "num_stages": 2
-          },
-          0.01942400075495243,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 32,
-            "BLOCK_N": 256,
             "num_warps": 32,
             "num_stages": 1
           },
-          0.019711999222636223,
+          0.019007999449968338,
           null
         ],
         [
@@ -9392,7 +9418,7 @@
             "num_warps": 32,
             "num_stages": 2
           },
-          0.019487999379634857,
+          0.01913600042462349,
           null
         ],
         [
@@ -9402,7 +9428,7 @@
             "num_warps": 2,
             "num_stages": 1
           },
-          0.022016000002622604,
+          0.021695999428629875,
           null
         ],
         [
@@ -9412,7 +9438,7 @@
             "num_warps": 2,
             "num_stages": 2
           },
-          0.021824000403285027,
+          0.021727999672293663,
           null
         ],
         [
@@ -9422,7 +9448,7 @@
             "num_warps": 4,
             "num_stages": 1
           },
-          0.02208000048995018,
+          0.021536000072956085,
           null
         ],
         [
@@ -9432,7 +9458,7 @@
             "num_warps": 4,
             "num_stages": 2
           },
-          0.021824000403285027,
+          0.021695999428629875,
           null
         ],
         [
@@ -9442,7 +9468,7 @@
             "num_warps": 8,
             "num_stages": 1
           },
-          0.019231999292969704,
+          0.018880000337958336,
           null
         ],
         [
@@ -9452,7 +9478,7 @@
             "num_warps": 8,
             "num_stages": 2
           },
-          0.019168000668287277,
+          0.01894400082528591,
           null
         ],
         [
@@ -9462,7 +9488,7 @@
             "num_warps": 16,
             "num_stages": 1
           },
-          0.01945599913597107,
+          0.018751999363303185,
           null
         ],
         [
@@ -9472,7 +9498,7 @@
             "num_warps": 16,
             "num_stages": 2
           },
-          0.019231999292969704,
+          0.01894400082528591,
           null
         ],
         [
@@ -9482,7 +9508,7 @@
             "num_warps": 32,
             "num_stages": 1
           },
-          0.02287999913096428,
+          0.02239999920129776,
           null
         ],
         [
@@ -9492,7 +9518,7 @@
             "num_warps": 32,
             "num_stages": 2
           },
-          0.022655999287962914,
+          0.022624000906944275,
           null
         ],
         [
@@ -9502,7 +9528,7 @@
             "num_warps": 2,
             "num_stages": 1
           },
-          0.026976000517606735,
+          0.026559999212622643,
           null
         ],
         [
@@ -9522,7 +9548,7 @@
             "num_warps": 4,
             "num_stages": 1
           },
-          0.021376000717282295,
+          0.020959999412298203,
           null
         ],
         [
@@ -9532,7 +9558,7 @@
             "num_warps": 4,
             "num_stages": 2
           },
-          0.02127999998629093,
+          0.021247999742627144,
           null
         ],
         [
@@ -9542,7 +9568,7 @@
             "num_warps": 8,
             "num_stages": 1
           },
-          0.021536000072956085,
+          0.021023999899625778,
           null
         ],
         [
@@ -9552,7 +9578,7 @@
             "num_warps": 8,
             "num_stages": 2
           },
-          0.02127999998629093,
+          0.021247999742627144,
           null
         ],
         [
@@ -9561,6 +9587,16 @@
             "BLOCK_N": 128,
             "num_warps": 16,
             "num_stages": 1
+          },
+          0.0191040001809597,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 64,
+            "BLOCK_N": 128,
+            "num_warps": 16,
+            "num_stages": 2
           },
           0.01926399953663349,
           null
@@ -9569,20 +9605,10 @@
           {
             "BLOCK_M": 64,
             "BLOCK_N": 128,
-            "num_warps": 16,
-            "num_stages": 2
-          },
-          0.019168000668287277,
-          null
-        ],
-        [
-          {
-            "BLOCK_M": 64,
-            "BLOCK_N": 128,
             "num_warps": 32,
             "num_stages": 1
           },
-          0.019487999379634857,
+          0.018783999606966972,
           null
         ],
         [
@@ -9592,7 +9618,7 @@
             "num_warps": 32,
             "num_stages": 2
           },
-          0.019231999292969704,
+          0.019071999937295914,
           null
         ]
       ]
@@ -9605,123 +9631,18 @@
             "BLOCK_N": 128,
             "BLOCK_K": 128,
             "num_warps": 8,
-            "num_stages": 5,
+            "num_stages": 3,
             "GROUP_M": 8,
             "warp_specialize": true
           },
           "act": {
-            "BLOCK_M": 2,
-            "BLOCK_N": 512,
-            "num_warps": 2,
-            "num_stages": 2
-          }
-        },
-        2.9018239974975586,
-        null
-      ],
-      [
-        {
-          "gemm": {
-            "BLOCK_M": 32,
+            "BLOCK_M": 8,
             "BLOCK_N": 128,
-            "BLOCK_K": 128,
-            "num_warps": 8,
-            "num_stages": 5,
-            "GROUP_M": 8,
-            "warp_specialize": true
-          },
-          "act": {
-            "BLOCK_M": 4,
-            "BLOCK_N": 256,
-            "num_warps": 2,
-            "num_stages": 2
+            "num_warps": 4,
+            "num_stages": 1
           }
         },
-        2.9039359092712402,
-        null
-      ],
-      [
-        {
-          "gemm": {
-            "BLOCK_M": 32,
-            "BLOCK_N": 128,
-            "BLOCK_K": 128,
-            "num_warps": 8,
-            "num_stages": 5,
-            "GROUP_M": 8,
-            "warp_specialize": true
-          },
-          "act": {
-            "BLOCK_M": 1,
-            "BLOCK_N": 1024,
-            "num_warps": 2,
-            "num_stages": 2
-          }
-        },
-        2.904736042022705,
-        null
-      ],
-      [
-        {
-          "gemm": {
-            "BLOCK_M": 32,
-            "BLOCK_N": 256,
-            "BLOCK_K": 128,
-            "num_warps": 8,
-            "num_stages": 4,
-            "GROUP_M": 8,
-            "warp_specialize": true
-          },
-          "act": {
-            "BLOCK_M": 2,
-            "BLOCK_N": 512,
-            "num_warps": 2,
-            "num_stages": 2
-          }
-        },
-        3.0561599731445312,
-        null
-      ],
-      [
-        {
-          "gemm": {
-            "BLOCK_M": 32,
-            "BLOCK_N": 256,
-            "BLOCK_K": 128,
-            "num_warps": 8,
-            "num_stages": 4,
-            "GROUP_M": 8,
-            "warp_specialize": true
-          },
-          "act": {
-            "BLOCK_M": 4,
-            "BLOCK_N": 256,
-            "num_warps": 2,
-            "num_stages": 2
-          }
-        },
-        2.9027199745178223,
-        null
-      ],
-      [
-        {
-          "gemm": {
-            "BLOCK_M": 32,
-            "BLOCK_N": 256,
-            "BLOCK_K": 128,
-            "num_warps": 8,
-            "num_stages": 4,
-            "GROUP_M": 8,
-            "warp_specialize": true
-          },
-          "act": {
-            "BLOCK_M": 1,
-            "BLOCK_N": 1024,
-            "num_warps": 2,
-            "num_stages": 2
-          }
-        },
-        2.902751922607422,
+        2.8996798992156982,
         null
       ],
       [
@@ -9736,13 +9657,13 @@
             "warp_specialize": true
           },
           "act": {
-            "BLOCK_M": 2,
-            "BLOCK_N": 512,
-            "num_warps": 2,
-            "num_stages": 2
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "num_warps": 8,
+            "num_stages": 1
           }
         },
-        2.9168319702148438,
+        2.8976640701293945,
         null
       ],
       [
@@ -9757,20 +9678,83 @@
             "warp_specialize": true
           },
           "act": {
-            "BLOCK_M": 4,
+            "BLOCK_M": 32,
+            "BLOCK_N": 128,
+            "num_warps": 16,
+            "num_stages": 1
+          }
+        },
+        2.897631883621216,
+        null
+      ],
+      [
+        {
+          "gemm": {
+            "BLOCK_M": 32,
             "BLOCK_N": 256,
-            "num_warps": 2,
-            "num_stages": 2
+            "BLOCK_K": 128,
+            "num_warps": 8,
+            "num_stages": 4,
+            "GROUP_M": 8,
+            "warp_specialize": true
+          },
+          "act": {
+            "BLOCK_M": 8,
+            "BLOCK_N": 128,
+            "num_warps": 4,
+            "num_stages": 1
           }
         },
-        2.9030399322509766,
+        2.926975965499878,
         null
       ],
       [
         {
           "gemm": {
             "BLOCK_M": 32,
+            "BLOCK_N": 256,
+            "BLOCK_K": 128,
+            "num_warps": 8,
+            "num_stages": 4,
+            "GROUP_M": 8,
+            "warp_specialize": true
+          },
+          "act": {
+            "BLOCK_M": 16,
             "BLOCK_N": 128,
+            "num_warps": 8,
+            "num_stages": 1
+          }
+        },
+        2.900991916656494,
+        null
+      ],
+      [
+        {
+          "gemm": {
+            "BLOCK_M": 32,
+            "BLOCK_N": 256,
+            "BLOCK_K": 128,
+            "num_warps": 8,
+            "num_stages": 4,
+            "GROUP_M": 8,
+            "warp_specialize": true
+          },
+          "act": {
+            "BLOCK_M": 32,
+            "BLOCK_N": 128,
+            "num_warps": 16,
+            "num_stages": 1
+          }
+        },
+        2.901887893676758,
+        null
+      ],
+      [
+        {
+          "gemm": {
+            "BLOCK_M": 32,
+            "BLOCK_N": 256,
             "BLOCK_K": 128,
             "num_warps": 8,
             "num_stages": 3,
@@ -9778,13 +9762,55 @@
             "warp_specialize": true
           },
           "act": {
-            "BLOCK_M": 1,
-            "BLOCK_N": 1024,
-            "num_warps": 2,
-            "num_stages": 2
+            "BLOCK_M": 8,
+            "BLOCK_N": 128,
+            "num_warps": 4,
+            "num_stages": 1
           }
         },
-        2.8992319107055664,
+        2.9262399673461914,
+        null
+      ],
+      [
+        {
+          "gemm": {
+            "BLOCK_M": 32,
+            "BLOCK_N": 256,
+            "BLOCK_K": 128,
+            "num_warps": 8,
+            "num_stages": 3,
+            "GROUP_M": 8,
+            "warp_specialize": true
+          },
+          "act": {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "num_warps": 8,
+            "num_stages": 1
+          }
+        },
+        2.895967960357666,
+        null
+      ],
+      [
+        {
+          "gemm": {
+            "BLOCK_M": 32,
+            "BLOCK_N": 256,
+            "BLOCK_K": 128,
+            "num_warps": 8,
+            "num_stages": 3,
+            "GROUP_M": 8,
+            "warp_specialize": true
+          },
+          "act": {
+            "BLOCK_M": 32,
+            "BLOCK_N": 128,
+            "num_warps": 16,
+            "num_stages": 1
+          }
+        },
+        2.8907840251922607,
         null
       ]
     ]
@@ -9795,7 +9821,7 @@
         "coarse": {
           "n_tried": 200,
           "n_failed": 61,
-          "best_ms": 2.8672640323638916,
+          "best_ms": 2.8693439960479736,
           "axis_counts": {
             "num_ctas": 40,
             "warp_specialize": 90,
@@ -9806,7 +9832,7 @@
         "refine": {
           "n_tried": 32,
           "n_failed": 8,
-          "best_ms": 2.8455679416656494,
+          "best_ms": 2.845855951309204,
           "axis_counts": {
             "USE_TMA": 32,
             "warp_specialize": 32,
@@ -9818,7 +9844,7 @@
         "coarse": {
           "n_tried": 200,
           "n_failed": 36,
-          "best_ms": 2.888223886489868,
+          "best_ms": 2.887648105621338,
           "axis_counts": {
             "USE_TMA": 77,
             "warp_specialize": 89,
@@ -9829,7 +9855,7 @@
         "refine": {
           "n_tried": 15,
           "n_failed": 5,
-          "best_ms": 2.887295961380005,
+          "best_ms": 2.8851840496063232,
           "axis_counts": {
             "warp_specialize": 15,
             "_total_cfgs": 15
@@ -9840,7 +9866,7 @@
         "tune": {
           "n_tried": 270,
           "n_failed": 0,
-          "best_ms": 0.018880000337958336,
+          "best_ms": 0.01849599927663803,
           "axis_counts": {
             "_total_cfgs": 270
           }
@@ -9854,9 +9880,9 @@
     }
   },
   "device": "NVIDIA H200",
-  "device_uuid": "6c4cc3d3-e0bc-949d-16be-822af843e49f",
+  "device_uuid": "59aa5198-70aa-0e6f-16b9-a6d483af9c4e",
   "torch": "2.11.0+cu130",
   "triton": "3.6.0",
-  "saved_at": "2026-08-04 11:36:14",
+  "saved_at": "2026-08-04 17:24:04",
   "_ckpt_schema": 1
 }
