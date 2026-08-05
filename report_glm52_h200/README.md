@@ -39,40 +39,56 @@ Source data `results/h200/`. Per-family run logs `log/run_h200/`. Build and audi
 produce this report**; every number here was read out of the JSON.
 
 
-## 0. Read this first: the campaign ran on TWO different H200s
+## 0. Read this first: what the re-run fixed, and what it did not
 
-The eight families did not share a GPU, and the two cards do not share a timing basis:
+This directory is generated from a **re-run** of the whole campaign. The first attempt split
+silently across two H200s with harness floors of **−5.975 us** and **+42.185 us**, which made
+its decode numbers incomparable both with each other and with its own layer sweep.
 
-| GPU | families | harness floor |
-|---|---|---|
-| `59aa5198` | f01, f03, f10 | **−5.975 us** |
-| `6c4cc3d3` | f04f05, f06, f08f09, f11, **the whole-layer sweep** | **+42.185 us** |
+**Fixed.** All eight families now ran on **one pinned, idle card** — GPU index 1,
+`GPU-59aa5198-70aa-0e6f-16b9-a6d483af9c4e`, `gpu_was_idle: True` — with a single **positive**
+harness floor of **+37.669 us** and a 0.032 us timer tick. The unphysical negative floor is
+gone. Every row's `notes` column still names the card and floor it was measured on, so the
+next split is visible rather than silent.
 
-Two things follow, and neither is cosmetic:
+**Changed since the first run: this report publishes the PAIRED estimator.** Every row carries
+two ratios — a *sequential* one (two medians, one arm after the other, so a monotone clock or
+thermal ramp does not cancel) and a *paired* one (median of per-repetition ratios from an
+interleaved A/B/A/B loop, which does cancel it). `summary.json` published the sequential one;
+the CSVs here publish the paired one. They disagree by up to **13.8 %** (f04f05 prefill_t8192
+F4_topk: 0.841 sequential vs 0.957 paired), which is far too large to treat as
+interchangeable. Publishing the sequential ratio is what let a physically impossible speedup
+through on the RTX 4060.
 
-**A negative harness floor is not physical.** It is what the linear fit `t = O + N·L` returns
-when the launch term is over-estimated, so the small-kernel timing model on `59aa5198` is
-wrong in an unknown direction.
+**Not fixed: the layer-level effects are mostly not resolvable.** Under LOG-11's tie protocol,
+**six of seven regimes are TIED** — at `decode_bs1024`, 14 configurations are statistically
+indistinguishable. Only `decode_bs32` separates. Comparing the two runs shows why that matters:
 
-**At decode, the floor is most of the measurement.** `#3`'s entire fused arm at `decode_bs1`
-is **52.6 us**, against a **48.2 us** difference between the two cards' floors. A speedup is
-`(floor + work_unfused) / (floor + work_fused)`, which equals the ratio of the actual work
-only when the floor is zero. So every decode speedup here is partly a measurement of the
-harness — and `f01`/`f03`/`f10` are not on the same footing as the families printed beside
-them, nor as the whole-layer sweep, which ran on the other card.
+| regime | run 1 winner | run 1 | run 2 winner | run 2 |
+|---|---|---|---|---|
+| decode_bs1 | #3 + #9 | 1.2007 | #1+#10+#11a+#11b | 1.2718 |
+| decode_bs32 | greedy | 1.0089 | **greedy** (separated) | 1.0165 |
+| decode_bs256 | #11b | 1.0219 | greedy | 1.0092 |
+| decode_bs512 | #4 | 1.0185 | greedy | 1.0167 |
+| decode_bs1024 | greedy | 1.0111 | #9 | 1.0009 |
+| prefill_t2048 | #3 + #10 | 1.0148 | **#3 + #10** | 1.0101 |
+| prefill_t8192 | #3 + #10 | 1.0071 | #3 | 1.0087 |
 
-At prefill the kernels are millisecond-scale and the floor is negligible; those rows are
-unaffected.
+The *named winner* changes in four of seven regimes between runs. That is not a contradiction —
+it is what "TIED" means, and the protocol now says so. **Do not quote a layer winner from a
+tied regime as a result.** What survives both runs is: `decode_bs1` gains ~1.20–1.27x, greedy
+fusion is competitive at small decode batches, and prefill sits near 1.01x.
 
-**Why it happened.** The checkpoint and result fences compare device *name*, and all eight
-cards report `NVIDIA H200`, so work from one card is accepted on another without complaint.
-`ckpt_save` records `device_uuid`; nothing reads it. This was flagged as a risk when `--gpu`
-was added and is now a realised defect in the data, not a hypothetical.
-
-**What to do with the numbers.** Prefill rows: use them. Decode rows: treat the *ordering*
-within a single family as informative and the absolute ratios as upper bounds; do not compare
-a `59aa5198` decode ratio against a `6c4cc3d3` one, and do not reconcile either against the
-layer sweep. Every row's `notes` column names its card.
+**Lost: fusion #11 produced no rows at all.** `bench_f11` wrote `complete: true` with an empty
+`rows` array. Three separate causes, all visible in `log/run_h200/f11.log`:
+its F11a (`moe_fused`) arm failed the fp32 reference at rel_err **0.37–0.77** against a 0.02
+tolerance, and `run_regime` raises on that — destroying the F11b router results measured in
+the same regime, which were fine; the `norm` and `rstd` screens rejected **every** config
+(`124 offered -> 0 valid`) and the harness then reported a time anyway
+(`!! screening rejected EVERY config; timing unscreened`); and `specialization_study` hit
+`PassManager::run failed` at three regimes (caught and recorded, not fatal). So `#11a`,
+`#11b` and `#11b'` are **absent** from every per-regime CSV, and the four layer configurations
+containing them (`O`, `P`, `Q`, `R`) were excluded for failing the fp32 reference.
 
 
 ## Files

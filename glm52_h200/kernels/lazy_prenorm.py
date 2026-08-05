@@ -68,9 +68,15 @@ backend -- on C500/MACA mode 1 won the router and mode 2 won w13 (log/LOG-07 sec
   2e-6 of extra relative error.
 * ``3`` -- ``a`` re-loaded with a second ``tl.load`` and then mode 0.  Intended to test
   whether the dot-operand -> blocked layout conversion is the cost; Triton CSEs the two
-  loads, so it compiled to exactly mode 0 on MACA and timed identically.  Kept as
-  evidence, and worth re-checking on this stack: whether Triton still CSEs across a
-  wgmma-operand use is a backend question, not a language guarantee.
+  loads, so it compiled to exactly mode 0 on MACA and timed identically.  **Re-checked on
+  this stack and the answer is the same**: cross-compiling both kernels for sm_90 (Triton
+  3.6, ``GPUTarget("cuda", 90)``) gives mode 3 the same k-loop global-load count, the same
+  ``local_alloc``/``local_load`` counts, the same ``tt.reduce`` count and the same
+  ``metadata.shared`` as mode 0 at every BLOCK_M tried, including BLOCK_M >= 64 where the
+  first load has become a ``wgmma`` operand.  So Triton CSEs the second read *across* a
+  wgmma-operand use too, and mode 3 is not a way to give the reduction its own copy of A.
+  That matters beyond tuning -- see the campaign-1 section below, where "give the reduction
+  a separate load" was the obvious workaround and this is the measurement that rules it out.
 
 The mode is picked by a documented pre-study (recorded as ``sq_mode_study`` in the result
 JSON) and then held FIXED so that the fused and unfused tuning grids have identical size.
@@ -178,6 +184,76 @@ the whole suite, including *which spelling* of warp specialization this Triton h
 (``tl.range(warp_specialize=)`` at source level, or ``num_consumer_groups`` launch kwargs
 on a forked build).  Both launchers below pass whichever of the two the feature layer
 reports, so the same call works on either stack.
+
+======================================================================================
+Campaign 1 (H200, log/run_h200/f11.log): the fused arms answered wrong, and the defect
+is NOT the arithmetic in this file.  Read this before "fixing" the k-loop.
+======================================================================================
+The first H200 run rejected 71 configs as wrong-answer across the screens (``w13F`` and
+``routerF``; the unfused arms rejected **zero**) and then failed its post-tuning check with
+``moe_fused`` relative errors of 0.37 / 0.41 / 0.53 / 0.77 against a 0.02 tolerance.  The
+obvious reading -- "the fused epilogue is wrong" -- is not what happened, and the argument
+that rules it out is structural rather than empirical:
+
+  ``sq`` is a **full-K reduction over a single row of A**, accumulated in CTA-local
+  registers, never shared between CTAs, and recomputed identically by every n-tile and by
+  each of the ``top_k`` gathered copies of a token.  Nothing about which rows a CTA owns,
+  how many warps it has, how deeply the loop is staged, or whether the loop is warp
+  specialized can change the value ``rstd`` takes for a given row.  So the fused output is
+  **invariant** to BLOCK_M, BLOCK_N, GROUP_M, num_warps, num_stages, WARP_SPECIALIZE and
+  num_ctas by construction -- BLOCK_K and SQ_MODE are the only mapping knobs that may move
+  it, and only by fp32 summation order.  A result that depends on BLOCK_M is therefore a
+  codegen or hardware defect *by definition*, not an arithmetic one.
+
+And BLOCK_M is exactly what it depended on.  Every one of the 71 wrong-answer configs had
+BLOCK_M in {64, 128}; not one had BLOCK_M in {16, 32}.  The tuned winner's BLOCK_M predicts
+the post-tuning verdict perfectly across all seven regimes (BM16 -> passed at ~4e-03;
+BM64/BM128 -> failed).  The same signature appears in ``router_gemm_kernel``, which shares
+none of the MoE dispatch, so no dispatch-, padding- or sampling-level explanation survives.
+
+Independently verified on sm_89 before touching anything (correctness is device-neutral;
+w13 was shrunk in H/I2 while keeping E=256 and the **real** router-derived top-8 dispatch,
+so the zero-row-expert sparsity the synthetic repros lacked was present): ~4700 config
+launches over the regenerated H200 grid, 0 wrong answers, 0 unwritten rows, and every
+config bit-identical to every other across BLOCK_M 16..256, BLOCK_N, num_warps and
+warp_specialize.  The invariant above holds exactly on sm_89.
+
+Cross-compiling this file for sm_90 locally (``triton.compile`` with
+``GPUTarget("cuda", 90)``, which needs no H200) shows what is special about BLOCK_M >= 64:
+it is precisely the threshold at which Triton 3.6 stops emitting ``mma.sync`` and emits the
+asynchronous ``ttng.warp_group_dot``.  At that point the A tile acquires a SECOND consumer
+in the fused arm -- ``ttg.local_alloc`` stages it into shared memory for the async wgmma
+while ``arith.mulf``/``tt.reduce`` read a register copy (``ttg.local_load`` drops to 0) --
+and the unfused arm has only the first.  That asymmetry is the whole difference between an
+arm with 20-37 wrong answers per screen and an arm with none.  Whether the failure is a
+Triton miscompile or a genuine race at that boundary cannot be settled without an H200.
+
+**Consequences for this file, all of them deliberate:**
+
+* **No change was made to the k-loop, the epilogue, the masking or the dispatch.**  They
+  were re-audited line by line against ``reference.rmsnorm`` (same ``rsqrt(sq/K + eps)``)
+  and ``reference.moe_align_block_size`` (``total`` is a multiple of BLOCK_M, so the
+  unmasked ``sorted_token_ids`` load cannot run past the end, and an expert with zero rows
+  gets zero blocks rather than an all-padding one).  Patching correct arithmetic to chase a
+  codegen defect would have made the kernel wrong on every *other* device in the study.
+* **SQ_MODE is not an escape hatch.**  All four modes lower to ``warp_group_dot`` at
+  BLOCK_M >= 64 on sm_90; mode 3's second load is CSE'd away (see above), so it cannot give
+  the reduction an independent copy of A.  Mode 2 is the only structurally distinct one --
+  it routes the sum of squares through a third wgmma and emits no in-loop cross-lane
+  reduction at all -- which makes it the one variant worth trying on an H200, not a fix.
+* ``INVARIANT_CFG_KEYS`` / ``invariance_partner()`` / ``invariance_verdict()`` below turn
+  the invariant into an executable screen: run one arm at two mappings that differ only in
+  a value-invariant key and require bit-equality.  **No reference tensor and no tolerance
+  argument** -- it compares the kernel against itself, which is what makes it immune to the
+  two things that defeated campaign 1's reference-based screen (a stale output buffer, and
+  a neighbourhood search that invented configs the screen never saw).  The one measured
+  exception is ``num_warps``, which repartitions the reduce across lanes and moves the fp32
+  result by ~1.8e-07; it is quarantined in ``INVARIANT_CFG_KEYS_ULP`` and screened with a
+  tolerance instead.  Two launches would have caught this before a single timing was
+  published, on a device nobody could debug on, and ``repeat_verdict()`` is the one
+  measurement that also separates a miscompile (deterministic disagreement) from a race
+  (disagreement with itself across repeats).
+* ``num_ctas`` was withdrawn from ``ROUTER_AXES``; see the comment there.
 
 Defensive notes for a device nobody can test on
 -----------------------------------------------
@@ -464,8 +540,39 @@ def resolve_num_ctas(cfg: "dict | None" = None) -> "tuple[int, dict, str]":
 # `launch_moe_gateup` deliberately refuses clusters (early `return` for out-of-range
 # dispatch blocks -> a partial-cluster exit is a hang, not an error), so advertising it
 # module-wide would double the w13 grid with configs that compile to identical code and
-# differ only by noise.  `ROUTER_AXES` carries it for the router grid, which is the one
-# place a cluster could plausibly pay: B is the 3 MB gate weight every CTA reads.
+# differ only by noise.
+#
+# `ROUTER_AXES` used to carry it, on the argument that the router is the one place a cluster
+# could plausibly pay (B is the 3 MB gate weight every CTA reads).  **It has been withdrawn,
+# because on this Triton the axis is legal for only ONE ARM OF THE PAIR.**  Measured by
+# cross-compiling this file for sm_90 (no H200 needed): at `num_ctas=2` and `num_ctas=4`,
+# `router_gemm_kernel` compiles with FUSE_NORM=0 and with USE_RSTD=1, and fails with
+# FUSE_NORM=1, at every tile shape and every SQ_MODE tried -- 12 of 12 configs asymmetric,
+# with
+#
+#     'nvvm.mapa' op result #0 must be LLVM pointer in address space 0 or 7,
+#     but got '!llvm.ptr<3>'                      [ConvertTritonGPUToLLVM]
+#
+# i.e. under a CGALayout Triton tries to cluster-map the shared-memory scratch that the
+# cross-lane `tt.reduce` allocates, and the LLVM op rejects an addrspace-3 pointer.  The
+# reduction IS the fusion, so this is not a tile that happens not to fit -- it is every
+# cluster config, forever, until Triton changes.  `keep_dims=True` was tried and does not
+# help; the failure is the reduce, not the `rstd[:, None]` broadcast (the USE_RSTD arm does
+# the identical broadcast and compiles clean at num_ctas=4).
+#
+# `bench.h200_cfg_overlays()` states the contract this violates in its own docstring --
+# "overlays are applied to the coarse grid of BOTH arms of a pair, so they cannot bias a
+# ratio".  The bench cannot know that one arm's *constructs* are unlowerable under the
+# overlay; only this module knows.  Left advertised, it handed the unfused router a grid
+# ~25 % larger than the fused router's (routerF 48 compile-fails against routerU's 3 on the
+# same 180-config list in campaign 1) and let the tuner pick the unfused winner from the
+# larger space -- a bias in the numerator of the exact ratio this study reports.  A feature
+# only one arm can use is not admissible in a paired comparison, so the honest move is to
+# sweep it for neither and say so.  `resolve_num_ctas` / `launch_router` still honour an
+# explicit `cfg["num_ctas"]`, so a deliberate cluster experiment is still one key away; it
+# is only the automatic grid widening that is withdrawn.  `caps_report()["axes_declined"]`
+# carries the reason into the result JSON, so the file records a feature that was present,
+# tested, and excluded on fairness grounds rather than one that quietly went missing.
 # ======================================================================================
 H200_CFG_KEYS = ("warp_specialize",)
 
@@ -479,8 +586,35 @@ class _Axes:
         self.H200_CFG_KEYS = tuple(keys)
 
 
-ROUTER_AXES = _Axes(("warp_specialize", "num_ctas"))
+ROUTER_AXES = _Axes(("warp_specialize",))
 MOE_AXES = _Axes(("warp_specialize",))
+
+#: Axes this module could offer and deliberately does not, with the evidence.  Reported by
+#: `caps_report()`; `bench.h200_axis_report()` would otherwise record the cluster axis as
+#: "this kernel module advertises no cfg key for it", which is true and says nothing about
+#: why.  An excluded axis with a reason is a finding; an absent one is an omission.
+AXES_DECLINED = {
+    "clusters": {
+        "cfg_key": "num_ctas",
+        "kernels": ["router_gemm_kernel", "moe_gateup_prenorm_kernel"],
+        "reason": (
+            "num_ctas > 1 is legal for the UNFUSED and half-fused (USE_RSTD) arms and "
+            "illegal for the FUSED arm: under a CGALayout the cross-lane tl.reduce that "
+            "computes the sum of squares lowers to 'nvvm.mapa' on its addrspace-3 shared "
+            "scratch, which ConvertTritonGPUToLLVM rejects. Verified by cross-compiling "
+            "for sm_90: 12/12 configs asymmetric across BM/BN/SQ_MODE; keep_dims does not "
+            "avoid it; the USE_RSTD arm does the same rstd broadcast and compiles at "
+            "num_ctas=4. Sweeping it would give one arm of the pair a larger grid than the "
+            "other, which biases the fused/unfused ratio this study reports."
+        ),
+        "also": (
+            "moe_gateup_prenorm_kernel refuses clusters for a second, independent reason: "
+            "its early return for out-of-range dispatch blocks makes a partial-cluster "
+            "exit against a cluster-scoped barrier a hang rather than an error."
+        ),
+        "still_reachable": "explicit cfg['num_ctas']; only the grid widening is withdrawn",
+    },
+}
 
 
 def caps_report() -> dict:
@@ -494,6 +628,7 @@ def caps_report() -> dict:
     d["ws_mode"] = _ws_mode()
     d["last_warp_specialize_decision"] = dict(LAST_WS_DECISION)
     d["last_num_ctas_decision"] = dict(LAST_CTAS_DECISION)
+    d["axes_declined"] = {k: dict(v) for k, v in AXES_DECLINED.items()}
     return d
 
 
@@ -1232,6 +1367,13 @@ def launch_router(
     every CTA, which is the one place in this study where cluster-level reuse of a weight
     tile could plausibly pay.  The grid is NOT divided by it: Triton multiplies gridDimX
     internally, so one Triton program becomes one cluster.
+
+    Still honoured, but **no longer swept**: `ROUTER_AXES` withdrew the axis because
+    `num_ctas > 1` compiles only for `fuse_norm=False` (and for the USE_RSTD arm) -- the
+    fused arm's cross-lane reduction cannot be lowered under a CGALayout, so tuning over it
+    would hand one arm of the pair a larger grid than the other.  See `AXES_DECLINED`.  A
+    caller that passes it explicitly gets it, and a fused launch that does so will fail to
+    compile and be recorded as a failed config, which is the visible failure mode.
     """
     M, K = a.shape
     N = c.shape[1]
@@ -1303,6 +1445,183 @@ def launch_flags(cfg: dict, fuse_norm: bool, sq_mode: int = 0, rstd=None,
         "smem_hopper_rule_bytes": smem_bytes_hopper(cfg) if "BLOCK_M" in cfg else None,
         "smem_limit_bytes": smem_limit(),
     }
+
+
+# ======================================================================================
+# The mapping invariant -- an exact correctness screen that needs NO reference
+#
+# `sq` is a full-K reduction over ONE row of A, held in CTA-local registers, never shared
+# between CTAs, and recomputed identically by every n-tile and by each of the `top_k`
+# gathered copies of a token.  So no mapping knob can change the value `rstd` takes for a
+# given row: which rows a CTA owns (BLOCK_M, GROUP_M), how wide its n-tile is (BLOCK_N), how
+# deeply the loop is staged (num_stages), whether it is warp specialized, and how many CTAs
+# form a cluster are all invisible to the arithmetic.  Two runs of the same arm that differ
+# only in those keys MUST agree.
+#
+# That makes a screen with no reference tensor, no fp32 recomputation and no tolerance
+# argument: launch twice, compare.  It is worth having because it is exactly what campaign 1
+# lacked -- the run had a reference and a tolerance and still shipped a tuned winner whose
+# BLOCK_M made it wrong, because the screen it did run validated against a stale buffer and
+# the neighbourhood search then invented configs the screen never saw.  An invariant cannot
+# be fooled that way: it compares the kernel against itself.
+#
+# BLOCK_K and SQ_MODE are deliberately NOT in the invariant set.  Both change the order in
+# which fp32 partial sums are combined, so they move the last ulp legitimately.  num_warps
+# is the one borderline key -- it repartitions the reduce across lanes, so in principle it
+# too may move the last ulp, and it is listed separately.
+#
+# That split is measured, not assumed.  On sm_89 at E=256 with the real router-derived
+# dispatch, both fused kernels:
+#
+#   BLOCK_M 16/32/64/128/256, BLOCK_N 128/256, num_stages, GROUP_M   max_rel_diff 0.0
+#     -- bit-exact, and bit-exact on the ROUTER's fp32 output too, where no bf16 rounding
+#        could be hiding a difference.  Hence `tol` is not what makes this screen pass.
+#   num_warps 4 -> 8 -> 16                        router (fp32 out)  max_rel_diff 1.77e-07
+#                                                 w13    (bf16 out)  max_rel_diff 0.0
+#     -- one ulp of fp32, exactly the predicted lane-repartition effect, invisible once the
+#        w13 result rounds to bf16.  A bit-equality screen over num_warps on an fp32 output
+#        would therefore have produced a FALSE defect, which is why it is a separate tuple.
+#
+# Campaign 1's failures were 0.37 to 0.77 relative -- six orders of magnitude above that
+# ulp -- so the screen has an enormous margin and no threshold to argue about.
+# ======================================================================================
+#: Keys that cannot change any output value.  Disagreement here is a defect, full stop.
+INVARIANT_CFG_KEYS = (
+    "BLOCK_M", "BLOCK_N", "GROUP_M", "num_stages",
+    "WARP_SPECIALIZE", "warp_specialize", "WS", "num_ctas",
+)
+
+#: Value-invariant in exact arithmetic, but they repartition the reduction across lanes, so
+#: a last-ulp fp32 difference is legitimate.  Screen these with `tol`, not bit-equality.
+INVARIANT_CFG_KEYS_ULP = ("num_warps",)
+
+#: Keys that DO change the fp32 accumulation order.  Never screen across these.
+ORDER_SENSITIVE_CFG_KEYS = ("BLOCK_K", "SQ_MODE")
+
+#: The tile axis that campaign 1 failed on, and the value that separates the two codegen
+#: regimes: below it Triton emits `mma.sync`, at or above it `ttng.warp_group_dot` (wgmma).
+#: A screen that never crosses this boundary would have passed the whole broken campaign.
+WGMMA_BLOCK_M_THRESHOLD = 64
+
+
+def invariance_partner(cfg: dict, key: str = "BLOCK_M",
+                       choices: tuple = (16, 32, 64, 128, 256)) -> "dict | None":
+    """A second config that MUST produce the same answer as `cfg`, or None if none exists.
+
+    Prefers a partner on the OTHER side of `WGMMA_BLOCK_M_THRESHOLD` when `key` is
+    BLOCK_M, because that is the boundary the defect lives on: a pair of configs that are
+    both wgmma, or both `mma.sync`, agreed perfectly all through campaign 1.
+
+    Two things the caller owns, because this function cannot:
+
+    * **Legality.** The partner is not filtered for SMEM or registers -- the bench's `_ok()`
+      is the authority on that, and inventing a second opinion here is how a grid ends up
+      pruned differently from the one being screened.  Filter the returned config, and if it
+      is rejected ask for another `key`.
+    * **The MoE dispatch layout depends on BLOCK_M.** `moe_align_block_size(topk_ids,
+      BLOCK_M, E)` must be rebuilt for the partner config or the comparison is between two
+      different problems and will report a false defect.  The output row index is
+      `safe_token`, which is layout-independent, so the two runs remain comparable once the
+      layout matches its own config.  `router_gemm_kernel` has no such coupling.
+    """
+    if key not in INVARIANT_CFG_KEYS + INVARIANT_CFG_KEYS_ULP or key not in cfg:
+        return None
+    cur = cfg[key]
+    alts = [v for v in choices if v != cur]
+    if not alts:
+        return None
+    if key == "BLOCK_M":
+        cross = [v for v in alts
+                 if (v >= WGMMA_BLOCK_M_THRESHOLD) != (cur >= WGMMA_BLOCK_M_THRESHOLD)]
+        if cross:
+            # nearest across the boundary: the smallest legality perturbation that still
+            # changes which MMA the tile lowers to
+            alts = sorted(cross, key=lambda v: abs(v - cur))
+    return dict(cfg, **{key: alts[0]})
+
+
+def invariance_verdict(out_ref, out_cmp, *, tol: float = 1e-5,
+                       names: tuple = ("ref", "cmp")) -> dict:
+    """Compare two runs of the SAME arm at two mappings that differ only in invariant keys.
+
+    Returns a JSON-able verdict; never raises on a shape or dtype quirk, because this is a
+    screen and a screen that crashes is a screen that gets removed.
+
+    `tol` is relative to `max|out_ref|` and exists only for the `num_warps`-class last-ulp
+    case; `bit_exact` is reported separately so a caller screening a strictly value-invariant
+    key can require it.  The threshold is not delicate: campaign 1's failures were 0.37 to
+    0.77 relative, four to five orders of magnitude above any rounding argument, so no
+    plausible choice of `tol` changes the verdict.
+
+    NaN is counted, not tolerated.  Fill the output with NaN before each launch and an
+    UNWRITTEN row becomes a loud, distinct failure instead of a silent zero that reads like
+    an arithmetic error -- the exact ambiguity that cost campaign 1 a diagnosis.
+    """
+    out: dict = {"keys": list(names), "ok": False}
+    try:
+        a = out_ref.detach().float()
+        b = out_cmp.detach().float()
+        if a.shape != b.shape:
+            out["reason"] = f"shape mismatch {tuple(a.shape)} vs {tuple(b.shape)}"
+            return out
+        na, nb = int(torch.isnan(a).sum()), int(torch.isnan(b).sum())
+        out["nan_elems"] = {names[0]: na, names[1]: nb}
+        if na or nb:
+            # rows never written by the kernel, if the caller NaN-filled beforehand
+            out["unwritten_rows"] = {
+                names[0]: int(torch.isnan(a).any(-1).sum()),
+                names[1]: int(torch.isnan(b).any(-1).sum()),
+            }
+            out["reason"] = "output contains NaN: rows were never written"
+            return out
+        scale = float(a.abs().max())
+        diff = float((a - b).abs().max())
+        out["max_abs_diff"] = diff
+        out["scale"] = scale
+        out["max_rel_diff"] = diff / scale if scale > 0 else 0.0
+        out["bit_exact"] = diff == 0.0
+        out["tol"] = tol
+        out["ok"] = out["max_rel_diff"] <= tol
+        if not out["ok"]:
+            out["reason"] = (
+                f"mapping-invariant configs disagree by {out['max_rel_diff']:.3e} "
+                f"(> {tol:.1e}); these keys cannot change any value, so this is a codegen "
+                f"or hardware defect, not an arithmetic or tolerance question"
+            )
+    except Exception as exc:  # noqa: BLE001 -- a screen must not become the failure
+        out["reason"] = f"could not compare: {type(exc).__name__}: {exc}"[:200]
+    return out
+
+
+def repeat_verdict(outs: list, *, tol: float = 0.0) -> dict:
+    """Same arm, same config, N launches: does the kernel agree with ITSELF?
+
+    The companion to `invariance_verdict` and the one measurement that separates the two
+    live explanations for campaign 1's failure.  A miscompiled reduction is deterministic
+    and repeats bit-exactly; a race at the wgmma boundary does not.  Costs N launches, needs
+    no reference, and `tol=0.0` is the right default because a kernel with no atomics and no
+    cross-CTA communication is bit-deterministic by construction on every device in this
+    study.
+    """
+    out: dict = {"n": len(outs), "ok": False}
+    if len(outs) < 2:
+        out["reason"] = "need at least two runs"
+        return out
+    try:
+        a = outs[0].detach().float()
+        spread = max(float((a - o.detach().float()).abs().max()) for o in outs[1:])
+        scale = float(a.abs().max())
+        out["max_abs_spread"] = spread
+        out["max_rel_spread"] = spread / scale if scale > 0 else 0.0
+        out["ok"] = out["max_rel_spread"] <= tol
+        if not out["ok"]:
+            out["reason"] = (
+                f"the same config disagrees with itself across {len(outs)} launches by "
+                f"{out['max_rel_spread']:.3e} -- a race, not a miscompile"
+            )
+    except Exception as exc:  # noqa: BLE001
+        out["reason"] = f"could not compare: {type(exc).__name__}: {exc}"[:200]
+    return out
 
 
 # ======================================================================================

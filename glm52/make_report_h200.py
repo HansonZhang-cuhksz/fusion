@@ -339,12 +339,50 @@ def fairness_notes(family: str, variant: str, regime: str, pair_meta: dict | Non
 # NAME, and all eight cards report "NVIDIA H200", so cross-card reuse passes silently. The
 # `device_uuid` is recorded by `ckpt_save` and read by nothing.
 # ======================================================================================
-FAMILY_CARD = {
-    "f01": ("59aa5198", -5.975), "f03": ("59aa5198", -5.975), "f10": ("59aa5198", -5.975),
-    "f04f05": ("6c4cc3d3", 42.185), "f06": ("6c4cc3d3", 42.185),
-    "f08f09": ("6c4cc3d3", 42.185), "f11": ("6c4cc3d3", 42.185),
-    "layer": ("6c4cc3d3", 42.185),
-}
+def best_speedup(r: dict) -> tuple:
+    """(value, which). Prefer the paired/interleaved ratio over the sequential one.
+
+    Every row in the H200 re-run carries BOTH. The sequential ratio is two medians measured
+    one arm after the other, so a monotone clock or thermal ramp does not cancel in it; the
+    paired ratio is the median of per-repetition ratios from an interleaved A/B/A/B loop, and
+    it does. They disagree by up to 13.8 % here (f04f05 prefill_t8192 F4_topk: 0.841 vs
+    0.957), which is far too large to treat as interchangeable -- and publishing the
+    sequential one is what let a physically impossible speedup through on the RTX 4060.
+    """
+    p, q = r.get("paired_speedup"), r.get("speedup")
+    if isinstance(p, (int, float)) and p > 0:
+        return p, "paired"
+    return q, "sequential"
+
+
+def _campaign_cards() -> dict:
+    """(uuid, harness_floor_us) per family, read from the result files themselves.
+
+    The first H200 campaign silently split across two cards with harness floors of -5.975 us
+    and +42.185 us, so this was hardcoded to expose it. The re-run pinned one idle GPU. Read
+    it rather than assert it, so the next split is caught instead of papered over.
+    """
+    out = {}
+    for fam, fn in (("f01", "f01_oproj_resadd"), ("f03", "f03_resadd_rmsnorm"),
+                    ("f04f05", "f04f05_norm_router"), ("f06", "f06_upgate_swiglu"),
+                    ("f08f09", "f08f09_down_merge_resadd"), ("f10", "f10_merge_resadd"),
+                    ("f11", "f11_lazy_prenorm"), ("layer", "layer_configurations")):
+        try:
+            d = json.loads((RES / f"{fn}.json").read_text())
+        except Exception:  # noqa: BLE001
+            continue
+        floor = ((d.get("fairness") or {}).get("timing") or {}).get("harness_floor_us")
+        uu = ""
+        try:
+            uu = str(json.loads((RES / "summary.json").read_text())
+                     .get("_meta", {}).get("gpu_uuid", ""))
+        except Exception:  # noqa: BLE001
+            pass
+        out[fam] = (uu.replace("GPU-", "")[:8], floor)
+    return out
+
+
+FAMILY_CARD = _campaign_cards()
 FUSION_FAMILY = {
     "#1": "f01", "#3": "f03", "#4": "f04f05", "#5": "f04f05", "#6": "f06",
     "#8": "f08f09", "#9": "f08f09", "#10": "f10", "#11": "f11",
@@ -352,21 +390,23 @@ FUSION_FAMILY = {
 
 
 def provenance_note(fusion: str, regime: str) -> str:
-    """The card this row was measured on, and whether its floor threatens the number."""
+    """The card this row was measured on, its harness floor, and what that costs at decode."""
     key = next((k for k in sorted(FUSION_FAMILY, key=len, reverse=True)
                 if fusion.startswith(k)), None)
     fam = FUSION_FAMILY.get(key or "", "")
     card, floor = FAMILY_CARD.get(fam, ("", None))
-    if not card:
+    if not card and floor is None:
         return ""
-    n = f"MEASURED ON GPU {card} (family {fam}), harness floor {floor:+.3f} us"
-    if floor < 0:
-        n += (" -- a negative floor is unphysical (an over-estimated launch term in the "
-              "t = O + N*L fit), so this card's small-kernel timing model is unreliable")
-    if regime.startswith("decode"):
-        n += ("; at decode the floor is comparable to the whole measurement, so the ratio is "
-              "partly a measurement of the harness. The layer sweep ran on 6c4cc3d3, so "
-              "decode rows from 59aa5198 are NOT on the same footing as it")
+    n = f"MEASURED ON GPU {card} (family {fam})"
+    if floor is not None:
+        n += f", harness floor {floor:+.3f} us"
+        if floor < 0:
+            n += (" -- a negative floor is unphysical (an over-estimated launch term in the "
+                  "t = O + N*L fit), so this card's small-kernel timing model is unreliable")
+        elif regime.startswith("decode"):
+            n += (f"; at decode that floor is a large share of the measurement (it is added to "
+                  f"BOTH arms, so a ratio understates the true work ratio), which is why the "
+                  f"decode numbers here should be read as bounds rather than exact")
     return n
 
 
@@ -435,7 +475,7 @@ def rows_for(regime: str) -> list[dict]:
                      f"{r['triton_vs_vendor']:.3f}x the vendor fused time")
             add("#1 o_proj + ResAdd", "triton", notes=n,
                 fused_ms=r4(r["fused_ms"]), fused_mapping=fm,
-                unfused_total_ms=r4(r["unfused_ms"]), speedup=r4(r["speedup"]),
+                unfused_total_ms=r4(r["unfused_ms"]), speedup=r4(best_speedup(r)[0]),
                 n_unfused_kernels=2,
                 unfused_k1_name="o_proj GEMM", unfused_k1_ms="", unfused_k1_mapping=m(u_cfg),
                 unfused_k2_name="residual add (elementwise)",
@@ -468,7 +508,7 @@ def rows_for(regime: str) -> list[dict]:
                          f"torch.compile {r['torch_compile_ms']:.4f} ms")
             add("#3 ResAdd + RMSNorm", "-", notes=n,
                 fused_ms=r4(r["fused_ms"]), fused_mapping=m(r["fused_cfg"]),
-                unfused_total_ms=r4(r["unfused_ms"]), speedup=r4(r["speedup"]),
+                unfused_total_ms=r4(r["unfused_ms"]), speedup=r4(best_speedup(r)[0]),
                 n_unfused_kernels=2,
                 unfused_k1_name="residual add", unfused_k1_ms=r4(r["add_only_ms"]),
                 unfused_k1_mapping=m(a_cfg),
@@ -514,7 +554,7 @@ def rows_for(regime: str) -> list[dict]:
                      f"ms, torch reference chain {r['torch_ref_ms']:.4f} ms")
             add(fusion, variant, notes=n,
                 fused_ms=r4(r["fused_ms"]), fused_mapping=m(r["fused_cfg"]),
-                unfused_total_ms=r4(r["unfused_ms"]), speedup=r4(r["speedup"]),
+                unfused_total_ms=r4(r["unfused_ms"]), speedup=r4(best_speedup(r)[0]),
                 n_unfused_kernels=3 if istk else 2,
                 unfused_k1_name="add+rmsnorm (fusion #3 already applied)" if is4 else "rmsnorm",
                 unfused_k1_ms=r4(k1_ms), unfused_k1_mapping=m(k1_cfg),
@@ -561,7 +601,7 @@ def rows_for(regime: str) -> list[dict]:
                      f"{r['vendor_blas_ms']:.4f} ms ({r['vendor_tflops']:.1f} TF/s)")
             add("#6 Up_Gate + SwiGLU", "-", notes=n,
                 fused_ms=r4(r["fused_ms"]), fused_mapping=m(r["fused_cfg"]),
-                unfused_total_ms=r4(r["unfused_ms"]), speedup=r4(r["speedup"]),
+                unfused_total_ms=r4(r["unfused_ms"]), speedup=r4(best_speedup(r)[0]),
                 n_unfused_kernels=2,
                 unfused_k1_name="w13 grouped GEMM -> [rows, 2I]",
                 unfused_k1_ms=r4(r["unfused_gemm_ms"]),
@@ -623,7 +663,7 @@ def rows_for(regime: str) -> list[dict]:
                      f"{r['vendor_blas_gemm_merge_ms']:.4f} ms")
             add(fusion, variant, notes=n,
                 fused_ms=r4(r["fused_ms"]), fused_mapping=m(r["fused_cfg"]),
-                unfused_total_ms=r4(r["unfused_ms"]), speedup=r4(r["speedup"]),
+                unfused_total_ms=r4(r["unfused_ms"]), speedup=r4(best_speedup(r)[0]),
                 n_unfused_kernels=3 if is9 else 2,
                 unfused_k1_name="w2 grouped down GEMM -> [rows, H]",
                 unfused_k1_ms=r4(r["unfused_gemm_only_ms"]),
@@ -664,7 +704,7 @@ def rows_for(regime: str) -> list[dict]:
                          f"torch.compile {r['torch_compile_ms']:.4f} ms")
             add("#10 Expert Merge + ResAdd", "-", notes=n,
                 fused_ms=r4(r["fused_ms"]), fused_mapping=m(r["fused_cfg"]),
-                unfused_total_ms=r4(r["unfused_ms"]), speedup=r4(r["speedup"]),
+                unfused_total_ms=r4(r["unfused_ms"]), speedup=r4(best_speedup(r)[0]),
                 n_unfused_kernels=2,
                 unfused_k1_name="expert merge (moe_sum)", unfused_k1_ms=r4(r["merge_only_ms"]),
                 unfused_k1_mapping=m(mg_cfg),
@@ -701,7 +741,7 @@ def rows_for(regime: str) -> list[dict]:
                      f"dense 1-expert {b['vendor_blas_dense_1expert_ms']:.4f} ms")
             add(*NAME[("f11", "f11a_w13")], notes=n,
                 fused_ms=r4(b["fused_ms"]), fused_mapping=m(b["fused_cfg"]),
-                unfused_total_ms=r4(b["unfused_ms"]), speedup=r4(b["speedup"]),
+                unfused_total_ms=r4(b["unfused_ms"]), speedup=r4(best_speedup(b)[0]),
                 n_unfused_kernels=2,
                 unfused_k1_name="rmsnorm (writes x2)", unfused_k1_ms=r4(b["norm_only_ms"]),
                 unfused_k1_mapping=m(b.get("unfused_norm_cfg")),
@@ -720,7 +760,7 @@ def rows_for(regime: str) -> list[dict]:
                      f"fp32 {b['vendor_blas_fp32_ms']:.4f} ms")
             add(*NAME[("f11", "f11b_router")], notes=n,
                 fused_ms=r4(b["fused_ms"]), fused_mapping=m(b["fused_cfg"]),
-                unfused_total_ms=r4(b["unfused_ms"]), speedup=r4(b["speedup"]),
+                unfused_total_ms=r4(b["unfused_ms"]), speedup=r4(best_speedup(b)[0]),
                 n_unfused_kernels=2,
                 unfused_k1_name="rmsnorm (writes x2)", unfused_k1_ms=r4(b["norm_only_ms"]),
                 unfused_k1_mapping=m(b.get("unfused_norm_cfg")),
@@ -774,7 +814,7 @@ def rows_for(regime: str) -> list[dict]:
                 fused_ms=r4(c["fused_ms"]),
                 fused_mapping=f"router: {m(b11.get('fused_cfg'))} | "
                               f"w13: {m(a11.get('fused_cfg'))}",
-                unfused_total_ms=r4(c["unfused_ms"]), speedup=r4(c["speedup"]),
+                unfused_total_ms=r4(c["unfused_ms"]), speedup=r4(best_speedup(c)[0]),
                 n_unfused_kernels=3,
                 unfused_k1_name="rmsnorm (writes x2, charged once)", unfused_k1_ms="",
                 unfused_k1_mapping=m(c.get("norm_cfg")),

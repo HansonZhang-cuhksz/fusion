@@ -1325,6 +1325,23 @@ def screen(tag: str, run: Callable[[dict], object], verify: Callable[[], tuple],
     return ok, rej
 
 
+class ScreenRejectedAll(RuntimeError):
+    """Every config of one kernel failed the correctness/compile screen.
+
+    Carried as a typed exception so a caller can record the kernel as unmeasurable and move
+    on -- the user's decision was "fatal for that kernel, record and continue", not "fatal
+    for the regime" (which is what destroyed every #11b result) and not "publish a number
+    anyway" (which is what produced a timing for a kernel that never compiled).
+    """
+
+    def __init__(self, tag, n_offered, rejects, top_reasons):
+        self.tag, self.n_offered = tag, n_offered
+        self.rejects, self.top_reasons = rejects, top_reasons
+        super().__init__(
+            f"[{tag}] screening rejected all {n_offered} configs; "
+            + "; ".join(f"{n}x {m}" for m, n in top_reasons))
+
+
 def screened_autotune(tag, make_chain, grid, verify, warmup, rep, prep=None):
     """`screen` then `common.autotune`, with the screen folded into n_tried/n_failed.
 
@@ -1334,14 +1351,35 @@ def screened_autotune(tag, make_chain, grid, verify, warmup, rep, prep=None):
     t0 = time.time()
     if prep is not None:
         prep()
-    ok, rej = screen(tag, lambda c: [f() for f in make_chain(c)], verify, grid)
+    # `make_chain(c)` may return a bare callable OR a sequence of them. Iterating it
+    # directly raised `TypeError: 'function' object is not iterable` for f11's two
+    # bare-callable sites (prob.norm_fn, prob.rstd_fn), which rejected EVERY config for a
+    # reason that had nothing to do with the kernel -- and then the fallback below timed
+    # them anyway. Normalise through the same helper the timing path uses.
+    ok, rej = screen(tag, lambda c: [f() for f in _common._as_chain(make_chain(c))],
+                     verify, grid)
     if not ok:
-        # Never let a screening tolerance destroy an hour-long run: fall back to timing the
-        # unscreened grid and say so loudly, so the operator can judge the result.
-        print(f"    !! [{tag}] screening rejected EVERY config; timing unscreened",
-              flush=True)
-        ok, rej = list(grid), []
-    tr = _common.autotune(make_chain, ok, warmup, rep)
+        # An all-rejected screen is FATAL FOR THIS KERNEL. The previous behaviour timed the
+        # unscreened grid and reported a number -- `[rstd] 124/124 cfgs timed -> 0.0345 ms`
+        # for a kernel where nothing compiled -- and additionally reset `rej = []`, deleting
+        # the evidence of why. A figure with nothing behind it is worse than a gap.
+        reasons = {}
+        for entry in rej[:200]:
+            msg = str(entry[-1] if isinstance(entry, (tuple, list)) else entry)
+            reasons[msg[:120]] = reasons.get(msg[:120], 0) + 1
+        top = sorted(reasons.items(), key=lambda kv: -kv[1])[:3]
+        print(f"    !! [{tag}] screening rejected ALL {len(grid)} configs -- recording as "
+              f"UNMEASURABLE, publishing no timing", flush=True)
+        for msg, n in top:
+            print(f"       {n:>4}x {msg}", flush=True)
+        raise ScreenRejectedAll(tag, len(grid), rej, top)
+    # `refine=False`: `common.autotune`'s default refine calls `neighbours()`, which invents
+    # configs one lattice step from the winner. Those go through NEITHER `screen()` nor the
+    # bench's `_ok()` filter, and `if r_ms < best_ms` can promote one to the returned winner.
+    # That is how a wrong-answer config became campaign 1's tuned winner while the screen
+    # correctly rejected its siblings. Refinement must be screened to be trusted; until it
+    # is, the coarse grid is the whole search.
+    tr = _common.autotune(make_chain, ok, warmup, rep, refine=False)
     tr.table = list(tr.table) + rej
     tr.n_tried = len(grid)
     tr.n_failed = len(rej) + tr.n_failed
