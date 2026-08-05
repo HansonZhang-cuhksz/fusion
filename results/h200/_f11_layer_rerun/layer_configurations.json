@@ -1,0 +1,3860 @@
+{
+  "id": "layer_configurations",
+  "scope": "S3-S11 + shared expert; attention core / MLA projections / DSA indexer excluded (untouched by every fusion candidate). MoE dispatch-layout construction excluded from the timed region, as in every per-family bench.",
+  "protocol": {
+    "passes": 2,
+    "rounds_per_pass": 8,
+    "rep_per_round": 15,
+    "rule": "within a round every candidate is timed once, in a fixed order that reverses on odd rounds; a winner is declared only when its gap to the runner-up exceeds the round-to-round spread of BOTH, in BOTH passes, and both passes name the same configuration -- otherwise the set is reported as TIED",
+    "why": "the C500 first pass produced winners with a 0.2-0.4 % margin on a machine documented to throw 25-320 % one-off excursions; that margin is not resolvable in one pass (LOG-11 3)"
+  },
+  "configs": {
+    "A_all_unfused": {
+      "resadd1": "separate",
+      "norm": "split",
+      "gateup": "split",
+      "down": "split"
+    },
+    "B_f3": {
+      "resadd1": "separate",
+      "norm": "fused3",
+      "gateup": "split",
+      "down": "split"
+    },
+    "C_f1": {
+      "resadd1": "in_oproj",
+      "norm": "split",
+      "gateup": "split",
+      "down": "split"
+    },
+    "D_f6": {
+      "resadd1": "separate",
+      "norm": "split",
+      "gateup": "fused6",
+      "down": "split"
+    },
+    "E_f10": {
+      "resadd1": "separate",
+      "norm": "split",
+      "gateup": "split",
+      "down": "merge_f10"
+    },
+    "F_f8": {
+      "resadd1": "separate",
+      "norm": "split",
+      "gateup": "split",
+      "down": "atomic8"
+    },
+    "G_f9": {
+      "resadd1": "separate",
+      "norm": "split",
+      "gateup": "split",
+      "down": "atomic9"
+    },
+    "H_f3_f10": {
+      "resadd1": "separate",
+      "norm": "fused3",
+      "gateup": "split",
+      "down": "merge_f10"
+    },
+    "I_f3_f9": {
+      "resadd1": "separate",
+      "norm": "fused3",
+      "gateup": "split",
+      "down": "atomic9"
+    },
+    "J_greedy_all": {
+      "resadd1": "in_oproj",
+      "norm": "split",
+      "gateup": "fused6",
+      "down": "atomic9"
+    },
+    "K_f3_f8": {
+      "resadd1": "separate",
+      "norm": "fused3",
+      "gateup": "split",
+      "down": "atomic8"
+    },
+    "L_f5": {
+      "resadd1": "separate",
+      "norm": "fused5",
+      "gateup": "split",
+      "down": "split"
+    },
+    "M_f4": {
+      "resadd1": "separate",
+      "norm": "fused4",
+      "gateup": "split",
+      "down": "split"
+    },
+    "N_f11b": {
+      "resadd1": "separate",
+      "norm": "split",
+      "gateup": "split",
+      "down": "split",
+      "prenorm": "router"
+    },
+    "O_f11ab": {
+      "resadd1": "separate",
+      "norm": "split",
+      "gateup": "split",
+      "down": "split",
+      "prenorm": "all"
+    },
+    "P_f10_f11ab": {
+      "resadd1": "separate",
+      "norm": "split",
+      "gateup": "split",
+      "down": "merge_f10",
+      "prenorm": "all"
+    },
+    "Q_f8_f11ab": {
+      "resadd1": "separate",
+      "norm": "split",
+      "gateup": "split",
+      "down": "atomic8",
+      "prenorm": "all"
+    },
+    "R_f1_f10_f11ab": {
+      "resadd1": "in_oproj",
+      "norm": "split",
+      "gateup": "split",
+      "down": "merge_f10",
+      "prenorm": "all"
+    }
+  },
+  "prenorm": {
+    "enabled": true,
+    "skip_reason": null,
+    "capacity": {
+      "label": "w13 + w2 + folded w13",
+      "need_bytes": 32212254720,
+      "free_bytes": 149557411840,
+      "total_bytes": 150109880320,
+      "fits": true
+    }
+  },
+  "env": {
+    "device_name": "NVIDIA H200",
+    "device_index": 0,
+    "device_count": 1,
+    "uuid": "b2318e71-edbf-aa1b-dcf3-3cc3e6ea7db0",
+    "cc_major": 9,
+    "cc_minor": 0,
+    "warp_size": 32,
+    "num_sm": 132,
+    "smem_bytes": 232448,
+    "smem_per_sm": 233472,
+    "regs_per_sm": 65536,
+    "threads_per_sm": 2048,
+    "l2_bytes": 62914560,
+    "total_mem_bytes": 150109880320,
+    "free_mem_bytes": 149557411840,
+    "torch_version": "2.11.0+cu130",
+    "triton_version": "3.6.0",
+    "cuda_version": "13.0",
+    "probe_ok": true,
+    "cross_checked": true,
+    "tma_supported": true,
+    "tma_host_supported": true,
+    "tma_device_supported": true,
+    "clusters_supported": true,
+    "warp_spec_supported": true,
+    "feature_source": "preflight",
+    "feature_evidence": {
+      "triton_api_surface": {
+        "make_tensor_descriptor": true,
+        "set_allocator": true,
+        "tensor_descriptor_cls": true,
+        "tl_range_signature": "(arg1, arg2=None, step=None, num_stages=None, loop_unroll_factor=None, disallow_acc_multi_buffer=False, flatten=False, warp_specialize=False, disable_licm=False)",
+        "tl_range_warp_specialize": true
+      },
+      "arch": "sm_90",
+      "arch_ok": true,
+      "tma": "preflight compile+launch: tma_host_descriptor=PASS; tma_device_descriptor=PASS -> True",
+      "clusters": "preflight compile+launch: thread_block_cluster_num_ctas=PASS -> True",
+      "warp_spec": "preflight compile+launch: warp_specialize_tl_range=PASS -> True",
+      "warp_spec_num_consumer_groups": "FAIL -- recorded only; this spelling is never emitted by this suite (unrecognised keyword on triton 3.6)"
+    },
+    "preflight_path": "/home/guancheng/zsh/fusion/glm52_h200/preflight_h200.json",
+    "preflight_device_match": true,
+    "preflight_stack_match": true,
+    "preflight_timestamp": "2026-08-05 16:11:06",
+    "timer_tick_us": 0.032,
+    "launch_us": 9.023999529225486,
+    "harness_floor_us": 39.87200026001249,
+    "timer_tick_trusted": false,
+    "launch_trusted": false,
+    "calib_health": {
+      "timer_tick_us": 0.032,
+      "timer_tick_match_frac": 1.0,
+      "launch_us": 9.023999529225486,
+      "harness_floor_us": 39.87200026001249,
+      "mem_used_frac_at_probe": 0.0036804271565753256,
+      "launch_trusted": false,
+      "timer_tick_trusted": false,
+      "contended": true,
+      "reasons": [
+        "harness floor 39.87 us against a 9.02 us launch -- a floor is a launch plus a sync, so this one is measuring somebody else's kernels too"
+      ],
+      "msg": "timing calibration is UNRELIABLE (peaks are unaffected): harness floor 39.87 us against a 9.02 us launch -- a floor is a launch plus a sync, so this one is measuring somebody else's kernels too. Re-run preflight.py on an idle GPU (`--gpu auto`) before quoting a launch cost or flagging a cell as tick-limited."
+    },
+    "calib": {
+      "bandwidth": {
+        "copy_1024MB_GBs": 4239.237866451756,
+        "rmw_1024MB_GBs": 4231.184507592008,
+        "read_1024MB_GBs": 4584.4050833523115,
+        "copy_2048MB_GBs": 4245.389537231806,
+        "rmw_2048MB_GBs": 4259.156831954134,
+        "read_2048MB_GBs": 4597.294819124158
+      },
+      "gemm": {
+        "cublas_4096x16384x6144_TFs": 821.339040190349,
+        "triton_4096x16384x6144_TFs": 789.6751949210344,
+        "triton_4096x16384x6144_cfg": {
+          "BM": 128,
+          "BN": 256,
+          "BK": 64,
+          "GM": 8,
+          "num_warps": 8,
+          "num_stages": 3
+        },
+        "cublas_8192x16384x6144_TFs": 755.2907405699244,
+        "triton_8192x16384x6144_TFs": 661.9782770322557,
+        "triton_8192x16384x6144_cfg": {
+          "BM": 128,
+          "BN": 256,
+          "BK": 64,
+          "GM": 8,
+          "num_warps": 8,
+          "num_stages": 3
+        }
+      },
+      "smem_probe": {
+        "BM128_BN128_BK64_s3": {
+          "ok": true,
+          "shared_bytes": 98304
+        },
+        "BM128_BN256_BK64_s3": {
+          "ok": true,
+          "shared_bytes": 147456
+        },
+        "BM128_BN256_BK64_s4": {
+          "ok": true,
+          "shared_bytes": 196608
+        },
+        "BM256_BN256_BK64_s3": {
+          "ok": true,
+          "shared_bytes": 196608
+        },
+        "BM128_BN256_BK128_s3": {
+          "ok": false,
+          "error": "OutOfResources: out of resource: shared memory, Required: 294912, Hardware limit: 232448. Reducing block sizes or `num_stages` may help."
+        }
+      },
+      "launch_us": 9.023999529225486,
+      "harness_floor_us": 39.87200026001249,
+      "timer_tick_us": 0.032,
+      "timer_tick_match_frac": 1.0,
+      "timer_tick_candidates": {
+        "0.016": 1.0,
+        "0.032": 1.0,
+        "0.064": 0.585,
+        "0.128": 0.045,
+        "0.256": 0.015,
+        "0.512": 0.0,
+        "1.024": 0.0,
+        "2.048": 0.0,
+        "4.096": 0.0
+      },
+      "timing_environment": {
+        "gpu_index": 0,
+        "gpu_uuid": "GPU-b2318e71-edbf-aa1b-dcf3-3cc3e6ea7db0",
+        "foreign_processes_before": [],
+        "foreign_processes_after": [],
+        "tenancy_query_error": null
+      },
+      "launch_timer_trustworthy": true,
+      "launch_timer_doubts": []
+    },
+    "warnings": [
+      "timing calibration is UNRELIABLE (peaks are unaffected): harness floor 39.87 us against a 9.02 us launch -- a floor is a launch plus a sync, so this one is measuring somebody else's kernels too. Re-run preflight.py on an idle GPU (`--gpu auto`) before quoting a launch cost or flagging a cell as tick-limited."
+    ],
+    "extras": {
+      "max_shared_mem": 232448,
+      "max_num_regs": 65536,
+      "multiprocessor_count": 132,
+      "warpSize": 32,
+      "sm_clock_rate": 1980000,
+      "mem_clock_rate": 3201000,
+      "mem_bus_width": 6016,
+      "CUDA_VISIBLE_DEVICES": "0",
+      "smem_stage_rule": "num_stages buffers (floor 2) x 2 x BK x (BM + bn_mult*BN); fitted to 5 preflight smem_probe observation(s)"
+    }
+  },
+  "fairness": {
+    "mapping": "every kernel in the pipeline is tuned at THIS regime's shape and cached device-fenced; no mapping is imported from another result file or another machine",
+    "routing": "frozen after being computed from the pipeline's own h1, so every configuration routes identical tokens to identical experts; the router GEMM and top-k still run and are still timed, writing to scratch",
+    "correctness": "every configuration is validated against an INDEPENDENT fp32 reference of the whole subgraph, never against another configuration; a failing configuration is excluded outright",
+    "h200_axes": {
+      "per_family": "no family recorded an axis report",
+      "generic_overlays": "none at module scope (overlays are per kernel module; see per_family)",
+      "policy": "every offered axis is applied to the coarse grid of BOTH arms; per-arm live counts are under grids.<regime>.<arm>.<stage>.axis_counts"
+    },
+    "gpu_note": "which physical card this ran on is under fairness.gpu; on the 8-GPU measurement host that is not implied by the device name",
+    "grids": {},
+    "device_probe": {
+      "device": "NVIDIA H200",
+      "warp_size": 32,
+      "num_sm": 132,
+      "smem_bytes": 232448,
+      "regs_per_sm": 65536,
+      "threads_per_sm": 2048,
+      "max_threads_per_block": 1024,
+      "l2_bytes": 62914560,
+      "probe_ok": true
+    },
+    "l2_flush": {
+      "l2_bytes": 62914560,
+      "flush_bytes": 268435456,
+      "required_min_bytes": 251658240,
+      "ok": true
+    },
+    "preflight": {
+      "preflight_present": true,
+      "preflight_device": "NVIDIA H200",
+      "live_device": "NVIDIA H200",
+      "preflight_timestamp": "2026-08-05 16:11:06",
+      "compute_capability": "9.0",
+      "features": {
+        "baseline_elementwise": true,
+        "tl_dot_bf16": true,
+        "warp_specialize_tl_range": true,
+        "warp_specialize_num_consumer_groups": false,
+        "tma_host_descriptor": true,
+        "tma_device_descriptor": true,
+        "thread_block_cluster_num_ctas": true
+      }
+    },
+    "gpu": {
+      "selection": {
+        "requested": null,
+        "applied": false,
+        "cuda_visible_devices": "0",
+        "note": "no --gpu given; the process sees whatever devices it inherited. On a multi-tenant host that is how a contended GPU gets measured -- see the preflight's 40 us harness floor."
+      },
+      "torch_device_index": 0,
+      "torch_device_count": 1,
+      "uuid": "b2318e71-edbf-aa1b-dcf3-3cc3e6ea7db0",
+      "cuda_visible_devices": "0"
+    },
+    "smem_model": {
+      "observations": 5,
+      "source": "fitted to 5 preflight smem_probe observations",
+      "offset": 0,
+      "formula": "max(2, num_stages - 0) * 2*BK*(BM+BN)"
+    },
+    "timing": {
+      "protocol": "final per-regime timings are A/B interleaved within one loop with the order alternating each round; the reported speedup is the median of the per-round ratios, so monotone drift cancels",
+      "timer_tick_us": 0.032,
+      "launch_cost_us": 9.023999529225486,
+      "harness_floor_us": 39.87200026001249,
+      "calibration": {
+        "timer_tick_us": 0.032,
+        "timer_tick_match_frac": 1.0,
+        "launch_us": 9.023999529225486,
+        "harness_floor_us": 39.87200026001249,
+        "match_frac_min": 0.9,
+        "trusted": true,
+        "reason": null,
+        "mem_in_use_by_others_bytes": 552468480,
+        "mem_in_use_by_others_frac": 0.00368042715657535
+      }
+    }
+  },
+  "regimes": {
+    "decode_bs1": {
+      "T": 1,
+      "oproj_K": 32768,
+      "moe_rows": 8,
+      "correctness": {
+        "A_all_unfused": {
+          "rel_err": 0.008849557489156723,
+          "ok": true,
+          "n_kernels": 14,
+          "sel": {
+            "resadd1": "separate",
+            "norm": "split",
+            "gateup": "split",
+            "down": "split"
+          }
+        },
+        "N_f11b": {
+          "rel_err": 0.008849557489156723,
+          "ok": true,
+          "n_kernels": 14,
+          "sel": {
+            "resadd1": "separate",
+            "norm": "split",
+            "gateup": "split",
+            "down": "split",
+            "prenorm": "router"
+          }
+        },
+        "O_f11ab": {
+          "rel_err": 0.008849557489156723,
+          "ok": true,
+          "n_kernels": 13,
+          "sel": {
+            "resadd1": "separate",
+            "norm": "split",
+            "gateup": "split",
+            "down": "split",
+            "prenorm": "all"
+          }
+        },
+        "P_f10_f11ab": {
+          "rel_err": 0.008849557489156723,
+          "ok": true,
+          "n_kernels": 12,
+          "sel": {
+            "resadd1": "separate",
+            "norm": "split",
+            "gateup": "split",
+            "down": "merge_f10",
+            "prenorm": "all"
+          }
+        },
+        "Q_f8_f11ab": {
+          "rel_err": 0.008849557489156723,
+          "ok": true,
+          "n_kernels": 13,
+          "sel": {
+            "resadd1": "separate",
+            "norm": "split",
+            "gateup": "split",
+            "down": "atomic8",
+            "prenorm": "all"
+          }
+        },
+        "R_f1_f10_f11ab": {
+          "rel_err": 0.006637168116867542,
+          "ok": true,
+          "n_kernels": 11,
+          "sel": {
+            "resadd1": "in_oproj",
+            "norm": "split",
+            "gateup": "split",
+            "down": "merge_f10",
+            "prenorm": "all"
+          }
+        }
+      },
+      "pass1": {
+        "A_all_unfused": {
+          "median": 0.5651360154151917,
+          "min": 0.5598719716072083,
+          "max": 1.3734079599380493,
+          "spread_ms": 0.8135359883308411,
+          "spread_pct": 143.95401569534653,
+          "rounds": [
+            1.3734079599380493,
+            0.5607360005378723,
+            0.5626239776611328,
+            0.5598719716072083,
+            0.5670400261878967,
+            0.5680639743804932,
+            0.5677760243415833,
+            0.5632320046424866
+          ]
+        },
+        "N_f11b": {
+          "median": 0.5629279911518097,
+          "min": 0.5572479963302612,
+          "max": 0.9392639994621277,
+          "spread_ms": 0.38201600313186646,
+          "spread_pct": 67.86232149341546,
+          "rounds": [
+            0.9392639994621277,
+            0.5572479963302612,
+            0.5624639987945557,
+            0.5576959848403931,
+            0.560096025466919,
+            0.5647040009498596,
+            0.5651839971542358,
+            0.5633919835090637
+          ]
+        },
+        "O_f11ab": {
+          "median": 0.5173120200634003,
+          "min": 0.5075839757919312,
+          "max": 0.6992319822311401,
+          "spread_ms": 0.19164800643920898,
+          "spread_pct": 37.04688833940513,
+          "rounds": [
+            0.6992319822311401,
+            0.5117440223693848,
+            0.5075839757919312,
+            0.5138239860534668,
+            0.5194240212440491,
+            0.5224959850311279,
+            0.5164480209350586,
+            0.5181760191917419
+          ]
+        },
+        "P_f10_f11ab": {
+          "median": 0.4846400022506714,
+          "min": 0.47996801137924194,
+          "max": 0.5720959901809692,
+          "spread_ms": 0.0921279788017273,
+          "spread_pct": 19.00956965456511,
+          "rounds": [
+            0.5720959901809692,
+            0.47996801137924194,
+            0.48368000984191895,
+            0.48403200507164,
+            0.48524799942970276,
+            0.4878399968147278,
+            0.4866560101509094,
+            0.48230400681495667
+          ]
+        },
+        "Q_f8_f11ab": {
+          "median": 0.4958239942789078,
+          "min": 0.4867199957370758,
+          "max": 0.5206400156021118,
+          "spread_ms": 0.03392001986503601,
+          "spread_pct": 6.841141263114333,
+          "rounds": [
+            0.5206400156021118,
+            0.4923200011253357,
+            0.4905279874801636,
+            0.4867199957370758,
+            0.4970239996910095,
+            0.5001599788665771,
+            0.49462398886680603,
+            0.4975360035896301
+          ]
+        },
+        "R_f1_f10_f11ab": {
+          "median": 0.44286400079727173,
+          "min": 0.4373440146446228,
+          "max": 0.4466240108013153,
+          "spread_ms": 0.009279996156692505,
+          "spread_pct": 2.095450553665701,
+          "rounds": [
+            0.4424639940261841,
+            0.4386560022830963,
+            0.4373440146446228,
+            0.44176000356674194,
+            0.4466240108013153,
+            0.4432640075683594,
+            0.44470399618148804,
+            0.44604799151420593
+          ]
+        }
+      },
+      "pass2": {
+        "A_all_unfused": {
+          "median": 0.5647999942302704,
+          "min": 0.5605760216712952,
+          "max": 0.5688959956169128,
+          "spread_ms": 0.008319973945617676,
+          "spread_pct": 1.4730832207171731,
+          "rounds": [
+            0.5640959739685059,
+            0.5654399991035461,
+            0.5656960010528564,
+            0.5688959956169128,
+            0.5663679838180542,
+            0.5605760216712952,
+            0.5624639987945557,
+            0.5641599893569946
+          ]
+        },
+        "N_f11b": {
+          "median": 0.5608640015125275,
+          "min": 0.5582399964332581,
+          "max": 0.5646719932556152,
+          "spread_ms": 0.006431996822357178,
+          "spread_pct": 1.146801507141034,
+          "rounds": [
+            0.5642880201339722,
+            0.5646719932556152,
+            0.5602880120277405,
+            0.5614399909973145,
+            0.5602880120277405,
+            0.5588799715042114,
+            0.5621439814567566,
+            0.5582399964332581
+          ]
+        },
+        "O_f11ab": {
+          "median": 0.5162239968776703,
+          "min": 0.5139200091362,
+          "max": 0.5199040174484253,
+          "spread_ms": 0.005984008312225342,
+          "spread_pct": 1.1591883268540446,
+          "rounds": [
+            0.5199040174484253,
+            0.5157759785652161,
+            0.5166720151901245,
+            0.5183359980583191,
+            0.5198079943656921,
+            0.5144000053405762,
+            0.5139200091362,
+            0.5146880149841309
+          ]
+        },
+        "P_f10_f11ab": {
+          "median": 0.4837599992752075,
+          "min": 0.482015997171402,
+          "max": 0.4886719882488251,
+          "spread_ms": 0.006655991077423096,
+          "spread_pct": 1.3758870281535103,
+          "rounds": [
+            0.4822080135345459,
+            0.4886719882488251,
+            0.4870080053806305,
+            0.4830400049686432,
+            0.48403200507164,
+            0.4838080108165741,
+            0.48371198773384094,
+            0.482015997171402
+          ]
+        },
+        "Q_f8_f11ab": {
+          "median": 0.49460799992084503,
+          "min": 0.49084800481796265,
+          "max": 0.49827200174331665,
+          "spread_ms": 0.007423996925354004,
+          "spread_pct": 1.5009860185322739,
+          "rounds": [
+            0.49452799558639526,
+            0.49510401487350464,
+            0.49510401487350464,
+            0.49827200174331665,
+            0.4933759868144989,
+            0.492000013589859,
+            0.4946880042552948,
+            0.49084800481796265
+          ]
+        },
+        "R_f1_f10_f11ab": {
+          "median": 0.44036799669265747,
+          "min": 0.43907201290130615,
+          "max": 0.4435200095176697,
+          "spread_ms": 0.004447996616363525,
+          "spread_pct": 1.0100635490702745,
+          "rounds": [
+            0.43907201290130615,
+            0.4416959881782532,
+            0.4406079947948456,
+            0.4435200095176697,
+            0.44012799859046936,
+            0.4392639994621277,
+            0.4432640075683594,
+            0.4397439956665039
+          ]
+        }
+      },
+      "verdict": {
+        "winner": null,
+        "status": "TIED",
+        "tied_set": [
+          "O_f11ab",
+          "P_f10_f11ab",
+          "Q_f8_f11ab",
+          "R_f1_f10_f11ab"
+        ],
+        "pass1": {
+          "best": "R_f1_f10_f11ab",
+          "runner_up": "P_f10_f11ab",
+          "gap_ms": 0.04177600145339966,
+          "noise_ms": 0.0921279788017273,
+          "separated": false,
+          "tied_set": [
+            "R_f1_f10_f11ab",
+            "P_f10_f11ab",
+            "Q_f8_f11ab",
+            "O_f11ab"
+          ],
+          "order": [
+            "R_f1_f10_f11ab",
+            "P_f10_f11ab",
+            "Q_f8_f11ab",
+            "O_f11ab",
+            "N_f11b",
+            "A_all_unfused"
+          ]
+        },
+        "pass2": {
+          "best": "R_f1_f10_f11ab",
+          "runner_up": "P_f10_f11ab",
+          "gap_ms": 0.04339200258255005,
+          "noise_ms": 0.006655991077423096,
+          "separated": true,
+          "tied_set": [
+            "R_f1_f10_f11ab"
+          ],
+          "order": [
+            "R_f1_f10_f11ab",
+            "P_f10_f11ab",
+            "Q_f8_f11ab",
+            "O_f11ab",
+            "N_f11b",
+            "A_all_unfused"
+          ]
+        },
+        "agree_on_best": true,
+        "median_of_passes": {
+          "A_all_unfused": 0.564968004822731,
+          "N_f11b": 0.5618959963321686,
+          "O_f11ab": 0.5167680084705353,
+          "P_f10_f11ab": 0.48420000076293945,
+          "Q_f8_f11ab": 0.4952159970998764,
+          "R_f1_f10_f11ab": 0.4416159987449646
+        }
+      },
+      "paired_head_vs_unfused": {
+        "head": "O_f11ab",
+        "head_ms": 1.0195519924163818,
+        "all_unfused_ms": 1.1142719984054565,
+        "paired_speedup_p50": 1.0928621314004778,
+        "paired_speedup_trimmed": 1.0943991038052834,
+        "pair_meta": {
+          "drift_frac_fused": -0.3182646041375412,
+          "drift_frac_unfused": -0.3513429658882404,
+          "frac_fused_faster": 0.9666666666666667,
+          "machine": {
+            "compare": {
+              "elapsed_s": 0.47051048278808594,
+              "d_sm_mhz": 0.0,
+              "sm_rel": 0.0,
+              "d_mem_mhz": 0.0,
+              "d_temp_c": -1.0,
+              "d_power_w": -92.1,
+              "new_throttle": [],
+              "suspect": false,
+              "reasons": []
+            }
+          },
+          "n": 30,
+          "n_discarded": 0,
+          "noflush_ratio_p50": NaN,
+          "order_gap_frac": 0.017623048369181604,
+          "ratio_of_medians": 1.0929035563596754,
+          "ratio_p10": 1.0482981519383545,
+          "ratio_p50": 1.0928621314004778,
+          "ratio_p50_first_half": 1.1001945037351966,
+          "ratio_p50_fused_first": 1.0855159260947298,
+          "ratio_p50_second_half": 1.088692549863588,
+          "ratio_p50_unfused_first": 1.1048160896235146,
+          "ratio_p90": 1.18704770290677,
+          "ratio_trimmed": 1.0943991038052834,
+          "tick": {
+            "tick_ms": 3.2e-05,
+            "fused_ticks": 31860.999763011932,
+            "unfused_ticks": 34820.99995017052,
+            "gap_ticks": 2960.0001871585846,
+            "ratio_quantisation_frac": 6.010463683853589e-05,
+            "flagged": false,
+            "note": "well above timer granularity"
+          },
+          "impl": "common.bench_pair",
+          "interleaved": true,
+          "paired_speedup_p50": 1.0928621314004778,
+          "paired_speedup_trimmed_mean": 1.0943991038052834,
+          "paired_speedup_p10": 1.0482981519383545,
+          "paired_speedup_p90": 1.18704770290677
+        },
+        "tick": {
+          "timer_tick_us": 0.032,
+          "timer_tick_match_frac": 1.0,
+          "calibration_trusted": true,
+          "fused_ticks": 31860.999763011932,
+          "unfused_ticks": 34820.99995017052,
+          "gap_ticks": 2960.0001871585846,
+          "tick_limited": false,
+          "quantisation_pct": 0.003138633462346401
+        }
+      },
+      "speedup_vs_unfused": 1.093272020640078,
+      "shared_expert_ms": {
+        "w13": 0.05500800162553787,
+        "act": 0.005535999778658152,
+        "w2": 0.024607999250292778
+      },
+      "cfgs": {
+        "oproj_gemm": {
+          "BLOCK_M": 128,
+          "BLOCK_N": 64,
+          "BLOCK_K": 128,
+          "GROUP_M": 1,
+          "num_warps": 4,
+          "num_stages": 4
+        },
+        "oproj_gemm_fused": {
+          "BLOCK_M": 16,
+          "BLOCK_N": 64,
+          "BLOCK_K": 128,
+          "GROUP_M": 16,
+          "num_warps": 2,
+          "num_stages": 4
+        },
+        "oproj_epi": {
+          "BLOCK": 512,
+          "num_warps": 8,
+          "num_stages": 2
+        },
+        "oproj_epi_fused": {
+          "BLOCK": 512,
+          "num_warps": 8,
+          "num_stages": 2
+        },
+        "add": {
+          "ROWS": 8,
+          "BLOCK_N": 256,
+          "num_warps": 32,
+          "num_stages": 2,
+          "grid_cap": null,
+          "eps": 1e-05
+        },
+        "norm": {
+          "ROWS": 1,
+          "BLOCK_N": 2048,
+          "num_warps": 32,
+          "num_stages": 2,
+          "grid_cap": null,
+          "eps": 1e-05
+        },
+        "addnorm": {
+          "ROWS": 8,
+          "BLOCK_N": 256,
+          "num_warps": 32,
+          "num_stages": 4,
+          "grid_cap": null,
+          "eps": 1e-05
+        },
+        "router": {
+          "BLOCK_M": 64,
+          "BLOCK_K": 128,
+          "BLOCK_E": 64,
+          "num_warps": 4,
+          "num_stages": 4
+        },
+        "topk": {
+          "BLOCK_M": 16,
+          "BLOCK_K": 32,
+          "BLOCK_E": 256,
+          "num_warps": 8,
+          "num_stages": 2
+        },
+        "f5": {
+          "BLOCK_M": 16,
+          "BLOCK_K": 128,
+          "BLOCK_E": 64,
+          "num_warps": 8,
+          "num_stages": 4
+        },
+        "f4": {
+          "BLOCK_M": 16,
+          "BLOCK_K": 128,
+          "BLOCK_E": 64,
+          "num_warps": 8,
+          "num_stages": 4
+        },
+        "w13": {
+          "BLOCK_M": 16,
+          "BLOCK_N": 128,
+          "BLOCK_K": 128,
+          "GROUP_M": 16,
+          "num_warps": 8,
+          "num_stages": 3
+        },
+        "w13_fused": {
+          "BLOCK_M": 16,
+          "BLOCK_N": 64,
+          "BLOCK_K": 128,
+          "GROUP_M": 8,
+          "num_warps": 4,
+          "num_stages": 3
+        },
+        "act": {
+          "BLOCK_M": 64,
+          "BLOCK_N": 1024,
+          "num_warps": 32,
+          "num_stages": 1
+        },
+        "w2": {
+          "BLOCK_M": 16,
+          "BLOCK_N": 128,
+          "BLOCK_K": 128,
+          "GROUP_M": 4,
+          "num_warps": 8,
+          "num_stages": 2
+        },
+        "w2_fused8": {
+          "BLOCK_M": 64,
+          "BLOCK_N": 64,
+          "BLOCK_K": 128,
+          "GROUP_M": 8,
+          "num_warps": 4,
+          "num_stages": 3
+        },
+        "w2_fused9": {
+          "BLOCK_M": 64,
+          "BLOCK_N": 64,
+          "BLOCK_K": 128,
+          "GROUP_M": 8,
+          "num_warps": 4,
+          "num_stages": 3
+        },
+        "moe_sum": {
+          "BLOCK_M": 4,
+          "BLOCK_DIM": 256,
+          "num_warps": 16,
+          "num_stages": 3
+        },
+        "resadd2": {
+          "BLOCK_M": 4,
+          "BLOCK_N": 128,
+          "num_warps": 8,
+          "num_stages": 2
+        },
+        "router_prenorm": {
+          "BLOCK_M": 64,
+          "BLOCK_N": 32,
+          "BLOCK_K": 128,
+          "GROUP_M": 8,
+          "num_warps": 4,
+          "num_stages": 4
+        },
+        "w13_prenorm": {
+          "BLOCK_M": 16,
+          "BLOCK_N": 256,
+          "BLOCK_K": 128,
+          "GROUP_M": 8,
+          "num_warps": 8,
+          "num_stages": 3
+        },
+        "sq_router": 0,
+        "sq_moe": 0
+      }
+    },
+    "decode_bs32": {
+      "T": 32,
+      "oproj_K": 32768,
+      "moe_rows": 256,
+      "correctness": {
+        "A_all_unfused": {
+          "rel_err": 0.006493506487458944,
+          "ok": true,
+          "n_kernels": 14,
+          "sel": {
+            "resadd1": "separate",
+            "norm": "split",
+            "gateup": "split",
+            "down": "split"
+          }
+        },
+        "N_f11b": {
+          "rel_err": 0.006493506487458944,
+          "ok": true,
+          "n_kernels": 14,
+          "sel": {
+            "resadd1": "separate",
+            "norm": "split",
+            "gateup": "split",
+            "down": "split",
+            "prenorm": "router"
+          }
+        },
+        "O_f11ab": {
+          "rel_err": 0.16558441519737244,
+          "ok": false,
+          "n_kernels": 13,
+          "sel": {
+            "resadd1": "separate",
+            "norm": "split",
+            "gateup": "split",
+            "down": "split",
+            "prenorm": "all"
+          }
+        },
+        "P_f10_f11ab": {
+          "rel_err": 0.16923701763153076,
+          "ok": false,
+          "n_kernels": 12,
+          "sel": {
+            "resadd1": "separate",
+            "norm": "split",
+            "gateup": "split",
+            "down": "merge_f10",
+            "prenorm": "all"
+          }
+        },
+        "Q_f8_f11ab": {
+          "rel_err": 0.1952110379934311,
+          "ok": false,
+          "n_kernels": 13,
+          "sel": {
+            "resadd1": "separate",
+            "norm": "split",
+            "gateup": "split",
+            "down": "atomic8",
+            "prenorm": "all"
+          }
+        },
+        "R_f1_f10_f11ab": {
+          "rel_err": 0.1696428507566452,
+          "ok": false,
+          "n_kernels": 11,
+          "sel": {
+            "resadd1": "in_oproj",
+            "norm": "split",
+            "gateup": "split",
+            "down": "merge_f10",
+            "prenorm": "all"
+          }
+        }
+      },
+      "pass1": {
+        "A_all_unfused": {
+          "median": 2.9966399669647217,
+          "min": 2.995136022567749,
+          "max": 2.9975039958953857,
+          "spread_ms": 0.0023679733276367188,
+          "spread_pct": 0.07902094858713456,
+          "rounds": [
+            2.9962880611419678,
+            2.9975039958953857,
+            2.996767997741699,
+            2.9972479343414307,
+            2.996095895767212,
+            2.996511936187744,
+            2.996864080429077,
+            2.995136022567749
+          ]
+        },
+        "N_f11b": {
+          "median": 2.9637919664382935,
+          "min": 2.9622719287872314,
+          "max": 2.9652159214019775,
+          "spread_ms": 0.0029439926147460938,
+          "spread_pct": 0.09933195879075166,
+          "rounds": [
+            2.9622719287872314,
+            2.964063882827759,
+            2.964832067489624,
+            2.9633278846740723,
+            2.9638400077819824,
+            2.9622719287872314,
+            2.9637439250946045,
+            2.9652159214019775
+          ]
+        }
+      },
+      "pass2": {
+        "A_all_unfused": {
+          "median": 2.9982880353927612,
+          "min": 2.997215986251831,
+          "max": 3.000159978866577,
+          "spread_ms": 0.0029439926147460938,
+          "spread_pct": 0.0981891192571979,
+          "rounds": [
+            2.997215986251831,
+            2.9983999729156494,
+            2.998176097869873,
+            2.9972798824310303,
+            2.9994239807128906,
+            2.997407913208008,
+            3.000159978866577,
+            2.999232053756714
+          ]
+        },
+        "N_f11b": {
+          "median": 2.9642560482025146,
+          "min": 2.96342396736145,
+          "max": 2.966559886932373,
+          "spread_ms": 0.0031359195709228516,
+          "spread_pct": 0.10579111655433515,
+          "rounds": [
+            2.964576005935669,
+            2.96342396736145,
+            2.964384078979492,
+            2.963711977005005,
+            2.964128017425537,
+            2.966559886932373,
+            2.963776111602783,
+            2.964927911758423
+          ]
+        }
+      },
+      "verdict": {
+        "winner": "N_f11b",
+        "status": "SEPARATED",
+        "tied_set": [
+          "N_f11b"
+        ],
+        "pass1": {
+          "best": "N_f11b",
+          "runner_up": "A_all_unfused",
+          "gap_ms": 0.03284800052642822,
+          "noise_ms": 0.0029439926147460938,
+          "separated": true,
+          "tied_set": [
+            "N_f11b"
+          ],
+          "order": [
+            "N_f11b",
+            "A_all_unfused"
+          ]
+        },
+        "pass2": {
+          "best": "N_f11b",
+          "runner_up": "A_all_unfused",
+          "gap_ms": 0.03403198719024658,
+          "noise_ms": 0.0031359195709228516,
+          "separated": true,
+          "tied_set": [
+            "N_f11b"
+          ],
+          "order": [
+            "N_f11b",
+            "A_all_unfused"
+          ]
+        },
+        "agree_on_best": true,
+        "median_of_passes": {
+          "A_all_unfused": 2.9974640011787415,
+          "N_f11b": 2.964024007320404
+        }
+      },
+      "paired_head_vs_unfused": {
+        "head": "N_f11b",
+        "head_ms": 2.9637439250946045,
+        "all_unfused_ms": 2.997152090072632,
+        "paired_speedup_p50": 1.0114416326767175,
+        "paired_speedup_trimmed": 1.0113871205354943,
+        "pair_meta": {
+          "drift_frac_fused": -0.001052551148645252,
+          "drift_frac_unfused": -0.0003682249208948617,
+          "frac_fused_faster": 0.9666666666666667,
+          "machine": {
+            "compare": {
+              "elapsed_s": 0.47904062271118164,
+              "d_sm_mhz": 0.0,
+              "sm_rel": 0.0,
+              "d_mem_mhz": 0.0,
+              "d_temp_c": -2.0,
+              "d_power_w": -140.76999999999998,
+              "new_throttle": [],
+              "suspect": false,
+              "reasons": []
+            }
+          },
+          "n": 30,
+          "n_discarded": 0,
+          "noflush_ratio_p50": NaN,
+          "order_gap_frac": 0.0005258261766804857,
+          "ratio_of_medians": 1.011272284590836,
+          "ratio_p10": 1.008814907206172,
+          "ratio_p50": 1.0114416326767175,
+          "ratio_p50_first_half": 1.0110486067817197,
+          "ratio_p50_fused_first": 1.0117797320744861,
+          "ratio_p50_second_half": 1.0114416326767175,
+          "ratio_p50_unfused_first": 1.011247851644653,
+          "ratio_p90": 1.0137637283997702,
+          "ratio_trimmed": 1.0113871205354943,
+          "tick": {
+            "tick_ms": 3.2e-05,
+            "fused_ticks": 92616.99765920639,
+            "unfused_ticks": 93661.00281476974,
+            "gap_ticks": 1044.0051555633545,
+            "ratio_quantisation_frac": 2.147395633344288e-05,
+            "flagged": false,
+            "note": "well above timer granularity"
+          },
+          "impl": "common.bench_pair",
+          "interleaved": true,
+          "paired_speedup_p50": 1.0114416326767175,
+          "paired_speedup_trimmed_mean": 1.0113871205354943,
+          "paired_speedup_p10": 1.008814907206172,
+          "paired_speedup_p90": 1.0137637283997702
+        },
+        "tick": {
+          "timer_tick_us": 0.032,
+          "timer_tick_match_frac": 1.0,
+          "calibration_trusted": true,
+          "fused_ticks": 92616.99765920639,
+          "unfused_ticks": 93661.00281476974,
+          "gap_ticks": 1044.0051555633545,
+          "tick_limited": false,
+          "quantisation_pct": 0.0010797154143126094
+        }
+      },
+      "speedup_vs_unfused": 1.0112819578302163,
+      "shared_expert_ms": {
+        "w13": 0.05446400120854378,
+        "act": 0.005791999865323305,
+        "w2": 0.02454400062561035
+      },
+      "cfgs": {
+        "oproj_gemm": {
+          "BLOCK_M": 64,
+          "BLOCK_N": 64,
+          "BLOCK_K": 128,
+          "GROUP_M": 16,
+          "num_warps": 4,
+          "num_stages": 3
+        },
+        "oproj_gemm_fused": {
+          "BLOCK_M": 64,
+          "BLOCK_N": 64,
+          "BLOCK_K": 128,
+          "GROUP_M": 16,
+          "num_warps": 8,
+          "num_stages": 4
+        },
+        "oproj_epi": {
+          "BLOCK": 512,
+          "num_warps": 16,
+          "num_stages": 4
+        },
+        "oproj_epi_fused": {
+          "BLOCK": 512,
+          "num_warps": 16,
+          "num_stages": 4
+        },
+        "add": {
+          "ROWS": 8,
+          "BLOCK_N": 256,
+          "num_warps": 4,
+          "num_stages": 2,
+          "grid_cap": null,
+          "eps": 1e-05
+        },
+        "norm": {
+          "ROWS": 8,
+          "BLOCK_N": 2048,
+          "num_warps": 32,
+          "num_stages": 3,
+          "grid_cap": null,
+          "eps": 1e-05
+        },
+        "addnorm": {
+          "ROWS": 1,
+          "BLOCK_N": 256,
+          "num_warps": 8,
+          "num_stages": 2,
+          "grid_cap": null,
+          "eps": 1e-05
+        },
+        "router": {
+          "BLOCK_M": 128,
+          "BLOCK_K": 128,
+          "BLOCK_E": 64,
+          "num_warps": 16,
+          "num_stages": 2
+        },
+        "topk": {
+          "BLOCK_M": 16,
+          "BLOCK_K": 128,
+          "BLOCK_E": 64,
+          "num_warps": 32,
+          "num_stages": 2
+        },
+        "f5": {
+          "BLOCK_M": 16,
+          "BLOCK_K": 128,
+          "BLOCK_E": 64,
+          "num_warps": 16,
+          "num_stages": 2
+        },
+        "f4": {
+          "BLOCK_M": 16,
+          "BLOCK_K": 128,
+          "BLOCK_E": 64,
+          "num_warps": 8,
+          "num_stages": 3
+        },
+        "w13": {
+          "BLOCK_M": 16,
+          "BLOCK_N": 64,
+          "BLOCK_K": 128,
+          "GROUP_M": 1,
+          "num_warps": 4,
+          "num_stages": 3
+        },
+        "w13_fused": {
+          "BLOCK_M": 16,
+          "BLOCK_N": 128,
+          "BLOCK_K": 128,
+          "GROUP_M": 1,
+          "num_warps": 16,
+          "num_stages": 3
+        },
+        "act": {
+          "BLOCK_M": 64,
+          "BLOCK_N": 1024,
+          "num_warps": 8,
+          "num_stages": 2
+        },
+        "w2": {
+          "BLOCK_M": 16,
+          "BLOCK_N": 128,
+          "BLOCK_K": 128,
+          "GROUP_M": 1,
+          "num_warps": 8,
+          "num_stages": 3
+        },
+        "w2_fused8": {
+          "BLOCK_M": 16,
+          "BLOCK_N": 128,
+          "BLOCK_K": 128,
+          "GROUP_M": 1,
+          "num_warps": 16,
+          "num_stages": 3
+        },
+        "w2_fused9": {
+          "BLOCK_M": 16,
+          "BLOCK_N": 128,
+          "BLOCK_K": 128,
+          "GROUP_M": 1,
+          "num_warps": 16,
+          "num_stages": 3
+        },
+        "moe_sum": {
+          "BLOCK_M": 4,
+          "BLOCK_DIM": 256,
+          "num_warps": 16,
+          "num_stages": 2
+        },
+        "resadd2": {
+          "BLOCK_M": 4,
+          "BLOCK_N": 256,
+          "num_warps": 8,
+          "num_stages": 1
+        },
+        "router_prenorm": {
+          "BLOCK_M": 64,
+          "BLOCK_N": 32,
+          "BLOCK_K": 128,
+          "GROUP_M": 8,
+          "num_warps": 8,
+          "num_stages": 3
+        },
+        "w13_prenorm": {
+          "BLOCK_M": 64,
+          "BLOCK_N": 256,
+          "BLOCK_K": 128,
+          "GROUP_M": 8,
+          "num_warps": 8,
+          "num_stages": 3
+        },
+        "sq_router": 0,
+        "sq_moe": 0
+      }
+    },
+    "decode_bs256": {
+      "T": 256,
+      "oproj_K": 32768,
+      "moe_rows": 2048,
+      "correctness": {
+        "A_all_unfused": {
+          "rel_err": 0.006535947788506746,
+          "ok": true,
+          "n_kernels": 14,
+          "sel": {
+            "resadd1": "separate",
+            "norm": "split",
+            "gateup": "split",
+            "down": "split"
+          }
+        },
+        "N_f11b": {
+          "rel_err": 0.006535947788506746,
+          "ok": true,
+          "n_kernels": 14,
+          "sel": {
+            "resadd1": "separate",
+            "norm": "split",
+            "gateup": "split",
+            "down": "split",
+            "prenorm": "router"
+          }
+        },
+        "O_f11ab": {
+          "rel_err": 0.17483660578727722,
+          "ok": false,
+          "n_kernels": 13,
+          "sel": {
+            "resadd1": "separate",
+            "norm": "split",
+            "gateup": "split",
+            "down": "split",
+            "prenorm": "all"
+          }
+        },
+        "P_f10_f11ab": {
+          "rel_err": 0.21119281649589539,
+          "ok": false,
+          "n_kernels": 12,
+          "sel": {
+            "resadd1": "separate",
+            "norm": "split",
+            "gateup": "split",
+            "down": "merge_f10",
+            "prenorm": "all"
+          }
+        },
+        "Q_f8_f11ab": {
+          "rel_err": 0.2083333283662796,
+          "ok": false,
+          "n_kernels": 13,
+          "sel": {
+            "resadd1": "separate",
+            "norm": "split",
+            "gateup": "split",
+            "down": "atomic8",
+            "prenorm": "all"
+          }
+        },
+        "R_f1_f10_f11ab": {
+          "rel_err": 0.21486927568912506,
+          "ok": false,
+          "n_kernels": 11,
+          "sel": {
+            "resadd1": "in_oproj",
+            "norm": "split",
+            "gateup": "split",
+            "down": "merge_f10",
+            "prenorm": "all"
+          }
+        }
+      },
+      "pass1": {
+        "A_all_unfused": {
+          "median": 4.643264055252075,
+          "min": 4.642240047454834,
+          "max": 4.6503682136535645,
+          "spread_ms": 0.008128166198730469,
+          "spread_pct": 0.17505285295021206,
+          "rounds": [
+            4.642528057098389,
+            4.642496109008789,
+            4.642240047454834,
+            4.645247936248779,
+            4.6426239013671875,
+            4.648064136505127,
+            4.6503682136535645,
+            4.643904209136963
+          ]
+        },
+        "N_f11b": {
+          "median": 4.656639814376831,
+          "min": 4.654016017913818,
+          "max": 4.675327777862549,
+          "spread_ms": 0.02131175994873047,
+          "spread_pct": 0.45766391213966995,
+          "rounds": [
+            4.654016017913818,
+            4.654240131378174,
+            4.675327777862549,
+            4.660128116607666,
+            4.655488014221191,
+            4.6559038162231445,
+            4.65996789932251,
+            4.657375812530518
+          ]
+        }
+      },
+      "pass2": {
+        "A_all_unfused": {
+          "median": 4.646752119064331,
+          "min": 4.642816066741943,
+          "max": 4.655263900756836,
+          "spread_ms": 0.012447834014892578,
+          "spread_pct": 0.2678824627597969,
+          "rounds": [
+            4.644000053405762,
+            4.650944232940674,
+            4.64851188659668,
+            4.655263900756836,
+            4.645376205444336,
+            4.644224166870117,
+            4.642816066741943,
+            4.648128032684326
+          ]
+        },
+        "N_f11b": {
+          "median": 4.660144090652466,
+          "min": 4.65561580657959,
+          "max": 4.668447971343994,
+          "spread_ms": 0.012832164764404297,
+          "spread_pct": 0.27535982825388705,
+          "rounds": [
+            4.667168140411377,
+            4.660192012786865,
+            4.65561580657959,
+            4.65667200088501,
+            4.658624172210693,
+            4.660096168518066,
+            4.668447971343994,
+            4.662208080291748
+          ]
+        }
+      },
+      "verdict": {
+        "winner": null,
+        "status": "TIED",
+        "tied_set": [
+          "A_all_unfused",
+          "N_f11b"
+        ],
+        "pass1": {
+          "best": "A_all_unfused",
+          "runner_up": "N_f11b",
+          "gap_ms": 0.01337575912475586,
+          "noise_ms": 0.02131175994873047,
+          "separated": false,
+          "tied_set": [
+            "A_all_unfused",
+            "N_f11b"
+          ],
+          "order": [
+            "A_all_unfused",
+            "N_f11b"
+          ]
+        },
+        "pass2": {
+          "best": "A_all_unfused",
+          "runner_up": "N_f11b",
+          "gap_ms": 0.013391971588134766,
+          "noise_ms": 0.012832164764404297,
+          "separated": true,
+          "tied_set": [
+            "A_all_unfused"
+          ],
+          "order": [
+            "A_all_unfused",
+            "N_f11b"
+          ]
+        },
+        "agree_on_best": true,
+        "median_of_passes": {
+          "A_all_unfused": 4.645008087158203,
+          "N_f11b": 4.658391952514648
+        }
+      },
+      "paired_head_vs_unfused": null,
+      "speedup_vs_unfused": 1.0,
+      "shared_expert_ms": {
+        "w13": 0.057023998349905014,
+        "act": 0.0066559999249875546,
+        "w2": 0.026528000831604004
+      },
+      "cfgs": {
+        "oproj_gemm": {
+          "BLOCK_M": 128,
+          "BLOCK_N": 128,
+          "BLOCK_K": 128,
+          "GROUP_M": 8,
+          "num_warps": 4,
+          "num_stages": 3
+        },
+        "oproj_gemm_fused": {
+          "BLOCK_M": 128,
+          "BLOCK_N": 128,
+          "BLOCK_K": 128,
+          "GROUP_M": 16,
+          "num_warps": 8,
+          "num_stages": 3
+        },
+        "oproj_epi": {
+          "BLOCK": 2048,
+          "num_warps": 4,
+          "num_stages": 3
+        },
+        "oproj_epi_fused": {
+          "BLOCK": 2048,
+          "num_warps": 4,
+          "num_stages": 3
+        },
+        "add": {
+          "ROWS": 2,
+          "BLOCK_N": 2048,
+          "num_warps": 8,
+          "num_stages": 2,
+          "grid_cap": null,
+          "eps": 1e-05
+        },
+        "norm": {
+          "ROWS": 8,
+          "BLOCK_N": 256,
+          "num_warps": 32,
+          "num_stages": 3,
+          "grid_cap": null,
+          "eps": 1e-05
+        },
+        "addnorm": {
+          "ROWS": 8,
+          "BLOCK_N": 2048,
+          "num_warps": 8,
+          "num_stages": 4,
+          "grid_cap": null,
+          "eps": 1e-05
+        },
+        "router": {
+          "BLOCK_M": 16,
+          "BLOCK_K": 128,
+          "BLOCK_E": 64,
+          "num_warps": 4,
+          "num_stages": 4
+        },
+        "topk": {
+          "BLOCK_M": 32,
+          "BLOCK_K": 128,
+          "BLOCK_E": 128,
+          "num_warps": 32,
+          "num_stages": 4
+        },
+        "f5": {
+          "BLOCK_M": 16,
+          "BLOCK_K": 128,
+          "BLOCK_E": 64,
+          "num_warps": 8,
+          "num_stages": 4
+        },
+        "f4": {
+          "BLOCK_M": 16,
+          "BLOCK_K": 128,
+          "BLOCK_E": 64,
+          "num_warps": 8,
+          "num_stages": 3
+        },
+        "w13": {
+          "BLOCK_M": 32,
+          "BLOCK_N": 256,
+          "BLOCK_K": 128,
+          "GROUP_M": 1,
+          "num_warps": 8,
+          "num_stages": 3
+        },
+        "w13_fused": {
+          "BLOCK_M": 32,
+          "BLOCK_N": 128,
+          "BLOCK_K": 128,
+          "GROUP_M": 1,
+          "num_warps": 8,
+          "num_stages": 3
+        },
+        "act": {
+          "BLOCK_M": 4,
+          "BLOCK_N": 1024,
+          "num_warps": 8,
+          "num_stages": 2
+        },
+        "w2": {
+          "BLOCK_M": 16,
+          "BLOCK_N": 128,
+          "BLOCK_K": 128,
+          "GROUP_M": 4,
+          "num_warps": 8,
+          "num_stages": 4
+        },
+        "w2_fused8": {
+          "BLOCK_M": 16,
+          "BLOCK_N": 128,
+          "BLOCK_K": 128,
+          "GROUP_M": 1,
+          "num_warps": 16,
+          "num_stages": 3
+        },
+        "w2_fused9": {
+          "BLOCK_M": 16,
+          "BLOCK_N": 128,
+          "BLOCK_K": 128,
+          "GROUP_M": 1,
+          "num_warps": 16,
+          "num_stages": 3
+        },
+        "moe_sum": {
+          "BLOCK_M": 4,
+          "BLOCK_DIM": 512,
+          "num_warps": 8,
+          "num_stages": 2
+        },
+        "resadd2": {
+          "BLOCK_M": 4,
+          "BLOCK_N": 256,
+          "num_warps": 8,
+          "num_stages": 4
+        },
+        "router_prenorm": {
+          "BLOCK_M": 64,
+          "BLOCK_N": 32,
+          "BLOCK_K": 128,
+          "GROUP_M": 1,
+          "num_warps": 8,
+          "num_stages": 3
+        },
+        "w13_prenorm": {
+          "BLOCK_M": 64,
+          "BLOCK_N": 256,
+          "BLOCK_K": 128,
+          "GROUP_M": 8,
+          "num_warps": 8,
+          "num_stages": 3
+        },
+        "sq_router": 0,
+        "sq_moe": 0
+      }
+    },
+    "decode_bs512": {
+      "T": 512,
+      "oproj_K": 32768,
+      "moe_rows": 4096,
+      "correctness": {
+        "A_all_unfused": {
+          "rel_err": 0.0078125,
+          "ok": true,
+          "n_kernels": 14,
+          "sel": {
+            "resadd1": "separate",
+            "norm": "split",
+            "gateup": "split",
+            "down": "split"
+          }
+        },
+        "N_f11b": {
+          "rel_err": 0.0078125,
+          "ok": true,
+          "n_kernels": 14,
+          "sel": {
+            "resadd1": "separate",
+            "norm": "split",
+            "gateup": "split",
+            "down": "split",
+            "prenorm": "router"
+          }
+        },
+        "O_f11ab": {
+          "rel_err": 0.17890624701976776,
+          "ok": false,
+          "n_kernels": 13,
+          "sel": {
+            "resadd1": "separate",
+            "norm": "split",
+            "gateup": "split",
+            "down": "split",
+            "prenorm": "all"
+          }
+        },
+        "P_f10_f11ab": {
+          "rel_err": 0.2265625,
+          "ok": false,
+          "n_kernels": 12,
+          "sel": {
+            "resadd1": "separate",
+            "norm": "split",
+            "gateup": "split",
+            "down": "merge_f10",
+            "prenorm": "all"
+          }
+        },
+        "Q_f8_f11ab": {
+          "rel_err": 0.19843749701976776,
+          "ok": false,
+          "n_kernels": 13,
+          "sel": {
+            "resadd1": "separate",
+            "norm": "split",
+            "gateup": "split",
+            "down": "atomic8",
+            "prenorm": "all"
+          }
+        },
+        "R_f1_f10_f11ab": {
+          "rel_err": 0.19296875596046448,
+          "ok": false,
+          "n_kernels": 11,
+          "sel": {
+            "resadd1": "in_oproj",
+            "norm": "split",
+            "gateup": "split",
+            "down": "merge_f10",
+            "prenorm": "all"
+          }
+        }
+      },
+      "pass1": {
+        "A_all_unfused": {
+          "median": 4.847375869750977,
+          "min": 4.841407775878906,
+          "max": 5.00819206237793,
+          "spread_ms": 0.16678428649902344,
+          "spread_pct": 3.440712892511709,
+          "rounds": [
+            4.841407775878906,
+            4.845823764801025,
+            4.842688083648682,
+            4.848927974700928,
+            4.841951847076416,
+            5.00819206237793,
+            4.8858561515808105,
+            4.869952201843262
+          ]
+        },
+        "N_f11b": {
+          "median": 4.852288007736206,
+          "min": 4.847775936126709,
+          "max": 5.298655986785889,
+          "spread_ms": 0.4508800506591797,
+          "spread_pct": 9.292112297133286,
+          "rounds": [
+            4.8494720458984375,
+            4.852992057800293,
+            5.298655986785889,
+            4.889984130859375,
+            4.847775936126709,
+            4.925695896148682,
+            4.851039886474609,
+            4.851583957672119
+          ]
+        }
+      },
+      "pass2": {
+        "A_all_unfused": {
+          "median": 4.875792026519775,
+          "min": 4.846560001373291,
+          "max": 4.9422078132629395,
+          "spread_ms": 0.09564781188964844,
+          "spread_pct": 1.9616876882650711,
+          "rounds": [
+            4.9422078132629395,
+            4.846560001373291,
+            4.859519958496094,
+            4.909183979034424,
+            4.884160041809082,
+            4.867424011230469,
+            4.925568103790283,
+            4.867040157318115
+          ]
+        },
+        "N_f11b": {
+          "median": 4.896512031555176,
+          "min": 4.850719928741455,
+          "max": 4.964928150177002,
+          "spread_ms": 0.11420822143554688,
+          "spread_pct": 2.3324403309854285,
+          "rounds": [
+            4.964928150177002,
+            4.897215843200684,
+            4.895808219909668,
+            4.944928169250488,
+            4.868319988250732,
+            4.850719928741455,
+            4.90774393081665,
+            4.89027214050293
+          ]
+        }
+      },
+      "verdict": {
+        "winner": null,
+        "status": "TIED",
+        "tied_set": [
+          "A_all_unfused",
+          "N_f11b"
+        ],
+        "pass1": {
+          "best": "A_all_unfused",
+          "runner_up": "N_f11b",
+          "gap_ms": 0.004912137985229492,
+          "noise_ms": 0.4508800506591797,
+          "separated": false,
+          "tied_set": [
+            "A_all_unfused",
+            "N_f11b"
+          ],
+          "order": [
+            "A_all_unfused",
+            "N_f11b"
+          ]
+        },
+        "pass2": {
+          "best": "A_all_unfused",
+          "runner_up": "N_f11b",
+          "gap_ms": 0.02072000503540039,
+          "noise_ms": 0.11420822143554688,
+          "separated": false,
+          "tied_set": [
+            "A_all_unfused",
+            "N_f11b"
+          ],
+          "order": [
+            "A_all_unfused",
+            "N_f11b"
+          ]
+        },
+        "agree_on_best": true,
+        "median_of_passes": {
+          "A_all_unfused": 4.861583948135376,
+          "N_f11b": 4.874400019645691
+        }
+      },
+      "paired_head_vs_unfused": null,
+      "speedup_vs_unfused": 1.0,
+      "shared_expert_ms": {
+        "w13": 0.06275200098752975,
+        "act": 0.007648000027984381,
+        "w2": 0.03276799991726875
+      },
+      "cfgs": {
+        "oproj_gemm": {
+          "BLOCK_M": 128,
+          "BLOCK_N": 256,
+          "BLOCK_K": 64,
+          "GROUP_M": 16,
+          "num_warps": 8,
+          "num_stages": 4
+        },
+        "oproj_gemm_fused": {
+          "BLOCK_M": 128,
+          "BLOCK_N": 256,
+          "BLOCK_K": 32,
+          "GROUP_M": 16,
+          "num_warps": 8,
+          "num_stages": 4
+        },
+        "oproj_epi": {
+          "BLOCK": 2048,
+          "num_warps": 8,
+          "num_stages": 1
+        },
+        "oproj_epi_fused": {
+          "BLOCK": 2048,
+          "num_warps": 8,
+          "num_stages": 1
+        },
+        "add": {
+          "ROWS": 2,
+          "BLOCK_N": 2048,
+          "num_warps": 8,
+          "num_stages": 3,
+          "grid_cap": null,
+          "eps": 1e-05
+        },
+        "norm": {
+          "ROWS": 1,
+          "BLOCK_N": 2048,
+          "num_warps": 16,
+          "num_stages": 2,
+          "grid_cap": null,
+          "eps": 1e-05
+        },
+        "addnorm": {
+          "ROWS": 8,
+          "BLOCK_N": 256,
+          "num_warps": 32,
+          "num_stages": 3,
+          "grid_cap": null,
+          "eps": 1e-05
+        },
+        "router": {
+          "BLOCK_M": 64,
+          "BLOCK_K": 128,
+          "BLOCK_E": 128,
+          "num_warps": 4,
+          "num_stages": 4
+        },
+        "topk": {
+          "BLOCK_M": 64,
+          "BLOCK_K": 128,
+          "BLOCK_E": 128,
+          "num_warps": 32,
+          "num_stages": 2
+        },
+        "f5": {
+          "BLOCK_M": 32,
+          "BLOCK_K": 128,
+          "BLOCK_E": 128,
+          "num_warps": 16,
+          "num_stages": 2
+        },
+        "f4": {
+          "BLOCK_M": 16,
+          "BLOCK_K": 128,
+          "BLOCK_E": 64,
+          "num_warps": 8,
+          "num_stages": 3
+        },
+        "w13": {
+          "BLOCK_M": 32,
+          "BLOCK_N": 256,
+          "BLOCK_K": 128,
+          "GROUP_M": 1,
+          "num_warps": 8,
+          "num_stages": 3
+        },
+        "w13_fused": {
+          "BLOCK_M": 32,
+          "BLOCK_N": 128,
+          "BLOCK_K": 128,
+          "GROUP_M": 1,
+          "num_warps": 8,
+          "num_stages": 3
+        },
+        "act": {
+          "BLOCK_M": 4,
+          "BLOCK_N": 1024,
+          "num_warps": 8,
+          "num_stages": 4
+        },
+        "w2": {
+          "BLOCK_M": 32,
+          "BLOCK_N": 128,
+          "BLOCK_K": 128,
+          "GROUP_M": 1,
+          "num_warps": 4,
+          "num_stages": 2
+        },
+        "w2_fused8": {
+          "BLOCK_M": 32,
+          "BLOCK_N": 128,
+          "BLOCK_K": 128,
+          "GROUP_M": 1,
+          "num_warps": 8,
+          "num_stages": 3
+        },
+        "w2_fused9": {
+          "BLOCK_M": 32,
+          "BLOCK_N": 128,
+          "BLOCK_K": 128,
+          "GROUP_M": 1,
+          "num_warps": 8,
+          "num_stages": 3
+        },
+        "moe_sum": {
+          "BLOCK_M": 4,
+          "BLOCK_DIM": 512,
+          "num_warps": 8,
+          "num_stages": 3
+        },
+        "resadd2": {
+          "BLOCK_M": 4,
+          "BLOCK_N": 256,
+          "num_warps": 8,
+          "num_stages": 4
+        },
+        "router_prenorm": {
+          "BLOCK_M": 64,
+          "BLOCK_N": 32,
+          "BLOCK_K": 128,
+          "GROUP_M": 4,
+          "num_warps": 8,
+          "num_stages": 3
+        },
+        "w13_prenorm": {
+          "BLOCK_M": 64,
+          "BLOCK_N": 256,
+          "BLOCK_K": 128,
+          "GROUP_M": 8,
+          "num_warps": 8,
+          "num_stages": 3
+        },
+        "sq_router": 0,
+        "sq_moe": 0
+      }
+    },
+    "decode_bs1024": {
+      "T": 1024,
+      "oproj_K": 32768,
+      "moe_rows": 8192,
+      "correctness": {
+        "A_all_unfused": {
+          "rel_err": 0.008620689623057842,
+          "ok": true,
+          "n_kernels": 14,
+          "sel": {
+            "resadd1": "separate",
+            "norm": "split",
+            "gateup": "split",
+            "down": "split"
+          }
+        },
+        "N_f11b": {
+          "rel_err": 0.008620689623057842,
+          "ok": true,
+          "n_kernels": 14,
+          "sel": {
+            "resadd1": "separate",
+            "norm": "split",
+            "gateup": "split",
+            "down": "split",
+            "prenorm": "router"
+          }
+        },
+        "O_f11ab": {
+          "rel_err": 0.16091954708099365,
+          "ok": false,
+          "n_kernels": 13,
+          "sel": {
+            "resadd1": "separate",
+            "norm": "split",
+            "gateup": "split",
+            "down": "split",
+            "prenorm": "all"
+          }
+        },
+        "P_f10_f11ab": {
+          "rel_err": 0.20043103396892548,
+          "ok": false,
+          "n_kernels": 12,
+          "sel": {
+            "resadd1": "separate",
+            "norm": "split",
+            "gateup": "split",
+            "down": "merge_f10",
+            "prenorm": "all"
+          }
+        },
+        "Q_f8_f11ab": {
+          "rel_err": 0.19216954708099365,
+          "ok": false,
+          "n_kernels": 13,
+          "sel": {
+            "resadd1": "separate",
+            "norm": "split",
+            "gateup": "split",
+            "down": "atomic8",
+            "prenorm": "all"
+          }
+        },
+        "R_f1_f10_f11ab": {
+          "rel_err": 0.19181033968925476,
+          "ok": false,
+          "n_kernels": 11,
+          "sel": {
+            "resadd1": "in_oproj",
+            "norm": "split",
+            "gateup": "split",
+            "down": "merge_f10",
+            "prenorm": "all"
+          }
+        }
+      },
+      "pass1": {
+        "A_all_unfused": {
+          "median": 5.4789440631866455,
+          "min": 5.455776214599609,
+          "max": 6.157567977905273,
+          "spread_ms": 0.7017917633056641,
+          "spread_pct": 12.80888717264053,
+          "rounds": [
+            5.455776214599609,
+            5.477407932281494,
+            6.157567977905273,
+            5.479328155517578,
+            5.475584030151367,
+            5.506400108337402,
+            5.478559970855713,
+            5.671008110046387
+          ]
+        },
+        "N_f11b": {
+          "median": 5.491375923156738,
+          "min": 5.429952144622803,
+          "max": 5.8033599853515625,
+          "spread_ms": 0.37340784072875977,
+          "spread_pct": 6.799895799413871,
+          "rounds": [
+            5.429952144622803,
+            5.436319828033447,
+            5.5447998046875,
+            5.437952041625977,
+            5.8033599853515625,
+            5.567552089691162,
+            5.436927795410156,
+            5.646815776824951
+          ]
+        }
+      },
+      "pass2": {
+        "A_all_unfused": {
+          "median": 5.556031942367554,
+          "min": 5.492832183837891,
+          "max": 5.682208061218262,
+          "spread_ms": 0.1893758773803711,
+          "spread_pct": 3.4084735175167773,
+          "rounds": [
+            5.529952049255371,
+            5.618175983428955,
+            5.682208061218262,
+            5.492832183837891,
+            5.588543891906738,
+            5.494495868682861,
+            5.501760005950928,
+            5.582111835479736
+          ]
+        },
+        "N_f11b": {
+          "median": 5.504672050476074,
+          "min": 5.442751884460449,
+          "max": 5.622655868530273,
+          "spread_ms": 0.17990398406982422,
+          "spread_pct": 3.2682053066951577,
+          "rounds": [
+            5.449312210083008,
+            5.462687969207764,
+            5.503168106079102,
+            5.442751884460449,
+            5.62172794342041,
+            5.506175994873047,
+            5.5261759757995605,
+            5.622655868530273
+          ]
+        }
+      },
+      "verdict": {
+        "winner": null,
+        "status": "TIED",
+        "tied_set": [
+          "A_all_unfused",
+          "N_f11b"
+        ],
+        "pass1": {
+          "best": "A_all_unfused",
+          "runner_up": "N_f11b",
+          "gap_ms": 0.012431859970092773,
+          "noise_ms": 0.7017917633056641,
+          "separated": false,
+          "tied_set": [
+            "A_all_unfused",
+            "N_f11b"
+          ],
+          "order": [
+            "A_all_unfused",
+            "N_f11b"
+          ]
+        },
+        "pass2": {
+          "best": "N_f11b",
+          "runner_up": "A_all_unfused",
+          "gap_ms": 0.05135989189147949,
+          "noise_ms": 0.1893758773803711,
+          "separated": false,
+          "tied_set": [
+            "N_f11b",
+            "A_all_unfused"
+          ],
+          "order": [
+            "N_f11b",
+            "A_all_unfused"
+          ]
+        },
+        "agree_on_best": false,
+        "median_of_passes": {
+          "A_all_unfused": 5.5174880027771,
+          "N_f11b": 5.498023986816406
+        }
+      },
+      "paired_head_vs_unfused": null,
+      "speedup_vs_unfused": 1.0,
+      "shared_expert_ms": {
+        "w13": 0.09276799857616425,
+        "act": 0.00886400043964386,
+        "w2": 0.05488000065088272
+      },
+      "cfgs": {
+        "oproj_gemm": {
+          "BLOCK_M": 64,
+          "BLOCK_N": 256,
+          "BLOCK_K": 64,
+          "GROUP_M": 16,
+          "num_warps": 4,
+          "num_stages": 4
+        },
+        "oproj_gemm_fused": {
+          "BLOCK_M": 128,
+          "BLOCK_N": 128,
+          "BLOCK_K": 128,
+          "GROUP_M": 8,
+          "num_warps": 8,
+          "num_stages": 3
+        },
+        "oproj_epi": {
+          "BLOCK": 1024,
+          "num_warps": 4,
+          "num_stages": 1
+        },
+        "oproj_epi_fused": {
+          "BLOCK": 1024,
+          "num_warps": 4,
+          "num_stages": 1
+        },
+        "add": {
+          "ROWS": 8,
+          "BLOCK_N": 256,
+          "num_warps": 16,
+          "num_stages": 4,
+          "grid_cap": null,
+          "eps": 1e-05
+        },
+        "norm": {
+          "ROWS": 8,
+          "BLOCK_N": 256,
+          "num_warps": 16,
+          "num_stages": 4,
+          "grid_cap": null,
+          "eps": 1e-05
+        },
+        "addnorm": {
+          "ROWS": 4,
+          "BLOCK_N": 2048,
+          "num_warps": 32,
+          "num_stages": 1,
+          "grid_cap": null,
+          "eps": 1e-05
+        },
+        "router": {
+          "BLOCK_M": 16,
+          "BLOCK_K": 128,
+          "BLOCK_E": 256,
+          "num_warps": 8,
+          "num_stages": 2
+        },
+        "topk": {
+          "BLOCK_M": 64,
+          "BLOCK_K": 128,
+          "BLOCK_E": 64,
+          "num_warps": 16,
+          "num_stages": 2
+        },
+        "f5": {
+          "BLOCK_M": 16,
+          "BLOCK_K": 128,
+          "BLOCK_E": 128,
+          "num_warps": 8,
+          "num_stages": 3
+        },
+        "f4": {
+          "BLOCK_M": 32,
+          "BLOCK_K": 128,
+          "BLOCK_E": 64,
+          "num_warps": 8,
+          "num_stages": 3
+        },
+        "w13": {
+          "BLOCK_M": 64,
+          "BLOCK_N": 128,
+          "BLOCK_K": 128,
+          "GROUP_M": 1,
+          "num_warps": 8,
+          "num_stages": 4
+        },
+        "w13_fused": {
+          "BLOCK_M": 64,
+          "BLOCK_N": 64,
+          "BLOCK_K": 64,
+          "GROUP_M": 1,
+          "num_warps": 4,
+          "num_stages": 4
+        },
+        "act": {
+          "BLOCK_M": 4,
+          "BLOCK_N": 1024,
+          "num_warps": 8,
+          "num_stages": 2
+        },
+        "w2": {
+          "BLOCK_M": 64,
+          "BLOCK_N": 128,
+          "BLOCK_K": 64,
+          "GROUP_M": 1,
+          "num_warps": 4,
+          "num_stages": 3
+        },
+        "w2_fused8": {
+          "BLOCK_M": 64,
+          "BLOCK_N": 128,
+          "BLOCK_K": 64,
+          "GROUP_M": 1,
+          "num_warps": 8,
+          "num_stages": 3
+        },
+        "w2_fused9": {
+          "BLOCK_M": 64,
+          "BLOCK_N": 128,
+          "BLOCK_K": 64,
+          "GROUP_M": 1,
+          "num_warps": 8,
+          "num_stages": 3
+        },
+        "moe_sum": {
+          "BLOCK_M": 4,
+          "BLOCK_DIM": 256,
+          "num_warps": 8,
+          "num_stages": 4
+        },
+        "resadd2": {
+          "BLOCK_M": 4,
+          "BLOCK_N": 256,
+          "num_warps": 8,
+          "num_stages": 2
+        },
+        "router_prenorm": {
+          "BLOCK_M": 64,
+          "BLOCK_N": 32,
+          "BLOCK_K": 128,
+          "GROUP_M": 1,
+          "num_warps": 4,
+          "num_stages": 3
+        },
+        "w13_prenorm": {
+          "BLOCK_M": 64,
+          "BLOCK_N": 256,
+          "BLOCK_K": 128,
+          "GROUP_M": 8,
+          "num_warps": 8,
+          "num_stages": 3
+        },
+        "sq_router": 0,
+        "sq_moe": 0
+      }
+    },
+    "prefill_t2048": {
+      "T": 2048,
+      "oproj_K": 16384,
+      "moe_rows": 16384,
+      "correctness": {
+        "A_all_unfused": {
+          "rel_err": 0.00872093066573143,
+          "ok": true,
+          "n_kernels": 14,
+          "sel": {
+            "resadd1": "separate",
+            "norm": "split",
+            "gateup": "split",
+            "down": "split"
+          }
+        },
+        "N_f11b": {
+          "rel_err": 0.00872093066573143,
+          "ok": true,
+          "n_kernels": 14,
+          "sel": {
+            "resadd1": "separate",
+            "norm": "split",
+            "gateup": "split",
+            "down": "split",
+            "prenorm": "router"
+          }
+        },
+        "O_f11ab": {
+          "rel_err": 0.5588662624359131,
+          "ok": false,
+          "n_kernels": 13,
+          "sel": {
+            "resadd1": "separate",
+            "norm": "split",
+            "gateup": "split",
+            "down": "split",
+            "prenorm": "all"
+          }
+        },
+        "P_f10_f11ab": {
+          "rel_err": 0.5188953280448914,
+          "ok": false,
+          "n_kernels": 12,
+          "sel": {
+            "resadd1": "separate",
+            "norm": "split",
+            "gateup": "split",
+            "down": "merge_f10",
+            "prenorm": "all"
+          }
+        },
+        "Q_f8_f11ab": {
+          "rel_err": 0.5377907156944275,
+          "ok": false,
+          "n_kernels": 13,
+          "sel": {
+            "resadd1": "separate",
+            "norm": "split",
+            "gateup": "split",
+            "down": "atomic8",
+            "prenorm": "all"
+          }
+        },
+        "R_f1_f10_f11ab": {
+          "rel_err": 0.5188953280448914,
+          "ok": false,
+          "n_kernels": 11,
+          "sel": {
+            "resadd1": "in_oproj",
+            "norm": "split",
+            "gateup": "split",
+            "down": "merge_f10",
+            "prenorm": "all"
+          }
+        }
+      },
+      "pass1": {
+        "A_all_unfused": {
+          "median": 6.323616027832031,
+          "min": 6.211584091186523,
+          "max": 6.786911964416504,
+          "spread_ms": 0.5753278732299805,
+          "spread_pct": 9.098083607508727,
+          "rounds": [
+            6.219103813171387,
+            6.211584091186523,
+            6.6877760887146,
+            6.269216060638428,
+            6.786911964416504,
+            6.297855854034424,
+            6.642943859100342,
+            6.349376201629639
+          ]
+        },
+        "N_f11b": {
+          "median": 6.243088006973267,
+          "min": 6.154111862182617,
+          "max": 6.527200222015381,
+          "spread_ms": 0.37308835983276367,
+          "spread_pct": 5.976022753740452,
+          "rounds": [
+            6.158720016479492,
+            6.154111862182617,
+            6.242976188659668,
+            6.192448139190674,
+            6.372992038726807,
+            6.243199825286865,
+            6.527200222015381,
+            6.250400066375732
+          ]
+        }
+      },
+      "pass2": {
+        "A_all_unfused": {
+          "median": 6.348207950592041,
+          "min": 6.24675178527832,
+          "max": 6.4515838623046875,
+          "spread_ms": 0.2048320770263672,
+          "spread_pct": 3.2266125908377705,
+          "rounds": [
+            6.368480205535889,
+            6.24675178527832,
+            6.322591781616211,
+            6.3521599769592285,
+            6.3442559242248535,
+            6.329728126525879,
+            6.3533759117126465,
+            6.4515838623046875
+          ]
+        },
+        "N_f11b": {
+          "median": 6.478543996810913,
+          "min": 6.356256008148193,
+          "max": 6.550655841827393,
+          "spread_ms": 0.19439983367919922,
+          "spread_pct": 3.000671659787959,
+          "rounds": [
+            6.550655841827393,
+            6.371103763580322,
+            6.5043840408325195,
+            6.356256008148193,
+            6.4976959228515625,
+            6.491968154907227,
+            6.366847991943359,
+            6.4651198387146
+          ]
+        }
+      },
+      "verdict": {
+        "winner": null,
+        "status": "TIED",
+        "tied_set": [
+          "A_all_unfused",
+          "N_f11b"
+        ],
+        "pass1": {
+          "best": "N_f11b",
+          "runner_up": "A_all_unfused",
+          "gap_ms": 0.08052802085876465,
+          "noise_ms": 0.5753278732299805,
+          "separated": false,
+          "tied_set": [
+            "N_f11b",
+            "A_all_unfused"
+          ],
+          "order": [
+            "N_f11b",
+            "A_all_unfused"
+          ]
+        },
+        "pass2": {
+          "best": "A_all_unfused",
+          "runner_up": "N_f11b",
+          "gap_ms": 0.13033604621887207,
+          "noise_ms": 0.2048320770263672,
+          "separated": false,
+          "tied_set": [
+            "A_all_unfused",
+            "N_f11b"
+          ],
+          "order": [
+            "A_all_unfused",
+            "N_f11b"
+          ]
+        },
+        "agree_on_best": false,
+        "median_of_passes": {
+          "A_all_unfused": 6.335911989212036,
+          "N_f11b": 6.36081600189209
+        }
+      },
+      "paired_head_vs_unfused": null,
+      "speedup_vs_unfused": 1.0,
+      "shared_expert_ms": {
+        "w13": 0.1823039948940277,
+        "act": 0.011872000060975552,
+        "w2": 0.0950080007314682
+      },
+      "cfgs": {
+        "oproj_gemm": {
+          "BLOCK_M": 128,
+          "BLOCK_N": 256,
+          "BLOCK_K": 32,
+          "GROUP_M": 16,
+          "num_warps": 8,
+          "num_stages": 4
+        },
+        "oproj_gemm_fused": {
+          "BLOCK_M": 128,
+          "BLOCK_N": 256,
+          "BLOCK_K": 64,
+          "GROUP_M": 16,
+          "num_warps": 8,
+          "num_stages": 4
+        },
+        "oproj_epi": {
+          "BLOCK": 1024,
+          "num_warps": 4,
+          "num_stages": 1
+        },
+        "oproj_epi_fused": {
+          "BLOCK": 1024,
+          "num_warps": 4,
+          "num_stages": 1
+        },
+        "add": {
+          "ROWS": 2,
+          "BLOCK_N": 2048,
+          "num_warps": 16,
+          "num_stages": 2,
+          "grid_cap": null,
+          "eps": 1e-05
+        },
+        "norm": {
+          "ROWS": 8,
+          "BLOCK_N": 2048,
+          "num_warps": 32,
+          "num_stages": 4,
+          "grid_cap": null,
+          "eps": 1e-05
+        },
+        "addnorm": {
+          "ROWS": 1,
+          "BLOCK_N": 2048,
+          "num_warps": 4,
+          "num_stages": 1,
+          "grid_cap": null,
+          "eps": 1e-05
+        },
+        "router": {
+          "BLOCK_M": 128,
+          "BLOCK_K": 128,
+          "BLOCK_E": 256,
+          "num_warps": 8,
+          "num_stages": 2
+        },
+        "topk": {
+          "BLOCK_M": 16,
+          "BLOCK_K": 128,
+          "BLOCK_E": 128,
+          "num_warps": 16,
+          "num_stages": 2
+        },
+        "f5": {
+          "BLOCK_M": 32,
+          "BLOCK_K": 128,
+          "BLOCK_E": 128,
+          "num_warps": 8,
+          "num_stages": 3
+        },
+        "f4": {
+          "BLOCK_M": 64,
+          "BLOCK_K": 128,
+          "BLOCK_E": 64,
+          "num_warps": 8,
+          "num_stages": 3
+        },
+        "w13": {
+          "BLOCK_M": 128,
+          "BLOCK_N": 256,
+          "BLOCK_K": 64,
+          "GROUP_M": 1,
+          "num_warps": 8,
+          "num_stages": 4
+        },
+        "w13_fused": {
+          "BLOCK_M": 128,
+          "BLOCK_N": 64,
+          "BLOCK_K": 64,
+          "GROUP_M": 8,
+          "num_warps": 8,
+          "num_stages": 3
+        },
+        "act": {
+          "BLOCK_M": 4,
+          "BLOCK_N": 1024,
+          "num_warps": 16,
+          "num_stages": 2
+        },
+        "w2": {
+          "BLOCK_M": 128,
+          "BLOCK_N": 128,
+          "BLOCK_K": 64,
+          "GROUP_M": 1,
+          "num_warps": 8,
+          "num_stages": 3
+        },
+        "w2_fused8": {
+          "BLOCK_M": 128,
+          "BLOCK_N": 128,
+          "BLOCK_K": 64,
+          "GROUP_M": 1,
+          "num_warps": 8,
+          "num_stages": 3
+        },
+        "w2_fused9": {
+          "BLOCK_M": 128,
+          "BLOCK_N": 128,
+          "BLOCK_K": 64,
+          "GROUP_M": 1,
+          "num_warps": 8,
+          "num_stages": 3
+        },
+        "moe_sum": {
+          "BLOCK_M": 4,
+          "BLOCK_DIM": 256,
+          "num_warps": 4,
+          "num_stages": 3
+        },
+        "resadd2": {
+          "BLOCK_M": 4,
+          "BLOCK_N": 256,
+          "num_warps": 8,
+          "num_stages": 2
+        },
+        "router_prenorm": {
+          "BLOCK_M": 64,
+          "BLOCK_N": 64,
+          "BLOCK_K": 128,
+          "GROUP_M": 4,
+          "num_warps": 8,
+          "num_stages": 3
+        },
+        "w13_prenorm": {
+          "BLOCK_M": 128,
+          "BLOCK_N": 256,
+          "BLOCK_K": 64,
+          "GROUP_M": 4,
+          "num_warps": 8,
+          "num_stages": 4
+        },
+        "sq_router": 0,
+        "sq_moe": 0
+      }
+    },
+    "prefill_t8192": {
+      "T": 8192,
+      "oproj_K": 16384,
+      "moe_rows": 65536,
+      "correctness": {
+        "A_all_unfused": {
+          "rel_err": 0.007614213041961193,
+          "ok": true,
+          "n_kernels": 14,
+          "sel": {
+            "resadd1": "separate",
+            "norm": "split",
+            "gateup": "split",
+            "down": "split"
+          }
+        },
+        "N_f11b": {
+          "rel_err": 0.007614213041961193,
+          "ok": true,
+          "n_kernels": 14,
+          "sel": {
+            "resadd1": "separate",
+            "norm": "split",
+            "gateup": "split",
+            "down": "split",
+            "prenorm": "router"
+          }
+        },
+        "O_f11ab": {
+          "rel_err": 0.09517766535282135,
+          "ok": false,
+          "n_kernels": 13,
+          "sel": {
+            "resadd1": "separate",
+            "norm": "split",
+            "gateup": "split",
+            "down": "split",
+            "prenorm": "all"
+          }
+        },
+        "P_f10_f11ab": {
+          "rel_err": 0.08058375865221024,
+          "ok": false,
+          "n_kernels": 12,
+          "sel": {
+            "resadd1": "separate",
+            "norm": "split",
+            "gateup": "split",
+            "down": "merge_f10",
+            "prenorm": "all"
+          }
+        },
+        "Q_f8_f11ab": {
+          "rel_err": 0.08280456811189651,
+          "ok": false,
+          "n_kernels": 13,
+          "sel": {
+            "resadd1": "separate",
+            "norm": "split",
+            "gateup": "split",
+            "down": "atomic8",
+            "prenorm": "all"
+          }
+        },
+        "R_f1_f10_f11ab": {
+          "rel_err": 0.0824873074889183,
+          "ok": false,
+          "n_kernels": 11,
+          "sel": {
+            "resadd1": "in_oproj",
+            "norm": "split",
+            "gateup": "split",
+            "down": "merge_f10",
+            "prenorm": "all"
+          }
+        }
+      },
+      "pass1": {
+        "A_all_unfused": {
+          "median": 16.424479484558105,
+          "min": 15.955167770385742,
+          "max": 17.38809585571289,
+          "spread_ms": 1.4329280853271484,
+          "spread_pct": 8.724343968856683,
+          "rounds": [
+            15.955167770385742,
+            17.38809585571289,
+            15.970047950744629,
+            16.30748748779297,
+            16.798368453979492,
+            16.51875114440918,
+            16.36307144165039,
+            16.48588752746582
+          ]
+        },
+        "N_f11b": {
+          "median": 16.434656143188477,
+          "min": 16.004640579223633,
+          "max": 16.74025535583496,
+          "spread_ms": 0.7356147766113281,
+          "spread_pct": 4.47599736923131,
+          "rounds": [
+            16.11311912536621,
+            16.004640579223633,
+            16.443679809570312,
+            16.481887817382812,
+            16.068256378173828,
+            16.74025535583496,
+            16.540512084960938,
+            16.42563247680664
+          ]
+        }
+      },
+      "pass2": {
+        "A_all_unfused": {
+          "median": 16.388063430786133,
+          "min": 16.3492488861084,
+          "max": 16.493152618408203,
+          "spread_ms": 0.1439037322998047,
+          "spread_pct": 0.8781008989107975,
+          "rounds": [
+            16.391647338867188,
+            16.384479522705078,
+            16.3492488861084,
+            16.41971206665039,
+            16.373376846313477,
+            16.377792358398438,
+            16.393407821655273,
+            16.493152618408203
+          ]
+        },
+        "N_f11b": {
+          "median": 16.430335998535156,
+          "min": 16.339967727661133,
+          "max": 16.552383422851562,
+          "spread_ms": 0.2124156951904297,
+          "spread_pct": 1.2928262404942148,
+          "rounds": [
+            16.485504150390625,
+            16.339967727661133,
+            16.41334342956543,
+            16.41689682006836,
+            16.438304901123047,
+            16.552383422851562,
+            16.425567626953125,
+            16.435104370117188
+          ]
+        }
+      },
+      "verdict": {
+        "winner": null,
+        "status": "TIED",
+        "tied_set": [
+          "A_all_unfused",
+          "N_f11b"
+        ],
+        "pass1": {
+          "best": "A_all_unfused",
+          "runner_up": "N_f11b",
+          "gap_ms": 0.010176658630371094,
+          "noise_ms": 1.4329280853271484,
+          "separated": false,
+          "tied_set": [
+            "A_all_unfused",
+            "N_f11b"
+          ],
+          "order": [
+            "A_all_unfused",
+            "N_f11b"
+          ]
+        },
+        "pass2": {
+          "best": "A_all_unfused",
+          "runner_up": "N_f11b",
+          "gap_ms": 0.04227256774902344,
+          "noise_ms": 0.2124156951904297,
+          "separated": false,
+          "tied_set": [
+            "A_all_unfused",
+            "N_f11b"
+          ],
+          "order": [
+            "A_all_unfused",
+            "N_f11b"
+          ]
+        },
+        "agree_on_best": true,
+        "median_of_passes": {
+          "A_all_unfused": 16.40627145767212,
+          "N_f11b": 16.432496070861816
+        }
+      },
+      "paired_head_vs_unfused": null,
+      "speedup_vs_unfused": 1.0,
+      "shared_expert_ms": {
+        "w13": 0.8252800107002258,
+        "act": 0.0306560005992651,
+        "w2": 0.3662720024585724
+      },
+      "cfgs": {
+        "oproj_gemm": {
+          "BLOCK_M": 128,
+          "BLOCK_N": 256,
+          "BLOCK_K": 64,
+          "GROUP_M": 1,
+          "num_warps": 8,
+          "num_stages": 3
+        },
+        "oproj_gemm_fused": {
+          "BLOCK_M": 128,
+          "BLOCK_N": 256,
+          "BLOCK_K": 64,
+          "GROUP_M": 8,
+          "num_warps": 8,
+          "num_stages": 4
+        },
+        "oproj_epi": {
+          "BLOCK": 1024,
+          "num_warps": 1,
+          "num_stages": 1
+        },
+        "oproj_epi_fused": {
+          "BLOCK": 1024,
+          "num_warps": 1,
+          "num_stages": 1
+        },
+        "add": {
+          "ROWS": 8,
+          "BLOCK_N": 256,
+          "num_warps": 16,
+          "num_stages": 3,
+          "grid_cap": null,
+          "eps": 1e-05
+        },
+        "norm": {
+          "ROWS": 1,
+          "BLOCK_N": 2048,
+          "num_warps": 8,
+          "num_stages": 4,
+          "grid_cap": null,
+          "eps": 1e-05
+        },
+        "addnorm": {
+          "ROWS": 1,
+          "BLOCK_N": 2048,
+          "num_warps": 8,
+          "num_stages": 3,
+          "grid_cap": null,
+          "eps": 1e-05
+        },
+        "router": {
+          "BLOCK_M": 128,
+          "BLOCK_K": 64,
+          "BLOCK_E": 64,
+          "num_warps": 8,
+          "num_stages": 4
+        },
+        "topk": {
+          "BLOCK_M": 16,
+          "BLOCK_K": 64,
+          "BLOCK_E": 128,
+          "num_warps": 8,
+          "num_stages": 2
+        },
+        "f5": {
+          "BLOCK_M": 32,
+          "BLOCK_K": 128,
+          "BLOCK_E": 256,
+          "num_warps": 8,
+          "num_stages": 2
+        },
+        "f4": {
+          "BLOCK_M": 32,
+          "BLOCK_K": 128,
+          "BLOCK_E": 256,
+          "num_warps": 8,
+          "num_stages": 2
+        },
+        "w13": {
+          "BLOCK_M": 128,
+          "BLOCK_N": 256,
+          "BLOCK_K": 64,
+          "GROUP_M": 8,
+          "num_warps": 8,
+          "num_stages": 4
+        },
+        "w13_fused": {
+          "BLOCK_M": 128,
+          "BLOCK_N": 128,
+          "BLOCK_K": 64,
+          "GROUP_M": 16,
+          "num_warps": 16,
+          "num_stages": 3
+        },
+        "act": {
+          "BLOCK_M": 4,
+          "BLOCK_N": 1024,
+          "num_warps": 16,
+          "num_stages": 4
+        },
+        "w2": {
+          "BLOCK_M": 128,
+          "BLOCK_N": 256,
+          "BLOCK_K": 64,
+          "GROUP_M": 1,
+          "num_warps": 8,
+          "num_stages": 3
+        },
+        "w2_fused8": {
+          "BLOCK_M": 128,
+          "BLOCK_N": 128,
+          "BLOCK_K": 64,
+          "GROUP_M": 1,
+          "num_warps": 8,
+          "num_stages": 3
+        },
+        "w2_fused9": {
+          "BLOCK_M": 128,
+          "BLOCK_N": 128,
+          "BLOCK_K": 64,
+          "GROUP_M": 1,
+          "num_warps": 8,
+          "num_stages": 3
+        },
+        "moe_sum": {
+          "BLOCK_M": 4,
+          "BLOCK_DIM": 256,
+          "num_warps": 8,
+          "num_stages": 2
+        },
+        "resadd2": {
+          "BLOCK_M": 4,
+          "BLOCK_N": 256,
+          "num_warps": 8,
+          "num_stages": 2
+        },
+        "router_prenorm": {
+          "BLOCK_M": 128,
+          "BLOCK_N": 256,
+          "BLOCK_K": 64,
+          "GROUP_M": 8,
+          "num_warps": 8,
+          "num_stages": 3
+        },
+        "w13_prenorm": {
+          "BLOCK_M": 64,
+          "BLOCK_N": 256,
+          "BLOCK_K": 64,
+          "GROUP_M": 8,
+          "num_warps": 4,
+          "num_stages": 3
+        },
+        "sq_router": 0,
+        "sq_moe": 0
+      }
+    }
+  },
+  "_meta": {
+    "schema": 1,
+    "harness": "glm52_h200/common.py",
+    "recorded_at": "2026-08-05 17:20:41",
+    "device": "NVIDIA H200",
+    "visible_devices": "0",
+    "torch": "2.11.0+cu130",
+    "results_dir": "/home/guancheng/zsh/fusion/results/h200/_f11_layer_rerun",
+    "harness_info": {
+      "_errors": {},
+      "cuda_available": true,
+      "device_name": "NVIDIA H200",
+      "compute_capability": "9.0",
+      "num_sm": 132,
+      "warp_size": 32,
+      "smem_per_block_optin": 232448,
+      "smem_per_sm": 233472,
+      "regs_per_sm": 65536,
+      "threads_per_sm": 2048,
+      "l2_bytes": 62914560,
+      "total_memory": 150109880320,
+      "uuid": "b2318e71-edbf-aa1b-dcf3-3cc3e6ea7db0",
+      "mem_free_bytes": 149557411840,
+      "mem_total_bytes": 150109880320,
+      "torch": "2.11.0+cu130",
+      "triton": "3.6.0",
+      "flush_bytes": 268435456,
+      "flush_source": "max(256MB, 4 x L2=60MB)",
+      "timer_tick_ms": 3.2e-05,
+      "features": {
+        "source": "ok",
+        "cc": "9.0",
+        "sm90": true,
+        "tma": true,
+        "clusters": true,
+        "warp_specialize": true,
+        "ws": true,
+        "num_consumer_groups": false,
+        "dot_bf16": true,
+        "disabled": []
+      },
+      "preflight": {
+        "status": "ok",
+        "path": "/home/guancheng/zsh/fusion/glm52_h200/preflight_h200.json",
+        "timestamp": "2026-08-05 16:11:06",
+        "bandwidth_GBs": 4245.389537231806,
+        "gemm_TFs": 821.339040190349,
+        "launch_ms": 0.009023999529225486
+      },
+      "nvidia_smi": [
+        {
+          "name": "NVIDIA H200",
+          "driver_version": "580.173.02",
+          "pstate": "P0",
+          "clocks.max.sm": "1980 MHz",
+          "enforced.power.limit": "700.00 W",
+          "ecc.mode.current": "Enabled",
+          "mig.mode.current": "Disabled",
+          "persistence_mode": "Enabled"
+        },
+        {
+          "name": "NVIDIA H200",
+          "driver_version": "580.173.02",
+          "pstate": "P0",
+          "clocks.max.sm": "1980 MHz",
+          "enforced.power.limit": "700.00 W",
+          "ecc.mode.current": "Enabled",
+          "mig.mode.current": "Disabled",
+          "persistence_mode": "Enabled"
+        },
+        {
+          "name": "NVIDIA H200",
+          "driver_version": "580.173.02",
+          "pstate": "P0",
+          "clocks.max.sm": "1980 MHz",
+          "enforced.power.limit": "700.00 W",
+          "ecc.mode.current": "Enabled",
+          "mig.mode.current": "Disabled",
+          "persistence_mode": "Enabled"
+        },
+        {
+          "name": "NVIDIA H200",
+          "driver_version": "580.173.02",
+          "pstate": "P0",
+          "clocks.max.sm": "1980 MHz",
+          "enforced.power.limit": "700.00 W",
+          "ecc.mode.current": "Enabled",
+          "mig.mode.current": "Disabled",
+          "persistence_mode": "Enabled"
+        },
+        {
+          "name": "NVIDIA H200",
+          "driver_version": "580.173.02",
+          "pstate": "P0",
+          "clocks.max.sm": "1980 MHz",
+          "enforced.power.limit": "700.00 W",
+          "ecc.mode.current": "Enabled",
+          "mig.mode.current": "Disabled",
+          "persistence_mode": "Enabled"
+        },
+        {
+          "name": "NVIDIA H200",
+          "driver_version": "580.173.02",
+          "pstate": "P0",
+          "clocks.max.sm": "1980 MHz",
+          "enforced.power.limit": "700.00 W",
+          "ecc.mode.current": "Enabled",
+          "mig.mode.current": "Disabled",
+          "persistence_mode": "Enabled"
+        },
+        {
+          "name": "NVIDIA H200",
+          "driver_version": "580.173.02",
+          "pstate": "P0",
+          "clocks.max.sm": "1980 MHz",
+          "enforced.power.limit": "700.00 W",
+          "ecc.mode.current": "Enabled",
+          "mig.mode.current": "Disabled",
+          "persistence_mode": "Enabled"
+        },
+        {
+          "name": "NVIDIA H200",
+          "driver_version": "580.173.02",
+          "pstate": "P0",
+          "clocks.max.sm": "1980 MHz",
+          "enforced.power.limit": "700.00 W",
+          "ecc.mode.current": "Enabled",
+          "mig.mode.current": "Disabled",
+          "persistence_mode": "Enabled"
+        }
+      ]
+    },
+    "hwinfo": {
+      "host": {
+        "hostname": "hgx-h200-233",
+        "cpu_count": 192,
+        "machine": "x86_64",
+        "processor": "x86_64",
+        "kernel": "5.15.0-186-generic",
+        "cpu_model": "INTEL(R) XEON(R) PLATINUM 8558",
+        "mem_total_kb": 2113400636
+      },
+      "stack": {
+        "python": "3.10.12",
+        "platform": "Linux-5.15.0-186-generic-x86_64-with-glibc2.35",
+        "torch": "2.11.0+cu130",
+        "torch_cuda": "13.0",
+        "torch_hip": null,
+        "torch_git": "70d99e998b4955e0049d13a98d77ae1b14db1f45",
+        "cudnn": 91900,
+        "cuda_available": true,
+        "device_count": 1,
+        "cuda_arch_list": [
+          "sm_75",
+          "sm_80",
+          "sm_86",
+          "sm_90",
+          "sm_100",
+          "sm_120"
+        ],
+        "triton": "3.6.0",
+        "triton_file": "/home/guancheng/.local/lib/python3.10/site-packages/triton/__init__.py"
+      },
+      "devices": [
+        {
+          "index": 0,
+          "name": "NVIDIA H200",
+          "uuid": "b2318e71-edbf-aa1b-dcf3-3cc3e6ea7db0",
+          "total_memory": 150109880320,
+          "compute_capability": "9.0",
+          "multi_processor_count": 132
+        }
+      ],
+      "torch_device_properties": {
+        "_index": 0,
+        "L2_cache_size": 62914560,
+        "clock_rate": 1980000,
+        "gcnArchName": "NVIDIA H200",
+        "is_integrated": 0,
+        "is_multi_gpu_board": 0,
+        "major": 9,
+        "max_threads_per_block": 1024,
+        "max_threads_per_multi_processor": 2048,
+        "memory_bus_width": 6016,
+        "memory_clock_rate": 3201000,
+        "minor": 0,
+        "multi_processor_count": 132,
+        "name": "NVIDIA H200",
+        "pci_bus_id": 25,
+        "pci_device_id": 0,
+        "pci_domain_id": 0,
+        "regs_per_multiprocessor": 65536,
+        "shared_memory_per_block": 49152,
+        "shared_memory_per_block_optin": 232448,
+        "shared_memory_per_multiprocessor": 233472,
+        "total_memory": 150109880320,
+        "uuid": "b2318e71-edbf-aa1b-dcf3-3cc3e6ea7db0",
+        "warp_size": 32,
+        "mem_free_bytes": 149557411840,
+        "mem_total_bytes": 150109880320,
+        "compute_capability": "9.0"
+      },
+      "nvidia_smi_static": [
+        {
+          "index": "0",
+          "name": "NVIDIA H200",
+          "uuid": "GPU-b2318e71-edbf-aa1b-dcf3-3cc3e6ea7db0",
+          "serial": "1750225050758",
+          "driver_version": "580.173.02",
+          "vbios_version": "96.00.A5.00.03",
+          "pci.bus_id": "00000000:19:00.0",
+          "pcie.link.gen.max": "5",
+          "pcie.link.width.max": "16",
+          "clocks.max.sm": "1980 MHz",
+          "clocks.max.mem": "3201 MHz",
+          "clocks.max.gr": "1980 MHz",
+          "clocks.default_applications.graphics": "1980 MHz",
+          "clocks.default_applications.memory": "3201 MHz",
+          "ecc.mode.current": "Enabled",
+          "ecc.mode.pending": "Enabled",
+          "mig.mode.current": "Disabled",
+          "mig.mode.pending": "Disabled",
+          "persistence_mode": "Enabled",
+          "compute_mode": "Default",
+          "accounting.mode": "Disabled",
+          "power.max_limit": "700.00 W",
+          "power.min_limit": "200.00 W",
+          "power.default_limit": "700.00 W",
+          "enforced.power.limit": "700.00 W",
+          "memory.total": "143771 MiB"
+        },
+        {
+          "index": "1",
+          "name": "NVIDIA H200",
+          "uuid": "GPU-59aa5198-70aa-0e6f-16b9-a6d483af9c4e",
+          "serial": "1750225056354",
+          "driver_version": "580.173.02",
+          "vbios_version": "96.00.A5.00.03",
+          "pci.bus_id": "00000000:2A:00.0",
+          "pcie.link.gen.max": "5",
+          "pcie.link.width.max": "16",
+          "clocks.max.sm": "1980 MHz",
+          "clocks.max.mem": "3201 MHz",
+          "clocks.max.gr": "1980 MHz",
+          "clocks.default_applications.graphics": "1980 MHz",
+          "clocks.default_applications.memory": "3201 MHz",
+          "ecc.mode.current": "Enabled",
+          "ecc.mode.pending": "Enabled",
+          "mig.mode.current": "Disabled",
+          "mig.mode.pending": "Disabled",
+          "persistence_mode": "Enabled",
+          "compute_mode": "Default",
+          "accounting.mode": "Disabled",
+          "power.max_limit": "700.00 W",
+          "power.min_limit": "200.00 W",
+          "power.default_limit": "700.00 W",
+          "enforced.power.limit": "700.00 W",
+          "memory.total": "143771 MiB"
+        },
+        {
+          "index": "2",
+          "name": "NVIDIA H200",
+          "uuid": "GPU-3eb2bc50-6290-2508-4dc5-e01f05c85e5f",
+          "serial": "1750325032330",
+          "driver_version": "580.173.02",
+          "vbios_version": "96.00.A5.00.03",
+          "pci.bus_id": "00000000:3B:00.0",
+          "pcie.link.gen.max": "5",
+          "pcie.link.width.max": "16",
+          "clocks.max.sm": "1980 MHz",
+          "clocks.max.mem": "3201 MHz",
+          "clocks.max.gr": "1980 MHz",
+          "clocks.default_applications.graphics": "1980 MHz",
+          "clocks.default_applications.memory": "3201 MHz",
+          "ecc.mode.current": "Enabled",
+          "ecc.mode.pending": "Enabled",
+          "mig.mode.current": "Disabled",
+          "mig.mode.pending": "Disabled",
+          "persistence_mode": "Enabled",
+          "compute_mode": "Default",
+          "accounting.mode": "Disabled",
+          "power.max_limit": "700.00 W",
+          "power.min_limit": "200.00 W",
+          "power.default_limit": "700.00 W",
+          "enforced.power.limit": "700.00 W",
+          "memory.total": "143771 MiB"
+        },
+        {
+          "index": "3",
+          "name": "NVIDIA H200",
+          "uuid": "GPU-6c4cc3d3-e0bc-949d-16be-822af843e49f",
+          "serial": "1750225050680",
+          "driver_version": "580.173.02",
+          "vbios_version": "96.00.A5.00.03",
+          "pci.bus_id": "00000000:5D:00.0",
+          "pcie.link.gen.max": "5",
+          "pcie.link.width.max": "16",
+          "clocks.max.sm": "1980 MHz",
+          "clocks.max.mem": "3201 MHz",
+          "clocks.max.gr": "1980 MHz",
+          "clocks.default_applications.graphics": "1980 MHz",
+          "clocks.default_applications.memory": "3201 MHz",
+          "ecc.mode.current": "Enabled",
+          "ecc.mode.pending": "Enabled",
+          "mig.mode.current": "Disabled",
+          "mig.mode.pending": "Disabled",
+          "persistence_mode": "Enabled",
+          "compute_mode": "Default",
+          "accounting.mode": "Disabled",
+          "power.max_limit": "700.00 W",
+          "power.min_limit": "200.00 W",
+          "power.default_limit": "700.00 W",
+          "enforced.power.limit": "700.00 W",
+          "memory.total": "143771 MiB"
+        },
+        {
+          "index": "4",
+          "name": "NVIDIA H200",
+          "uuid": "GPU-c20464a7-77aa-f6f2-9a70-207c42f6b4a1",
+          "serial": "1750225053234",
+          "driver_version": "580.173.02",
+          "vbios_version": "96.00.A5.00.03",
+          "pci.bus_id": "00000000:9B:00.0",
+          "pcie.link.gen.max": "5",
+          "pcie.link.width.max": "16",
+          "clocks.max.sm": "1980 MHz",
+          "clocks.max.mem": "3201 MHz",
+          "clocks.max.gr": "1980 MHz",
+          "clocks.default_applications.graphics": "1980 MHz",
+          "clocks.default_applications.memory": "3201 MHz",
+          "ecc.mode.current": "Enabled",
+          "ecc.mode.pending": "Enabled",
+          "mig.mode.current": "Disabled",
+          "mig.mode.pending": "Disabled",
+          "persistence_mode": "Enabled",
+          "compute_mode": "Default",
+          "accounting.mode": "Disabled",
+          "power.max_limit": "700.00 W",
+          "power.min_limit": "200.00 W",
+          "power.default_limit": "700.00 W",
+          "enforced.power.limit": "700.00 W",
+          "memory.total": "143771 MiB"
+        },
+        {
+          "index": "5",
+          "name": "NVIDIA H200",
+          "uuid": "GPU-2c1d24fb-c9a6-9d6c-fa91-28ea2b50e17f",
+          "serial": "1750225046339",
+          "driver_version": "580.173.02",
+          "vbios_version": "96.00.A5.00.03",
+          "pci.bus_id": "00000000:AB:00.0",
+          "pcie.link.gen.max": "5",
+          "pcie.link.width.max": "16",
+          "clocks.max.sm": "1980 MHz",
+          "clocks.max.mem": "3201 MHz",
+          "clocks.max.gr": "1980 MHz",
+          "clocks.default_applications.graphics": "1980 MHz",
+          "clocks.default_applications.memory": "3201 MHz",
+          "ecc.mode.current": "Enabled",
+          "ecc.mode.pending": "Enabled",
+          "mig.mode.current": "Disabled",
+          "mig.mode.pending": "Disabled",
+          "persistence_mode": "Enabled",
+          "compute_mode": "Default",
+          "accounting.mode": "Disabled",
+          "power.max_limit": "700.00 W",
+          "power.min_limit": "200.00 W",
+          "power.default_limit": "700.00 W",
+          "enforced.power.limit": "700.00 W",
+          "memory.total": "143771 MiB"
+        },
+        {
+          "index": "6",
+          "name": "NVIDIA H200",
+          "uuid": "GPU-338e7fe0-5ca6-f37f-b9b6-ea4ea6c5358b",
+          "serial": "1750225053170",
+          "driver_version": "580.173.02",
+          "vbios_version": "96.00.A5.00.03",
+          "pci.bus_id": "00000000:BB:00.0",
+          "pcie.link.gen.max": "5",
+          "pcie.link.width.max": "16",
+          "clocks.max.sm": "1980 MHz",
+          "clocks.max.mem": "3201 MHz",
+          "clocks.max.gr": "1980 MHz",
+          "clocks.default_applications.graphics": "1980 MHz",
+          "clocks.default_applications.memory": "3201 MHz",
+          "ecc.mode.current": "Enabled",
+          "ecc.mode.pending": "Enabled",
+          "mig.mode.current": "Disabled",
+          "mig.mode.pending": "Disabled",
+          "persistence_mode": "Enabled",
+          "compute_mode": "Default",
+          "accounting.mode": "Disabled",
+          "power.max_limit": "700.00 W",
+          "power.min_limit": "200.00 W",
+          "power.default_limit": "700.00 W",
+          "enforced.power.limit": "700.00 W",
+          "memory.total": "143771 MiB"
+        },
+        {
+          "index": "7",
+          "name": "NVIDIA H200",
+          "uuid": "GPU-3aa19cef-f7a3-bd28-1b5e-2e6d8b8ca670",
+          "serial": "1750225056892",
+          "driver_version": "580.173.02",
+          "vbios_version": "96.00.A5.00.03",
+          "pci.bus_id": "00000000:DB:00.0",
+          "pcie.link.gen.max": "5",
+          "pcie.link.width.max": "16",
+          "clocks.max.sm": "1980 MHz",
+          "clocks.max.mem": "3201 MHz",
+          "clocks.max.gr": "1980 MHz",
+          "clocks.default_applications.graphics": "1980 MHz",
+          "clocks.default_applications.memory": "3201 MHz",
+          "ecc.mode.current": "Enabled",
+          "ecc.mode.pending": "Enabled",
+          "mig.mode.current": "Disabled",
+          "mig.mode.pending": "Disabled",
+          "persistence_mode": "Enabled",
+          "compute_mode": "Default",
+          "accounting.mode": "Disabled",
+          "power.max_limit": "700.00 W",
+          "power.min_limit": "200.00 W",
+          "power.default_limit": "700.00 W",
+          "enforced.power.limit": "700.00 W",
+          "memory.total": "143771 MiB"
+        }
+      ],
+      "nvidia_smi_version": "NVIDIA-SMI version  : 580.173.02\nNVML version        : 580.173\nDRIVER version      : 580.173.02\nCUDA Version        : 13.0",
+      "nvidia_smi_list": "GPU 0: NVIDIA H200 (UUID: GPU-b2318e71-edbf-aa1b-dcf3-3cc3e6ea7db0)\nGPU 1: NVIDIA H200 (UUID: GPU-59aa5198-70aa-0e6f-16b9-a6d483af9c4e)\nGPU 2: NVIDIA H200 (UUID: GPU-3eb2bc50-6290-2508-4dc5-e01f05c85e5f)\nGPU 3: NVIDIA H200 (UUID: GPU-6c4cc3d3-e0bc-949d-16be-822af843e49f)\nGPU 4: NVIDIA H200 (UUID: GPU-c20464a7-77aa-f6f2-9a70-207c42f6b4a1)\nGPU 5: NVIDIA H200 (UUID: GPU-2c1d24fb-c9a6-9d6c-fa91-28ea2b50e17f)\nGPU 6: NVIDIA H200 (UUID: GPU-338e7fe0-5ca6-f37f-b9b6-ea4ea6c5358b)\nGPU 7: NVIDIA H200 (UUID: GPU-3aa19cef-f7a3-bd28-1b5e-2e6d8b8ca670)",
+      "nvidia_smi_clock_report": "\n==============NVSMI LOG==============\n\nTimestamp                                              : Wed Aug  5 16:46:46 2026\nDriver Version                                         : 580.173.02\nCUDA Version                                           : 13.0\n\nAttached GPUs                                          : 8\nGPU 00000000:19:00.0\n    Clocks\n        Graphics                                       : 1980 MHz\n        SM                                             : 1980 MHz\n        Memory                                         : 3201 MHz\n        Video                                          : 1545 MHz\n    Applications Clocks\n        Graphics                                       : 1980 MHz\n        Memory                                         : 3201 MHz\n    Default Applications Clocks\n        Graphics                                       : 1980 MHz\n        Memory                                         : 3201 MHz\n    Deferred Clocks\n        Memory                                         : N/A\n    Max Clocks\n        Graphics                                       : 1980 MHz\n        SM                                             : 1980 MHz\n        Memory                                         : 3201 MHz\n        Video                                          : 1545 MHz\n    Max Customer Boost Clocks\n        Graphics                                       : 1980 MHz\n    SM Clock Samples\n        Duration                                       : Not Found\n        Number of Samples                              : Not Found\n        Max                                            : Not Found\n        Min                                            : Not Found\n        Avg                                            : Not Found\n    Memory Clock Samples\n        Duration                                       : Not Found\n        Number of Samples                              : Not Found\n        Max                                            : Not Found\n        Min                                            : Not Found\n        Avg                                            : Not Found\n    Clock Policy\n        Auto Boost                                     : N/A\n        Auto Boost Default                             : N/A\n\nGPU 00000000:2A:00.0\n    Clocks\n        Graphics                                       : 345 MHz\n        SM                                             : 345 MHz\n        Memory                                         : 3201 MHz\n        Video                                          : 765 MHz\n    Applications Clocks\n        Graphics                                       : 1980 MHz\n        Memory                                         : 3201 MHz\n    Default Applications Clocks\n        Graphics                                       : 1980 MHz\n        Memory                                         : 3201 MHz\n    Deferred Clocks\n        Memory                                         : N/A\n    Max Clocks\n        Graphics                                       : 1980 MHz\n        SM                                             : 1980 MHz\n        Memory                                         : 3201 MHz\n        Video                                          : 1545 MHz\n    Max Customer Boost Clocks\n        Graphics                                       : 1980 MHz\n    SM Clock Samples\n        Duration                                       : Not Found\n        Number of Samples                              : Not Found\n        Max                                            : Not Found\n        Min                                            : Not Found\n        Avg                                            : Not Found\n    Memory Clock Samples\n        Duration                                       : Not Found\n        Number of Samples                              : Not Found\n        Max                                            : Not Found\n        Min                                            : Not Found\n        Avg                               ",
+      "topology": "\tGPU0\tGPU1\tGPU2\tGPU3\tGPU4\tGPU5\tGPU6\tGPU7\tNIC0\tNIC1\tNIC2\tNIC3\tNIC4\tNIC5\tNIC6\tCPU Affinity\tNUMA Affinity\tGPU NUMA ID\nGPU0\t X \tNV18\tNV18\tNV18\tNV18\tNV18\tNV18\tNV18\tNODE\tNODE\tSYS\tSYS\tSYS\tSYS\tSYS\t0-23,96-119\t0\t\tN/A\nGPU1\tNV18\t X \tNV18\tNV18\tNV18\tNV18\tNV18\tNV18\tPIX\tNODE\tSYS\tSYS\tSYS\tSYS\tSYS\t0-23,96-119\t0\t\tN/A\nGPU2\tNV18\tNV18\t X \tNV18\tNV18\tNV18\tNV18\tNV18\tNODE\tPIX\tSYS\tSYS\tSYS\tSYS\tSYS\t0-23,96-119\t0\t\tN/A\nGPU3\tNV18\tNV18\tNV18\t X \tNV18\tNV18\tNV18\tNV18\tSYS\tSYS\tSYS\tSYS\tSYS\tSYS\tSYS\t24-47,120-143\t1\t\tN/A\nGPU4\tNV18\tNV18\tNV18\tNV18\t X \tNV18\tNV18\tNV18\tSYS\tSYS\tPIX\tNODE\tNODE\tSYS\tSYS\t48-71,144-167\t2\t\tN/A\nGPU5\tNV18\tNV18\tNV18\tNV18\tNV18\t X \tNV18\tNV18\tSYS\tSYS\tNODE\tPIX\tNODE\tSYS\tSYS\t48-71,144-167\t2\t\tN/A\nGPU6\tNV18\tNV18\tNV18\tNV18\tNV18\tNV18\t X \tNV18\tSYS\tSYS\tNODE\tNODE\tPIX\tSYS\tSYS\t48-71,144-167\t2\t\tN/A\nGPU7\tNV18\tNV18\tNV18\tNV18\tNV18\tNV18\tNV18\t X \tSYS\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\t72-95,168-191\t3\t\tN/A\nNIC0\tNODE\tPIX\tNODE\tSYS\tSYS\tSYS\tSYS\tSYS\t X \tNODE\tSYS\tSYS\tSYS\tSYS\tSYS\t\t\t\t\nNIC1\tNODE\tNODE\tPIX\tSYS\tSYS\tSYS\tSYS\tSYS\tNODE\t X \tSYS\tSYS\tSYS\tSYS\tSYS\t\t\t\t\nNIC2\tSYS\tSYS\tSYS\tSYS\tPIX\tNODE\tNODE\tSYS\tSYS\tSYS\t X \tNODE\tNODE\tSYS\tSYS\t\t\t\t\nNIC3\tSYS\tSYS\tSYS\tSYS\tNODE\tPIX\tNODE\tSYS\tSYS\tSYS\tNODE\t X \tNODE\tSYS\tSYS\t\t\t\t\nNIC4\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tPIX\tSYS\tSYS\tSYS\tNODE\tNODE\t X \tSYS\tSYS\t\t\t\t\nNIC5\tSYS\tSYS\tSYS\tSYS\tSYS\tSYS\tSYS\tNODE\tSYS\tSYS\tSYS\tSYS\tSYS\t X \tPIX\t\t\t\t\nNIC6\tSYS\tSYS\tSYS\tSYS\tSYS\tSYS\tSYS\tNODE\tSYS\tSYS\tSYS\tSYS\tSYS\tPIX\t X \t\t\t\t\n\nLegend:\n\n  X    = Self\n  SYS  = Connection traversing PCIe as well as the SMP interconnect between NUMA nodes (e.g., QPI/UPI)\n  NODE = Connection traversing PCIe as well as the interconnect between PCIe Host Bridges within a NUMA node\n  PHB  = Connection traversing PCIe as well as a PCIe Host Bridge (typically the CPU)\n  PXB  = Connection traversing multiple PCIe bridges (without traversing the PCIe Host Bridge)\n  PIX  = Connection traversing at most a single PCIe bridge\n  NV#  = Connection traversing a bonded set of # NVLinks\n\nNIC Legend:\n\n  NIC0: mlx5_0\n  NIC1: mlx5_1\n  NIC2: mlx5_2\n  NIC3: mlx5_3\n  NIC4: mlx5_4\n  NIC5: mlx5_5\n  NIC6: mlx5_6\n\n",
+      "nvlink": "GPU 0: NVIDIA H200 (UUID: GPU-b2318e71-edbf-aa1b-dcf3-3cc3e6ea7db0)\n\t Link 0: 26.562 GB/s\n\t Link 1: 26.562 GB/s\n\t Link 2: 26.562 GB/s\n\t Link 3: 26.562 GB/s\n\t Link 4: 26.562 GB/s\n\t Link 5: 26.562 GB/s\n\t Link 6: 26.562 GB/s\n\t Link 7: 26.562 GB/s\n\t Link 8: 26.562 GB/s\n\t Link 9: 26.562 GB/s\n\t Link 10: 26.562 GB/s\n\t Link 11: 26.562 GB/s\n\t Link 12: 26.562 GB/s\n\t Link 13: 26.562 GB/s\n\t Link 14: 26.562 GB/s\n\t Link 15: 26.562 GB/s\n\t Link 16: 26.562 GB/s\n\t Link 17: 26.562 GB/s\nGPU 1: NVIDIA H200 (UUID: GPU-59aa5198-70aa-0e6f-16b9-a6d483af9c4e)\n\t Link 0: 26.562 GB/s\n\t Link 1: 26.562 GB/s\n\t Link 2: 26.562 GB/s\n\t Link 3: 26.562 GB/s\n\t Link 4: 26.562 GB/s\n\t Link 5: 26.562 GB/s\n\t Link 6: 26.562 GB/s\n\t Link 7: 26.562 GB/s\n\t Link 8: 26.562 GB/s\n\t Link 9: 26.562 GB/s\n\t Link 10: 26.562 GB/s\n\t Link 11: 26.562 GB/s\n\t Link 12: 26.562 GB/s\n\t Link 13: 26.562 GB/s\n\t Link 14: 26.562 GB/s\n\t Link 15: 26.562 GB/s\n\t Link 16: 26.562 GB/s\n\t Link 17: 26.562 GB/s\nGPU 2: NVIDIA H200 (UUID: GPU-3eb2bc50-6290-2508-4dc5-e01f05c85e5f)\n\t Link 0: 26.562 GB/s\n\t Link 1: 26.562 GB/s\n\t Link 2: 26.562 GB/s\n\t Link 3: 26.562 GB/s\n\t Link 4: 26.562 GB/s\n\t Link 5: 26.562 GB/s\n\t Link 6: 26.562 GB/s\n\t Link 7: 26.562 GB/s\n\t Link 8: 26.562 GB/s\n\t Link 9: 26.562 GB/s\n\t Link 10: 26.562 GB/s\n\t Link 11: 26.562 GB/s\n\t Link 12: 26.562 GB/s\n\t Link 13: 26.562 GB/s\n\t Link 14: 26.562 GB/s\n\t Link 15: 26.562 GB/s\n\t Link 16: 26.562 GB/s\n\t Link 17: 26.562 GB/s\nGPU 3: NVIDIA H200 (UUID: GPU-6c4cc3d3-e0bc-949d-16be-822af843e49f)\n\t Link 0: 26.562 GB/s\n\t Link 1: 26.562 GB/s\n\t Link 2: 26.562 GB/s\n\t Link 3: 26.562 GB/s\n\t Link 4: 26.562 GB/s\n\t Link 5: 26.562 GB/s\n\t Link 6: 26.562 GB/s\n\t Link 7: 26.562 GB/s\n\t Link 8: 26.562 GB/s\n\t Link 9: 26.562 GB/s\n\t Link 10: 26.562 GB/s\n\t Link 11: 26.562 GB/s\n\t Link 12: 26.562 GB/s\n\t Link 13: 26.562 GB/s\n\t Link 14: 26.562 GB/s\n\t Link 15: 26.562 GB/s\n\t Link 16: 26.562 GB/s\n\t Link 17: 26.562 GB/s\nGPU 4: NVIDIA H200 (UUID: GPU-c20464a7-77aa-f6f2-9a70-207c42f6b4a1)\n\t Link 0: 26.562 GB/s\n\t Link 1: 26.562 GB/s\n",
+      "_static_errors": {},
+      "schema": 1,
+      "collected_at": "2026-08-05 17:20:41",
+      "torch_flags": {
+        "float32_matmul_precision": "highest",
+        "cuda.matmul.allow_tf32": false,
+        "cudnn.allow_tf32": false,
+        "cudnn.benchmark": false,
+        "cuda.matmul.allow_bf16_reduced_precision_reduction": true,
+        "cuda.matmul.allow_fp16_reduced_precision_reduction": true,
+        "env": {
+          "CUDA_VISIBLE_DEVICES": "0",
+          "CUDA_DEVICE_ORDER": "PCI_BUS_ID",
+          "GLM52_RESULTS_DIR": "/home/guancheng/zsh/fusion/results/h200/_f11_layer_rerun",
+          "GLM52_H200_RESULTS_DIR": "/home/guancheng/zsh/fusion/results/h200/_f11_layer_rerun",
+          "GLM52_H200_PREFLIGHT": "/home/guancheng/zsh/fusion/glm52_h200/preflight_h200.json"
+        }
+      },
+      "nvidia_smi_dynamic": [
+        {
+          "index": "0",
+          "uuid": "GPU-b2318e71-edbf-aa1b-dcf3-3cc3e6ea7db0",
+          "pstate": "P0",
+          "clocks.sm": "1980 MHz",
+          "clocks.mem": "3201 MHz",
+          "clocks.gr": "1980 MHz",
+          "clocks.applications.graphics": "1980 MHz",
+          "clocks.applications.memory": "3201 MHz",
+          "clocks_throttle_reasons.active": "0x0000000000000000",
+          "clocks_event_reasons.active": "0x0000000000000000",
+          "power.draw": "439.44 W",
+          "power.limit": "700.00 W",
+          "temperature.gpu": "50",
+          "temperature.memory": "48",
+          "fan.speed": "[N/A]",
+          "utilization.gpu": "0 %",
+          "utilization.memory": "0 %",
+          "memory.used": "40585 MiB",
+          "memory.free": "102572 MiB",
+          "pcie.link.gen.current": "5",
+          "pcie.link.width.current": "16"
+        },
+        {
+          "index": "1",
+          "uuid": "GPU-59aa5198-70aa-0e6f-16b9-a6d483af9c4e",
+          "pstate": "P0",
+          "clocks.sm": "345 MHz",
+          "clocks.mem": "3201 MHz",
+          "clocks.gr": "345 MHz",
+          "clocks.applications.graphics": "1980 MHz",
+          "clocks.applications.memory": "3201 MHz",
+          "clocks_throttle_reasons.active": "0x0000000000000001",
+          "clocks_event_reasons.active": "0x0000000000000001",
+          "power.draw": "81.61 W",
+          "power.limit": "700.00 W",
+          "temperature.gpu": "44",
+          "temperature.memory": "41",
+          "fan.speed": "[N/A]",
+          "utilization.gpu": "0 %",
+          "utilization.memory": "0 %",
+          "memory.used": "0 MiB",
+          "memory.free": "143156 MiB",
+          "pcie.link.gen.current": "5",
+          "pcie.link.width.current": "16"
+        },
+        {
+          "index": "2",
+          "uuid": "GPU-3eb2bc50-6290-2508-4dc5-e01f05c85e5f",
+          "pstate": "P0",
+          "clocks.sm": "345 MHz",
+          "clocks.mem": "3201 MHz",
+          "clocks.gr": "345 MHz",
+          "clocks.applications.graphics": "1980 MHz",
+          "clocks.applications.memory": "3201 MHz",
+          "clocks_throttle_reasons.active": "0x0000000000000001",
+          "clocks_event_reasons.active": "0x0000000000000001",
+          "power.draw": "76.41 W",
+          "power.limit": "700.00 W",
+          "temperature.gpu": "33",
+          "temperature.memory": "31",
+          "fan.speed": "[N/A]",
+          "utilization.gpu": "0 %",
+          "utilization.memory": "0 %",
+          "memory.used": "0 MiB",
+          "memory.free": "143156 MiB",
+          "pcie.link.gen.current": "5",
+          "pcie.link.width.current": "16"
+        },
+        {
+          "index": "3",
+          "uuid": "GPU-6c4cc3d3-e0bc-949d-16be-822af843e49f",
+          "pstate": "P0",
+          "clocks.sm": "345 MHz",
+          "clocks.mem": "3201 MHz",
+          "clocks.gr": "345 MHz",
+          "clocks.applications.graphics": "1980 MHz",
+          "clocks.applications.memory": "3201 MHz",
+          "clocks_throttle_reasons.active": "0x0000000000000001",
+          "clocks_event_reasons.active": "0x0000000000000001",
+          "power.draw": "77.20 W",
+          "power.limit": "700.00 W",
+          "temperature.gpu": "29",
+          "temperature.memory": "29",
+          "fan.speed": "[N/A]",
+          "utilization.gpu": "0 %",
+          "utilization.memory": "0 %",
+          "memory.used": "0 MiB",
+          "memory.free": "143156 MiB",
+          "pcie.link.gen.current": "5",
+          "pcie.link.width.current": "16"
+        },
+        {
+          "index": "4",
+          "uuid": "GPU-c20464a7-77aa-f6f2-9a70-207c42f6b4a1",
+          "pstate": "P0",
+          "clocks.sm": "345 MHz",
+          "clocks.mem": "3201 MHz",
+          "clocks.gr": "345 MHz",
+          "clocks.applications.graphics": "1980 MHz",
+          "clocks.applications.memory": "3201 MHz",
+          "clocks_throttle_reasons.active": "0x0000000000000001",
+          "clocks_event_reasons.active": "0x0000000000000001",
+          "power.draw": "77.61 W",
+          "power.limit": "700.00 W",
+          "temperature.gpu": "31",
+          "temperature.memory": "29",
+          "fan.speed": "[N/A]",
+          "utilization.gpu": "0 %",
+          "utilization.memory": "0 %",
+          "memory.used": "0 MiB",
+          "memory.free": "143156 MiB",
+          "pcie.link.gen.current": "5",
+          "pcie.link.width.current": "16"
+        },
+        {
+          "index": "5",
+          "uuid": "GPU-2c1d24fb-c9a6-9d6c-fa91-28ea2b50e17f",
+          "pstate": "P0",
+          "clocks.sm": "345 MHz",
+          "clocks.mem": "3201 MHz",
+          "clocks.gr": "345 MHz",
+          "clocks.applications.graphics": "1980 MHz",
+          "clocks.applications.memory": "3201 MHz",
+          "clocks_throttle_reasons.active": "0x0000000000000001",
+          "clocks_event_reasons.active": "0x0000000000000001",
+          "power.draw": "74.85 W",
+          "power.limit": "700.00 W",
+          "temperature.gpu": "32",
+          "temperature.memory": "31",
+          "fan.speed": "[N/A]",
+          "utilization.gpu": "0 %",
+          "utilization.memory": "0 %",
+          "memory.used": "0 MiB",
+          "memory.free": "143156 MiB",
+          "pcie.link.gen.current": "5",
+          "pcie.link.width.current": "16"
+        },
+        {
+          "index": "6",
+          "uuid": "GPU-338e7fe0-5ca6-f37f-b9b6-ea4ea6c5358b",
+          "pstate": "P0",
+          "clocks.sm": "345 MHz",
+          "clocks.mem": "3201 MHz",
+          "clocks.gr": "345 MHz",
+          "clocks.applications.graphics": "1980 MHz",
+          "clocks.applications.memory": "3201 MHz",
+          "clocks_throttle_reasons.active": "0x0000000000000001",
+          "clocks_event_reasons.active": "0x0000000000000001",
+          "power.draw": "76.84 W",
+          "power.limit": "700.00 W",
+          "temperature.gpu": "33",
+          "temperature.memory": "30",
+          "fan.speed": "[N/A]",
+          "utilization.gpu": "0 %",
+          "utilization.memory": "0 %",
+          "memory.used": "0 MiB",
+          "memory.free": "143156 MiB",
+          "pcie.link.gen.current": "5",
+          "pcie.link.width.current": "16"
+        },
+        {
+          "index": "7",
+          "uuid": "GPU-3aa19cef-f7a3-bd28-1b5e-2e6d8b8ca670",
+          "pstate": "P0",
+          "clocks.sm": "345 MHz",
+          "clocks.mem": "3201 MHz",
+          "clocks.gr": "345 MHz",
+          "clocks.applications.graphics": "1980 MHz",
+          "clocks.applications.memory": "3201 MHz",
+          "clocks_throttle_reasons.active": "0x0000000000000001",
+          "clocks_event_reasons.active": "0x0000000000000001",
+          "power.draw": "77.69 W",
+          "power.limit": "700.00 W",
+          "temperature.gpu": "29",
+          "temperature.memory": "28",
+          "fan.speed": "[N/A]",
+          "utilization.gpu": "0 %",
+          "utilization.memory": "0 %",
+          "memory.used": "0 MiB",
+          "memory.free": "143156 MiB",
+          "pcie.link.gen.current": "5",
+          "pcie.link.width.current": "16"
+        }
+      ],
+      "nvml_via_torch": {
+        "clock_rate": 1980,
+        "power_draw": 330486,
+        "temperature": 50,
+        "utilization": 0,
+        "memory_usage": 0
+      },
+      "gpu": {
+        "index": "0",
+        "name": "NVIDIA H200",
+        "uuid": "GPU-b2318e71-edbf-aa1b-dcf3-3cc3e6ea7db0",
+        "serial": "1750225050758",
+        "driver_version": "580.173.02",
+        "vbios_version": "96.00.A5.00.03",
+        "pci.bus_id": "00000000:19:00.0",
+        "pcie.link.gen.max": "5",
+        "pcie.link.width.max": "16",
+        "clocks.max.sm": "1980 MHz",
+        "clocks.max.mem": "3201 MHz",
+        "clocks.max.gr": "1980 MHz",
+        "clocks.default_applications.graphics": "1980 MHz",
+        "clocks.default_applications.memory": "3201 MHz",
+        "ecc.mode.current": "Enabled",
+        "ecc.mode.pending": "Enabled",
+        "mig.mode.current": "Disabled",
+        "mig.mode.pending": "Disabled",
+        "persistence_mode": "Enabled",
+        "compute_mode": "Default",
+        "accounting.mode": "Disabled",
+        "power.max_limit": "700.00 W",
+        "power.min_limit": "200.00 W",
+        "power.default_limit": "700.00 W",
+        "enforced.power.limit": "700.00 W",
+        "memory.total": "143771 MiB",
+        "_matched_by": "uuid",
+        "pstate": "P0",
+        "clocks.sm": "1980 MHz",
+        "clocks.mem": "3201 MHz",
+        "clocks.gr": "1980 MHz",
+        "clocks.applications.graphics": "1980 MHz",
+        "clocks.applications.memory": "3201 MHz",
+        "clocks_throttle_reasons.active": "0x0000000000000000",
+        "clocks_event_reasons.active": "0x0000000000000000",
+        "power.draw": "439.44 W",
+        "power.limit": "700.00 W",
+        "temperature.gpu": "50",
+        "temperature.memory": "48",
+        "fan.speed": "[N/A]",
+        "utilization.gpu": "0 %",
+        "utilization.memory": "0 %",
+        "memory.used": "40585 MiB",
+        "memory.free": "102572 MiB",
+        "pcie.link.gen.current": "5",
+        "pcie.link.width.current": "16"
+      },
+      "physical_gpu": {
+        "cuda_ordinal": 0,
+        "uuid": "b2318e71-edbf-aa1b-dcf3-3cc3e6ea7db0",
+        "nvidia_smi_index": 0,
+        "matched_by": "uuid",
+        "cuda_visible_devices": "0",
+        "cuda_device_order": "PCI_BUS_ID"
+      },
+      "clocks": {
+        "state": "unlocked",
+        "basis": [
+          "application clocks equal their defaults"
+        ],
+        "throttle_reasons": [],
+        "sm_mhz": 1980.0,
+        "sm_max_mhz": 1980.0,
+        "sm_frac_of_max": 1.0,
+        "mem_mhz": 3201.0,
+        "mem_max_mhz": 3201.0,
+        "mem_frac_of_max": 1.0,
+        "applications_sm_mhz": 1980.0,
+        "applications_mem_mhz": 3201.0,
+        "default_applications_sm_mhz": 1980.0,
+        "default_applications_mem_mhz": 3201.0
+      },
+      "errors": {}
+    }
+  }
+}

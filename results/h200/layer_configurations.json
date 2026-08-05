@@ -1517,7 +1517,8 @@
         },
         "sq_router": 0,
         "sq_moe": 0
-      }
+      },
+      "f11_rerun_note": "O_f11ab, P_f10_f11ab, Q_f8_f11ab, R_f1_f10_f11ab were re-measured by run_f11_h200.py (session 45887cf0d67241a5); rows carrying `_source.f11_rerun_session` come from that session and are NOT part of `verdict`, which the campaign computed over the configurations timed in ITS interleaved rounds. The tie analysis over the re-measured set is in the top-level `f11_rerun` block."
     },
     "decode_bs32": {
       "T": 32,
@@ -2508,7 +2509,8 @@
         },
         "sq_router": 0,
         "sq_moe": 0
-      }
+      },
+      "f11_rerun_note": "O_f11ab, P_f10_f11ab, Q_f8_f11ab, R_f1_f10_f11ab were re-measured by run_f11_h200.py (session 45887cf0d67241a5); rows carrying `_source.f11_rerun_session` come from that session and are NOT part of `verdict`, which the campaign computed over the configurations timed in ITS interleaved rounds. The tie analysis over the re-measured set is in the top-level `f11_rerun` block."
     },
     "decode_bs256": {
       "T": 256,
@@ -3501,7 +3503,8 @@
         },
         "sq_router": 0,
         "sq_moe": 0
-      }
+      },
+      "f11_rerun_note": "O_f11ab, P_f10_f11ab, Q_f8_f11ab, R_f1_f10_f11ab were re-measured by run_f11_h200.py (session 45887cf0d67241a5); rows carrying `_source.f11_rerun_session` come from that session and are NOT part of `verdict`, which the campaign computed over the configurations timed in ITS interleaved rounds. The tie analysis over the re-measured set is in the top-level `f11_rerun` block."
     },
     "decode_bs512": {
       "T": 512,
@@ -4500,7 +4503,8 @@
         },
         "sq_router": 0,
         "sq_moe": 0
-      }
+      },
+      "f11_rerun_note": "O_f11ab, P_f10_f11ab, Q_f8_f11ab, R_f1_f10_f11ab were re-measured by run_f11_h200.py (session 45887cf0d67241a5); rows carrying `_source.f11_rerun_session` come from that session and are NOT part of `verdict`, which the campaign computed over the configurations timed in ITS interleaved rounds. The tie analysis over the re-measured set is in the top-level `f11_rerun` block."
     },
     "decode_bs1024": {
       "T": 1024,
@@ -5465,7 +5469,8 @@
         },
         "sq_router": 0,
         "sq_moe": 0
-      }
+      },
+      "f11_rerun_note": "O_f11ab, P_f10_f11ab, Q_f8_f11ab, R_f1_f10_f11ab were re-measured by run_f11_h200.py (session 45887cf0d67241a5); rows carrying `_source.f11_rerun_session` come from that session and are NOT part of `verdict`, which the campaign computed over the configurations timed in ITS interleaved rounds. The tie analysis over the re-measured set is in the top-level `f11_rerun` block."
     },
     "prefill_t2048": {
       "T": 2048,
@@ -6420,7 +6425,8 @@
         },
         "sq_router": 0,
         "sq_moe": 0
-      }
+      },
+      "f11_rerun_note": "O_f11ab, P_f10_f11ab, Q_f8_f11ab, R_f1_f10_f11ab were re-measured by run_f11_h200.py (session 45887cf0d67241a5); rows carrying `_source.f11_rerun_session` come from that session and are NOT part of `verdict`, which the campaign computed over the configurations timed in ITS interleaved rounds. The tie analysis over the re-measured set is in the top-level `f11_rerun` block."
     },
     "prefill_t8192": {
       "T": 8192,
@@ -7370,7 +7376,8 @@
         },
         "sq_router": 0,
         "sq_moe": 0
-      }
+      },
+      "f11_rerun_note": "O_f11ab, P_f10_f11ab, Q_f8_f11ab, R_f1_f10_f11ab were re-measured by run_f11_h200.py (session 45887cf0d67241a5); rows carrying `_source.f11_rerun_session` come from that session and are NOT part of `verdict`, which the campaign computed over the configurations timed in ITS interleaved rounds. The tie analysis over the re-measured set is in the top-level `f11_rerun` block."
     }
   },
   "_meta": {
@@ -8094,6 +8101,2030 @@
         "default_applications_mem_mhz": 3201.0
       },
       "errors": {}
-    }
+    },
+    "amendments": [
+      {
+        "at": "2026-08-05 17:20:45",
+        "by": "run_f11_h200.py",
+        "session": "45887cf0d67241a5",
+        "rows": 0,
+        "note": "re-measured #11 whole-layer configurations merged in; every other configuration is the campaign's, untouched"
+      }
+    ]
+  },
+  "f11_rerun": {
+    "schema": 1,
+    "why": "O_f11ab / P_f10_f11ab / Q_f8_f11ab / R_f1_f10_f11ab were excluded from the campaign for failing bench_layer's independent fp32 reference, which was a symptom of the same #11 defect that left f11_lazy_prenorm.json with zero rows. They were re-measured alone by run_f11_h200.py once #11 passed its correctness screen. Their rows in `regimes[*].pass1/pass2/correctness` come from THAT session; every other configuration's rows are the campaign's, untouched. `verdict` is the campaign's and was NOT recomputed -- see `sessions[*].regimes[*].session_verdict` for the tie analysis over the re-measured set, and `anchor_drift` for how far the two sessions' A_all_unfused differ, which bounds how comparable they are.",
+    "sessions": [
+      {
+        "session": "45887cf0d67241a5",
+        "driver": "run_f11_h200.py",
+        "device": "NVIDIA H200",
+        "targets": [
+          "O_f11ab",
+          "P_f10_f11ab",
+          "Q_f8_f11ab",
+          "R_f1_f10_f11ab"
+        ],
+        "anchors_measured_not_merged": [
+          "A_all_unfused",
+          "N_f11b"
+        ],
+        "protocol": {
+          "passes": 2,
+          "rounds_per_pass": 8,
+          "rep_per_round": 15,
+          "rule": "within a round every candidate is timed once, in a fixed order that reverses on odd rounds; a winner is declared only when its gap to the runner-up exceeds the round-to-round spread of BOTH, in BOTH passes, and both passes name the same configuration -- otherwise the set is reported as TIED",
+          "why": "the C500 first pass produced winners with a 0.2-0.4 % margin on a machine documented to throw 25-320 % one-off excursions; that margin is not resolvable in one pass (LOG-11 3)"
+        },
+        "staging_payload_meta": {
+          "schema": 1,
+          "harness": "glm52_h200/common.py",
+          "recorded_at": "2026-08-05 17:20:41",
+          "device": "NVIDIA H200",
+          "visible_devices": "0",
+          "torch": "2.11.0+cu130",
+          "results_dir": "/home/guancheng/zsh/fusion/results/h200/_f11_layer_rerun",
+          "harness_info": {
+            "_errors": {},
+            "cuda_available": true,
+            "device_name": "NVIDIA H200",
+            "compute_capability": "9.0",
+            "num_sm": 132,
+            "warp_size": 32,
+            "smem_per_block_optin": 232448,
+            "smem_per_sm": 233472,
+            "regs_per_sm": 65536,
+            "threads_per_sm": 2048,
+            "l2_bytes": 62914560,
+            "total_memory": 150109880320,
+            "uuid": "b2318e71-edbf-aa1b-dcf3-3cc3e6ea7db0",
+            "mem_free_bytes": 149557411840,
+            "mem_total_bytes": 150109880320,
+            "torch": "2.11.0+cu130",
+            "triton": "3.6.0",
+            "flush_bytes": 268435456,
+            "flush_source": "max(256MB, 4 x L2=60MB)",
+            "timer_tick_ms": 3.2e-05,
+            "features": {
+              "source": "ok",
+              "cc": "9.0",
+              "sm90": true,
+              "tma": true,
+              "clusters": true,
+              "warp_specialize": true,
+              "ws": true,
+              "num_consumer_groups": false,
+              "dot_bf16": true,
+              "disabled": []
+            },
+            "preflight": {
+              "status": "ok",
+              "path": "/home/guancheng/zsh/fusion/glm52_h200/preflight_h200.json",
+              "timestamp": "2026-08-05 16:11:06",
+              "bandwidth_GBs": 4245.389537231806,
+              "gemm_TFs": 821.339040190349,
+              "launch_ms": 0.009023999529225486
+            },
+            "nvidia_smi": [
+              {
+                "name": "NVIDIA H200",
+                "driver_version": "580.173.02",
+                "pstate": "P0",
+                "clocks.max.sm": "1980 MHz",
+                "enforced.power.limit": "700.00 W",
+                "ecc.mode.current": "Enabled",
+                "mig.mode.current": "Disabled",
+                "persistence_mode": "Enabled"
+              },
+              {
+                "name": "NVIDIA H200",
+                "driver_version": "580.173.02",
+                "pstate": "P0",
+                "clocks.max.sm": "1980 MHz",
+                "enforced.power.limit": "700.00 W",
+                "ecc.mode.current": "Enabled",
+                "mig.mode.current": "Disabled",
+                "persistence_mode": "Enabled"
+              },
+              {
+                "name": "NVIDIA H200",
+                "driver_version": "580.173.02",
+                "pstate": "P0",
+                "clocks.max.sm": "1980 MHz",
+                "enforced.power.limit": "700.00 W",
+                "ecc.mode.current": "Enabled",
+                "mig.mode.current": "Disabled",
+                "persistence_mode": "Enabled"
+              },
+              {
+                "name": "NVIDIA H200",
+                "driver_version": "580.173.02",
+                "pstate": "P0",
+                "clocks.max.sm": "1980 MHz",
+                "enforced.power.limit": "700.00 W",
+                "ecc.mode.current": "Enabled",
+                "mig.mode.current": "Disabled",
+                "persistence_mode": "Enabled"
+              },
+              {
+                "name": "NVIDIA H200",
+                "driver_version": "580.173.02",
+                "pstate": "P0",
+                "clocks.max.sm": "1980 MHz",
+                "enforced.power.limit": "700.00 W",
+                "ecc.mode.current": "Enabled",
+                "mig.mode.current": "Disabled",
+                "persistence_mode": "Enabled"
+              },
+              {
+                "name": "NVIDIA H200",
+                "driver_version": "580.173.02",
+                "pstate": "P0",
+                "clocks.max.sm": "1980 MHz",
+                "enforced.power.limit": "700.00 W",
+                "ecc.mode.current": "Enabled",
+                "mig.mode.current": "Disabled",
+                "persistence_mode": "Enabled"
+              },
+              {
+                "name": "NVIDIA H200",
+                "driver_version": "580.173.02",
+                "pstate": "P0",
+                "clocks.max.sm": "1980 MHz",
+                "enforced.power.limit": "700.00 W",
+                "ecc.mode.current": "Enabled",
+                "mig.mode.current": "Disabled",
+                "persistence_mode": "Enabled"
+              },
+              {
+                "name": "NVIDIA H200",
+                "driver_version": "580.173.02",
+                "pstate": "P0",
+                "clocks.max.sm": "1980 MHz",
+                "enforced.power.limit": "700.00 W",
+                "ecc.mode.current": "Enabled",
+                "mig.mode.current": "Disabled",
+                "persistence_mode": "Enabled"
+              }
+            ]
+          },
+          "hwinfo": {
+            "host": {
+              "hostname": "hgx-h200-233",
+              "cpu_count": 192,
+              "machine": "x86_64",
+              "processor": "x86_64",
+              "kernel": "5.15.0-186-generic",
+              "cpu_model": "INTEL(R) XEON(R) PLATINUM 8558",
+              "mem_total_kb": 2113400636
+            },
+            "stack": {
+              "python": "3.10.12",
+              "platform": "Linux-5.15.0-186-generic-x86_64-with-glibc2.35",
+              "torch": "2.11.0+cu130",
+              "torch_cuda": "13.0",
+              "torch_hip": null,
+              "torch_git": "70d99e998b4955e0049d13a98d77ae1b14db1f45",
+              "cudnn": 91900,
+              "cuda_available": true,
+              "device_count": 1,
+              "cuda_arch_list": [
+                "sm_75",
+                "sm_80",
+                "sm_86",
+                "sm_90",
+                "sm_100",
+                "sm_120"
+              ],
+              "triton": "3.6.0",
+              "triton_file": "/home/guancheng/.local/lib/python3.10/site-packages/triton/__init__.py"
+            },
+            "devices": [
+              {
+                "index": 0,
+                "name": "NVIDIA H200",
+                "uuid": "b2318e71-edbf-aa1b-dcf3-3cc3e6ea7db0",
+                "total_memory": 150109880320,
+                "compute_capability": "9.0",
+                "multi_processor_count": 132
+              }
+            ],
+            "torch_device_properties": {
+              "_index": 0,
+              "L2_cache_size": 62914560,
+              "clock_rate": 1980000,
+              "gcnArchName": "NVIDIA H200",
+              "is_integrated": 0,
+              "is_multi_gpu_board": 0,
+              "major": 9,
+              "max_threads_per_block": 1024,
+              "max_threads_per_multi_processor": 2048,
+              "memory_bus_width": 6016,
+              "memory_clock_rate": 3201000,
+              "minor": 0,
+              "multi_processor_count": 132,
+              "name": "NVIDIA H200",
+              "pci_bus_id": 25,
+              "pci_device_id": 0,
+              "pci_domain_id": 0,
+              "regs_per_multiprocessor": 65536,
+              "shared_memory_per_block": 49152,
+              "shared_memory_per_block_optin": 232448,
+              "shared_memory_per_multiprocessor": 233472,
+              "total_memory": 150109880320,
+              "uuid": "b2318e71-edbf-aa1b-dcf3-3cc3e6ea7db0",
+              "warp_size": 32,
+              "mem_free_bytes": 149557411840,
+              "mem_total_bytes": 150109880320,
+              "compute_capability": "9.0"
+            },
+            "nvidia_smi_static": [
+              {
+                "index": "0",
+                "name": "NVIDIA H200",
+                "uuid": "GPU-b2318e71-edbf-aa1b-dcf3-3cc3e6ea7db0",
+                "serial": "1750225050758",
+                "driver_version": "580.173.02",
+                "vbios_version": "96.00.A5.00.03",
+                "pci.bus_id": "00000000:19:00.0",
+                "pcie.link.gen.max": "5",
+                "pcie.link.width.max": "16",
+                "clocks.max.sm": "1980 MHz",
+                "clocks.max.mem": "3201 MHz",
+                "clocks.max.gr": "1980 MHz",
+                "clocks.default_applications.graphics": "1980 MHz",
+                "clocks.default_applications.memory": "3201 MHz",
+                "ecc.mode.current": "Enabled",
+                "ecc.mode.pending": "Enabled",
+                "mig.mode.current": "Disabled",
+                "mig.mode.pending": "Disabled",
+                "persistence_mode": "Enabled",
+                "compute_mode": "Default",
+                "accounting.mode": "Disabled",
+                "power.max_limit": "700.00 W",
+                "power.min_limit": "200.00 W",
+                "power.default_limit": "700.00 W",
+                "enforced.power.limit": "700.00 W",
+                "memory.total": "143771 MiB"
+              },
+              {
+                "index": "1",
+                "name": "NVIDIA H200",
+                "uuid": "GPU-59aa5198-70aa-0e6f-16b9-a6d483af9c4e",
+                "serial": "1750225056354",
+                "driver_version": "580.173.02",
+                "vbios_version": "96.00.A5.00.03",
+                "pci.bus_id": "00000000:2A:00.0",
+                "pcie.link.gen.max": "5",
+                "pcie.link.width.max": "16",
+                "clocks.max.sm": "1980 MHz",
+                "clocks.max.mem": "3201 MHz",
+                "clocks.max.gr": "1980 MHz",
+                "clocks.default_applications.graphics": "1980 MHz",
+                "clocks.default_applications.memory": "3201 MHz",
+                "ecc.mode.current": "Enabled",
+                "ecc.mode.pending": "Enabled",
+                "mig.mode.current": "Disabled",
+                "mig.mode.pending": "Disabled",
+                "persistence_mode": "Enabled",
+                "compute_mode": "Default",
+                "accounting.mode": "Disabled",
+                "power.max_limit": "700.00 W",
+                "power.min_limit": "200.00 W",
+                "power.default_limit": "700.00 W",
+                "enforced.power.limit": "700.00 W",
+                "memory.total": "143771 MiB"
+              },
+              {
+                "index": "2",
+                "name": "NVIDIA H200",
+                "uuid": "GPU-3eb2bc50-6290-2508-4dc5-e01f05c85e5f",
+                "serial": "1750325032330",
+                "driver_version": "580.173.02",
+                "vbios_version": "96.00.A5.00.03",
+                "pci.bus_id": "00000000:3B:00.0",
+                "pcie.link.gen.max": "5",
+                "pcie.link.width.max": "16",
+                "clocks.max.sm": "1980 MHz",
+                "clocks.max.mem": "3201 MHz",
+                "clocks.max.gr": "1980 MHz",
+                "clocks.default_applications.graphics": "1980 MHz",
+                "clocks.default_applications.memory": "3201 MHz",
+                "ecc.mode.current": "Enabled",
+                "ecc.mode.pending": "Enabled",
+                "mig.mode.current": "Disabled",
+                "mig.mode.pending": "Disabled",
+                "persistence_mode": "Enabled",
+                "compute_mode": "Default",
+                "accounting.mode": "Disabled",
+                "power.max_limit": "700.00 W",
+                "power.min_limit": "200.00 W",
+                "power.default_limit": "700.00 W",
+                "enforced.power.limit": "700.00 W",
+                "memory.total": "143771 MiB"
+              },
+              {
+                "index": "3",
+                "name": "NVIDIA H200",
+                "uuid": "GPU-6c4cc3d3-e0bc-949d-16be-822af843e49f",
+                "serial": "1750225050680",
+                "driver_version": "580.173.02",
+                "vbios_version": "96.00.A5.00.03",
+                "pci.bus_id": "00000000:5D:00.0",
+                "pcie.link.gen.max": "5",
+                "pcie.link.width.max": "16",
+                "clocks.max.sm": "1980 MHz",
+                "clocks.max.mem": "3201 MHz",
+                "clocks.max.gr": "1980 MHz",
+                "clocks.default_applications.graphics": "1980 MHz",
+                "clocks.default_applications.memory": "3201 MHz",
+                "ecc.mode.current": "Enabled",
+                "ecc.mode.pending": "Enabled",
+                "mig.mode.current": "Disabled",
+                "mig.mode.pending": "Disabled",
+                "persistence_mode": "Enabled",
+                "compute_mode": "Default",
+                "accounting.mode": "Disabled",
+                "power.max_limit": "700.00 W",
+                "power.min_limit": "200.00 W",
+                "power.default_limit": "700.00 W",
+                "enforced.power.limit": "700.00 W",
+                "memory.total": "143771 MiB"
+              },
+              {
+                "index": "4",
+                "name": "NVIDIA H200",
+                "uuid": "GPU-c20464a7-77aa-f6f2-9a70-207c42f6b4a1",
+                "serial": "1750225053234",
+                "driver_version": "580.173.02",
+                "vbios_version": "96.00.A5.00.03",
+                "pci.bus_id": "00000000:9B:00.0",
+                "pcie.link.gen.max": "5",
+                "pcie.link.width.max": "16",
+                "clocks.max.sm": "1980 MHz",
+                "clocks.max.mem": "3201 MHz",
+                "clocks.max.gr": "1980 MHz",
+                "clocks.default_applications.graphics": "1980 MHz",
+                "clocks.default_applications.memory": "3201 MHz",
+                "ecc.mode.current": "Enabled",
+                "ecc.mode.pending": "Enabled",
+                "mig.mode.current": "Disabled",
+                "mig.mode.pending": "Disabled",
+                "persistence_mode": "Enabled",
+                "compute_mode": "Default",
+                "accounting.mode": "Disabled",
+                "power.max_limit": "700.00 W",
+                "power.min_limit": "200.00 W",
+                "power.default_limit": "700.00 W",
+                "enforced.power.limit": "700.00 W",
+                "memory.total": "143771 MiB"
+              },
+              {
+                "index": "5",
+                "name": "NVIDIA H200",
+                "uuid": "GPU-2c1d24fb-c9a6-9d6c-fa91-28ea2b50e17f",
+                "serial": "1750225046339",
+                "driver_version": "580.173.02",
+                "vbios_version": "96.00.A5.00.03",
+                "pci.bus_id": "00000000:AB:00.0",
+                "pcie.link.gen.max": "5",
+                "pcie.link.width.max": "16",
+                "clocks.max.sm": "1980 MHz",
+                "clocks.max.mem": "3201 MHz",
+                "clocks.max.gr": "1980 MHz",
+                "clocks.default_applications.graphics": "1980 MHz",
+                "clocks.default_applications.memory": "3201 MHz",
+                "ecc.mode.current": "Enabled",
+                "ecc.mode.pending": "Enabled",
+                "mig.mode.current": "Disabled",
+                "mig.mode.pending": "Disabled",
+                "persistence_mode": "Enabled",
+                "compute_mode": "Default",
+                "accounting.mode": "Disabled",
+                "power.max_limit": "700.00 W",
+                "power.min_limit": "200.00 W",
+                "power.default_limit": "700.00 W",
+                "enforced.power.limit": "700.00 W",
+                "memory.total": "143771 MiB"
+              },
+              {
+                "index": "6",
+                "name": "NVIDIA H200",
+                "uuid": "GPU-338e7fe0-5ca6-f37f-b9b6-ea4ea6c5358b",
+                "serial": "1750225053170",
+                "driver_version": "580.173.02",
+                "vbios_version": "96.00.A5.00.03",
+                "pci.bus_id": "00000000:BB:00.0",
+                "pcie.link.gen.max": "5",
+                "pcie.link.width.max": "16",
+                "clocks.max.sm": "1980 MHz",
+                "clocks.max.mem": "3201 MHz",
+                "clocks.max.gr": "1980 MHz",
+                "clocks.default_applications.graphics": "1980 MHz",
+                "clocks.default_applications.memory": "3201 MHz",
+                "ecc.mode.current": "Enabled",
+                "ecc.mode.pending": "Enabled",
+                "mig.mode.current": "Disabled",
+                "mig.mode.pending": "Disabled",
+                "persistence_mode": "Enabled",
+                "compute_mode": "Default",
+                "accounting.mode": "Disabled",
+                "power.max_limit": "700.00 W",
+                "power.min_limit": "200.00 W",
+                "power.default_limit": "700.00 W",
+                "enforced.power.limit": "700.00 W",
+                "memory.total": "143771 MiB"
+              },
+              {
+                "index": "7",
+                "name": "NVIDIA H200",
+                "uuid": "GPU-3aa19cef-f7a3-bd28-1b5e-2e6d8b8ca670",
+                "serial": "1750225056892",
+                "driver_version": "580.173.02",
+                "vbios_version": "96.00.A5.00.03",
+                "pci.bus_id": "00000000:DB:00.0",
+                "pcie.link.gen.max": "5",
+                "pcie.link.width.max": "16",
+                "clocks.max.sm": "1980 MHz",
+                "clocks.max.mem": "3201 MHz",
+                "clocks.max.gr": "1980 MHz",
+                "clocks.default_applications.graphics": "1980 MHz",
+                "clocks.default_applications.memory": "3201 MHz",
+                "ecc.mode.current": "Enabled",
+                "ecc.mode.pending": "Enabled",
+                "mig.mode.current": "Disabled",
+                "mig.mode.pending": "Disabled",
+                "persistence_mode": "Enabled",
+                "compute_mode": "Default",
+                "accounting.mode": "Disabled",
+                "power.max_limit": "700.00 W",
+                "power.min_limit": "200.00 W",
+                "power.default_limit": "700.00 W",
+                "enforced.power.limit": "700.00 W",
+                "memory.total": "143771 MiB"
+              }
+            ],
+            "nvidia_smi_version": "NVIDIA-SMI version  : 580.173.02\nNVML version        : 580.173\nDRIVER version      : 580.173.02\nCUDA Version        : 13.0",
+            "nvidia_smi_list": "GPU 0: NVIDIA H200 (UUID: GPU-b2318e71-edbf-aa1b-dcf3-3cc3e6ea7db0)\nGPU 1: NVIDIA H200 (UUID: GPU-59aa5198-70aa-0e6f-16b9-a6d483af9c4e)\nGPU 2: NVIDIA H200 (UUID: GPU-3eb2bc50-6290-2508-4dc5-e01f05c85e5f)\nGPU 3: NVIDIA H200 (UUID: GPU-6c4cc3d3-e0bc-949d-16be-822af843e49f)\nGPU 4: NVIDIA H200 (UUID: GPU-c20464a7-77aa-f6f2-9a70-207c42f6b4a1)\nGPU 5: NVIDIA H200 (UUID: GPU-2c1d24fb-c9a6-9d6c-fa91-28ea2b50e17f)\nGPU 6: NVIDIA H200 (UUID: GPU-338e7fe0-5ca6-f37f-b9b6-ea4ea6c5358b)\nGPU 7: NVIDIA H200 (UUID: GPU-3aa19cef-f7a3-bd28-1b5e-2e6d8b8ca670)",
+            "nvidia_smi_clock_report": "\n==============NVSMI LOG==============\n\nTimestamp                                              : Wed Aug  5 16:46:46 2026\nDriver Version                                         : 580.173.02\nCUDA Version                                           : 13.0\n\nAttached GPUs                                          : 8\nGPU 00000000:19:00.0\n    Clocks\n        Graphics                                       : 1980 MHz\n        SM                                             : 1980 MHz\n        Memory                                         : 3201 MHz\n        Video                                          : 1545 MHz\n    Applications Clocks\n        Graphics                                       : 1980 MHz\n        Memory                                         : 3201 MHz\n    Default Applications Clocks\n        Graphics                                       : 1980 MHz\n        Memory                                         : 3201 MHz\n    Deferred Clocks\n        Memory                                         : N/A\n    Max Clocks\n        Graphics                                       : 1980 MHz\n        SM                                             : 1980 MHz\n        Memory                                         : 3201 MHz\n        Video                                          : 1545 MHz\n    Max Customer Boost Clocks\n        Graphics                                       : 1980 MHz\n    SM Clock Samples\n        Duration                                       : Not Found\n        Number of Samples                              : Not Found\n        Max                                            : Not Found\n        Min                                            : Not Found\n        Avg                                            : Not Found\n    Memory Clock Samples\n        Duration                                       : Not Found\n        Number of Samples                              : Not Found\n        Max                                            : Not Found\n        Min                                            : Not Found\n        Avg                                            : Not Found\n    Clock Policy\n        Auto Boost                                     : N/A\n        Auto Boost Default                             : N/A\n\nGPU 00000000:2A:00.0\n    Clocks\n        Graphics                                       : 345 MHz\n        SM                                             : 345 MHz\n        Memory                                         : 3201 MHz\n        Video                                          : 765 MHz\n    Applications Clocks\n        Graphics                                       : 1980 MHz\n        Memory                                         : 3201 MHz\n    Default Applications Clocks\n        Graphics                                       : 1980 MHz\n        Memory                                         : 3201 MHz\n    Deferred Clocks\n        Memory                                         : N/A\n    Max Clocks\n        Graphics                                       : 1980 MHz\n        SM                                             : 1980 MHz\n        Memory                                         : 3201 MHz\n        Video                                          : 1545 MHz\n    Max Customer Boost Clocks\n        Graphics                                       : 1980 MHz\n    SM Clock Samples\n        Duration                                       : Not Found\n        Number of Samples                              : Not Found\n        Max                                            : Not Found\n        Min                                            : Not Found\n        Avg                                            : Not Found\n    Memory Clock Samples\n        Duration                                       : Not Found\n        Number of Samples                              : Not Found\n        Max                                            : Not Found\n        Min                                            : Not Found\n        Avg                               ",
+            "topology": "\tGPU0\tGPU1\tGPU2\tGPU3\tGPU4\tGPU5\tGPU6\tGPU7\tNIC0\tNIC1\tNIC2\tNIC3\tNIC4\tNIC5\tNIC6\tCPU Affinity\tNUMA Affinity\tGPU NUMA ID\nGPU0\t X \tNV18\tNV18\tNV18\tNV18\tNV18\tNV18\tNV18\tNODE\tNODE\tSYS\tSYS\tSYS\tSYS\tSYS\t0-23,96-119\t0\t\tN/A\nGPU1\tNV18\t X \tNV18\tNV18\tNV18\tNV18\tNV18\tNV18\tPIX\tNODE\tSYS\tSYS\tSYS\tSYS\tSYS\t0-23,96-119\t0\t\tN/A\nGPU2\tNV18\tNV18\t X \tNV18\tNV18\tNV18\tNV18\tNV18\tNODE\tPIX\tSYS\tSYS\tSYS\tSYS\tSYS\t0-23,96-119\t0\t\tN/A\nGPU3\tNV18\tNV18\tNV18\t X \tNV18\tNV18\tNV18\tNV18\tSYS\tSYS\tSYS\tSYS\tSYS\tSYS\tSYS\t24-47,120-143\t1\t\tN/A\nGPU4\tNV18\tNV18\tNV18\tNV18\t X \tNV18\tNV18\tNV18\tSYS\tSYS\tPIX\tNODE\tNODE\tSYS\tSYS\t48-71,144-167\t2\t\tN/A\nGPU5\tNV18\tNV18\tNV18\tNV18\tNV18\t X \tNV18\tNV18\tSYS\tSYS\tNODE\tPIX\tNODE\tSYS\tSYS\t48-71,144-167\t2\t\tN/A\nGPU6\tNV18\tNV18\tNV18\tNV18\tNV18\tNV18\t X \tNV18\tSYS\tSYS\tNODE\tNODE\tPIX\tSYS\tSYS\t48-71,144-167\t2\t\tN/A\nGPU7\tNV18\tNV18\tNV18\tNV18\tNV18\tNV18\tNV18\t X \tSYS\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\t72-95,168-191\t3\t\tN/A\nNIC0\tNODE\tPIX\tNODE\tSYS\tSYS\tSYS\tSYS\tSYS\t X \tNODE\tSYS\tSYS\tSYS\tSYS\tSYS\t\t\t\t\nNIC1\tNODE\tNODE\tPIX\tSYS\tSYS\tSYS\tSYS\tSYS\tNODE\t X \tSYS\tSYS\tSYS\tSYS\tSYS\t\t\t\t\nNIC2\tSYS\tSYS\tSYS\tSYS\tPIX\tNODE\tNODE\tSYS\tSYS\tSYS\t X \tNODE\tNODE\tSYS\tSYS\t\t\t\t\nNIC3\tSYS\tSYS\tSYS\tSYS\tNODE\tPIX\tNODE\tSYS\tSYS\tSYS\tNODE\t X \tNODE\tSYS\tSYS\t\t\t\t\nNIC4\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tPIX\tSYS\tSYS\tSYS\tNODE\tNODE\t X \tSYS\tSYS\t\t\t\t\nNIC5\tSYS\tSYS\tSYS\tSYS\tSYS\tSYS\tSYS\tNODE\tSYS\tSYS\tSYS\tSYS\tSYS\t X \tPIX\t\t\t\t\nNIC6\tSYS\tSYS\tSYS\tSYS\tSYS\tSYS\tSYS\tNODE\tSYS\tSYS\tSYS\tSYS\tSYS\tPIX\t X \t\t\t\t\n\nLegend:\n\n  X    = Self\n  SYS  = Connection traversing PCIe as well as the SMP interconnect between NUMA nodes (e.g., QPI/UPI)\n  NODE = Connection traversing PCIe as well as the interconnect between PCIe Host Bridges within a NUMA node\n  PHB  = Connection traversing PCIe as well as a PCIe Host Bridge (typically the CPU)\n  PXB  = Connection traversing multiple PCIe bridges (without traversing the PCIe Host Bridge)\n  PIX  = Connection traversing at most a single PCIe bridge\n  NV#  = Connection traversing a bonded set of # NVLinks\n\nNIC Legend:\n\n  NIC0: mlx5_0\n  NIC1: mlx5_1\n  NIC2: mlx5_2\n  NIC3: mlx5_3\n  NIC4: mlx5_4\n  NIC5: mlx5_5\n  NIC6: mlx5_6\n\n",
+            "nvlink": "GPU 0: NVIDIA H200 (UUID: GPU-b2318e71-edbf-aa1b-dcf3-3cc3e6ea7db0)\n\t Link 0: 26.562 GB/s\n\t Link 1: 26.562 GB/s\n\t Link 2: 26.562 GB/s\n\t Link 3: 26.562 GB/s\n\t Link 4: 26.562 GB/s\n\t Link 5: 26.562 GB/s\n\t Link 6: 26.562 GB/s\n\t Link 7: 26.562 GB/s\n\t Link 8: 26.562 GB/s\n\t Link 9: 26.562 GB/s\n\t Link 10: 26.562 GB/s\n\t Link 11: 26.562 GB/s\n\t Link 12: 26.562 GB/s\n\t Link 13: 26.562 GB/s\n\t Link 14: 26.562 GB/s\n\t Link 15: 26.562 GB/s\n\t Link 16: 26.562 GB/s\n\t Link 17: 26.562 GB/s\nGPU 1: NVIDIA H200 (UUID: GPU-59aa5198-70aa-0e6f-16b9-a6d483af9c4e)\n\t Link 0: 26.562 GB/s\n\t Link 1: 26.562 GB/s\n\t Link 2: 26.562 GB/s\n\t Link 3: 26.562 GB/s\n\t Link 4: 26.562 GB/s\n\t Link 5: 26.562 GB/s\n\t Link 6: 26.562 GB/s\n\t Link 7: 26.562 GB/s\n\t Link 8: 26.562 GB/s\n\t Link 9: 26.562 GB/s\n\t Link 10: 26.562 GB/s\n\t Link 11: 26.562 GB/s\n\t Link 12: 26.562 GB/s\n\t Link 13: 26.562 GB/s\n\t Link 14: 26.562 GB/s\n\t Link 15: 26.562 GB/s\n\t Link 16: 26.562 GB/s\n\t Link 17: 26.562 GB/s\nGPU 2: NVIDIA H200 (UUID: GPU-3eb2bc50-6290-2508-4dc5-e01f05c85e5f)\n\t Link 0: 26.562 GB/s\n\t Link 1: 26.562 GB/s\n\t Link 2: 26.562 GB/s\n\t Link 3: 26.562 GB/s\n\t Link 4: 26.562 GB/s\n\t Link 5: 26.562 GB/s\n\t Link 6: 26.562 GB/s\n\t Link 7: 26.562 GB/s\n\t Link 8: 26.562 GB/s\n\t Link 9: 26.562 GB/s\n\t Link 10: 26.562 GB/s\n\t Link 11: 26.562 GB/s\n\t Link 12: 26.562 GB/s\n\t Link 13: 26.562 GB/s\n\t Link 14: 26.562 GB/s\n\t Link 15: 26.562 GB/s\n\t Link 16: 26.562 GB/s\n\t Link 17: 26.562 GB/s\nGPU 3: NVIDIA H200 (UUID: GPU-6c4cc3d3-e0bc-949d-16be-822af843e49f)\n\t Link 0: 26.562 GB/s\n\t Link 1: 26.562 GB/s\n\t Link 2: 26.562 GB/s\n\t Link 3: 26.562 GB/s\n\t Link 4: 26.562 GB/s\n\t Link 5: 26.562 GB/s\n\t Link 6: 26.562 GB/s\n\t Link 7: 26.562 GB/s\n\t Link 8: 26.562 GB/s\n\t Link 9: 26.562 GB/s\n\t Link 10: 26.562 GB/s\n\t Link 11: 26.562 GB/s\n\t Link 12: 26.562 GB/s\n\t Link 13: 26.562 GB/s\n\t Link 14: 26.562 GB/s\n\t Link 15: 26.562 GB/s\n\t Link 16: 26.562 GB/s\n\t Link 17: 26.562 GB/s\nGPU 4: NVIDIA H200 (UUID: GPU-c20464a7-77aa-f6f2-9a70-207c42f6b4a1)\n\t Link 0: 26.562 GB/s\n\t Link 1: 26.562 GB/s\n",
+            "_static_errors": {},
+            "schema": 1,
+            "collected_at": "2026-08-05 17:20:41",
+            "torch_flags": {
+              "float32_matmul_precision": "highest",
+              "cuda.matmul.allow_tf32": false,
+              "cudnn.allow_tf32": false,
+              "cudnn.benchmark": false,
+              "cuda.matmul.allow_bf16_reduced_precision_reduction": true,
+              "cuda.matmul.allow_fp16_reduced_precision_reduction": true,
+              "env": {
+                "CUDA_VISIBLE_DEVICES": "0",
+                "CUDA_DEVICE_ORDER": "PCI_BUS_ID",
+                "GLM52_RESULTS_DIR": "/home/guancheng/zsh/fusion/results/h200/_f11_layer_rerun",
+                "GLM52_H200_RESULTS_DIR": "/home/guancheng/zsh/fusion/results/h200/_f11_layer_rerun",
+                "GLM52_H200_PREFLIGHT": "/home/guancheng/zsh/fusion/glm52_h200/preflight_h200.json"
+              }
+            },
+            "nvidia_smi_dynamic": [
+              {
+                "index": "0",
+                "uuid": "GPU-b2318e71-edbf-aa1b-dcf3-3cc3e6ea7db0",
+                "pstate": "P0",
+                "clocks.sm": "1980 MHz",
+                "clocks.mem": "3201 MHz",
+                "clocks.gr": "1980 MHz",
+                "clocks.applications.graphics": "1980 MHz",
+                "clocks.applications.memory": "3201 MHz",
+                "clocks_throttle_reasons.active": "0x0000000000000000",
+                "clocks_event_reasons.active": "0x0000000000000000",
+                "power.draw": "439.44 W",
+                "power.limit": "700.00 W",
+                "temperature.gpu": "50",
+                "temperature.memory": "48",
+                "fan.speed": "[N/A]",
+                "utilization.gpu": "0 %",
+                "utilization.memory": "0 %",
+                "memory.used": "40585 MiB",
+                "memory.free": "102572 MiB",
+                "pcie.link.gen.current": "5",
+                "pcie.link.width.current": "16"
+              },
+              {
+                "index": "1",
+                "uuid": "GPU-59aa5198-70aa-0e6f-16b9-a6d483af9c4e",
+                "pstate": "P0",
+                "clocks.sm": "345 MHz",
+                "clocks.mem": "3201 MHz",
+                "clocks.gr": "345 MHz",
+                "clocks.applications.graphics": "1980 MHz",
+                "clocks.applications.memory": "3201 MHz",
+                "clocks_throttle_reasons.active": "0x0000000000000001",
+                "clocks_event_reasons.active": "0x0000000000000001",
+                "power.draw": "81.61 W",
+                "power.limit": "700.00 W",
+                "temperature.gpu": "44",
+                "temperature.memory": "41",
+                "fan.speed": "[N/A]",
+                "utilization.gpu": "0 %",
+                "utilization.memory": "0 %",
+                "memory.used": "0 MiB",
+                "memory.free": "143156 MiB",
+                "pcie.link.gen.current": "5",
+                "pcie.link.width.current": "16"
+              },
+              {
+                "index": "2",
+                "uuid": "GPU-3eb2bc50-6290-2508-4dc5-e01f05c85e5f",
+                "pstate": "P0",
+                "clocks.sm": "345 MHz",
+                "clocks.mem": "3201 MHz",
+                "clocks.gr": "345 MHz",
+                "clocks.applications.graphics": "1980 MHz",
+                "clocks.applications.memory": "3201 MHz",
+                "clocks_throttle_reasons.active": "0x0000000000000001",
+                "clocks_event_reasons.active": "0x0000000000000001",
+                "power.draw": "76.41 W",
+                "power.limit": "700.00 W",
+                "temperature.gpu": "33",
+                "temperature.memory": "31",
+                "fan.speed": "[N/A]",
+                "utilization.gpu": "0 %",
+                "utilization.memory": "0 %",
+                "memory.used": "0 MiB",
+                "memory.free": "143156 MiB",
+                "pcie.link.gen.current": "5",
+                "pcie.link.width.current": "16"
+              },
+              {
+                "index": "3",
+                "uuid": "GPU-6c4cc3d3-e0bc-949d-16be-822af843e49f",
+                "pstate": "P0",
+                "clocks.sm": "345 MHz",
+                "clocks.mem": "3201 MHz",
+                "clocks.gr": "345 MHz",
+                "clocks.applications.graphics": "1980 MHz",
+                "clocks.applications.memory": "3201 MHz",
+                "clocks_throttle_reasons.active": "0x0000000000000001",
+                "clocks_event_reasons.active": "0x0000000000000001",
+                "power.draw": "77.20 W",
+                "power.limit": "700.00 W",
+                "temperature.gpu": "29",
+                "temperature.memory": "29",
+                "fan.speed": "[N/A]",
+                "utilization.gpu": "0 %",
+                "utilization.memory": "0 %",
+                "memory.used": "0 MiB",
+                "memory.free": "143156 MiB",
+                "pcie.link.gen.current": "5",
+                "pcie.link.width.current": "16"
+              },
+              {
+                "index": "4",
+                "uuid": "GPU-c20464a7-77aa-f6f2-9a70-207c42f6b4a1",
+                "pstate": "P0",
+                "clocks.sm": "345 MHz",
+                "clocks.mem": "3201 MHz",
+                "clocks.gr": "345 MHz",
+                "clocks.applications.graphics": "1980 MHz",
+                "clocks.applications.memory": "3201 MHz",
+                "clocks_throttle_reasons.active": "0x0000000000000001",
+                "clocks_event_reasons.active": "0x0000000000000001",
+                "power.draw": "77.61 W",
+                "power.limit": "700.00 W",
+                "temperature.gpu": "31",
+                "temperature.memory": "29",
+                "fan.speed": "[N/A]",
+                "utilization.gpu": "0 %",
+                "utilization.memory": "0 %",
+                "memory.used": "0 MiB",
+                "memory.free": "143156 MiB",
+                "pcie.link.gen.current": "5",
+                "pcie.link.width.current": "16"
+              },
+              {
+                "index": "5",
+                "uuid": "GPU-2c1d24fb-c9a6-9d6c-fa91-28ea2b50e17f",
+                "pstate": "P0",
+                "clocks.sm": "345 MHz",
+                "clocks.mem": "3201 MHz",
+                "clocks.gr": "345 MHz",
+                "clocks.applications.graphics": "1980 MHz",
+                "clocks.applications.memory": "3201 MHz",
+                "clocks_throttle_reasons.active": "0x0000000000000001",
+                "clocks_event_reasons.active": "0x0000000000000001",
+                "power.draw": "74.85 W",
+                "power.limit": "700.00 W",
+                "temperature.gpu": "32",
+                "temperature.memory": "31",
+                "fan.speed": "[N/A]",
+                "utilization.gpu": "0 %",
+                "utilization.memory": "0 %",
+                "memory.used": "0 MiB",
+                "memory.free": "143156 MiB",
+                "pcie.link.gen.current": "5",
+                "pcie.link.width.current": "16"
+              },
+              {
+                "index": "6",
+                "uuid": "GPU-338e7fe0-5ca6-f37f-b9b6-ea4ea6c5358b",
+                "pstate": "P0",
+                "clocks.sm": "345 MHz",
+                "clocks.mem": "3201 MHz",
+                "clocks.gr": "345 MHz",
+                "clocks.applications.graphics": "1980 MHz",
+                "clocks.applications.memory": "3201 MHz",
+                "clocks_throttle_reasons.active": "0x0000000000000001",
+                "clocks_event_reasons.active": "0x0000000000000001",
+                "power.draw": "76.84 W",
+                "power.limit": "700.00 W",
+                "temperature.gpu": "33",
+                "temperature.memory": "30",
+                "fan.speed": "[N/A]",
+                "utilization.gpu": "0 %",
+                "utilization.memory": "0 %",
+                "memory.used": "0 MiB",
+                "memory.free": "143156 MiB",
+                "pcie.link.gen.current": "5",
+                "pcie.link.width.current": "16"
+              },
+              {
+                "index": "7",
+                "uuid": "GPU-3aa19cef-f7a3-bd28-1b5e-2e6d8b8ca670",
+                "pstate": "P0",
+                "clocks.sm": "345 MHz",
+                "clocks.mem": "3201 MHz",
+                "clocks.gr": "345 MHz",
+                "clocks.applications.graphics": "1980 MHz",
+                "clocks.applications.memory": "3201 MHz",
+                "clocks_throttle_reasons.active": "0x0000000000000001",
+                "clocks_event_reasons.active": "0x0000000000000001",
+                "power.draw": "77.69 W",
+                "power.limit": "700.00 W",
+                "temperature.gpu": "29",
+                "temperature.memory": "28",
+                "fan.speed": "[N/A]",
+                "utilization.gpu": "0 %",
+                "utilization.memory": "0 %",
+                "memory.used": "0 MiB",
+                "memory.free": "143156 MiB",
+                "pcie.link.gen.current": "5",
+                "pcie.link.width.current": "16"
+              }
+            ],
+            "nvml_via_torch": {
+              "clock_rate": 1980,
+              "power_draw": 330486,
+              "temperature": 50,
+              "utilization": 0,
+              "memory_usage": 0
+            },
+            "gpu": {
+              "index": "0",
+              "name": "NVIDIA H200",
+              "uuid": "GPU-b2318e71-edbf-aa1b-dcf3-3cc3e6ea7db0",
+              "serial": "1750225050758",
+              "driver_version": "580.173.02",
+              "vbios_version": "96.00.A5.00.03",
+              "pci.bus_id": "00000000:19:00.0",
+              "pcie.link.gen.max": "5",
+              "pcie.link.width.max": "16",
+              "clocks.max.sm": "1980 MHz",
+              "clocks.max.mem": "3201 MHz",
+              "clocks.max.gr": "1980 MHz",
+              "clocks.default_applications.graphics": "1980 MHz",
+              "clocks.default_applications.memory": "3201 MHz",
+              "ecc.mode.current": "Enabled",
+              "ecc.mode.pending": "Enabled",
+              "mig.mode.current": "Disabled",
+              "mig.mode.pending": "Disabled",
+              "persistence_mode": "Enabled",
+              "compute_mode": "Default",
+              "accounting.mode": "Disabled",
+              "power.max_limit": "700.00 W",
+              "power.min_limit": "200.00 W",
+              "power.default_limit": "700.00 W",
+              "enforced.power.limit": "700.00 W",
+              "memory.total": "143771 MiB",
+              "_matched_by": "uuid",
+              "pstate": "P0",
+              "clocks.sm": "1980 MHz",
+              "clocks.mem": "3201 MHz",
+              "clocks.gr": "1980 MHz",
+              "clocks.applications.graphics": "1980 MHz",
+              "clocks.applications.memory": "3201 MHz",
+              "clocks_throttle_reasons.active": "0x0000000000000000",
+              "clocks_event_reasons.active": "0x0000000000000000",
+              "power.draw": "439.44 W",
+              "power.limit": "700.00 W",
+              "temperature.gpu": "50",
+              "temperature.memory": "48",
+              "fan.speed": "[N/A]",
+              "utilization.gpu": "0 %",
+              "utilization.memory": "0 %",
+              "memory.used": "40585 MiB",
+              "memory.free": "102572 MiB",
+              "pcie.link.gen.current": "5",
+              "pcie.link.width.current": "16"
+            },
+            "physical_gpu": {
+              "cuda_ordinal": 0,
+              "uuid": "b2318e71-edbf-aa1b-dcf3-3cc3e6ea7db0",
+              "nvidia_smi_index": 0,
+              "matched_by": "uuid",
+              "cuda_visible_devices": "0",
+              "cuda_device_order": "PCI_BUS_ID"
+            },
+            "clocks": {
+              "state": "unlocked",
+              "basis": [
+                "application clocks equal their defaults"
+              ],
+              "throttle_reasons": [],
+              "sm_mhz": 1980.0,
+              "sm_max_mhz": 1980.0,
+              "sm_frac_of_max": 1.0,
+              "mem_mhz": 3201.0,
+              "mem_max_mhz": 3201.0,
+              "mem_frac_of_max": 1.0,
+              "applications_sm_mhz": 1980.0,
+              "applications_mem_mhz": 3201.0,
+              "default_applications_sm_mhz": 1980.0,
+              "default_applications_mem_mhz": 3201.0
+            },
+            "errors": {}
+          }
+        },
+        "rows_from_this_session": [],
+        "n_rows_from_this_session": 0,
+        "regimes": {
+          "decode_bs1": {
+            "session_verdict": {
+              "winner": null,
+              "status": "TIED",
+              "tied_set": [
+                "O_f11ab",
+                "P_f10_f11ab",
+                "Q_f8_f11ab",
+                "R_f1_f10_f11ab"
+              ],
+              "pass1": {
+                "best": "R_f1_f10_f11ab",
+                "runner_up": "P_f10_f11ab",
+                "gap_ms": 0.04177600145339966,
+                "noise_ms": 0.0921279788017273,
+                "separated": false,
+                "tied_set": [
+                  "R_f1_f10_f11ab",
+                  "P_f10_f11ab",
+                  "Q_f8_f11ab",
+                  "O_f11ab"
+                ],
+                "order": [
+                  "R_f1_f10_f11ab",
+                  "P_f10_f11ab",
+                  "Q_f8_f11ab",
+                  "O_f11ab",
+                  "N_f11b",
+                  "A_all_unfused"
+                ]
+              },
+              "pass2": {
+                "best": "R_f1_f10_f11ab",
+                "runner_up": "P_f10_f11ab",
+                "gap_ms": 0.04339200258255005,
+                "noise_ms": 0.006655991077423096,
+                "separated": true,
+                "tied_set": [
+                  "R_f1_f10_f11ab"
+                ],
+                "order": [
+                  "R_f1_f10_f11ab",
+                  "P_f10_f11ab",
+                  "Q_f8_f11ab",
+                  "O_f11ab",
+                  "N_f11b",
+                  "A_all_unfused"
+                ]
+              },
+              "agree_on_best": true,
+              "median_of_passes": {
+                "A_all_unfused": 0.564968004822731,
+                "N_f11b": 0.5618959963321686,
+                "O_f11ab": 0.5167680084705353,
+                "P_f10_f11ab": 0.48420000076293945,
+                "Q_f8_f11ab": 0.4952159970998764,
+                "R_f1_f10_f11ab": 0.4416159987449646
+              }
+            },
+            "session_median_of_passes": {
+              "A_all_unfused": 0.564968004822731,
+              "N_f11b": 0.5618959963321686,
+              "O_f11ab": 0.5167680084705353,
+              "P_f10_f11ab": 0.48420000076293945,
+              "Q_f8_f11ab": 0.4952159970998764,
+              "R_f1_f10_f11ab": 0.4416159987449646
+            },
+            "session_correctness": {
+              "A_all_unfused": {
+                "rel_err": 0.008849557489156723,
+                "ok": true,
+                "n_kernels": 14,
+                "sel": {
+                  "resadd1": "separate",
+                  "norm": "split",
+                  "gateup": "split",
+                  "down": "split"
+                }
+              },
+              "N_f11b": {
+                "rel_err": 0.008849557489156723,
+                "ok": true,
+                "n_kernels": 14,
+                "sel": {
+                  "resadd1": "separate",
+                  "norm": "split",
+                  "gateup": "split",
+                  "down": "split",
+                  "prenorm": "router"
+                }
+              },
+              "O_f11ab": {
+                "rel_err": 0.008849557489156723,
+                "ok": true,
+                "n_kernels": 13,
+                "sel": {
+                  "resadd1": "separate",
+                  "norm": "split",
+                  "gateup": "split",
+                  "down": "split",
+                  "prenorm": "all"
+                }
+              },
+              "P_f10_f11ab": {
+                "rel_err": 0.008849557489156723,
+                "ok": true,
+                "n_kernels": 12,
+                "sel": {
+                  "resadd1": "separate",
+                  "norm": "split",
+                  "gateup": "split",
+                  "down": "merge_f10",
+                  "prenorm": "all"
+                }
+              },
+              "Q_f8_f11ab": {
+                "rel_err": 0.008849557489156723,
+                "ok": true,
+                "n_kernels": 13,
+                "sel": {
+                  "resadd1": "separate",
+                  "norm": "split",
+                  "gateup": "split",
+                  "down": "atomic8",
+                  "prenorm": "all"
+                }
+              },
+              "R_f1_f10_f11ab": {
+                "rel_err": 0.006637168116867542,
+                "ok": true,
+                "n_kernels": 11,
+                "sel": {
+                  "resadd1": "in_oproj",
+                  "norm": "split",
+                  "gateup": "split",
+                  "down": "merge_f10",
+                  "prenorm": "all"
+                }
+              }
+            },
+            "session_paired_head_vs_unfused": {
+              "head": "O_f11ab",
+              "head_ms": 1.0195519924163818,
+              "all_unfused_ms": 1.1142719984054565,
+              "paired_speedup_p50": 1.0928621314004778,
+              "paired_speedup_trimmed": 1.0943991038052834,
+              "pair_meta": {
+                "drift_frac_fused": -0.3182646041375412,
+                "drift_frac_unfused": -0.3513429658882404,
+                "frac_fused_faster": 0.9666666666666667,
+                "machine": {
+                  "compare": {
+                    "elapsed_s": 0.47051048278808594,
+                    "d_sm_mhz": 0.0,
+                    "sm_rel": 0.0,
+                    "d_mem_mhz": 0.0,
+                    "d_temp_c": -1.0,
+                    "d_power_w": -92.1,
+                    "new_throttle": [],
+                    "suspect": false,
+                    "reasons": []
+                  }
+                },
+                "n": 30,
+                "n_discarded": 0,
+                "noflush_ratio_p50": NaN,
+                "order_gap_frac": 0.017623048369181604,
+                "ratio_of_medians": 1.0929035563596754,
+                "ratio_p10": 1.0482981519383545,
+                "ratio_p50": 1.0928621314004778,
+                "ratio_p50_first_half": 1.1001945037351966,
+                "ratio_p50_fused_first": 1.0855159260947298,
+                "ratio_p50_second_half": 1.088692549863588,
+                "ratio_p50_unfused_first": 1.1048160896235146,
+                "ratio_p90": 1.18704770290677,
+                "ratio_trimmed": 1.0943991038052834,
+                "tick": {
+                  "tick_ms": 3.2e-05,
+                  "fused_ticks": 31860.999763011932,
+                  "unfused_ticks": 34820.99995017052,
+                  "gap_ticks": 2960.0001871585846,
+                  "ratio_quantisation_frac": 6.010463683853589e-05,
+                  "flagged": false,
+                  "note": "well above timer granularity"
+                },
+                "impl": "common.bench_pair",
+                "interleaved": true,
+                "paired_speedup_p50": 1.0928621314004778,
+                "paired_speedup_trimmed_mean": 1.0943991038052834,
+                "paired_speedup_p10": 1.0482981519383545,
+                "paired_speedup_p90": 1.18704770290677
+              },
+              "tick": {
+                "timer_tick_us": 0.032,
+                "timer_tick_match_frac": 1.0,
+                "calibration_trusted": true,
+                "fused_ticks": 31860.999763011932,
+                "unfused_ticks": 34820.99995017052,
+                "gap_ticks": 2960.0001871585846,
+                "tick_limited": false,
+                "quantisation_pct": 0.003138633462346401
+              }
+            },
+            "session_shared_expert_ms": {
+              "w13": 0.05500800162553787,
+              "act": 0.005535999778658152,
+              "w2": 0.024607999250292778
+            },
+            "anchor": "A_all_unfused",
+            "anchor_ms_this_session": 0.564968004822731,
+            "speedup_vs_unfused_this_session": {
+              "O_f11ab": 1.093272020640078,
+              "P_f10_f11ab": 1.1668071126239732,
+              "Q_f8_f11ab": 1.1408516851865487,
+              "R_f1_f10_f11ab": 1.2793196044262944
+            },
+            "decisions": {
+              "O_f11ab": {
+                "state": "canonical_row_kept",
+                "fresh_ok": true,
+                "fresh_rel_err": 0.008849557489156723,
+                "fresh_error": null
+              },
+              "P_f10_f11ab": {
+                "state": "canonical_row_kept",
+                "fresh_ok": true,
+                "fresh_rel_err": 0.008849557489156723,
+                "fresh_error": null
+              },
+              "Q_f8_f11ab": {
+                "state": "canonical_row_kept",
+                "fresh_ok": true,
+                "fresh_rel_err": 0.008849557489156723,
+                "fresh_error": null
+              },
+              "R_f1_f10_f11ab": {
+                "state": "canonical_row_kept",
+                "fresh_ok": true,
+                "fresh_rel_err": 0.006637168116867542,
+                "fresh_error": null
+              }
+            },
+            "anchor_ms_campaign": 0.5570719987154007,
+            "anchor_drift_pct": 1.417412134434757
+          },
+          "decode_bs1024": {
+            "session_verdict": {
+              "winner": null,
+              "status": "TIED",
+              "tied_set": [
+                "A_all_unfused",
+                "N_f11b"
+              ],
+              "pass1": {
+                "best": "A_all_unfused",
+                "runner_up": "N_f11b",
+                "gap_ms": 0.012431859970092773,
+                "noise_ms": 0.7017917633056641,
+                "separated": false,
+                "tied_set": [
+                  "A_all_unfused",
+                  "N_f11b"
+                ],
+                "order": [
+                  "A_all_unfused",
+                  "N_f11b"
+                ]
+              },
+              "pass2": {
+                "best": "N_f11b",
+                "runner_up": "A_all_unfused",
+                "gap_ms": 0.05135989189147949,
+                "noise_ms": 0.1893758773803711,
+                "separated": false,
+                "tied_set": [
+                  "N_f11b",
+                  "A_all_unfused"
+                ],
+                "order": [
+                  "N_f11b",
+                  "A_all_unfused"
+                ]
+              },
+              "agree_on_best": false,
+              "median_of_passes": {
+                "A_all_unfused": 5.5174880027771,
+                "N_f11b": 5.498023986816406
+              }
+            },
+            "session_median_of_passes": {
+              "A_all_unfused": 5.5174880027771,
+              "N_f11b": 5.498023986816406
+            },
+            "session_correctness": {
+              "A_all_unfused": {
+                "rel_err": 0.008620689623057842,
+                "ok": true,
+                "n_kernels": 14,
+                "sel": {
+                  "resadd1": "separate",
+                  "norm": "split",
+                  "gateup": "split",
+                  "down": "split"
+                }
+              },
+              "N_f11b": {
+                "rel_err": 0.008620689623057842,
+                "ok": true,
+                "n_kernels": 14,
+                "sel": {
+                  "resadd1": "separate",
+                  "norm": "split",
+                  "gateup": "split",
+                  "down": "split",
+                  "prenorm": "router"
+                }
+              },
+              "O_f11ab": {
+                "rel_err": 0.16091954708099365,
+                "ok": false,
+                "n_kernels": 13,
+                "sel": {
+                  "resadd1": "separate",
+                  "norm": "split",
+                  "gateup": "split",
+                  "down": "split",
+                  "prenorm": "all"
+                }
+              },
+              "P_f10_f11ab": {
+                "rel_err": 0.20043103396892548,
+                "ok": false,
+                "n_kernels": 12,
+                "sel": {
+                  "resadd1": "separate",
+                  "norm": "split",
+                  "gateup": "split",
+                  "down": "merge_f10",
+                  "prenorm": "all"
+                }
+              },
+              "Q_f8_f11ab": {
+                "rel_err": 0.19216954708099365,
+                "ok": false,
+                "n_kernels": 13,
+                "sel": {
+                  "resadd1": "separate",
+                  "norm": "split",
+                  "gateup": "split",
+                  "down": "atomic8",
+                  "prenorm": "all"
+                }
+              },
+              "R_f1_f10_f11ab": {
+                "rel_err": 0.19181033968925476,
+                "ok": false,
+                "n_kernels": 11,
+                "sel": {
+                  "resadd1": "in_oproj",
+                  "norm": "split",
+                  "gateup": "split",
+                  "down": "merge_f10",
+                  "prenorm": "all"
+                }
+              }
+            },
+            "session_paired_head_vs_unfused": null,
+            "session_shared_expert_ms": {
+              "w13": 0.09276799857616425,
+              "act": 0.00886400043964386,
+              "w2": 0.05488000065088272
+            },
+            "anchor": "A_all_unfused",
+            "anchor_ms_this_session": 5.5174880027771,
+            "speedup_vs_unfused_this_session": {},
+            "decisions": {
+              "O_f11ab": {
+                "state": "not_merged_re_measurement_failed",
+                "fresh_ok": false,
+                "fresh_rel_err": 0.16091954708099365,
+                "fresh_error": null
+              },
+              "P_f10_f11ab": {
+                "state": "not_merged_re_measurement_failed",
+                "fresh_ok": false,
+                "fresh_rel_err": 0.20043103396892548,
+                "fresh_error": null
+              },
+              "Q_f8_f11ab": {
+                "state": "not_merged_re_measurement_failed",
+                "fresh_ok": false,
+                "fresh_rel_err": 0.19216954708099365,
+                "fresh_error": null
+              },
+              "R_f1_f10_f11ab": {
+                "state": "not_merged_re_measurement_failed",
+                "fresh_ok": false,
+                "fresh_rel_err": 0.19181033968925476,
+                "fresh_error": null
+              }
+            },
+            "anchor_ms_campaign": 5.559847950935364,
+            "anchor_drift_pct": -0.7618904065737574
+          },
+          "decode_bs256": {
+            "session_verdict": {
+              "winner": null,
+              "status": "TIED",
+              "tied_set": [
+                "A_all_unfused",
+                "N_f11b"
+              ],
+              "pass1": {
+                "best": "A_all_unfused",
+                "runner_up": "N_f11b",
+                "gap_ms": 0.01337575912475586,
+                "noise_ms": 0.02131175994873047,
+                "separated": false,
+                "tied_set": [
+                  "A_all_unfused",
+                  "N_f11b"
+                ],
+                "order": [
+                  "A_all_unfused",
+                  "N_f11b"
+                ]
+              },
+              "pass2": {
+                "best": "A_all_unfused",
+                "runner_up": "N_f11b",
+                "gap_ms": 0.013391971588134766,
+                "noise_ms": 0.012832164764404297,
+                "separated": true,
+                "tied_set": [
+                  "A_all_unfused"
+                ],
+                "order": [
+                  "A_all_unfused",
+                  "N_f11b"
+                ]
+              },
+              "agree_on_best": true,
+              "median_of_passes": {
+                "A_all_unfused": 4.645008087158203,
+                "N_f11b": 4.658391952514648
+              }
+            },
+            "session_median_of_passes": {
+              "A_all_unfused": 4.645008087158203,
+              "N_f11b": 4.658391952514648
+            },
+            "session_correctness": {
+              "A_all_unfused": {
+                "rel_err": 0.006535947788506746,
+                "ok": true,
+                "n_kernels": 14,
+                "sel": {
+                  "resadd1": "separate",
+                  "norm": "split",
+                  "gateup": "split",
+                  "down": "split"
+                }
+              },
+              "N_f11b": {
+                "rel_err": 0.006535947788506746,
+                "ok": true,
+                "n_kernels": 14,
+                "sel": {
+                  "resadd1": "separate",
+                  "norm": "split",
+                  "gateup": "split",
+                  "down": "split",
+                  "prenorm": "router"
+                }
+              },
+              "O_f11ab": {
+                "rel_err": 0.17483660578727722,
+                "ok": false,
+                "n_kernels": 13,
+                "sel": {
+                  "resadd1": "separate",
+                  "norm": "split",
+                  "gateup": "split",
+                  "down": "split",
+                  "prenorm": "all"
+                }
+              },
+              "P_f10_f11ab": {
+                "rel_err": 0.21119281649589539,
+                "ok": false,
+                "n_kernels": 12,
+                "sel": {
+                  "resadd1": "separate",
+                  "norm": "split",
+                  "gateup": "split",
+                  "down": "merge_f10",
+                  "prenorm": "all"
+                }
+              },
+              "Q_f8_f11ab": {
+                "rel_err": 0.2083333283662796,
+                "ok": false,
+                "n_kernels": 13,
+                "sel": {
+                  "resadd1": "separate",
+                  "norm": "split",
+                  "gateup": "split",
+                  "down": "atomic8",
+                  "prenorm": "all"
+                }
+              },
+              "R_f1_f10_f11ab": {
+                "rel_err": 0.21486927568912506,
+                "ok": false,
+                "n_kernels": 11,
+                "sel": {
+                  "resadd1": "in_oproj",
+                  "norm": "split",
+                  "gateup": "split",
+                  "down": "merge_f10",
+                  "prenorm": "all"
+                }
+              }
+            },
+            "session_paired_head_vs_unfused": null,
+            "session_shared_expert_ms": {
+              "w13": 0.057023998349905014,
+              "act": 0.0066559999249875546,
+              "w2": 0.026528000831604004
+            },
+            "anchor": "A_all_unfused",
+            "anchor_ms_this_session": 4.645008087158203,
+            "speedup_vs_unfused_this_session": {},
+            "decisions": {
+              "O_f11ab": {
+                "state": "not_merged_re_measurement_failed",
+                "fresh_ok": false,
+                "fresh_rel_err": 0.17483660578727722,
+                "fresh_error": null
+              },
+              "P_f10_f11ab": {
+                "state": "not_merged_re_measurement_failed",
+                "fresh_ok": false,
+                "fresh_rel_err": 0.21119281649589539,
+                "fresh_error": null
+              },
+              "Q_f8_f11ab": {
+                "state": "not_merged_re_measurement_failed",
+                "fresh_ok": false,
+                "fresh_rel_err": 0.2083333283662796,
+                "fresh_error": null
+              },
+              "R_f1_f10_f11ab": {
+                "state": "not_merged_re_measurement_failed",
+                "fresh_ok": false,
+                "fresh_rel_err": 0.21486927568912506,
+                "fresh_error": null
+              }
+            },
+            "anchor_ms_campaign": 4.706568002700806,
+            "anchor_drift_pct": -1.3079576351022049
+          },
+          "decode_bs32": {
+            "session_verdict": {
+              "winner": "N_f11b",
+              "status": "SEPARATED",
+              "tied_set": [
+                "N_f11b"
+              ],
+              "pass1": {
+                "best": "N_f11b",
+                "runner_up": "A_all_unfused",
+                "gap_ms": 0.03284800052642822,
+                "noise_ms": 0.0029439926147460938,
+                "separated": true,
+                "tied_set": [
+                  "N_f11b"
+                ],
+                "order": [
+                  "N_f11b",
+                  "A_all_unfused"
+                ]
+              },
+              "pass2": {
+                "best": "N_f11b",
+                "runner_up": "A_all_unfused",
+                "gap_ms": 0.03403198719024658,
+                "noise_ms": 0.0031359195709228516,
+                "separated": true,
+                "tied_set": [
+                  "N_f11b"
+                ],
+                "order": [
+                  "N_f11b",
+                  "A_all_unfused"
+                ]
+              },
+              "agree_on_best": true,
+              "median_of_passes": {
+                "A_all_unfused": 2.9974640011787415,
+                "N_f11b": 2.964024007320404
+              }
+            },
+            "session_median_of_passes": {
+              "A_all_unfused": 2.9974640011787415,
+              "N_f11b": 2.964024007320404
+            },
+            "session_correctness": {
+              "A_all_unfused": {
+                "rel_err": 0.006493506487458944,
+                "ok": true,
+                "n_kernels": 14,
+                "sel": {
+                  "resadd1": "separate",
+                  "norm": "split",
+                  "gateup": "split",
+                  "down": "split"
+                }
+              },
+              "N_f11b": {
+                "rel_err": 0.006493506487458944,
+                "ok": true,
+                "n_kernels": 14,
+                "sel": {
+                  "resadd1": "separate",
+                  "norm": "split",
+                  "gateup": "split",
+                  "down": "split",
+                  "prenorm": "router"
+                }
+              },
+              "O_f11ab": {
+                "rel_err": 0.16558441519737244,
+                "ok": false,
+                "n_kernels": 13,
+                "sel": {
+                  "resadd1": "separate",
+                  "norm": "split",
+                  "gateup": "split",
+                  "down": "split",
+                  "prenorm": "all"
+                }
+              },
+              "P_f10_f11ab": {
+                "rel_err": 0.16923701763153076,
+                "ok": false,
+                "n_kernels": 12,
+                "sel": {
+                  "resadd1": "separate",
+                  "norm": "split",
+                  "gateup": "split",
+                  "down": "merge_f10",
+                  "prenorm": "all"
+                }
+              },
+              "Q_f8_f11ab": {
+                "rel_err": 0.1952110379934311,
+                "ok": false,
+                "n_kernels": 13,
+                "sel": {
+                  "resadd1": "separate",
+                  "norm": "split",
+                  "gateup": "split",
+                  "down": "atomic8",
+                  "prenorm": "all"
+                }
+              },
+              "R_f1_f10_f11ab": {
+                "rel_err": 0.1696428507566452,
+                "ok": false,
+                "n_kernels": 11,
+                "sel": {
+                  "resadd1": "in_oproj",
+                  "norm": "split",
+                  "gateup": "split",
+                  "down": "merge_f10",
+                  "prenorm": "all"
+                }
+              }
+            },
+            "session_paired_head_vs_unfused": {
+              "head": "N_f11b",
+              "head_ms": 2.9637439250946045,
+              "all_unfused_ms": 2.997152090072632,
+              "paired_speedup_p50": 1.0114416326767175,
+              "paired_speedup_trimmed": 1.0113871205354943,
+              "pair_meta": {
+                "drift_frac_fused": -0.001052551148645252,
+                "drift_frac_unfused": -0.0003682249208948617,
+                "frac_fused_faster": 0.9666666666666667,
+                "machine": {
+                  "compare": {
+                    "elapsed_s": 0.47904062271118164,
+                    "d_sm_mhz": 0.0,
+                    "sm_rel": 0.0,
+                    "d_mem_mhz": 0.0,
+                    "d_temp_c": -2.0,
+                    "d_power_w": -140.76999999999998,
+                    "new_throttle": [],
+                    "suspect": false,
+                    "reasons": []
+                  }
+                },
+                "n": 30,
+                "n_discarded": 0,
+                "noflush_ratio_p50": NaN,
+                "order_gap_frac": 0.0005258261766804857,
+                "ratio_of_medians": 1.011272284590836,
+                "ratio_p10": 1.008814907206172,
+                "ratio_p50": 1.0114416326767175,
+                "ratio_p50_first_half": 1.0110486067817197,
+                "ratio_p50_fused_first": 1.0117797320744861,
+                "ratio_p50_second_half": 1.0114416326767175,
+                "ratio_p50_unfused_first": 1.011247851644653,
+                "ratio_p90": 1.0137637283997702,
+                "ratio_trimmed": 1.0113871205354943,
+                "tick": {
+                  "tick_ms": 3.2e-05,
+                  "fused_ticks": 92616.99765920639,
+                  "unfused_ticks": 93661.00281476974,
+                  "gap_ticks": 1044.0051555633545,
+                  "ratio_quantisation_frac": 2.147395633344288e-05,
+                  "flagged": false,
+                  "note": "well above timer granularity"
+                },
+                "impl": "common.bench_pair",
+                "interleaved": true,
+                "paired_speedup_p50": 1.0114416326767175,
+                "paired_speedup_trimmed_mean": 1.0113871205354943,
+                "paired_speedup_p10": 1.008814907206172,
+                "paired_speedup_p90": 1.0137637283997702
+              },
+              "tick": {
+                "timer_tick_us": 0.032,
+                "timer_tick_match_frac": 1.0,
+                "calibration_trusted": true,
+                "fused_ticks": 92616.99765920639,
+                "unfused_ticks": 93661.00281476974,
+                "gap_ticks": 1044.0051555633545,
+                "tick_limited": false,
+                "quantisation_pct": 0.0010797154143126094
+              }
+            },
+            "session_shared_expert_ms": {
+              "w13": 0.05446400120854378,
+              "act": 0.005791999865323305,
+              "w2": 0.02454400062561035
+            },
+            "anchor": "A_all_unfused",
+            "anchor_ms_this_session": 2.9974640011787415,
+            "speedup_vs_unfused_this_session": {},
+            "decisions": {
+              "O_f11ab": {
+                "state": "not_merged_re_measurement_failed",
+                "fresh_ok": false,
+                "fresh_rel_err": 0.16558441519737244,
+                "fresh_error": null
+              },
+              "P_f10_f11ab": {
+                "state": "not_merged_re_measurement_failed",
+                "fresh_ok": false,
+                "fresh_rel_err": 0.16923701763153076,
+                "fresh_error": null
+              },
+              "Q_f8_f11ab": {
+                "state": "not_merged_re_measurement_failed",
+                "fresh_ok": false,
+                "fresh_rel_err": 0.1952110379934311,
+                "fresh_error": null
+              },
+              "R_f1_f10_f11ab": {
+                "state": "not_merged_re_measurement_failed",
+                "fresh_ok": false,
+                "fresh_rel_err": 0.1696428507566452,
+                "fresh_error": null
+              }
+            },
+            "anchor_ms_campaign": 2.9762799739837646,
+            "anchor_drift_pct": 0.7117619101747974
+          },
+          "decode_bs512": {
+            "session_verdict": {
+              "winner": null,
+              "status": "TIED",
+              "tied_set": [
+                "A_all_unfused",
+                "N_f11b"
+              ],
+              "pass1": {
+                "best": "A_all_unfused",
+                "runner_up": "N_f11b",
+                "gap_ms": 0.004912137985229492,
+                "noise_ms": 0.4508800506591797,
+                "separated": false,
+                "tied_set": [
+                  "A_all_unfused",
+                  "N_f11b"
+                ],
+                "order": [
+                  "A_all_unfused",
+                  "N_f11b"
+                ]
+              },
+              "pass2": {
+                "best": "A_all_unfused",
+                "runner_up": "N_f11b",
+                "gap_ms": 0.02072000503540039,
+                "noise_ms": 0.11420822143554688,
+                "separated": false,
+                "tied_set": [
+                  "A_all_unfused",
+                  "N_f11b"
+                ],
+                "order": [
+                  "A_all_unfused",
+                  "N_f11b"
+                ]
+              },
+              "agree_on_best": true,
+              "median_of_passes": {
+                "A_all_unfused": 4.861583948135376,
+                "N_f11b": 4.874400019645691
+              }
+            },
+            "session_median_of_passes": {
+              "A_all_unfused": 4.861583948135376,
+              "N_f11b": 4.874400019645691
+            },
+            "session_correctness": {
+              "A_all_unfused": {
+                "rel_err": 0.0078125,
+                "ok": true,
+                "n_kernels": 14,
+                "sel": {
+                  "resadd1": "separate",
+                  "norm": "split",
+                  "gateup": "split",
+                  "down": "split"
+                }
+              },
+              "N_f11b": {
+                "rel_err": 0.0078125,
+                "ok": true,
+                "n_kernels": 14,
+                "sel": {
+                  "resadd1": "separate",
+                  "norm": "split",
+                  "gateup": "split",
+                  "down": "split",
+                  "prenorm": "router"
+                }
+              },
+              "O_f11ab": {
+                "rel_err": 0.17890624701976776,
+                "ok": false,
+                "n_kernels": 13,
+                "sel": {
+                  "resadd1": "separate",
+                  "norm": "split",
+                  "gateup": "split",
+                  "down": "split",
+                  "prenorm": "all"
+                }
+              },
+              "P_f10_f11ab": {
+                "rel_err": 0.2265625,
+                "ok": false,
+                "n_kernels": 12,
+                "sel": {
+                  "resadd1": "separate",
+                  "norm": "split",
+                  "gateup": "split",
+                  "down": "merge_f10",
+                  "prenorm": "all"
+                }
+              },
+              "Q_f8_f11ab": {
+                "rel_err": 0.19843749701976776,
+                "ok": false,
+                "n_kernels": 13,
+                "sel": {
+                  "resadd1": "separate",
+                  "norm": "split",
+                  "gateup": "split",
+                  "down": "atomic8",
+                  "prenorm": "all"
+                }
+              },
+              "R_f1_f10_f11ab": {
+                "rel_err": 0.19296875596046448,
+                "ok": false,
+                "n_kernels": 11,
+                "sel": {
+                  "resadd1": "in_oproj",
+                  "norm": "split",
+                  "gateup": "split",
+                  "down": "merge_f10",
+                  "prenorm": "all"
+                }
+              }
+            },
+            "session_paired_head_vs_unfused": null,
+            "session_shared_expert_ms": {
+              "w13": 0.06275200098752975,
+              "act": 0.007648000027984381,
+              "w2": 0.03276799991726875
+            },
+            "anchor": "A_all_unfused",
+            "anchor_ms_this_session": 4.861583948135376,
+            "speedup_vs_unfused_this_session": {},
+            "decisions": {
+              "O_f11ab": {
+                "state": "not_merged_re_measurement_failed",
+                "fresh_ok": false,
+                "fresh_rel_err": 0.17890624701976776,
+                "fresh_error": null
+              },
+              "P_f10_f11ab": {
+                "state": "not_merged_re_measurement_failed",
+                "fresh_ok": false,
+                "fresh_rel_err": 0.2265625,
+                "fresh_error": null
+              },
+              "Q_f8_f11ab": {
+                "state": "not_merged_re_measurement_failed",
+                "fresh_ok": false,
+                "fresh_rel_err": 0.19843749701976776,
+                "fresh_error": null
+              },
+              "R_f1_f10_f11ab": {
+                "state": "not_merged_re_measurement_failed",
+                "fresh_ok": false,
+                "fresh_rel_err": 0.19296875596046448,
+                "fresh_error": null
+              }
+            },
+            "anchor_ms_campaign": 4.94703209400177,
+            "anchor_drift_pct": -1.7272607948106726
+          },
+          "prefill_t2048": {
+            "session_verdict": {
+              "winner": null,
+              "status": "TIED",
+              "tied_set": [
+                "A_all_unfused",
+                "N_f11b"
+              ],
+              "pass1": {
+                "best": "N_f11b",
+                "runner_up": "A_all_unfused",
+                "gap_ms": 0.08052802085876465,
+                "noise_ms": 0.5753278732299805,
+                "separated": false,
+                "tied_set": [
+                  "N_f11b",
+                  "A_all_unfused"
+                ],
+                "order": [
+                  "N_f11b",
+                  "A_all_unfused"
+                ]
+              },
+              "pass2": {
+                "best": "A_all_unfused",
+                "runner_up": "N_f11b",
+                "gap_ms": 0.13033604621887207,
+                "noise_ms": 0.2048320770263672,
+                "separated": false,
+                "tied_set": [
+                  "A_all_unfused",
+                  "N_f11b"
+                ],
+                "order": [
+                  "A_all_unfused",
+                  "N_f11b"
+                ]
+              },
+              "agree_on_best": false,
+              "median_of_passes": {
+                "A_all_unfused": 6.335911989212036,
+                "N_f11b": 6.36081600189209
+              }
+            },
+            "session_median_of_passes": {
+              "A_all_unfused": 6.335911989212036,
+              "N_f11b": 6.36081600189209
+            },
+            "session_correctness": {
+              "A_all_unfused": {
+                "rel_err": 0.00872093066573143,
+                "ok": true,
+                "n_kernels": 14,
+                "sel": {
+                  "resadd1": "separate",
+                  "norm": "split",
+                  "gateup": "split",
+                  "down": "split"
+                }
+              },
+              "N_f11b": {
+                "rel_err": 0.00872093066573143,
+                "ok": true,
+                "n_kernels": 14,
+                "sel": {
+                  "resadd1": "separate",
+                  "norm": "split",
+                  "gateup": "split",
+                  "down": "split",
+                  "prenorm": "router"
+                }
+              },
+              "O_f11ab": {
+                "rel_err": 0.5588662624359131,
+                "ok": false,
+                "n_kernels": 13,
+                "sel": {
+                  "resadd1": "separate",
+                  "norm": "split",
+                  "gateup": "split",
+                  "down": "split",
+                  "prenorm": "all"
+                }
+              },
+              "P_f10_f11ab": {
+                "rel_err": 0.5188953280448914,
+                "ok": false,
+                "n_kernels": 12,
+                "sel": {
+                  "resadd1": "separate",
+                  "norm": "split",
+                  "gateup": "split",
+                  "down": "merge_f10",
+                  "prenorm": "all"
+                }
+              },
+              "Q_f8_f11ab": {
+                "rel_err": 0.5377907156944275,
+                "ok": false,
+                "n_kernels": 13,
+                "sel": {
+                  "resadd1": "separate",
+                  "norm": "split",
+                  "gateup": "split",
+                  "down": "atomic8",
+                  "prenorm": "all"
+                }
+              },
+              "R_f1_f10_f11ab": {
+                "rel_err": 0.5188953280448914,
+                "ok": false,
+                "n_kernels": 11,
+                "sel": {
+                  "resadd1": "in_oproj",
+                  "norm": "split",
+                  "gateup": "split",
+                  "down": "merge_f10",
+                  "prenorm": "all"
+                }
+              }
+            },
+            "session_paired_head_vs_unfused": null,
+            "session_shared_expert_ms": {
+              "w13": 0.1823039948940277,
+              "act": 0.011872000060975552,
+              "w2": 0.0950080007314682
+            },
+            "anchor": "A_all_unfused",
+            "anchor_ms_this_session": 6.335911989212036,
+            "speedup_vs_unfused_this_session": {},
+            "decisions": {
+              "O_f11ab": {
+                "state": "not_merged_re_measurement_failed",
+                "fresh_ok": false,
+                "fresh_rel_err": 0.5588662624359131,
+                "fresh_error": null
+              },
+              "P_f10_f11ab": {
+                "state": "not_merged_re_measurement_failed",
+                "fresh_ok": false,
+                "fresh_rel_err": 0.5188953280448914,
+                "fresh_error": null
+              },
+              "Q_f8_f11ab": {
+                "state": "not_merged_re_measurement_failed",
+                "fresh_ok": false,
+                "fresh_rel_err": 0.5377907156944275,
+                "fresh_error": null
+              },
+              "R_f1_f10_f11ab": {
+                "state": "not_merged_re_measurement_failed",
+                "fresh_ok": false,
+                "fresh_rel_err": 0.5188953280448914,
+                "fresh_error": null
+              }
+            },
+            "anchor_ms_campaign": 6.370071887969971,
+            "anchor_drift_pct": -0.5362560950441758
+          },
+          "prefill_t8192": {
+            "session_verdict": {
+              "winner": null,
+              "status": "TIED",
+              "tied_set": [
+                "A_all_unfused",
+                "N_f11b"
+              ],
+              "pass1": {
+                "best": "A_all_unfused",
+                "runner_up": "N_f11b",
+                "gap_ms": 0.010176658630371094,
+                "noise_ms": 1.4329280853271484,
+                "separated": false,
+                "tied_set": [
+                  "A_all_unfused",
+                  "N_f11b"
+                ],
+                "order": [
+                  "A_all_unfused",
+                  "N_f11b"
+                ]
+              },
+              "pass2": {
+                "best": "A_all_unfused",
+                "runner_up": "N_f11b",
+                "gap_ms": 0.04227256774902344,
+                "noise_ms": 0.2124156951904297,
+                "separated": false,
+                "tied_set": [
+                  "A_all_unfused",
+                  "N_f11b"
+                ],
+                "order": [
+                  "A_all_unfused",
+                  "N_f11b"
+                ]
+              },
+              "agree_on_best": true,
+              "median_of_passes": {
+                "A_all_unfused": 16.40627145767212,
+                "N_f11b": 16.432496070861816
+              }
+            },
+            "session_median_of_passes": {
+              "A_all_unfused": 16.40627145767212,
+              "N_f11b": 16.432496070861816
+            },
+            "session_correctness": {
+              "A_all_unfused": {
+                "rel_err": 0.007614213041961193,
+                "ok": true,
+                "n_kernels": 14,
+                "sel": {
+                  "resadd1": "separate",
+                  "norm": "split",
+                  "gateup": "split",
+                  "down": "split"
+                }
+              },
+              "N_f11b": {
+                "rel_err": 0.007614213041961193,
+                "ok": true,
+                "n_kernels": 14,
+                "sel": {
+                  "resadd1": "separate",
+                  "norm": "split",
+                  "gateup": "split",
+                  "down": "split",
+                  "prenorm": "router"
+                }
+              },
+              "O_f11ab": {
+                "rel_err": 0.09517766535282135,
+                "ok": false,
+                "n_kernels": 13,
+                "sel": {
+                  "resadd1": "separate",
+                  "norm": "split",
+                  "gateup": "split",
+                  "down": "split",
+                  "prenorm": "all"
+                }
+              },
+              "P_f10_f11ab": {
+                "rel_err": 0.08058375865221024,
+                "ok": false,
+                "n_kernels": 12,
+                "sel": {
+                  "resadd1": "separate",
+                  "norm": "split",
+                  "gateup": "split",
+                  "down": "merge_f10",
+                  "prenorm": "all"
+                }
+              },
+              "Q_f8_f11ab": {
+                "rel_err": 0.08280456811189651,
+                "ok": false,
+                "n_kernels": 13,
+                "sel": {
+                  "resadd1": "separate",
+                  "norm": "split",
+                  "gateup": "split",
+                  "down": "atomic8",
+                  "prenorm": "all"
+                }
+              },
+              "R_f1_f10_f11ab": {
+                "rel_err": 0.0824873074889183,
+                "ok": false,
+                "n_kernels": 11,
+                "sel": {
+                  "resadd1": "in_oproj",
+                  "norm": "split",
+                  "gateup": "split",
+                  "down": "merge_f10",
+                  "prenorm": "all"
+                }
+              }
+            },
+            "session_paired_head_vs_unfused": null,
+            "session_shared_expert_ms": {
+              "w13": 0.8252800107002258,
+              "act": 0.0306560005992651,
+              "w2": 0.3662720024585724
+            },
+            "anchor": "A_all_unfused",
+            "anchor_ms_this_session": 16.40627145767212,
+            "speedup_vs_unfused_this_session": {},
+            "decisions": {
+              "O_f11ab": {
+                "state": "not_merged_re_measurement_failed",
+                "fresh_ok": false,
+                "fresh_rel_err": 0.09517766535282135,
+                "fresh_error": null
+              },
+              "P_f10_f11ab": {
+                "state": "not_merged_re_measurement_failed",
+                "fresh_ok": false,
+                "fresh_rel_err": 0.08058375865221024,
+                "fresh_error": null
+              },
+              "Q_f8_f11ab": {
+                "state": "not_merged_re_measurement_failed",
+                "fresh_ok": false,
+                "fresh_rel_err": 0.08280456811189651,
+                "fresh_error": null
+              },
+              "R_f1_f10_f11ab": {
+                "state": "not_merged_re_measurement_failed",
+                "fresh_ok": false,
+                "fresh_rel_err": 0.0824873074889183,
+                "fresh_error": null
+              }
+            },
+            "anchor_ms_campaign": 16.576536178588867,
+            "anchor_drift_pct": -1.0271429391664526
+          }
+        },
+        "merged_at": "2026-08-05 17:20:45",
+        "argv": [
+          "run_f11_h200.py",
+          "--gpu",
+          "auto"
+        ]
+      }
+    ]
   }
 }

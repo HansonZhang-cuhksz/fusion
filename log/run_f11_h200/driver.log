@@ -10,3 +10,278 @@
 12:14:46            staging /home/shuhan/fusion/results/h200/_f11_layer_rerun
 12:14:46            merges  /home/shuhan/fusion/results/h200/layer_configurations.json
 12:14:46   logs            /home/shuhan/fusion/log/run_f11_h200
+16:11:05 ============================================================================================
+16:11:05 GPU SELECTION -- 8 card(s) on this host
+16:11:05 ============================================================================================
+16:11:05   rank idx   util   used GB   free GB proc  temp  state
+16:11:05   -----------------------------------------------------
+16:11:05      0   0     0%       0.0     139.8    0    29  idle
+16:11:05      1   1     0%       0.0     139.8    0    34  idle
+16:11:05      2   2     0%       0.0     139.8    0    33  idle
+16:11:05      3   3     0%       0.0     139.8    0    30  idle
+16:11:05      4   4     0%       0.0     139.8    0    32  idle
+16:11:05      5   5     0%       0.0     139.8    0    33  idle
+16:11:05      6   6     0%       0.0     139.8    0    34  idle
+16:11:05      7   7     0%       0.0     139.8    0    30  idle
+16:11:05        gpu 0  NVIDIA H200  uuid GPU-b2318e71-edbf-aa1b-dcf3-3cc3e6ea7db0
+16:11:05        gpu 1  NVIDIA H200  uuid GPU-59aa5198-70aa-0e6f-16b9-a6d483af9c4e
+16:11:05        gpu 2  NVIDIA H200  uuid GPU-3eb2bc50-6290-2508-4dc5-e01f05c85e5f
+16:11:05        gpu 3  NVIDIA H200  uuid GPU-6c4cc3d3-e0bc-949d-16be-822af843e49f
+16:11:05        gpu 4  NVIDIA H200  uuid GPU-c20464a7-77aa-f6f2-9a70-207c42f6b4a1
+16:11:05        gpu 5  NVIDIA H200  uuid GPU-2c1d24fb-c9a6-9d6c-fa91-28ea2b50e17f
+16:11:05        gpu 6  NVIDIA H200  uuid GPU-338e7fe0-5ca6-f37f-b9b6-ea4ea6c5358b
+16:11:05        gpu 7  NVIDIA H200  uuid GPU-3aa19cef-f7a3-bd28-1b5e-2e6d8b8ca670
+16:11:05 
+16:11:05   [gpu] pinning GPU 0 (NVIDIA H200) uuid GPU-b2318e71-edbf-aa1b-dcf3-3cc3e6ea7db0
+16:11:05   [gpu] idlest of 8: 0% utilization, 0.0 GB used, 0 other compute process(es)
+16:11:05   [gpu] every child gets CUDA_VISIBLE_DEVICES=0 and CUDA_DEVICE_ORDER=PCI_BUS_ID, so each one sees exactly this card as cuda:0 -- which is why no bench needed changing.
+16:11:05 !! cached preflight does not describe the pinned GPU: same model but a different card (probe 59aa5198-70aa-0e6f-16b9-a6d483af9c4e, pinned b2318e71-edbf-aa1b-dcf3-3cc3e6ea7db0) -- re-probing before anything is tuned.
+16:11:05     running preflight: /usr/bin/python /home/guancheng/zsh/fusion/glm52_h200/preflight.py --gpu 0
+16:11:15     preflight exit=0, log -> /home/guancheng/zsh/fusion/log/run_f11_h200/preflight.log
+16:11:15 ============================================================================================
+16:11:15 GLM-5.2 MoE fusion study -- H200 campaign
+16:11:15 ============================================================================================
+16:11:15   repo            /home/guancheng/zsh/fusion
+16:11:15   results dir     /home/guancheng/zsh/fusion/results/h200
+16:11:15   driver started  2026-08-05 16:11:15
+16:11:15   gpu             0  uuid GPU-b2318e71-edbf-aa1b-dcf3-3cc3e6ea7db0  (idlest of 8: 0% utilization, 0.0 GB used, 0 other compute process(es))
+16:11:15 
+16:11:15   [device] NVIDIA H200  sm_90 | 132 SM | warp 32 | smem/block 232448 B | regs/SM 65536 | L2 60 MB | VRAM 139.8 GB
+16:11:15   [stack]  torch 2.11.0+cu130 (cuda 13.0) | triton 3.6.0
+16:11:15   [triton features, compiled AND launched] +baseline_elementwise +tl_dot_bf16 +warp_specialize_tl_range -warp_specialize_num_consumer_groups +tma_host_descriptor +tma_device_descriptor +thread_block_cluster_num_ctas
+16:11:15   [calib]  copy_1024MB_GBs=4239  rmw_1024MB_GBs=4231  read_1024MB_GBs=4584  copy_2048MB_GBs=4245  rmw_2048MB_GBs=4259  read_2048MB_GBs=4597   cublas_4096x16384x6144_TFs=821.3  triton_4096x16384x6144_TFs=789.7  cublas_8192x16384x6144_TFs=755.3  triton_8192x16384x6144_TFs=662.0
+16:11:15   [calib]  launch 9.02 us | timer tick 0.032 us (measured by preflight)
+16:11:15   [capacity] expert weights 18.0 GB | fit=True | whole layer feasible=True
+16:11:15 
+16:11:15   [hwinfo@start] GPU0 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 29 C | 76.62/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+16:11:15   [hwinfo@start] GPU1 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 34 C | 78.84/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+16:11:15   [hwinfo@start] GPU2 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 33 C | 76.29/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+16:11:15   [hwinfo@start] GPU3 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 30 C | 77.51/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+16:11:15   [hwinfo@start] GPU4 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 32 C | 77.8/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+16:11:15   [hwinfo@start] GPU5 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 33 C | 75.43/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+16:11:15   [hwinfo@start] GPU6 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 34 C | 77.21/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+16:11:15   [hwinfo@start] GPU7 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 30 C | 77.75/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+16:11:15 
+16:11:15   [gate] sm_90 confirmed (NVIDIA H200). Hopper paths (TMA, clusters, warp specialisation) are eligible; each is still chosen at RUNTIME from the probe.
+16:11:15 ============================================================================================
+16:11:15 #11 -- bench_f11_lazy_prenorm.py over 7 regime(s)
+16:11:15 ============================================================================================
+16:11:15 
+16:11:15   attempt 1/9: 7 regime(s) to measure (decode_bs1, decode_bs32, decode_bs256, decode_bs512, decode_bs1024, prefill_t2048, prefill_t8192)
+16:11:15   cmd     /usr/bin/python /home/guancheng/zsh/fusion/glm52_h200/bench/bench_f11_lazy_prenorm.py
+16:11:15   log     /home/guancheng/zsh/fusion/log/run_f11_h200/f11.a1.log
+16:11:15   timeout 10.0 h
+16:11:15   !! bench_f11_lazy_prenorm.py advertises no --regimes flag; the request was passed only via GLM52_REGIMES and may be ignored by this bench.
+16:11:16   [hw before] GPU0 NVIDIA H200 | sm 1980/1980 MHz | mem 3201/3201 MHz | 31 C | 121.39/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000000
+16:12:16     [f11.a1]    1.0 min |     [grid f11b/T1] 226 legal -> 180 sampled (budget 180)
+16:13:16     [f11.a1]    2.0 min |     [grid f11b/T1] 226 legal -> 180 sampled (budget 180)
+16:14:16     [f11.a1]    3.0 min |     [routerF/coarse] 180/180 cfgs timed -> 0.0321 ms  {'BLOCK_M': 16, 'BLOCK_N': 64, 'BLOCK_K': 128, 'num_warp
+16:15:16     [f11.a1]    4.0 min |     [grid f11a/small] 722 legal -> 180 sampled (budget 180)
+16:16:16     [f11.a1]    5.0 min |     [w13F/coarse ] 131/180 cfgs timed -> 0.1087 ms  {'BLOCK_M': 16, 'BLOCK_N': 128, 'BLOCK_K': 128, 'num_warps
+16:17:16     [f11.a1]    6.0 min |     [w13U/coarse ] 153/180 cfgs timed -> 0.1053 ms  {'BLOCK_M': 16, 'BLOCK_N': 128, 'BLOCK_K': 128, 'num_warps
+16:18:16     [f11.a1]    7.0 min |     [screen rstd        ] 124 offered -> 124 valid (0 compile-fail, 0 wrong-answer)
+16:19:16     [f11.a1]    8.0 min |     [grid f11b/T32] 488 legal -> 180 sampled (budget 180)
+16:20:16     [f11.a1]    9.0 min |     [routerF/coarse] 180/180 cfgs timed -> 0.0320 ms  {'BLOCK_M': 16, 'BLOCK_N': 64, 'BLOCK_K': 128, 'num_warp
+16:21:16     [f11.a1]   10.0 min |     [routerU/coarse] 180/180 cfgs timed -> 0.0227 ms  {'BLOCK_M': 16, 'BLOCK_N': 32, 'BLOCK_K': 128, 'num_warp
+16:22:16     [f11.a1]   11.0 min | /home/guancheng/zsh/fusion/glm52_h200/kernels/lazy_prenorm.py:723:0: note: Pipeline failed while executing [`N
+16:23:16     [f11.a1]   12.0 min |         wrong-answer: {'BLOCK_M': 64, 'BLOCK_N': 128, 'BLOCK_K': 32, 'num_warps': 4, 'num_stages': 4, 'GROUP_M
+16:24:16     [f11.a1]   13.0 min |     [w13F/coarse ] 119/180 cfgs timed -> 2.1057 ms  {'BLOCK_M': 64, 'BLOCK_N': 64, 'BLOCK_K': 128, 'num_warps'
+16:25:16     [f11.a1]   14.0 min |     [screen w13U/coarse ] 180 offered -> 153 valid (27 compile-fail, 0 wrong-answer)
+16:26:16     [f11.a1]   15.0 min |     [w13U/coarse ] 153/180 cfgs timed -> 1.8758 ms  {'BLOCK_M': 16, 'BLOCK_N': 128, 'BLOCK_K': 128, 'num_warps
+16:27:16     [f11.a1]   16.0 min |   w13 unfused: coarse 180(27f) + refine 28(0f) -> 1.8758 ms {'BLOCK_M': 16, 'BLOCK_N': 128, 'BLOCK_K': 128, 'n
+16:28:16     [f11.a1]   17.0 min |     [grid f11b/T256] 1010 legal -> 180 sampled (budget 180)
+16:29:16     [f11.a1]   18.0 min | /home/guancheng/zsh/fusion/glm52_h200/kernels/lazy_prenorm.py:933:0: note: Pipeline failed while executing [`N
+16:30:16     [f11.a1]   19.0 min |     [screen routerU/coarse] 180 offered -> 168 valid (12 compile-fail, 0 wrong-answer)
+16:31:16     [f11.a1]   20.0 min |         wrong-answer: {'BLOCK_M': 64, 'BLOCK_N': 128, 'BLOCK_K': 32, 'num_warps': 4, 'num_stages': 3, 'GROUP_M
+16:32:16     [f11.a1]   21.0 min |     [w13U/coarse ] 153/180 cfgs timed -> 2.8313 ms  {'BLOCK_M': 16, 'BLOCK_N': 128, 'BLOCK_K': 128, 'num_warps
+16:33:16     [f11.a1]   22.0 min |         wrong-answer: {'BLOCK_M': 64, 'BLOCK_N': 128, 'BLOCK_K': 32, 'num_warps': 4, 'num_stages': 4, 'GROUP_M
+16:34:16     [f11.a1]   23.0 min |     [screen w13U/coarse ] 180 offered -> 153 valid (27 compile-fail, 0 wrong-answer)
+16:35:16     [f11.a1]   24.0 min |     [rstd        ] 124/124 cfgs timed -> 0.0085 ms  {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 16, 'num_stages'
+16:36:16     [f11.a1]   25.0 min |         wrong-answer: {'BLOCK_M': 64, 'BLOCK_N': 128, 'BLOCK_K': 32, 'num_warps': 4, 'num_stages': 4, 'GROUP_M
+16:37:16     [f11.a1]   26.0 min |     [screen w13U/coarse ] 180 offered -> 153 valid (27 compile-fail, 0 wrong-answer)
+16:38:16     [f11.a1]   27.0 min |     [screen routerF/coarse] 180 offered -> 168 valid (12 compile-fail, 0 wrong-answer)
+16:39:16     [f11.a1]   28.0 min | /home/guancheng/zsh/fusion/glm52_h200/kernels/lazy_prenorm.py:723:0: note: Pipeline failed while executing [`N
+16:40:16     [f11.a1]   29.0 min |         wrong-answer: {'BLOCK_M': 64, 'BLOCK_N': 64, 'BLOCK_K': 128, 'num_warps': 16, 'num_stages': 2, 'GROUP_
+16:41:16     [f11.a1]   30.0 min | /home/guancheng/zsh/fusion/glm52_h200/kernels/lazy_prenorm.py:723:0: note: Pipeline failed while executing [`N
+16:42:16     [f11.a1]   31.0 min |     [screen w13U/coarse ] 180 offered -> 155 valid (25 compile-fail, 0 wrong-answer)
+16:43:16     [f11.a1]   32.0 min | /home/guancheng/zsh/fusion/glm52_h200/kernels/lazy_prenorm.py:933:0: note: Pipeline failed while executing [`N
+16:44:16     [f11.a1]   33.0 min |         wrong-answer: {'BLOCK_M': 64, 'BLOCK_N': 64, 'BLOCK_K': 128, 'num_warps': 16, 'num_stages': 3, 'GROUP_
+16:45:16     [f11.a1]   34.0 min |     [screen w13U/coarse ] 180 offered -> 155 valid (25 compile-fail, 0 wrong-answer)
+16:46:16     [f11.a1]   35.0 min |     [screen w13U/refine ]  23 offered ->  20 valid (3 compile-fail, 0 wrong-answer)
+16:46:39   [hw after ] GPU0 NVIDIA H200 | sm 1980/1980 MHz | mem 3201/3201 MHz | 50 C | 131.88/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000000
+16:46:39   .. temperature moved +19 C (31 -> 50)
+16:46:39   exit=0 status=ok wall=35.4 min
+16:46:39     | decode_bs1024       2.028   2.45     0.960   1.00     0.956
+16:46:39     | prefill_t2048       2.005   2.45     0.859   1.00     0.856
+16:46:39     | prefill_t8192       1.601   2.45     0.623   1.01     0.624
+16:46:39     | PARTIAL: 7/7 regimes produced rows; decode_bs32: unmeasurable combined, f11a_w13, headline.moe
+16:46:39     +7 regime(s): decode_bs1, decode_bs1024, decode_bs256, decode_bs32, decode_bs512, prefill_t2048, prefill_t8192
+16:46:39   #11 finished cleanly.
+16:46:40 ============================================================================================
+16:46:40 #11 CORRECTNESS GATE for the whole-layer re-measurement
+16:46:40 ============================================================================================
+16:46:40   O/P/Q/R fuse the normalization into BOTH the router GEMM and the w13 GEMM, so
+16:46:40   both #11 arms must be measured AND validated before re-timing them is worth an
+16:46:40   hour of this machine. The gate fails closed: an answer this driver cannot prove
+16:46:40   from the result file counts as 'did not pass'.
+16:46:40     decode_bs1       PASS  both #11 arms measured and validated
+16:46:40     decode_bs32      no    f11a_w13: unmeasurable (failed numerical validation)
+16:46:40     decode_bs256     PASS  both #11 arms measured and validated
+16:46:40     decode_bs512     PASS  both #11 arms measured and validated
+16:46:40     decode_bs1024    PASS  both #11 arms measured and validated
+16:46:40     prefill_t2048    PASS  both #11 arms measured and validated
+16:46:40     prefill_t8192    PASS  both #11 arms measured and validated
+16:46:40 ============================================================================================
+16:46:40 WHOLE-LAYER re-measurement of O_f11ab, P_f10_f11ab, Q_f8_f11ab, R_f1_f10_f11ab
+16:46:40 ============================================================================================
+16:46:40   staging results dir  /home/guancheng/zsh/fusion/results/h200/_f11_layer_rerun
+16:46:40   configurations       A_all_unfused, N_f11b, O_f11ab, P_f10_f11ab, Q_f8_f11ab, R_f1_f10_f11ab
+16:46:40   regimes              decode_bs1, decode_bs256, decode_bs512, decode_bs1024, prefill_t2048, prefill_t8192
+16:46:40   protocol             two interleaved passes x 8 rounds, LOG-11 tie rule (a winner only when its gap to the runner-up exceeds the round-to-round spread of both, in both passes)
+16:46:40 
+16:46:40   WHY A STAGING DIRECTORY: common.record() rewrites the whole result file, and
+16:46:40   bench_layer writes only the configurations it was asked for. Pointing this run at
+16:46:40   h200/ directly would replace layer_configurations.json -- fourteen clean
+16:46:40   configurations across seven regimes -- with a file holding these few. The merge
+16:46:40   below copies across only the four target rows, and only when they are better.
+16:46:40   [cfgs] the layer re-run will TUNE ITS OWN kernel mappings in _f11_layer_rerun/. --reuse-layer-cfgs would copy the campaign's cache in, but that cache pins router_prenorm/w13_prenorm to configurations chosen before #11 was repaired.
+16:46:40 
+16:46:40   attempt 1/8: decode_bs1, decode_bs256, decode_bs512, decode_bs1024, prefill_t2048, prefill_t8192
+16:46:40   cmd     /usr/bin/python /home/guancheng/zsh/fusion/glm52_h200/bench/bench_layer.py --only A_all_unfused,N_f11b,O_f11ab,P_f10_f11ab,Q_f8_f11ab,R_f1_f10_f11ab --rounds 8 --rep 15
+16:46:40   log     /home/guancheng/zsh/fusion/log/run_f11_h200/layer.a1.log
+16:46:40   timeout 16.0 h
+16:46:40   !! bench_layer.py advertises no --regimes flag; the request was passed only via GLM52_REGIMES and may be ignored by this bench.
+16:46:41   [hw before] GPU0 NVIDIA H200 | sm 900/1980 MHz | mem 3201/3201 MHz | 48 C | 123.88/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+16:47:41     [layer.a1]    1.0 min |   [cfgs] w13+swiglu            0.1044 ms  (37 cfgs tried)  {'BLOCK_M': 16, 'BLOCK_N': 64, 'BLOCK_K': 128, 'GRO
+16:48:41     [layer.a1]    2.0 min |   [cfgs] w13+swiglu            0.1044 ms  (37 cfgs tried)  {'BLOCK_M': 16, 'BLOCK_N': 64, 'BLOCK_K': 128, 'GRO
+16:49:41     [layer.a1]    3.0 min |   [cfgs] resadd                0.0055 ms  (17 cfgs tried)  {'BLOCK_M': 4, 'BLOCK_N': 128, 'num_warps': 8, 'num
+16:50:41     [layer.a1]    4.0 min |   [cfgs] w13 prenorm        tile sweep    0.1493 ms (46 cfgs, 0 fail)
+16:51:41     [layer.a1]    5.0 min |   [cfgs] rmsnorm               0.0589 ms  (13 cfgs tried)  {'ROWS': 8, 'BLOCK_N': 2048, 'num_warps': 32, 'num_
+16:52:41     [layer.a1]    6.0 min |   [cfgs] w13+swiglu            1.7789 ms  (31 cfgs tried)  {'BLOCK_M': 16, 'BLOCK_N': 128, 'BLOCK_K': 128, 'GR
+16:53:41     [layer.a1]    7.0 min |   [cfgs] w13+swiglu            1.7789 ms  (31 cfgs tried)  {'BLOCK_M': 16, 'BLOCK_N': 128, 'BLOCK_K': 128, 'GR
+16:54:41     [layer.a1]    8.0 min |   [cfgs] w13+swiglu            1.7789 ms  (31 cfgs tried)  {'BLOCK_M': 16, 'BLOCK_N': 128, 'BLOCK_K': 128, 'GR
+16:55:41     [layer.a1]    9.0 min |   [cfgs] w13+swiglu            1.7789 ms  (31 cfgs tried)  {'BLOCK_M': 16, 'BLOCK_N': 128, 'BLOCK_K': 128, 'GR
+16:56:41     [layer.a1]   10.0 min |   [cfgs] w13+swiglu            1.7789 ms  (31 cfgs tried)  {'BLOCK_M': 16, 'BLOCK_N': 128, 'BLOCK_K': 128, 'GR
+16:57:41     [layer.a1]   11.0 min |   [cfgs] resadd                0.0061 ms  (17 cfgs tried)  {'BLOCK_M': 4, 'BLOCK_N': 256, 'num_warps': 8, 'num
+16:58:41     [layer.a1]   12.0 min |   [cfgs] oproj gemm+res     tile sweep    0.2175 ms (48 cfgs, 2 fail)
+16:59:41     [layer.a1]   13.0 min |   [cfgs] oproj gemm         tile sweep    0.4017 ms (48 cfgs, 2 fail)
+17:00:41     [layer.a1]   14.0 min |   [cfgs] router prenorm     tile sweep    0.0350 ms (46 cfgs, 0 fail)
+17:01:41     [layer.a1]   15.0 min |   [cfgs] oproj gemm+res     tile sweep    0.7486 ms (48 cfgs, 2 fail)
+17:02:41     [layer.a1]   16.0 min | /home/guancheng/zsh/fusion/glm52_h200/kernels/moe_gateup.py:506:0: note: Pipeline failed while executing [`Tri
+17:03:41     [layer.a1]   17.0 min |   [cfgs] topk                  0.0135 ms  (17 cfgs tried)  {'BLOCK_M': 16, 'BLOCK_K': 128, 'BLOCK_E': 128, 'nu
+17:04:41     [layer.a1]   18.0 min | /home/guancheng/zsh/fusion/glm52_h200/kernels/moe_gateup.py:506:0: note: Pipeline failed while executing [`Tri
+17:05:41     [layer.a1]   19.0 min |   [cfgs] router prenorm        0.0391 ms  (37 cfgs tried)  {'BLOCK_M': 64, 'BLOCK_N': 64, 'BLOCK_K': 128, 'GRO
+17:06:41     [layer.a1]   20.0 min |   [cfgs] w13 prenorm        tile sweep    3.6127 ms (48 cfgs, 1 fail)
+17:07:41     [layer.a1]   21.0 min |   [cfgs] oproj gemm         tile sweep    2.4791 ms (48 cfgs, 2 fail)
+17:08:41     [layer.a1]   22.0 min |   [cfgs] oproj gemm         tile sweep    2.4791 ms (48 cfgs, 2 fail)
+17:09:41     [layer.a1]   23.0 min |   [cfgs] oproj gemm+res     tile sweep    2.5804 ms (48 cfgs, 2 fail)
+17:10:41     [layer.a1]   24.0 min |   [cfgs] f4 add+norm+rt        0.2061 ms  (29 cfgs tried)  {'BLOCK_M': 32, 'BLOCK_K': 128, 'BLOCK_E': 256, 'nu
+17:11:41     [layer.a1]   25.0 min |   [cfgs] w13 gemm           tile sweep    7.7622 ms (48 cfgs, 2 fail)
+17:12:41     [layer.a1]   26.0 min |   [cfgs] w13 gemm           tile sweep    7.7622 ms (48 cfgs, 2 fail)
+17:13:41     [layer.a1]   27.0 min |   [cfgs] w13 gemm           tile sweep    7.7622 ms (48 cfgs, 2 fail)
+17:14:41     [layer.a1]   28.0 min |   [cfgs] w13+swiglu         tile sweep    8.4846 ms (45 cfgs, 4 fail)
+17:15:41     [layer.a1]   29.0 min |   [cfgs] w13+swiglu         tile sweep    8.4846 ms (45 cfgs, 4 fail)
+17:16:41     [layer.a1]   30.0 min |   [cfgs] silu_and_mul          0.1906 ms  (17 cfgs tried)  {'BLOCK_M': 4, 'BLOCK_N': 1024, 'num_warps': 16, 'n
+17:17:41     [layer.a1]   31.0 min |   [cfgs] w2+merge(atomic)   tile sweep    4.6196 ms (47 cfgs, 1 fail)
+17:18:41     [layer.a1]   32.0 min |   [cfgs] router prenorm        0.0854 ms  (37 cfgs tried)  {'BLOCK_M': 128, 'BLOCK_N': 256, 'BLOCK_K': 64, 'GR
+17:19:41     [layer.a1]   33.0 min |   [cfgs] w13 prenorm        tile sweep    9.1960 ms (48 cfgs, 1 fail)
+17:20:41     [layer.a1]   34.0 min |     pass2 round 6: A_all_unfused=16.3934  N_f11b=16.4256
+17:20:44   [hw after ] GPU0 NVIDIA H200 | sm 1980/1980 MHz | mem 3201/3201 MHz | 48 C | 134.98/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000000
+17:20:44   !! SM clock moved +120.0% during this family (900 -> 1980 MHz) -- interleaved A/B timing is what protects the ratio from this; check the bench recorded a paired statistic.
+17:20:44   exit=0 status=ok wall=34.0 min
+17:20:44     | decode_bs512    TIED       A_all_unfused, N_f11b                           1.0000x
+17:20:44     | decode_bs1024   TIED       A_all_unfused, N_f11b                           1.0000x
+17:20:44     | prefill_t2048   TIED       A_all_unfused, N_f11b                           1.0000x
+17:20:44     | prefill_t8192   TIED       A_all_unfused, N_f11b                           1.0000x
+17:20:44   [accum] absorbed 7 regime(s) from the staging file: decode_bs1, decode_bs1024, decode_bs256, decode_bs32, decode_bs512, prefill_t2048, prefill_t8192
+17:20:44   [accum] absorbed 7 regime(s) from the staging file: decode_bs1, decode_bs1024, decode_bs256, decode_bs32, decode_bs512, prefill_t2048, prefill_t8192
+17:20:44   every regime in scope has a layer measurement (decode_bs1, decode_bs1024, decode_bs256, decode_bs512, prefill_t2048, prefill_t8192).
+17:20:44   [accum] absorbed 7 regime(s) from the staging file: decode_bs1, decode_bs1024, decode_bs256, decode_bs32, decode_bs512, prefill_t2048, prefill_t8192
+17:20:45 ============================================================================================
+17:20:45 MERGE into layer_configurations.json
+17:20:45 ============================================================================================
+17:20:45   decode_bs1      O_f11ab          keep   the canonical file already has a clean measurement of this configuration; --remerge-good would replace it
+17:20:45   decode_bs1      P_f10_f11ab      keep   the canonical file already has a clean measurement of this configuration; --remerge-good would replace it
+17:20:45   decode_bs1      Q_f8_f11ab       keep   the canonical file already has a clean measurement of this configuration; --remerge-good would replace it
+17:20:45   decode_bs1      R_f1_f10_f11ab   keep   the canonical file already has a clean measurement of this configuration; --remerge-good would replace it
+17:20:45   decode_bs1024   O_f11ab          SKIP   the re-measurement did not produce a clean timed row (correctness ok=False, rel_err=0.16091954708099365)
+17:20:45   decode_bs1024   P_f10_f11ab      SKIP   the re-measurement did not produce a clean timed row (correctness ok=False, rel_err=0.20043103396892548)
+17:20:45   decode_bs1024   Q_f8_f11ab       SKIP   the re-measurement did not produce a clean timed row (correctness ok=False, rel_err=0.19216954708099365)
+17:20:45   decode_bs1024   R_f1_f10_f11ab   SKIP   the re-measurement did not produce a clean timed row (correctness ok=False, rel_err=0.19181033968925476)
+17:20:45   decode_bs256    O_f11ab          SKIP   the re-measurement did not produce a clean timed row (correctness ok=False, rel_err=0.17483660578727722)
+17:20:45   decode_bs256    P_f10_f11ab      SKIP   the re-measurement did not produce a clean timed row (correctness ok=False, rel_err=0.21119281649589539)
+17:20:45   decode_bs256    Q_f8_f11ab       SKIP   the re-measurement did not produce a clean timed row (correctness ok=False, rel_err=0.2083333283662796)
+17:20:45   decode_bs256    R_f1_f10_f11ab   SKIP   the re-measurement did not produce a clean timed row (correctness ok=False, rel_err=0.21486927568912506)
+17:20:45   decode_bs32     O_f11ab          SKIP   the re-measurement did not produce a clean timed row (correctness ok=False, rel_err=0.16558441519737244)
+17:20:45   decode_bs32     P_f10_f11ab      SKIP   the re-measurement did not produce a clean timed row (correctness ok=False, rel_err=0.16923701763153076)
+17:20:45   decode_bs32     Q_f8_f11ab       SKIP   the re-measurement did not produce a clean timed row (correctness ok=False, rel_err=0.1952110379934311)
+17:20:45   decode_bs32     R_f1_f10_f11ab   SKIP   the re-measurement did not produce a clean timed row (correctness ok=False, rel_err=0.1696428507566452)
+17:20:45   decode_bs512    O_f11ab          SKIP   the re-measurement did not produce a clean timed row (correctness ok=False, rel_err=0.17890624701976776)
+17:20:45   decode_bs512    P_f10_f11ab      SKIP   the re-measurement did not produce a clean timed row (correctness ok=False, rel_err=0.2265625)
+17:20:45   decode_bs512    Q_f8_f11ab       SKIP   the re-measurement did not produce a clean timed row (correctness ok=False, rel_err=0.19843749701976776)
+17:20:45   decode_bs512    R_f1_f10_f11ab   SKIP   the re-measurement did not produce a clean timed row (correctness ok=False, rel_err=0.19296875596046448)
+17:20:45   prefill_t2048   O_f11ab          SKIP   the re-measurement did not produce a clean timed row (correctness ok=False, rel_err=0.5588662624359131)
+17:20:45   prefill_t2048   P_f10_f11ab      SKIP   the re-measurement did not produce a clean timed row (correctness ok=False, rel_err=0.5188953280448914)
+17:20:45   prefill_t2048   Q_f8_f11ab       SKIP   the re-measurement did not produce a clean timed row (correctness ok=False, rel_err=0.5377907156944275)
+17:20:45   prefill_t2048   R_f1_f10_f11ab   SKIP   the re-measurement did not produce a clean timed row (correctness ok=False, rel_err=0.5188953280448914)
+17:20:45   prefill_t8192   O_f11ab          SKIP   the re-measurement did not produce a clean timed row (correctness ok=False, rel_err=0.09517766535282135)
+17:20:45   prefill_t8192   P_f10_f11ab      SKIP   the re-measurement did not produce a clean timed row (correctness ok=False, rel_err=0.08058375865221024)
+17:20:45   prefill_t8192   Q_f8_f11ab       SKIP   the re-measurement did not produce a clean timed row (correctness ok=False, rel_err=0.08280456811189651)
+17:20:45   prefill_t8192   R_f1_f10_f11ab   SKIP   the re-measurement did not produce a clean timed row (correctness ok=False, rel_err=0.0824873074889183)
+17:20:45   [merge] backup of the pre-merge file -> layer_configurations.pre_f11_merge_20260805_172045.json
+17:20:45   [merge] wrote 0 row(s) into layer_configurations.json (session 45887cf0d67241a5).
+17:20:48 ============================================================================================
+17:20:48 STATUS -- per arm x per regime
+17:20:48 ============================================================================================
+17:20:48   arm                                           d1     d32    d256    d512   d1024   p2048   p8192
+17:20:48   ------------------------------------------------------------------------------------------------
+17:20:48   #11a  lazy pre-norm -> w13 grouped MoE GEMM   1.013  UNMEAS   0.992   0.949   0.960   0.859   0.623
+17:20:48   #11b  lazy pre-norm -> router GEMM         2.146   0.848   2.203   2.113   2.028   2.005   1.601
+17:20:48   #11a+#11b combined (x2 never materialized)   0.992  UNMEAS   0.989   0.946   0.956   0.856   0.624
+17:20:48   #11b' half-fused router                    1.564   1.056   1.488   1.640   1.521   1.463   1.329
+17:20:48   #11b' half-fused w13                       1.020   0.999   0.997   1.003   0.999   1.007   0.942
+17:20:48 
+17:20:48   whole-layer configuration (merge state)       d1     d32    d256    d512   d1024   p2048   p8192
+17:20:48   ------------------------------------------------------------------------------------------------
+17:20:48   O_f11ab                                     kept   WRONG   WRONG   WRONG   WRONG   WRONG   WRONG
+17:20:48   P_f10_f11ab                                 kept   WRONG   WRONG   WRONG   WRONG   WRONG   WRONG
+17:20:48   Q_f8_f11ab                                  kept   WRONG   WRONG   WRONG   WRONG   WRONG   WRONG
+17:20:48   R_f1_f10_f11ab                              kept   WRONG   WRONG   WRONG   WRONG   WRONG   WRONG
+17:20:48 
+17:20:48   #11 arms: the value is the paired fused/unfused speedup where the bench recorded one.
+17:20:48   UNMEAS  = the bench recorded this arm as unmeasurable (a screen rejected every config, or a prerequisite kernel did); NO timing is published for it, by design.
+17:20:48   layer:  a number is that configuration's median vs A_all_unfused MEASURED IN THE SAME SESSION; `kept` = the canonical file already had a clean row and it was left alone; `gated` = #11 did not pass its correctness screen in that regime, so nothing was re-measured.
+17:20:48 
+17:20:48 ============================================================================================
+17:20:48 STAGE STATUS
+17:20:48 ============================================================================================
+17:20:48   f11     attempt 1  ok                  35.4 min  +7 regime(s)  /home/guancheng/zsh/fusion/log/run_f11_h200/f11.a1.log
+17:20:48   f11     done: decode_bs1, decode_bs32, decode_bs256, decode_bs512, decode_bs1024, prefill_t2048, prefill_t8192
+17:20:48   layer   attempt 1  ok                  34.0 min  +7 regime(s)  /home/guancheng/zsh/fusion/log/run_f11_h200/layer.a1.log
+17:20:48   layer   done: decode_bs1, decode_bs1024, decode_bs256, decode_bs512, prefill_t2048, prefill_t8192
+17:20:48 
+17:20:48   merge: 0 row(s) written, backup layer_configurations.pre_f11_merge_20260805_172045.json
+17:20:48 
+17:20:48 ============================================================================================
+17:20:48 HWINFO -- START vs END
+17:20:48 ============================================================================================
+17:20:48   GPU0 SM clock +104.3%, temperature +17 C, throttle 0x0000000000000001 -> 0x0000000000000001
+17:20:48   GPU1 SM clock +0.0%, temperature +10 C, throttle 0x0000000000000001 -> 0x0000000000000001
+17:20:48   GPU2 SM clock +0.0%, temperature +0 C, throttle 0x0000000000000001 -> 0x0000000000000001
+17:20:48   GPU3 SM clock +0.0%, temperature -1 C, throttle 0x0000000000000001 -> 0x0000000000000001
+17:20:48   GPU4 SM clock +0.0%, temperature -1 C, throttle 0x0000000000000001 -> 0x0000000000000001
+17:20:48   GPU5 SM clock +0.0%, temperature -1 C, throttle 0x0000000000000001 -> 0x0000000000000001
+17:20:48   GPU6 SM clock +0.0%, temperature -1 C, throttle 0x0000000000000001 -> 0x0000000000000001
+17:20:48   GPU7 SM clock +0.0%, temperature -1 C, throttle 0x0000000000000001 -> 0x0000000000000001
+17:20:48 
+17:20:48   wrote /home/guancheng/zsh/fusion/results/h200/f11_rerun_summary.json
+17:20:48 
+17:20:48 ============================================================================================
+17:20:48 SEND BACK
+17:20:48 ============================================================================================
+17:20:48   1. /home/guancheng/zsh/fusion/results/h200/f11_lazy_prenorm.json
+17:20:48   2. /home/guancheng/zsh/fusion/results/h200/layer_configurations.json   (+ any .pre_f11_merge_*.json backup beside it)
+17:20:48   3. /home/guancheng/zsh/fusion/results/h200/_f11_layer_rerun   (the un-merged re-measurement)
+17:20:48   4. /home/guancheng/zsh/fusion/results/h200/f11_rerun_summary.json
+17:20:48   5. /home/guancheng/zsh/fusion/log/run_f11_h200
+17:20:48   total wall 1.16 h
