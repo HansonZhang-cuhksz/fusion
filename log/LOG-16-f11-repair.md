@@ -1,6 +1,6 @@
 # LOG-16 — Repairing fusion #11 (#11a / #11b / #11b′) after the H200 re-run lost it
 
-**Date** 2026-08-04, re-run 2026-08-05 · **Status** repaired and re-measured; verification in progress (§6)
+**Date** 2026-08-04, re-run 2026-08-05 · **Status** §7 is final: 3 of 28 cells published, on a graph-replay basis; #11a unmeasurable
 **Trigger** the H200 re-run wrote `f11_lazy_prenorm.json` with `complete: true` and an **empty
 `rows` array** — the campaign's headline experiment produced nothing.
 
@@ -182,3 +182,88 @@ checking:
   already measured cleanly (a timestamped pre-merge backup exists);
 - **which estimator** each number uses — the campaign publishes the sequential ratio while a
   paired one exists, and elsewhere they disagreed by up to 13.8 %.
+
+
+---
+
+## 7. The gated re-measurement, and what may be published (2026-08-06)
+
+`f11_publish.py` re-measured #11 on an idle H200 (GPU 0 of 8, 0 MiB used, 0 % util) with four
+gates the old harness lacked. Three independent adjudicators then re-derived every cell from
+the raw JSON rather than trusting the script's own flags — which was the right call, because
+they overturned three of them.
+
+### 7.1 The calibration gate passed for the first time
+
+| | blocked run | this run |
+|---|---|---|
+| harness floor | 39.87 µs | **15.321 µs** (bar 20.0) |
+| launch cost | 9.02 µs | 8.327 µs |
+| floor / launch | 4.42 | **1.84** (bar 3.0) |
+
+That is what makes this the first #11 measurement whose *basis* is sound. Everything below
+follows from having a trustworthy floor.
+
+### 7.2 Published: 3 cells, and only on a graph-replay basis
+
+| regime | arm | published | basis |
+|---|---|---|---|
+| decode_bs1024 | #11b | **0.955** | CUDA-graph replay |
+| prefill_t2048 | #11b | **1.377** | CUDA-graph replay |
+| prefill_t8192 | #11b | **1.396** | CUDA-graph replay |
+
+Everything else — 25 cells — is **empty with a stated reason**, never omitted and never filled.
+
+**Why the graph basis and not the wall clock.** Each `wall` figure exceeds the largest ratio
+its own graph work plus its own calibrated launch and floor can produce: prefill_t2048 by
+**34 %** (1.833 against a self-consistent bound of 1.365), prefill_t8192 by 13 %, and the four
+decode cells by 2.08–2.15×, above the hard `n_unfused/n_fused = 2.0` asymptote that no launch
+cost can breach. The wall numbers are also **non-monotone in T**, which the mechanism forbids.
+The graph numbers, by contrast, sit exactly where the study's other devices bracket them
+(C500 1.096 → **H200 1.377** → RTX 4060 1.411 at t2048) and equal the theoretical maximum
+`(T_gemm + T_norm) / T_gemm_fused` for this fusion.
+
+The published rows carry an explicit warning that their timing basis differs from every other
+row in the file, so `fused_ms` must not be compared across rows.
+
+**decode_bs1024 publishes a regression.** 0.955 means fusion *loses* 4.5 % once launch
+overhead is amortised. Its 1.147 wall figure was the harness floor plus one saved launch — a
+launch-count win, not a work win. Publishing the regression is the honest reading.
+
+### 7.3 #11a: unmeasurable, not measured-and-lost
+
+**0 of 7 cells.** Six fail the strict invariance screen outright — `BLOCK_M` rel_err up to
+**1.18e-01** against tol 1e-5 — and the seventh was overturned: at decode_bs1 its `BLOCK_M`
+probe recorded `ran: false`, so the one axis the wgmma defect lives on was **never tested**,
+and the arm has no ceiling of any kind. Untested is not invariant.
+
+This changes the claim the study makes. #11a on H200 is not "measured and lost at 0.62–1.01";
+it is **not measurable on this toolchain**, because its winning configs cannot be shown to
+compute the right answer. The two are different statements and only the second is supportable.
+
+One finding deserves recording. At prefill_t8192, four independent perturbations —
+`BLOCK_M`, `BLOCK_N`, `GROUP_M`, `num_stages` — all report `rel_err = 0.02628391422331333` to
+**17 significant figures**. Four probes agreeing with each other to the last bit while
+disagreeing with the tuned winner by an identical amount does not describe four miscompiles;
+it says **the tuned winner is the outlier**. The screen rejected the right config.
+
+### 7.4 Two defects in my own script, found by the adjudication and now fixed
+
+Recorded because both would have produced plausible numbers with nothing behind them:
+
+1. **The `rstd` producer was tuned with `lambda: (True, "")`** — an unconditional pass. No
+   config was ever compared against anything, and `#11b′` inherited a figure with **no
+   numerical evidence at all**. It now verifies against `rsqrt(mean(h1²)+eps)`.
+2. **`#11b′` had no invariance screen, and its ceiling omitted `router_half`'s re-read of
+   `h1`** — making the bound 55 % too generous at t8192, which is how the arm looked bounded
+   when it was not. Both corrected.
+
+`#11b′` is therefore **unpublished for now** and rescuable on a re-run, not refuted.
+
+### 7.5 What the study can now claim about #11 on H200
+
+That fusing an RMSNorm into the router GEMM is **worth ~1.38–1.40× at prefill** on real work,
+consistent with the other two devices; that it is **neutral-to-negative at decode** once launch
+accounting is removed; that fusing it into the **w13 grouped GEMM cannot be validated at all**
+on this toolchain; and — from the 2×2 in §6.3 — that **warp specialization does not absorb the
+reduction**, which was the hypothesis H200 was brought in to test.

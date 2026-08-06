@@ -395,6 +395,9 @@ def _campaign_cards() -> dict:
 
 
 FAMILY_CARD = _campaign_cards()
+# The gated #11 re-measurement, loaded once. Its presence is what makes every #11 row in this
+# report come from it instead of from the campaign file (see the F11 section below).
+F11P = load("f11_publish.json")
 FUSION_FAMILY = {
     "#1": "f01", "#3": "f03", "#4": "f04f05", "#5": "f04f05", "#6": "f06",
     "#8": "f08f09", "#9": "f08f09", "#10": "f10", "#11": "f11",
@@ -406,6 +409,20 @@ def provenance_note(fusion: str, regime: str) -> str:
     key = next((k for k in sorted(FUSION_FAMILY, key=len, reverse=True)
                 if fusion.startswith(k)), None)
     fam = FUSION_FAMILY.get(key or "", "")
+    if fam == "f11" and F11P is not None:
+        # #11 no longer comes from the campaign file, so it must not inherit that file's
+        # card record. The gated re-measurement pinned its own GPU and measured its own
+        # floor; its `env.uuid` is carried from a PREFLIGHT taken the day before and is not
+        # evidence about which card this run got, so it is not quoted as one.
+        g, cal = F11P.get("gpu") or {}, F11P["calibration"]
+        return (f"MEASURED BY f11_publish.py on the GPU it pinned itself: index "
+                f"{g.get('index')}, \"{g.get('why')}\" -- harness floor "
+                f"{cal['harness_floor_us']:+.3f} us against a {cal['floor_bar_us']:.1f} us "
+                f"bar, launch {cal['launch_us']:.3f} us. NOT the card record of "
+                f"results/h200/{F11_FILE} (floor "
+                f"{FAMILY_CARD.get('f11', ('', 0.0))[1]:+.3f} us), which no longer supplies "
+                f"any #11 number here. The `env.uuid` in the newer file comes from a preflight "
+                f"taken the previous day and is not quoted as this run's card")
     card, floor = FAMILY_CARD.get(fam, ("", None))
     if not card and floor is None:
         return ""
@@ -456,6 +473,476 @@ WS_NOT_APPLIED = (
     "sm_90 to `add_hopper_warpspec`, which crashed 493 times in this run's compiler log and "
     "otherwise emitted nothing"
 )
+
+# ======================================================================================
+# #11 -- THE GATED RE-MEASUREMENT (`results/h200/f11_publish.json`), and its adjudication
+# ======================================================================================
+# `f11_lazy_prenorm.json` (above) is the THIRD attempt at #11 on this device and the second
+# that failed verification: it was taken on a contended card (its own
+# `fairness.timing.harness_floor_us` is 39.872 us against a 9.024 us launch -- a floor is a
+# launch plus a sync, so that one was timing somebody else's kernels too) and its table
+# carries ratios above their own physical ceilings.  `f11_publish.py` re-measured with four
+# gates that harness did not have, and THIS generator prefers its file for every #11 row.
+# The older file's #11 numbers are no longer published by this report at any regime.
+#
+# WHICH NUMBER EACH ROW CARRIES IS NOT THE SCRIPT'S OWN `publishable` FLAG.  That flag is
+# wrong in four known ways, all of them in the permissive direction, and every one of them
+# is re-derived here from the raw fields rather than trusted:
+#
+#   D1  an invariance probe whose partner config FAILED TO RUN was recorded as
+#       `{"ran": false}` with no `pass` key, and the script's filter only rejected
+#       `pass is False`.  So an axis that was never tested counted as invariant.  That is
+#       exactly how `11a_w13` at decode_bs1 -- the one regime where the wgmma-signature axis
+#       (BLOCK_M) was never probed -- came out "PUBLISHABLE".  `f11p_gate` FAILS CLOSED: a
+#       probe that did not run blocks the cell.
+#   D2  the `11a_w13` branch never calls `ceilings()` at all, so no #11a cell in the file has
+#       `ceiling_launch_aware` and its flag reflects invariance only.  An unbounded number is
+#       not publishable, so `f11p_gate` requires the arm to HAVE a ceiling.
+#   D3  the `11b_half` ceiling is computed from `b_f + T*4`, but the half-fused arm is
+#       `launch_rstd(h1, ...)` followed by `launch_router(h1, ...)` -- it reads h1 TWICE.
+#       The rstd kernel's T*H*2 read and the router's T*4 read-back of rstd are both
+#       uncharged, which makes that ceiling too GENEROUS.  `f11p_half_ceiling_corrected`
+#       recomputes it; the correction is what puts decode_bs1024 #11b' over its bound.
+#   D4  `11b_half` has no correctness evidence of any kind: its output buffer `logits_h` is
+#       written and never compared to a reference, its rstd producer was tuned with
+#       `verify = lambda: (True, "")`, and it carries no `invariance` key at all.  The
+#       publication rule requires invariance PASSED with the critical axes actually TESTED;
+#       for this arm it was never attempted, so every #11b' cell is blocked.
+#
+# AND ONE THING THE FILE'S OWN LAYOUT WILL MISLEAD A READER ABOUT: `f11_publish.json`
+# carries TWO calibrations under similar names.  `/calibration` is THIS run's passing gate
+# (floor 15.321 us, launch 8.327 us, ok true).  `/env` still carries the BLOCKED run's
+# values (launch 9.024 us, floor 39.872 us, `calib_health.contended: true`, and the message
+# "timing calibration is UNRELIABLE").  Everything below reads `/calibration`.  Reading
+# `/env` -- the obvious place -- would silently recompute every ceiling from the numbers of
+# the run this one exists to replace.
+F11_PUBLISH_FILE = "f11_publish.json"
+# The bandwidth every ceiling in that file was computed at, read from the file itself. It is
+# needed by the corrected #11b' bound below, and reading it (rather than restating 4250) is
+# what makes that correction a recomputation of the same model rather than a second model.
+F11P_BW = ((F11P or {}).get("bandwidth_gbs"))
+
+# The ADJUDICATED decision, and the one judgement here that is not re-derivable from the
+# file: for the cells that clear every gate, the WALL ratio is still not published and the
+# CUDA-GRAPH ratio is.  The reason is measurable and is recomputed per cell by
+# `f11p_self_consistency()`: the largest wall ratio this run's own calibration permits is
+#     pred = (graph_unfused + n_unfused*launch + floor) / (graph_fused + n_fused*launch + floor)
+# with launch and floor from `/calibration`.  The four decode #11b cells measure 2.08-2.15x
+# ABOVE their own pred (and above the hard n_u/n_f = 2.0 asymptote that no launch cost can
+# breach when the fusion goes from 2 kernels to 1).  The two surviving prefill cells measure
+# 1.34x and 1.13x above it.  Only decode_bs1024 reproduces its own pred (1.148 vs 1.147).
+# The same systematic, same sign, is therefore present in the surviving prefill cells; the
+# ceiling gate did not catch them only because the launch-aware ceiling is loose at prefill.
+# The graph column, by contrast, is monotone in T as the mechanism requires and orders
+# correctly against the C500 and RTX 4060 files.  So: graph is published, wall is recorded
+# in `notes` as blocked, and no wall-based #11 speedup appears anywhere in this report.
+F11P_BASIS = ("TIMING BASIS FOR THIS ROW IS CUDA-GRAPH REPLAY (graph_unfused_ms / "
+              "graph_fused_ms), NOT the L2-flushed wall clock that every other row in this "
+              "file uses. Do not compare this row's `fused_ms` against another row's")
+
+# arm key in f11_publish.json -> the (fusion, variant) row identity this report already uses
+F11P_ARM_ROW = {
+    "11b_router": NAME[("f11", "f11b_router")],
+    "11b_half": HALF,
+    "11a_w13": NAME[("f11", "f11a_w13")],
+}
+# kernels per arm: (fused, unfused).  Read off the dispatch in f11_publish.py: #11b fuses
+# norm+GEMM into one kernel against norm+GEMM; #11b' keeps two kernels on both sides; #11a
+# fuses the pre-norm into the w13 grouped GEMM.
+F11P_KERNELS = {"11b_router": (1, 2), "11b_half": (2, 2), "11a_w13": (1, 2)}
+
+
+def _f11p_shape() -> tuple[int, int]:
+    """(HIDDEN_SIZE, N_ROUTED_EXPERTS) read out of the H200 config the run itself imported.
+
+    Parsed rather than imported so this generator keeps its no-torch dependency, and read
+    rather than hardcoded so a shape change cannot silently invalidate the corrected #11b'
+    ceiling below.
+    """
+    import re
+    txt = (ROOT / "glm52_h200" / "config.py").read_text()
+    def const(name: str) -> int:
+        mm = re.search(rf"^{name}\s*=\s*(\d+)", txt, re.M)
+        if not mm:
+            raise SystemExit(f"cannot read {name} from glm52_h200/config.py")
+        return int(mm.group(1))
+    return const("HIDDEN_SIZE"), const("N_ROUTED_EXPERTS")
+
+
+def f11p_half_ceiling_corrected(T: int, bw_gbs: float, launch_us: float) -> float:
+    """D3: the #11b' launch-aware ceiling with the second h1 read charged.
+
+    The half-fused arm is TWO kernels -- `launch_rstd(h1, rstd, ...)` then
+    `launch_router(h1, b_fold, logits_h, ...)`.  It streams h1 once per kernel:
+
+        fused    = (T*H*2 + T*4)            rstd:   read h1, write rstd
+                 + (T*H*2 + T*4 + H*ER*2 + T*ER*4)   router: read h1 + rstd + gate, write logits
+        unfused  = (2*T*H*2) + (T*H*2 + H*ER*2 + T*ER*4)    (as the script computes it)
+
+    The script charges the fused side `b_f + T*4`, i.e. ONE h1 read, so its ceiling is too
+    generous by a whole activation pass.  Both arms are then charged 2 launches.
+    """
+    H, ER = _f11p_shape()
+    b_f = (T * H * 2 + T * 4) + (T * H * 2 + T * 4 + H * ER * 2 + T * ER * 4)
+    b_u = (2 * T * H * 2) + (T * H * 2 + H * ER * 2 + T * ER * 4)
+    bw, L = bw_gbs * 1e9, launch_us * 1e-6
+    t_f = b_f / bw + 2 * L
+    t_u = b_u / bw + 2 * L
+    return t_u / t_f
+
+
+def f11p_graph_speedup(a: dict) -> float | None:
+    """graph_unfused_ms / graph_fused_ms.  The file records `graph_speedup` for the router
+    arm only; the two raw times are present for every arm, so the ratio is recovered here
+    rather than left as the `nan` the script's own summary printed."""
+    gf, gu = a.get("graph_fused_ms"), a.get("graph_unfused_ms")
+    if _nan(gf) or _nan(gu) or not gf:
+        return None
+    return float(gu) / float(gf)
+
+
+def f11p_self_consistency(a: dict, arm: str, cal: dict) -> float | None:
+    """The largest wall ratio this run's own calibration permits for this cell.
+
+    (graph_unfused + n_u*launch + floor) / (graph_fused + n_f*launch + floor), in ms, with
+    launch and floor from `/calibration`.  Everything on the right is measured; nothing is
+    modelled.  A measured wall ratio above this is not a fusion win, it is the wall timer.
+    """
+    gf, gu = a.get("graph_fused_ms"), a.get("graph_unfused_ms")
+    if _nan(gf) or _nan(gu):
+        return None
+    nf, nu = F11P_KERNELS[arm]
+    L = float(cal["launch_us"]) / 1e3
+    F = float(cal["harness_floor_us"]) / 1e3
+    den = float(gf) + nf * L + F
+    return (float(gu) + nu * L + F) / den if den > 0 else None
+
+
+def f11p_invariance(a: dict) -> tuple[str, list[str]]:
+    """(verdict, notes) for one arm's strict screen, re-derived FAIL-CLOSED (D1).
+
+    verdict is one of "PASS" / "REJECT" / "UNTESTED" / "ABSENT".
+    """
+    inv = a.get("invariance")
+    if not isinstance(inv, dict):
+        return "ABSENT", [
+            "INVARIANCE: NO SCREEN OF ANY KIND. This arm carries no `invariance` key, its "
+            "output buffer is never compared against a reference anywhere in f11_publish.py, "
+            "and its producer kernel was tuned with a verifier that returns True "
+            "unconditionally. It rests on timing alone (D4)"]
+    probes = inv.get("probes") or []
+    ran = [p for p in probes if p.get("pass") is True]
+    bad = [p for p in probes if p.get("pass") is False and p.get("ran") is not False]
+    unt = [p for p in probes if p.get("ran") is False or ("pass" not in p and "skipped" not in p)]
+    skipped = [p for p in probes if p.get("skipped")]
+    keys = ", ".join(inv.get("keys") or [])
+    n = [f"INVARIANCE SCREEN at tol {inv.get('tol')} (NOT check()'s 2e-2) over {len(probes)} "
+         f"axes [{keys}]: worst rel_err {inv.get('worst_rel_err')}"
+         + (f", {len(ran)} probes ran and passed" + (" BITWISE" if all(
+             p.get("bitwise") for p in ran) and ran else "") if ran else "")]
+    n.append("SCOPE OF THAT SCREEN: it probes only the keys present in the tuned config, and "
+             "this run's GEMM grid emits BLOCK_M / BLOCK_N / BLOCK_K / num_warps / "
+             "num_stages / GROUP_M only. warp_specialize and num_ctas are therefore NOT in "
+             "the screen -- they were never varied in the measurement either, but the "
+             "by-construction invariance argument names seven axes and this covers five")
+    for p in skipped:
+        n.append(f"axis {p['key']}: skipped -- {p['skipped']}")
+    for p in bad:
+        n.append(f"axis {p['key']}: {p.get('from')} -> {p.get('to')} changes the output by "
+                 f"rel_err {p.get('rel_err'):.4e} against tol {inv.get('tol')} -- "
+                 f"mathematically invariant, so this is a codegen defect")
+    for p in unt:
+        n.append(f"axis {p['key']}: partner {p.get('partner')} DID NOT RUN, so this axis is "
+                 f"UNTESTED, which is not the same as invariant. The recorded probe carries "
+                 f"no `pass` field and the script's filter only rejected `pass is False`, "
+                 f"which is how this cell was flagged publishable (D1)")
+    if bad:
+        return "REJECT", n
+    if unt:
+        return "UNTESTED", n
+    return "PASS", n
+
+
+def f11p_gate(row: dict, arm_key: str, a: dict, cal: dict) -> list[str]:
+    """Every reason this cell may NOT be published, re-derived from the raw fields.
+
+    Empty list == publishable. The rule, stated once: a cell is publishable only if the
+    calibration gate passed, the arm HAS a launch-aware ceiling, invariance PASSED with the
+    critical axes actually TESTED, and the measured wall ratio is at or below that ceiling.
+    """
+    why: list[str] = []
+    if not cal.get("ok"):
+        why.append(f"BLOCKED -- calibration gate FAILED: harness floor "
+                   f"{cal.get('harness_floor_us')} us against a bar of "
+                   f"{cal.get('floor_bar_us')} us")
+    cl = a.get("ceiling_launch_aware")
+    verdict, _ = f11p_invariance(a)
+    if verdict == "ABSENT":
+        why.append("BLOCKED -- no invariance screen was ever run on this arm, and its output "
+                   "is never compared against a reference: it has no numerical evidence at "
+                   "all (D4)")
+    elif verdict == "REJECT":
+        bad = sorted({p["key"] for p in (a["invariance"].get("probes") or [])
+                      if p.get("pass") is False and p.get("ran") is not False})
+        why.append(f"BLOCKED -- invariance REJECT: the fused output depends on "
+                   f"{', '.join(bad)}, worst rel_err "
+                   f"{a['invariance'].get('worst_rel_err'):.4e} against tol "
+                   f"{a['invariance'].get('tol')}. The screened quantity is a full-K "
+                   f"reduction over one row in CTA-local registers, so it is invariant to "
+                   f"these keys BY CONSTRUCTION and a dependence is a codegen defect")
+    elif verdict == "UNTESTED":
+        unt = sorted({p["key"] for p in (a["invariance"].get("probes") or [])
+                      if p.get("ran") is False or "pass" not in p})
+        why.append(f"BLOCKED -- invariance INCOMPLETE: the probe on {', '.join(unt)} did not "
+                   f"run, so the one axis the defect lives on was never tested. Untested is "
+                   f"not invariant; this gate fails closed (D1)")
+    if _nan(cl):
+        why.append("BLOCKED -- NO CEILING OF ANY KIND: f11_publish.py never calls "
+                   "`ceilings()` on this arm, so neither `ceiling_launch_aware` nor "
+                   "`ceiling_bytes` exists for it and the measured ratio was never bounded "
+                   "by anything (D2)")
+    w = a.get("paired_p50")
+    if not _nan(cl) and not _nan(w) and float(w) > float(cl):
+        why.append(f"BLOCKED -- measured wall ratio {float(w):.4f}x EXCEEDS its own "
+                   f"launch-aware ceiling {float(cl):.4f}x by "
+                   f"{100.0 * (float(w) / float(cl) - 1):.1f}%. The ceiling charges each arm "
+                   f"its ideal traffic time PLUS its launches; a measurement above it is not "
+                   f"a physical speedup")
+    if arm_key == "11b_half":
+        T = row["T"]
+        # D3: re-run the bound with the second h1 read charged, and block on it too.
+        corr = f11p_half_ceiling_corrected(T, float(F11P_BW), float(cal["launch_us"]))
+        if not _nan(w) and float(w) > corr:
+            why.append(f"BLOCKED -- the recorded ceiling {float(cl):.4f}x is too generous: "
+                       f"the half-fused arm reads h1 TWICE (rstd kernel, then router kernel) "
+                       f"and f11_publish.py charges it one read. With the second pass "
+                       f"charged the ceiling is {corr:.4f}x, and the measured wall "
+                       f"{float(w):.4f}x exceeds it (D3)")
+    return why
+
+
+def f11p_calib_notes(d: dict) -> list[str]:
+    """The calibration gate, verbatim from `/calibration`, plus the provenance hazard."""
+    cal = d["calibration"]
+    g = d.get("gpu") or {}
+    old = load(F11_FILE) or {}
+    oldt = ((old.get("fairness") or {}).get("timing") or {})
+    n = [f"SOURCE results/h200/{F11_PUBLISH_FILE} (f11_publish.py, {d.get('generated')}) -- "
+         f"the GATED re-measurement. It SUPERSEDES results/h200/{F11_FILE} for every #11 "
+         f"row in this report: that file's numbers were taken on a contended card (its own "
+         f"fairness.timing.harness_floor_us = {oldt.get('harness_floor_us')} us against a "
+         f"{oldt.get('launch_cost_us')} us launch) and its table carries ratios above their "
+         f"own physical ceilings. No number from it is published here",
+         f"CALIBRATION GATE (the first of the four gates the old harness lacked): harness "
+         f"floor {cal['harness_floor_us']:.3f} us measured BEFORE anything else, against a "
+         f"bar of {cal['floor_bar_us']:.1f} us -- ok={cal['ok']}, so the run proceeded. "
+         f"Launch cost {cal['launch_us']:.3f} us; floor/launch ratio "
+         f"{cal['harness_floor_us'] / cal['launch_us']:.2f} against a bar of 3.0. GPU "
+         f"{g.get('index')} of 8, picked as \"{g.get('why')}\". The run this replaces had a "
+         f"floor of {oldt.get('harness_floor_us'):.2f} us",
+         f"PROVENANCE HAZARD in the raw record, stated here because the file cannot be "
+         f"edited: {F11_PUBLISH_FILE} carries TWO calibrations. `/calibration` is this run's "
+         f"passing gate (the numbers above). `/env` still carries the BLOCKED run's values "
+         f"-- launch_us {(d.get('env') or {}).get('launch_us')}, harness_floor_us "
+         f"{(d.get('env') or {}).get('harness_floor_us')}, calib_health.contended="
+         f"{((d.get('env') or {}).get('calib_health') or {}).get('contended')}, and the "
+         f"message \"timing calibration is UNRELIABLE\". Every ceiling in this report is "
+         f"computed from `/calibration`; reading `/env` reproduces the run that failed",
+         f"bandwidth used for every ceiling below: {d.get('bandwidth_gbs')} GB/s"]
+    return n
+
+
+def f11p_decomp_notes(a: dict, arm: str, cal: dict) -> list[str]:
+    """The wall-vs-graph decomposition, which is the whole point of the dual timing."""
+    n: list[str] = []
+    w = a.get("paired_p50")
+    g = f11p_graph_speedup(a)
+    if not _nan(w):
+        n.append(f"WALL (L2-flushed, interleaved A/B/A/B, launch INCLUDED): {float(w):.4f}x "
+                 f"paired per-round median over n={a.get('n')} rounds, p10-p90 "
+                 f"{a.get('paired_p10'):.4f}-{a.get('paired_p90'):.4f}, ratio-of-medians "
+                 f"{a.get('ratio_of_medians'):.4f}; first-half {a.get('drift_first_half'):.4f} "
+                 f"vs second-half {a.get('drift_second_half'):.4f}; arms "
+                 f"{a.get('fused_ms'):.4f} / {a.get('unfused_ms'):.4f} ms")
+    if g is not None:
+        n.append(f"GRAPH (CUDA-graph replay, launch AMORTISED): {g:.4f}x; arms "
+                 f"{a.get('graph_fused_ms'):.4f} / {a.get('graph_unfused_ms'):.4f} ms")
+    if not _nan(w) and g is not None:
+        nf, nu = F11P_KERNELS[arm]
+        verdict = ("the win SURVIVES launch amortisation, so it is real work"
+                   if g > 1.0 else
+                   "the win DOES NOT survive launch amortisation: under CUDA graphs the "
+                   "fused arm is SLOWER, so the wall-clock win is launch overhead and not work")
+        n.append(f"LAUNCH-vs-WORK DECOMPOSITION: this fusion goes from {nu} kernels to {nf}. "
+                 f"wall {float(w):.4f}x, graph {g:.4f}x -- {verdict}")
+        pred = f11p_self_consistency(a, arm, cal)
+        if pred:
+            n.append(f"SELF-CONSISTENCY of the wall figure, from this run's own numbers: the "
+                     f"largest wall ratio its calibration permits is (graph_unfused + "
+                     f"{nu}*launch + floor)/(graph_fused + {nf}*launch + floor) = "
+                     f"{pred:.4f}x, using launch {cal['launch_us']:.3f} us and floor "
+                     f"{cal['harness_floor_us']:.3f} us. Measured wall {float(w):.4f}x is "
+                     f"{float(w) / pred:.2f}x that bound"
+                     + ("" if float(w) / pred <= 1.02 else
+                        " -- the wall column is measuring the harness, which is why this "
+                        "report publishes the graph ratio and not the wall ratio"))
+    return n
+
+
+def f11p_ceiling_notes(row: dict, a: dict, arm: str, cal: dict) -> list[str]:
+    """Which bound the cell was checked against, and what it is."""
+    cl, cb = a.get("ceiling_launch_aware"), a.get("ceiling_bytes")
+    if _nan(cl):
+        return ["CEILING: NONE. f11_publish.py never calls `ceilings()` on this arm, so this "
+                "cell was never bounded (D2)"]
+    n = [f"LAUNCH-AWARE CEILING {float(cl):.4f}x -- the bound this cell was checked against. "
+         f"Each arm is charged its ideal traffic time PLUS its launches "
+         f"(ideal {a.get('ideal_fused_ms'):.4f} / {a.get('ideal_unfused_ms'):.4f} ms at "
+         f"{F11P_BW} GB/s). A bytes-only roofline cannot bound a fusion whose win is one "
+         f"fewer launch, and here it says {float(cb):.4f}x",
+         f"measured wall {float(a.get('paired_p50')):.4f}x vs that ceiling: "
+         f"{'WITHIN' if float(a['paired_p50']) <= float(cl) else 'ABOVE'} it"]
+    if arm == "11b_half":
+        corr = f11p_half_ceiling_corrected(row["T"], float(F11P_BW), float(cal["launch_us"]))
+        n.append(f"that ceiling is MIS-DERIVED and this report does not accept it: the "
+                 f"half-fused arm is rstd(h1) then router(h1), so it reads h1 twice, and the "
+                 f"script charges `b_f + T*4` -- one read. With the second activation pass "
+                 f"and the rstd read-back charged the bound is {corr:.4f}x, not "
+                 f"{float(cl):.4f}x (D3)")
+    return n
+
+
+def f11p_rows(d: dict, regime: str) -> dict | None:
+    return next((r for r in d.get("rows", []) if r.get("regime") == regime), None)
+
+
+F11P_NO_HOPPER = (
+    "HOPPER AXES: this run offered NONE. f11_publish.py's GEMM grid is BLOCK_M x BLOCK_N x "
+    "BLOCK_K x num_warps x num_stages with GROUP_M=8 fixed -- it emits no USE_TMA, no "
+    "warp_specialize and no num_ctas, so no #11 number here measures TMA, warp "
+    "specialization or thread-block clusters, in either direction. That is a scoping fact "
+    "about this measurement, not a finding about the axes")
+
+
+def f11p_emit(d: dict, regime: str, add) -> None:
+    """The four #11 rows for one regime, from the gated re-measurement.
+
+    Four rows are emitted whatever happened. A cell the adjudication BLOCKED gets a row with
+    EMPTY measurement columns and the reasons in `notes` -- never omitted, and never filled
+    with a number the evidence does not support. A cell that clears every gate carries the
+    CUDA-GRAPH ratio (see F11P_BASIS) with the wall figure recorded in `notes` as blocked.
+    """
+    cal = d["calibration"]
+    row = f11p_rows(d, regime)
+    base = f11p_calib_notes(d)
+    if not row:
+        why = (f"NO ROW for this regime in results/h200/{F11_PUBLISH_FILE}: the gated "
+               f"re-measurement covers "
+               f"{', '.join(r['regime'] for r in d.get('rows', []))}. Nothing is estimated "
+               f"here, and the superseded file's number is not published")
+        for fusion, variant in (NAME[("f11", "f11a_w13")], NAME[("f11", "f11b_router")],
+                                HALF, NAME[("f11", "combined")]):
+            add(fusion, variant, notes=base + [why])
+        return
+
+    arms = row.get("arms") or {}
+    rt = arms.get("11b_router") or {}
+
+    def emit(arm_key: str, k1_name: str, k2_name: str, fused_mapping: str,
+             k1_mapping: str, k2_mapping: str, extra: list[str]) -> None:
+        fusion, variant = F11P_ARM_ROW[arm_key]
+        a = arms.get(arm_key)
+        if not a:
+            add(fusion, variant, notes=base + [
+                f"NOT MEASURED: results/h200/{F11_PUBLISH_FILE} carries no {arm_key!r} arm at "
+                f"this regime"])
+            return
+        why = f11p_gate(row, arm_key, a, cal)
+        n = list(base)
+        n += f11p_decomp_notes(a, arm_key, cal)
+        n += f11p_ceiling_notes(row, a, arm_key, cal)
+        n += f11p_invariance(a)[1]
+        n.append(F11P_NO_HOPPER)
+        n += extra
+        if why:
+            n = ["NOT PUBLISHED -- " + "; ".join(w.replace("BLOCKED -- ", "", 1)
+                                                 for w in why)] + n
+            n.append("every raw figure this cell does have is quoted above and is NOT "
+                     "published: the measurement columns are empty on purpose, so that no "
+                     "reader can re-derive a blocked ratio from this row")
+            add(fusion, variant, notes=n, fused_mapping=fused_mapping, n_unfused_kernels=2,
+                unfused_k1_name=k1_name, unfused_k1_mapping=k1_mapping,
+                unfused_k2_name=k2_name, unfused_k2_mapping=k2_mapping)
+            return
+        g = f11p_graph_speedup(a)
+        n = [F11P_BASIS,
+             "PUBLISHED: this cell clears every gate -- calibration passed, the arm has a "
+             "launch-aware ceiling, the strict invariance screen PASSED with every probe "
+             "actually run, and the measured wall ratio is within that ceiling. The WALL "
+             "ratio is nevertheless NOT published (see the self-consistency note); the "
+             "number in `speedup` is the CUDA-graph ratio"] + n
+        n.append("unfused_k1_ms / unfused_k2_ms are EMPTY on purpose: the per-kernel "
+                 "component times in this file are wall-clock measurements, and putting them "
+                 "beside a graph-replay total would mix two timing bases in one row")
+        add(fusion, variant, notes=n,
+            fused_ms=r4(a.get("graph_fused_ms")), fused_mapping=fused_mapping,
+            unfused_total_ms=r4(a.get("graph_unfused_ms")), speedup=r4(g),
+            n_unfused_kernels=2,
+            unfused_k1_name=k1_name, unfused_k1_mapping=k1_mapping,
+            unfused_k2_name=k2_name, unfused_k2_mapping=k2_mapping)
+
+    # ---- #11a: lazy pre-norm -> w13 grouped GEMM ------------------------------------
+    a11 = arms.get("11a_w13") or {}
+    emit("11a_w13", "rmsnorm (writes x2)", "w13 grouped GEMM",
+         m(a11.get("fused_cfg")), "", m(a11.get("unfused_cfg")),
+         ["#11a IS UNMEASURABLE ON THIS DEVICE, NOT MEASURED-AND-LOST. 'Measured and lost' "
+          "asserts a correct kernel was timed and was slower. Here the tuned fused winner "
+          "changes its output when a knob that cannot change the answer is perturbed (6 of 7 "
+          "regimes), and at the 7th the decisive axis could not be probed at all -- the "
+          "winner is BM16/BN256/BK128/s4 and every cross-boundary BLOCK_M partner needs more "
+          "shared memory than this device has, so no legal partner exists in the grid. The "
+          "tuner then selected among those settings on speed. Nothing licenses attributing "
+          "any of these ratios to 'lazy pre-norm fused into w13'",
+          "CAUSE UNRESOLVED, and this report does not inherit the earlier campaign's "
+          "'wgmma BLOCK_M>=64 lowering boundary' explanation: this run contradicts it at four "
+          "points -- two of the failing cells have a winner at BLOCK_M=16 (the mma.sync "
+          "side); three cells pass a BLOCK_M probe that straddles the threshold bit-exactly; "
+          "both-wgmma pairs disagree by up to 8.9e-2 where campaign 1 found perfect "
+          "agreement; and num_warps, quarantined there as a last-ulp effect, is the worst "
+          "axis here. The one measurement that separates a deterministic miscompile from a "
+          "race (`repeat_verdict()`) was never called by f11_publish.py",
+          "#11a is also slower under CUDA-graph replay at every regime, so even setting the "
+          "invariance failure aside there is no work-level win to report"])
+
+    # ---- #11b: lazy pre-norm -> router GEMM ------------------------------------------
+    emit("11b_router", "rmsnorm (writes x2)", "router GEMM",
+         m(rt.get("fused_cfg")), m(rt.get("norm_cfg")), m(rt.get("unfused_gemm_cfg")),
+         [f"component wall times measured in the same run (NOT published as a ratio): norm "
+          f"{rt.get('norm_only_ms'):.4f} ms at {m(rt.get('norm_cfg'))}, router GEMM alone "
+          f"{rt.get('gemm_only_ms'):.4f} ms at {m(rt.get('unfused_gemm_cfg'))}"
+          if not _nan(rt.get("norm_only_ms")) else ""])
+
+    # ---- #11b' half-fused: rstd kernel + epilogue scale -------------------------------
+    hf = arms.get("11b_half") or {}
+    emit("11b_half", "rmsnorm (writes x2)", "router GEMM",
+         (f"rstd: {m(hf.get('rstd_cfg'))} | gemm: {m(hf.get('router_cfg'))}"),
+         m(rt.get("norm_cfg")), m(rt.get("unfused_gemm_cfg")),
+         ["#11b' is the CONTROL that separates the traffic term from the launch term: it "
+          "holds the kernel count at two on both sides and removes only the activation pass. "
+          "That is what makes its total absence of correctness evidence disqualifying rather "
+          "than merely regrettable -- it is the arm whose number would carry the traffic "
+          "claim, and nothing in this run checked its output"])
+
+    # ---- #11a + #11b combined (one norm charged once) --------------------------------
+    add(*NAME[("f11", "combined")], notes=[
+        f"NOT PUBLISHED -- results/h200/{F11_PUBLISH_FILE} has no combined arm: the gated "
+        f"re-measurement times #11b, #11b' and #11a separately and never builds the "
+        f"layer-honest chain that charges the norm once. Nor could it be assembled here -- "
+        f"the combined ratio needs BOTH fused GEMMs, and #11a is unpublishable at every "
+        f"regime, so there is nothing to combine",
+        "the superseded file's combined number is not carried forward: it was computed on "
+        "the contended card, from an #11a arm that this run shows to be invariance-broken",
+    ] + base)
 
 
 def f11_estimator_spread(d: dict) -> tuple[int, float, str]:
@@ -1119,9 +1606,19 @@ def rows_for(regime: str) -> list[dict]:
                 unfused_k2_mapping=m(ra_cfg))
 
     # ---- #11a / #11b / #11a+b / #11b' -----------------------------------------------
-    # The repaired re-run. Four rows are emitted per regime whatever happened: an arm that
-    # could not be measured gets a row with EMPTY measurement columns and the file's own
-    # reason, because a silently absent row is what this whole repair exists to prevent.
+    # PREFER THE GATED RE-MEASUREMENT. `f11_publish.json` is the fourth attempt at #11 on
+    # this device and the first to pass its own calibration gate; `f11_lazy_prenorm.json` was
+    # taken on a contended card and failed verification, so when the newer file is present
+    # NONE of the older file's #11 numbers are published. The older path below is kept only
+    # so this generator still runs against a checkout that has not got the new file.
+    dp = load(F11_PUBLISH_FILE)
+    if dp:
+        f11p_emit(dp, regime, add)
+        return out
+
+    # Four rows are emitted per regime whatever happened: an arm that could not be measured
+    # gets a row with EMPTY measurement columns and the file's own reason, because a silently
+    # absent row is what this whole repair exists to prevent.
     d = load(F11_FILE)
     rr = pick(d["rows"], regime=regime) if d else None
     if rr:
@@ -1348,6 +1845,29 @@ def main() -> None:
           f"{len(seen_cells)}")
     for b in bad:
         print("  " + b)
+
+    # ---- #11 accounting, printed because it is the whole point of this re-run ----------
+    if F11P:
+        cal = F11P["calibration"]
+        print(f"\n  #11 from results/h200/{F11_PUBLISH_FILE} (calibration gate: floor "
+              f"{cal['harness_floor_us']:.3f} us vs bar {cal['floor_bar_us']:.1f} us, "
+              f"ok={cal['ok']})")
+        npub = nblk = 0
+        for r in F11P.get("rows", []):
+            for arm_key, a in (r.get("arms") or {}).items():
+                why = f11p_gate(r, arm_key, a, cal)
+                g = f11p_graph_speedup(a)
+                if why:
+                    nblk += 1
+                    print(f"    BLOCKED   {r['regime']:<14} {arm_key:<11} "
+                          f"{why[0].replace('BLOCKED -- ', '')[:96]}")
+                else:
+                    npub += 1
+                    print(f"    PUBLISHED {r['regime']:<14} {arm_key:<11} "
+                          f"graph {g:.4f}x (wall {a['paired_p50']:.4f}x NOT published)")
+        print(f"    -> {npub} published, {nblk} blocked, of "
+              f"{npub + nblk} arm-cells; the #11a+#11b combined row is blocked at all "
+              f"{len(F11P.get('rows', []))} regimes (no combined arm in the file)")
 
 
 if __name__ == "__main__":

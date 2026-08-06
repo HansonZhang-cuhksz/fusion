@@ -326,7 +326,13 @@ def invariance_screen(run_at, cfg: dict, keys=None, tol: float = INVARIANT_TOL) 
             continue
         other = run_at(partner)
         if other is None:
-            probes.append({"key": key, "partner": partner[key], "ran": False})
+            # FAIL CLOSED. A probe that could not run has not shown invariance, and treating
+            # it as a pass is how `11a_w13` at decode_bs1 was marked publishable with the
+            # BLOCK_M axis -- the one the wgmma defect lives on -- never tested.
+            probes.append({"key": key, "partner": partner[key], "ran": False,
+                           "pass": False,
+                           "why": "partner config did not run; invariance UNTESTED on this "
+                                  "axis, which is not the same as invariant"})
             continue
         d = (base.float() - other.float()).abs()
         scale = base.float().abs().max().clamp_min(1e-30)
@@ -336,16 +342,52 @@ def invariance_screen(run_at, cfg: dict, keys=None, tol: float = INVARIANT_TOL) 
                        "rel_err": rel, "bitwise": bool(torch.equal(base, other)),
                        "pass": rel <= tol})
     failed = [p for p in probes if p.get("pass") is False]
+    untested = [p for p in probes if p.get("ran") is False]
     return {"ok": not failed, "tol": tol, "worst_rel_err": worst,
+            "n_untested": len(untested),
             "n_probed": len(probes), "keys": keys, "probes": probes,
             "reason": ("" if not failed else
-                       "output depends on " + ", ".join(sorted({p["key"] for p in failed}))
-                       + " -- mathematically invariant, so this is a codegen defect")}
+                       ("output depends on "
+                        + ", ".join(sorted({p["key"] for p in failed if p.get("ran") is not False}))
+                        + " -- mathematically invariant, so this is a codegen defect"
+                        if any(p.get("ran") is not False for p in failed) else "")
+                       + ("" if not untested else
+                          ("; " if any(p.get("ran") is not False for p in failed) else "")
+                          + "UNTESTED on " + ", ".join(sorted({p["key"] for p in untested}))
+                          + " (partner did not run) -- untested is not invariant"))}
 
 
 # ======================================================================================
 # 3. ceilings (B1)
 # ======================================================================================
+def self_consistency(wall_ratio: float, graph_f: "float | None", graph_u: "float | None",
+                     n_kern_f: int, n_kern_u: int, launch_s: float, floor_s: float,
+                     tol: float = 0.05) -> dict:
+    """Can this wall ratio be produced by its OWN graph work plus its OWN overheads?
+
+    wall_arm ~= floor + n_launches*launch + work, and `graph` measures `work` directly. So
+
+        bound = (graph_u + n_u*L + floor) / (graph_f + n_f*L + floor)
+
+    is the largest wall ratio these components can generate. A wall figure ABOVE it is not
+    explainable by anything the run itself measured, and means the two arms are not doing
+    what the model says they are.
+
+    This is the gate that would have caught the defect that produced the last unpublishable
+    table: the unfused chain's GEMM read a different buffer than its norm wrote, so it paid a
+    cold DRAM read its real counterpart would not, inflating the unfused arm. Every wall
+    figure then sat 13-34 % above this bound while the graph figures were self-consistent.
+    """
+    if not graph_f or not graph_u or graph_f <= 0:
+        return {"checked": False, "why": "no graph timing (capture failed)"}
+    f = graph_f * 1e-3 + n_kern_f * launch_s + floor_s
+    u = graph_u * 1e-3 + n_kern_u * launch_s + floor_s
+    bound = u / f if f > 0 else float("nan")
+    return {"checked": True, "bound": bound, "wall": wall_ratio,
+            "excess_pct": (wall_ratio / bound - 1.0) * 100.0 if bound > 0 else float("nan"),
+            "ok": bool(wall_ratio <= bound * (1.0 + tol))}
+
+
 def ceilings(bytes_f: int, bytes_u: int, n_kern_f: int, n_kern_u: int,
              bw_bytes_per_s: float, launch_s: float) -> dict:
     """Byte ceiling, and the launch-aware ceiling that actually bounds this fusion.
@@ -383,7 +425,19 @@ class Problem:
         self.logits_u = torch.empty_like(self.logits_f)
         self.logits_h = torch.empty_like(self.logits_f)
         self.rstd = torch.empty(T, device="cuda", dtype=torch.float32)
-        self.x2_out = torch.empty_like(self.h1)
+        # THE UNFUSED CHAIN MUST BE A REAL CHAIN.
+        #
+        # `norm_only` writes x2_out and the unfused GEMM must READ THAT SAME BUFFER. Pointing
+        # the GEMM at a separately-allocated `self.x2` left the two kernels unconnected: after
+        # flush_l2() the GEMM paid a full cold DRAM read for a tensor that, in the real
+        # unfused path, its predecessor had just written and left L2-warm. That inflates the
+        # unfused arm, and therefore the speedup -- which is why every `wall` figure came out
+        # above what its own graph work plus launch could produce, while the `graph` figures
+        # (replayed back-to-back, so the buffer stays warm) were self-consistent.
+        #
+        # Seeded with the correct values so the GEMM can also be tuned STANDALONE, before any
+        # norm has run in that chain; `norm_only` then overwrites it with the same numbers.
+        self.x2_out = self.x2.clone()
         self.ref_logits = (self.x2.float() @ self.b_raw.float())
 
         self.w13_raw = self.w13_fold = None
@@ -411,7 +465,7 @@ class Problem:
                                         EPS, 0, None, ws)]
 
     def router_unfused(self, cfg, ws=None):
-        return [lambda: K.launch_router(self.x2, self.b_raw, self.logits_u, cfg, False,
+        return [lambda: K.launch_router(self.x2_out, self.b_raw, self.logits_u, cfg, False,
                                         EPS, 0, None, ws)]
 
     def norm_only(self, cfg):
@@ -432,8 +486,9 @@ class Problem:
 
     def moe_unfused(self, cfg, ws=None):
         sti, eid, ntp = self.layout(cfg["BLOCK_M"])
-        return [lambda: K.launch_moe_gateup(self.x2, self.w13_raw, self.c_u, sti, eid, ntp,
-                                            self.rows, TOPK, cfg, False, EPS, 0, None, ws)]
+        return [lambda: K.launch_moe_gateup(self.x2_out, self.w13_raw, self.c_u, sti, eid,
+                                            ntp, self.rows, TOPK, cfg, False, EPS, 0, None,
+                                            ws)]
 
 
 # ======================================================================================
@@ -522,7 +577,17 @@ def run_regime(name: str, T: int, args, env, calib, log) -> dict:
     tn = tune("norm", lambda c: prob.norm_only(c), vec_grid(),
               lambda: (rel(prob.x2_out, prob.x2) < 2e-2,
                        f"{rel(prob.x2_out, prob.x2):.2e}"), warm, rep, log)
-    tr = tune("rstd", lambda c: prob.rstd_only(c), vec_grid(), lambda: (True, ""), warm, rep, log)
+    # The rstd producer MUST be verified like every other kernel. It was previously tuned
+    # with `lambda: (True, "")` -- an unconditional pass -- so no config was ever compared
+    # against anything, and #11b' inherited a number with no numerical evidence behind it.
+    ref_rstd = torch.rsqrt(prob.h1.float().pow(2).mean(-1) + EPS)
+
+    def _rstd_ok():
+        e = ((prob.rstd.float() - ref_rstd).abs().max()
+             / ref_rstd.abs().max().clamp_min(1e-30)).item()
+        return e < 2e-2, f"{e:.2e}"
+
+    tr = tune("rstd", lambda c: prob.rstd_only(c), vec_grid(), _rstd_ok, warm, rep, log)
 
     if tf["ok"] and tu["ok"] and tn["ok"]:
         # B3: strict invariance screen on the FUSED winner before it is allowed to publish
@@ -547,30 +612,55 @@ def run_regime(name: str, T: int, args, env, calib, log) -> dict:
         b_f = T * H * 2 + H * ER * 2 + T * ER * 4
         b_u = (T * H * 2 * 2) + (T * H * 2 + H * ER * 2 + T * ER * 4)
         cl = ceilings(b_f, b_u, 1, 2, bw, launch_s)
+        sc = self_consistency(p["paired_p50"], gf, gu, 1, 2, launch_s,
+                              calib["harness_floor_us"] * 1e-6)
         row["arms"]["11b_router"] = {
             **p, "graph_fused_ms": gf, "graph_unfused_ms": gu,
             "graph_speedup": (gu / gf) if (gf and gu) else None,
-            **cl, "invariance": inv,
+            **cl, "invariance": inv, "self_consistency": sc,
             "fused_cfg": tf["cfg"], "unfused_gemm_cfg": tu["cfg"], "norm_cfg": tn["cfg"],
             "norm_only_ms": tn["ms"], "gemm_only_ms": tu["ms"],
-            "publishable": bool(inv["ok"] and p["paired_p50"] <= cl["ceiling_launch_aware"]),
+            "publishable": bool(inv["ok"]
+                                and p["paired_p50"] <= cl["ceiling_launch_aware"]
+                                and sc.get("ok", False)),
         }
         a = row["arms"]["11b_router"]
         log(f"  #11b  wall {p['paired_p50']:.3f}x | graph "
             f"{a['graph_speedup'] if a['graph_speedup'] else float('nan'):.3f}x | "
-            f"ceiling(launch-aware) {cl['ceiling_launch_aware']:.3f} | "
+            f"ceiling {cl['ceiling_launch_aware']:.3f} | "
+            f"self-consistent<={sc.get('bound', float('nan')):.3f} | "
             f"{'PUBLISHABLE' if a['publishable'] else 'BLOCKED'}")
 
         if tr["ok"]:
             half = prob.rstd_only(tr["cfg"]) + prob.router_half(tf["cfg"])
+
+            def run_half(cfg):
+                try:
+                    for f in prob.rstd_only(tr["cfg"]) + prob.router_half(cfg):
+                        f()
+                    torch.cuda.synchronize()
+                    return prob.logits_h.clone()
+                except Exception:  # noqa: BLE001
+                    return None
+
+            inv_h = invariance_screen(run_half, tf["cfg"])
+            e_h = rel(prob.logits_h, prob.ref_logits)
+            log(f"    [invariance routerHalf] {'PASS' if inv_h['ok'] else 'REJECT'} "
+                f"worst={inv_h.get('worst_rel_err', float('nan')):.2e} | "
+                f"vs fp32 ref {e_h:.2e}")
             ph = paired(half, unf, warm, rep)
+            # Byte count: the half-fused path reads h1 TWICE -- once in the rstd kernel and
+            # again in the router GEMM -- plus the tiny rstd vector. Omitting the second read
+            # made the ceiling 55% too generous at t8192 and is what let this arm look
+            # bounded when it was not.
+            b_half = (T * H * 2) + (T * 4) + (T * H * 2 + H * ER * 2 + T * ER * 4)
+            cl_h = ceilings(b_half, b_u, 2, 2, bw, launch_s)
             row["arms"]["11b_half"] = {
                 **ph, "graph_fused_ms": time_graph(half), "graph_unfused_ms": gu,
-                **ceilings(b_f + T * 4, b_u, 2, 2, bw, launch_s),
+                **cl_h, "invariance": inv_h, "rel_err_vs_fp32": e_h,
                 "rstd_cfg": tr["cfg"], "router_cfg": tf["cfg"],
-                "publishable": bool(ph["paired_p50"] <=
-                                    ceilings(b_f + T * 4, b_u, 2, 2, bw,
-                                             launch_s)["ceiling_launch_aware"]),
+                "publishable": bool(inv_h["ok"] and e_h < 2e-2
+                                    and ph["paired_p50"] <= cl_h["ceiling_launch_aware"]),
             }
             log(f"  #11b' wall {ph['paired_p50']:.3f}x | "
                 f"{'PUBLISHABLE' if row['arms']['11b_half']['publishable'] else 'BLOCKED'}")

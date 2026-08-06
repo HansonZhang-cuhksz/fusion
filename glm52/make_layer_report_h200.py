@@ -55,6 +55,27 @@ reference is excluded from timing outright (LOG-11 S7), so it has no times to re
 no row -- it is not written with empty cells and it is certainly not modelled. On H200 that is
 the whole `prenorm="all"` group (O/P/Q/R, i.e. #11a+#11b) at every regime except decode_bs1,
 where it passed and is timed. Those exclusions are printed per regime.
+
+THE FOUR `prenorm="all"` ROWS AT decode_bs1 ARE NO LONGER QUOTED AS SPEEDUPS.
+`results/h200/f11_publish.json` -- the gated re-measurement of #11 -- has no publishable
+`11a_w13` cell at any regime: the fused w13 output depends on mapping keys it is
+mathematically invariant to (rel_err 4.6e-2 to 1.2e-1 against a 1e-5 tolerance) at six of
+seven regimes, and at the seventh (decode_bs1, the only regime whose O/P/Q/R rows survived
+this file's own fp32 check) the decisive axis could not be probed at all -- no legal
+cross-boundary BLOCK_M partner exists for that tile shape on this device. #11a is therefore
+UNMEASURABLE on the H200, not measured-and-lost, and a layer configuration built on it cannot
+be validated either.
+
+That is not a reason to delete the rows -- the times were really measured, and deleting them
+would hide that the fastest decode_bs1 configuration in this file is one that cannot be
+validated. So the four rows STAY, with their measured `run1_ms` / `run2_ms` / `best_ms` and
+their tie flags intact, `speedup_vs_unfused` EMPTIED, and the reason in a `notes` column.
+The per-regime printout also names the fastest configuration that does NOT depend on #11a, so
+the leader board is still readable without the unvalidated rows.
+
+SCHEMA DEVIATION, stated because the rest of this file exists to preserve schema parity: this
+adds a trailing `notes` column that the C500 layer CSV does not have. It is appended last so
+the first nine columns still diff row-for-row against C500.
 """
 
 from __future__ import annotations
@@ -96,7 +117,52 @@ ORDER = ["decode_bs1", "decode_bs32", "decode_bs256", "decode_bs512", "decode_bs
 BASE = "A_all_unfused"
 
 FIELDS = ["regime", "fusion_set", "config_id", "run1_ms", "run2_ms", "best_ms",
-          "speedup_vs_unfused", "tied_with_best_run1", "tied_with_best_run2"]
+          "speedup_vs_unfused", "tied_with_best_run1", "tied_with_best_run2", "notes"]
+
+# The configurations whose fusion set contains #11a. Derived from NAMES so a renamed or added
+# configuration cannot slip past by not being on a hand-written list.
+F11A_CONFIGS = {cid for cid, name in NAMES.items() if "#11a" in name}
+F11B_ONLY = {cid for cid, name in NAMES.items()
+             if "#11b" in name and cid not in F11A_CONFIGS}
+
+F11_PUBLISH = ROOT / "results" / "h200" / "f11_publish.json"
+
+
+def f11a_publishable() -> tuple[int, int, str]:
+    """(publishable #11a cells, total #11a cells, why) from the gated re-measurement.
+
+    Re-derived from the raw fields rather than read off that file's own `publishable` flag,
+    which is wrong in the permissive direction for exactly this arm: it never bounds #11a
+    with a ceiling at all, and it scored an invariance probe whose partner config failed to
+    run as a pass. A cell counts here only if the arm HAS a launch-aware ceiling AND every
+    declared probe actually ran AND every probe passed.
+    """
+    if not F11_PUBLISH.exists():
+        return -1, -1, "results/h200/f11_publish.json is absent"
+    d = json.loads(F11_PUBLISH.read_text())
+    ok = tot = 0
+    fails, untested = set(), set()
+    for r in d.get("rows", []):
+        a = (r.get("arms") or {}).get("11a_w13")
+        if not a:
+            continue
+        tot += 1
+        inv = a.get("invariance") or {}
+        probes = inv.get("probes") or []
+        bad = [p for p in probes if p.get("pass") is False and p.get("ran") is not False]
+        unt = [p for p in probes if p.get("ran") is False or
+               ("pass" not in p and "skipped" not in p)]
+        fails |= {p["key"] for p in bad}
+        untested |= {f"{r['regime']}:{p['key']}" for p in unt}
+        has_ceiling = a.get("ceiling_launch_aware") is not None
+        if has_ceiling and not bad and not unt:
+            ok += 1
+    why = (f"{tot - ok} of {tot} #11a cells in {F11_PUBLISH.name} fail the publication rule: "
+           f"the fused w13 output depends on "
+           f"{', '.join(sorted(fails)) if fails else 'no axis'} at tol {inv.get('tol')}, "
+           f"the probe(s) at {', '.join(sorted(untested)) if untested else 'none'} never ran, "
+           f"and no #11a cell carries a launch-aware ceiling at all")
+    return ok, tot, why
 
 
 def tied_set(stats: dict) -> list[str]:
@@ -131,7 +197,24 @@ def main() -> None:
     regimes = doc.get("regimes", {})
     rows, missing, mismatches = [], [], []
 
+    n_ok, n_tot, why11a = f11a_publishable()
+    f11a_note = (
+        "SPEEDUP WITHHELD -- this configuration contains #11a (lazy pre-norm -> w13 grouped "
+        "GEMM), which the gated re-measurement results/h200/f11_publish.json shows to be "
+        "UNMEASURABLE on this device: " + why11a + ". The times in this row were really "
+        "measured and are left in place, but a layer speedup built on a fusion whose kernel "
+        "changes its answer when a mapping key that cannot change the answer is perturbed is "
+        "not a result. See report_glm52_h200/README.md sec.#11")
+    f11b_note = (
+        "contains #11b, which DOES pass the strict invariance screen at every regime in "
+        "results/h200/f11_publish.json. This layer number is a whole-layer measurement from "
+        "the earlier contended run (42.19 us harness floor), not the #11b microbenchmark "
+        "ratio -- the microbenchmark's decode wall figures are blocked for exceeding their "
+        "own launch-aware ceiling, and its published win is prefill-only")
+
     print(f"source   {SRC.relative_to(ROOT)}")
+    print(f"#11a     {n_ok}/{n_tot} cells publishable in results/h200/f11_publish.json -- "
+          f"{why11a}")
     print(f"device   {doc.get('env', {}).get('device_name')}   "
           f"passes={doc.get('protocol', {}).get('passes')} "
           f"rounds/pass={doc.get('protocol', {}).get('rounds_per_pass')} "
@@ -168,6 +251,7 @@ def main() -> None:
             m1 = s1.get(cid, {}).get("median")
             m2 = s2.get(cid, {}).get("median")
             best = med(cid)
+            unvalidated = cid in F11A_CONFIGS and n_ok == 0
             rows.append({
                 "regime": regime,
                 "fusion_set": NAMES.get(cid, cid),
@@ -175,9 +259,12 @@ def main() -> None:
                 "run1_ms": f"{m1:.4f}" if m1 is not None else "",
                 "run2_ms": f"{m2:.4f}" if m2 is not None else "",
                 "best_ms": f"{best:.4f}",
-                "speedup_vs_unfused": f"{base / best:.4f}" if base else "",
+                "speedup_vs_unfused": ("" if unvalidated
+                                       else f"{base / best:.4f}" if base else ""),
                 "tied_with_best_run1": int(cid in t1),
                 "tied_with_best_run2": int(cid in t2),
+                "notes": (f11a_note if unvalidated
+                          else f11b_note if cid in F11B_ONLY else ""),
             })
 
         # ---- what the file says about this regime, in the terms LOG-11 uses --------------
@@ -192,7 +279,18 @@ def main() -> None:
               f"{'winner ' + winner if winner else 'tied: ' + ', '.join(rec.get('tied_set', []))}")
         print(f"{'':<15} fastest row {NAMES.get(lead, lead)} ({lead}) "
               f"{med(lead):.4f} ms  vs all-unfused {base:.4f} ms "
-              f"= {base / med(lead):.4f}x")
+              f"= {base / med(lead):.4f}x"
+              + ("   <-- CONTAINS #11a, UNVALIDATED, speedup withheld"
+                 if lead in F11A_CONFIGS and n_ok == 0 else ""))
+        # The leader board without the configurations that cannot be validated. Printed
+        # always, so the fastest quotable configuration is never something a reader has to
+        # work out for themselves after discovering the winner is withheld.
+        vlist = [k for k in sorted(names, key=lambda k: (med(k), k))
+                 if not (k in F11A_CONFIGS and n_ok == 0)]
+        if vlist and vlist[0] != lead:
+            v = vlist[0]
+            print(f"{'':<15} fastest VALIDATED row {NAMES.get(v, v)} ({v}) {med(v):.4f} ms "
+                  f"= {base / med(v):.4f}x -- this is what this regime can claim")
         for tag, v in (("pass1", rec.get("pass1", {})), ("pass2", rec.get("pass2", {}))):
             gap, noise = v.get("gap_ms"), v.get("noise_ms")
             print(f"{'':<15}   {tag}: best {v.get('best')} gap "
