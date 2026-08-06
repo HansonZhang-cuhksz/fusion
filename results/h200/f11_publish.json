@@ -1,6 +1,6 @@
 {
   "id": "f11_publish",
-  "generated": "2026-08-06 12:58:46",
+  "generated": "2026-08-06 13:28:15",
   "gpu": {
     "index": 0,
     "why": "idlest of 8 (used 0 MiB, util 0%)",
@@ -165,10 +165,11 @@
     }
   },
   "calibration": {
-    "harness_floor_us": -5.903999986393111,
-    "launch_us": 13.679999824879426,
+    "harness_floor_us": 4.255999810993671,
+    "launch_us": 13.010286060827118,
     "floor_bar_us": 20.0,
-    "ok": true
+    "ok": true,
+    "problems": []
   },
   "bandwidth_gbs": 4250.0,
   "rows": [
@@ -177,22 +178,22 @@
       "T": 1,
       "arms": {
         "11b_router": {
-          "fused_ms": 0.0350399985909462,
-          "unfused_ms": 0.07393599674105644,
-          "paired_p50": 2.1508378325939046,
-          "paired_p10": 1.98813880785608,
-          "paired_p90": 2.2861416780335073,
-          "ratio_of_medians": 2.1100456539447574,
-          "drift_first_half": 2.0892619890076007,
-          "drift_second_half": 2.1529641501859738,
+          "fused_ms": 0.03355199843645096,
+          "unfused_ms": 0.06995199993252754,
+          "paired_p50": 2.0904669330101187,
+          "paired_p10": 1.941273718418011,
+          "paired_p90": 2.27079099601921,
+          "ratio_of_medians": 2.084883261574415,
+          "drift_first_half": 2.0601877359468648,
+          "drift_second_half": 2.131464319991415,
           "n": 40,
-          "graph_fused_ms": 0.02459099981933832,
-          "graph_unfused_ms": 0.02028174977749586,
-          "graph_speedup": 0.8247631217314851,
+          "graph_fused_ms": 0.02460850030183792,
+          "graph_unfused_ms": 0.01744574960321188,
+          "graph_speedup": 0.7089318483137682,
           "ceiling_bytes": 1.0077795786061587,
-          "ceiling_launch_aware": 1.9488660175092938,
-          "ideal_fused_ms": 0.01442330335429119,
-          "ideal_unfused_ms": 0.028109085767405912,
+          "ceiling_launch_aware": 1.9463761124804901,
+          "ideal_fused_ms": 0.013753589590238884,
+          "ideal_unfused_ms": 0.026769658239301296,
           "invariance": {
             "ok": true,
             "tol": 1e-05,
@@ -252,11 +253,19 @@
           },
           "self_consistency": {
             "checked": true,
-            "bound": 1.2895155523249622,
-            "wall": 2.1508378325939046,
-            "excess_pct": 66.79425298252522,
+            "bound": 1.1396433485761763,
+            "wall": 2.0904669330101187,
+            "excess_pct": 83.4316793602018,
             "ok": false
           },
+          "timing_basis": {
+            "basis": "graph",
+            "host_bound": true,
+            "host_frac_fused": 0.266556346905906,
+            "host_frac_unfused": 0.7506039910218544,
+            "why": "host-bound: 75% of the slower arm's wall time is not GPU work, so the wall ratio counts Python launches, not the fusion"
+          },
+          "published_speedup": 0.7089318483137682,
           "fused_cfg": {
             "BLOCK_M": 64,
             "BLOCK_N": 32,
@@ -266,7 +275,7 @@
             "GROUP_M": 8
           },
           "unfused_gemm_cfg": {
-            "BLOCK_M": 16,
+            "BLOCK_M": 64,
             "BLOCK_N": 32,
             "BLOCK_K": 128,
             "num_warps": 4,
@@ -275,32 +284,32 @@
           },
           "norm_cfg": {
             "ROWS": 4,
-            "BLOCK_N": 1024,
-            "num_warps": 4,
+            "BLOCK_N": 2048,
+            "num_warps": 8,
             "num_stages": 2,
             "grid_cap": null,
             "eps": 1e-05
           },
-          "norm_only_ms": 0.01929599978029728,
-          "gemm_only_ms": 0.02271999977529049,
-          "publishable": false
+          "norm_only_ms": 0.016736000776290894,
+          "gemm_only_ms": 0.0208320003002882,
+          "publishable": true
         },
         "11b_half": {
-          "fused_ms": 0.23235199600458145,
-          "unfused_ms": 0.2657279968261719,
-          "paired_p50": 1.143450829097443,
-          "paired_p10": 1.0988254910562087,
-          "paired_p90": 1.1990886385231834,
-          "ratio_of_medians": 1.1436441321594342,
-          "drift_first_half": 1.1431251834775364,
-          "drift_second_half": 1.1433686898839022,
+          "fused_ms": 0.057231999933719635,
+          "unfused_ms": 0.06905599683523178,
+          "paired_p50": 1.2187321633072323,
+          "paired_p10": 1.1486631101267757,
+          "paired_p90": 1.3261111422270588,
+          "ratio_of_medians": 1.2065976536763614,
+          "drift_first_half": 1.2124922116450545,
+          "drift_second_half": 1.225870929244946,
           "n": 40,
-          "graph_fused_ms": 0.016341250389814377,
-          "graph_unfused_ms": 0.02028174977749586,
+          "graph_fused_ms": 0.015765749849379063,
+          "graph_unfused_ms": 0.01744574960321188,
           "ceiling_bytes": 1.0038734512816696,
-          "ceiling_launch_aware": 1.000102836862071,
-          "ideal_fused_ms": 0.028106195414464734,
-          "ideal_unfused_ms": 0.028109085767405912,
+          "ceiling_launch_aware": 1.0001079828895834,
+          "ideal_fused_ms": 0.026766767886360118,
+          "ideal_unfused_ms": 0.026769658239301296,
           "invariance": {
             "ok": true,
             "tol": 1e-05,
@@ -360,7 +369,7 @@
           },
           "rel_err_vs_fp32": 0.0024893167428672314,
           "rstd_cfg": {
-            "ROWS": 4,
+            "ROWS": 1,
             "BLOCK_N": 8192,
             "num_warps": 16,
             "num_stages": 2,
@@ -378,22 +387,22 @@
           "publishable": false
         },
         "11a_w13": {
-          "fused_ms": 0.20444799959659576,
-          "unfused_ms": 0.3028159886598587,
-          "paired_p50": 1.4796028870566602,
-          "paired_p10": 1.4348767579799173,
-          "paired_p90": 1.5203483941700777,
-          "ratio_of_medians": 1.4811394058995764,
-          "drift_first_half": 1.4863596791467595,
-          "drift_second_half": 1.4758893983117338,
+          "fused_ms": 0.1199679970741272,
+          "unfused_ms": 0.1594879999756813,
+          "paired_p50": 1.3285140611317887,
+          "paired_p10": 1.3099368737627046,
+          "paired_p90": 1.3430873018665892,
+          "ratio_of_medians": 1.3294212112013093,
+          "drift_first_half": 1.3185411759178403,
+          "drift_second_half": 1.3326589064945347,
           "n": 40,
-          "graph_fused_ms": 0.09764150157570839,
-          "graph_unfused_ms": 0.10140375047922134,
+          "graph_fused_ms": 0.10007574781775475,
+          "graph_unfused_ms": 0.09794850274920464,
           "invariance": {
             "ok": false,
             "tol": 1e-05,
-            "worst_rel_err": 0.7255154848098755,
-            "n_untested": 0,
+            "worst_rel_err": 0.0,
+            "n_untested": 1,
             "n_probed": 5,
             "keys": [
               "BLOCK_M",
@@ -405,11 +414,10 @@
             "probes": [
               {
                 "key": "BLOCK_M",
-                "from": 16,
-                "to": 64,
-                "rel_err": 0.7255154848098755,
-                "bitwise": false,
-                "pass": false
+                "partner": 64,
+                "ran": false,
+                "pass": false,
+                "why": "partner config did not run; invariance UNTESTED on this axis, which is not the same as invariant"
               },
               {
                 "key": "BLOCK_N",
@@ -429,7 +437,7 @@
               },
               {
                 "key": "num_stages",
-                "from": 3,
+                "from": 4,
                 "to": 2,
                 "rel_err": 0.0,
                 "bitwise": true,
@@ -444,21 +452,21 @@
                 "pass": true
               }
             ],
-            "reason": "output depends on BLOCK_M -- mathematically invariant, so this is a codegen defect"
+            "reason": "UNTESTED on BLOCK_M (partner did not run) -- untested is not invariant"
           },
           "fused_cfg": {
             "BLOCK_M": 16,
             "BLOCK_N": 256,
             "BLOCK_K": 128,
             "num_warps": 4,
-            "num_stages": 3,
+            "num_stages": 4,
             "GROUP_M": 8
           },
           "unfused_cfg": {
             "BLOCK_M": 16,
             "BLOCK_N": 128,
             "BLOCK_K": 128,
-            "num_warps": 8,
+            "num_warps": 4,
             "num_stages": 3,
             "GROUP_M": 8
           },
@@ -471,22 +479,22 @@
       "T": 32,
       "arms": {
         "11b_router": {
-          "fused_ms": 0.0339680016040802,
-          "unfused_ms": 0.07310399785637856,
-          "paired_p50": 2.1389925079356806,
-          "paired_p10": 2.019038918179767,
-          "paired_p90": 2.328298009157302,
-          "ratio_of_medians": 2.1521430288556447,
-          "drift_first_half": 2.1351333716682284,
-          "drift_second_half": 2.138335256084111,
+          "fused_ms": 0.032127998769283295,
+          "unfused_ms": 0.06891200318932533,
+          "paired_p50": 2.1381644081343607,
+          "paired_p10": 2.0255655844696228,
+          "paired_p90": 2.260059043934276,
+          "ratio_of_medians": 2.1449205001592015,
+          "drift_first_half": 2.138695960761061,
+          "drift_second_half": 2.1314076751543016,
           "n": 40,
-          "graph_fused_ms": 0.024453500285744667,
-          "graph_unfused_ms": 0.01607574988156557,
-          "graph_speedup": 0.6574007685491569,
+          "graph_fused_ms": 0.02448150049895048,
+          "graph_unfused_ms": 0.016729749739170074,
+          "graph_speedup": 0.6833629229502202,
           "ceiling_bytes": 1.2201834862385321,
-          "ceiling_launch_aware": 1.9548662653599476,
-          "ideal_fused_ms": 0.014520402648408837,
-          "ideal_unfused_ms": 0.028385445296817677,
+          "ceiling_launch_aware": 1.9526839418983568,
+          "ideal_fused_ms": 0.013850688884356529,
+          "ideal_unfused_ms": 0.02704601776871306,
           "invariance": {
             "ok": true,
             "tol": 1e-05,
@@ -546,11 +554,19 @@
           },
           "self_consistency": {
             "checked": true,
-            "bound": 1.164515409803516,
-            "wall": 2.1389925079356806,
-            "excess_pct": 83.68091052539907,
+            "bound": 1.1259596198549189,
+            "wall": 2.1381644081343607,
+            "excess_pct": 89.89707716248878,
             "ok": false
           },
+          "timing_basis": {
+            "basis": "graph",
+            "host_bound": true,
+            "host_frac_fused": 0.23800107579820448,
+            "host_frac_unfused": 0.7572302506835041,
+            "why": "host-bound: 76% of the slower arm's wall time is not GPU work, so the wall ratio counts Python launches, not the fusion"
+          },
+          "published_speedup": 0.6833629229502202,
           "fused_cfg": {
             "BLOCK_M": 64,
             "BLOCK_N": 32,
@@ -569,32 +585,32 @@
           },
           "norm_cfg": {
             "ROWS": 4,
-            "BLOCK_N": 8192,
-            "num_warps": 8,
-            "num_stages": 1,
+            "BLOCK_N": 4096,
+            "num_warps": 16,
+            "num_stages": 2,
             "grid_cap": null,
             "eps": 1e-05
           },
-          "norm_only_ms": 0.01587199978530407,
-          "gemm_only_ms": 0.02377600036561489,
-          "publishable": false
+          "norm_only_ms": 0.015039999969303608,
+          "gemm_only_ms": 0.0208320003002882,
+          "publishable": true
         },
         "11b_half": {
-          "fused_ms": 0.21724800020456314,
-          "unfused_ms": 0.24399999529123306,
-          "paired_p50": 1.1438574021212784,
-          "paired_p10": 1.0655062226826613,
-          "paired_p90": 1.2013278263959075,
-          "ratio_of_medians": 1.1231403514024523,
-          "drift_first_half": 1.1356648807842322,
-          "drift_second_half": 1.14952244152629,
+          "fused_ms": 0.05611199885606766,
+          "unfused_ms": 0.06974400207400322,
+          "paired_p50": 1.2358156837174523,
+          "paired_p10": 1.1578645233059865,
+          "paired_p90": 1.3095238128235636,
+          "ratio_of_medians": 1.242942748357671,
+          "drift_first_half": 1.2255205538168497,
+          "drift_second_half": 1.2371003239015987,
           "n": 40,
-          "graph_fused_ms": 0.01452975021675229,
-          "graph_unfused_ms": 0.01607574988156557,
+          "graph_fused_ms": 0.014547249767929316,
+          "graph_unfused_ms": 0.016729749739170074,
           "ceiling_bytes": 1.0991380701811022,
-          "ceiling_launch_aware": 1.0032690575225485,
-          "ideal_fused_ms": 0.02829295400270003,
-          "ideal_unfused_ms": 0.028385445296817677,
+          "ceiling_launch_aware": 1.003431509943785,
+          "ideal_fused_ms": 0.026953526474595414,
+          "ideal_unfused_ms": 0.02704601776871306,
           "invariance": {
             "ok": true,
             "tol": 1e-05,
@@ -657,7 +673,7 @@
             "ROWS": 2,
             "BLOCK_N": 8192,
             "num_warps": 16,
-            "num_stages": 1,
+            "num_stages": 2,
             "grid_cap": null,
             "eps": 1e-05
           },
@@ -672,22 +688,22 @@
           "publishable": false
         },
         "11a_w13": {
-          "fused_ms": 1.8151519894599915,
-          "unfused_ms": 1.8181439638137817,
-          "paired_p50": 1.0016902132325003,
-          "paired_p10": 0.9985037064366068,
-          "paired_p90": 1.0045090419957274,
-          "ratio_of_medians": 1.0016483326857275,
-          "drift_first_half": 1.001612076204267,
-          "drift_second_half": 1.0016295956938535,
+          "fused_ms": 1.8239839673042297,
+          "unfused_ms": 1.8242239952087402,
+          "paired_p50": 1.0018804828633208,
+          "paired_p10": 0.989495375634246,
+          "paired_p90": 1.0134471212267486,
+          "ratio_of_medians": 1.0001315954025984,
+          "drift_first_half": 1.0066615597731765,
+          "drift_second_half": 0.9957518807804361,
           "n": 40,
-          "graph_fused_ms": 1.793417751789093,
-          "graph_unfused_ms": 1.753928542137146,
+          "graph_fused_ms": 1.7982257604599,
+          "graph_unfused_ms": 1.7552432417869568,
           "invariance": {
             "ok": false,
             "tol": 1e-05,
-            "worst_rel_err": 0.11208678036928177,
-            "n_untested": 0,
+            "worst_rel_err": 0.0,
+            "n_untested": 1,
             "n_probed": 5,
             "keys": [
               "BLOCK_M",
@@ -699,15 +715,14 @@
             "probes": [
               {
                 "key": "BLOCK_M",
-                "from": 16,
-                "to": 64,
-                "rel_err": 0.11208678036928177,
-                "bitwise": false,
-                "pass": false
+                "partner": 64,
+                "ran": false,
+                "pass": false,
+                "why": "partner config did not run; invariance UNTESTED on this axis, which is not the same as invariant"
               },
               {
                 "key": "BLOCK_N",
-                "from": 128,
+                "from": 256,
                 "to": 32,
                 "rel_err": 0.0,
                 "bitwise": true,
@@ -723,7 +738,7 @@
               },
               {
                 "key": "num_stages",
-                "from": 3,
+                "from": 4,
                 "to": 2,
                 "rel_err": 0.0,
                 "bitwise": true,
@@ -738,14 +753,14 @@
                 "pass": true
               }
             ],
-            "reason": "output depends on BLOCK_M -- mathematically invariant, so this is a codegen defect"
+            "reason": "UNTESTED on BLOCK_M (partner did not run) -- untested is not invariant"
           },
           "fused_cfg": {
             "BLOCK_M": 16,
-            "BLOCK_N": 128,
+            "BLOCK_N": 256,
             "BLOCK_K": 128,
             "num_warps": 4,
-            "num_stages": 3,
+            "num_stages": 4,
             "GROUP_M": 8
           },
           "unfused_cfg": {
@@ -765,22 +780,22 @@
       "T": 256,
       "arms": {
         "11b_router": {
-          "fused_ms": 0.03619199991226196,
-          "unfused_ms": 0.0756480023264885,
-          "paired_p50": 2.101143306948592,
-          "paired_p10": 1.979451899144467,
-          "paired_p90": 2.260950634696756,
-          "ratio_of_medians": 2.0901857457415254,
-          "drift_first_half": 2.106636295864842,
-          "drift_second_half": 2.0782746575540734,
+          "fused_ms": 0.029152000322937965,
+          "unfused_ms": 0.025551999919116497,
+          "paired_p50": 0.8697033881975462,
+          "paired_p10": 0.8433734532653381,
+          "paired_p90": 0.8971238848307361,
+          "ratio_of_medians": 0.8765093179218703,
+          "drift_first_half": 0.8713943882092275,
+          "drift_second_half": 0.8656453929425563,
           "n": 40,
-          "graph_fused_ms": 0.024944249540567398,
-          "graph_unfused_ms": 0.019145000725984573,
-          "graph_speedup": 0.7675115939987942,
+          "graph_fused_ms": 0.024707499891519547,
+          "graph_unfused_ms": 0.014648749958723783,
+          "graph_speedup": 0.5928867762031937,
           "ceiling_bytes": 1.96,
-          "ceiling_launch_aware": 1.99594791443024,
-          "ideal_fused_ms": 0.01522202335429119,
-          "ideal_unfused_ms": 0.03038236576740591,
+          "ceiling_launch_aware": 1.9957614328643858,
+          "ideal_fused_ms": 0.014552309590238883,
+          "ideal_unfused_ms": 0.029042938239301295,
           "invariance": {
             "ok": true,
             "tol": 1e-05,
@@ -840,11 +855,19 @@
           },
           "self_consistency": {
             "checked": true,
-            "bound": 1.2408524127979772,
-            "wall": 2.101143306948592,
-            "excess_pct": 69.33063797738517,
-            "ok": false
+            "bound": 1.0703185589375455,
+            "wall": 0.8697033881975462,
+            "excess_pct": -18.743501088044333,
+            "ok": true
           },
+          "timing_basis": {
+            "basis": "graph",
+            "host_bound": true,
+            "host_frac_fused": 0.15245953561276918,
+            "host_frac_unfused": 0.42670828095281677,
+            "why": "host-bound: 43% of the slower arm's wall time is not GPU work, so the wall ratio counts Python launches, not the fusion"
+          },
+          "published_speedup": 0.5928867762031937,
           "fused_cfg": {
             "BLOCK_M": 64,
             "BLOCK_N": 32,
@@ -854,7 +877,7 @@
             "GROUP_M": 8
           },
           "unfused_gemm_cfg": {
-            "BLOCK_M": 16,
+            "BLOCK_M": 64,
             "BLOCK_N": 32,
             "BLOCK_K": 128,
             "num_warps": 4,
@@ -862,33 +885,33 @@
             "GROUP_M": 8
           },
           "norm_cfg": {
-            "ROWS": 4,
-            "BLOCK_N": 1024,
-            "num_warps": 16,
-            "num_stages": 2,
+            "ROWS": 1,
+            "BLOCK_N": 8192,
+            "num_warps": 8,
+            "num_stages": 1,
             "grid_cap": null,
             "eps": 1e-05
           },
-          "norm_only_ms": 0.019007999449968338,
-          "gemm_only_ms": 0.024480000138282776,
-          "publishable": false
+          "norm_only_ms": 0.0077760000713169575,
+          "gemm_only_ms": 0.020608000457286835,
+          "publishable": true
         },
         "11b_half": {
-          "fused_ms": 0.06054399907588959,
-          "unfused_ms": 0.07521599903702736,
-          "paired_p50": 1.2340993224889758,
-          "paired_p10": 1.1132980946450406,
-          "paired_p90": 1.3052123287894033,
-          "ratio_of_medians": 1.2423361552768752,
-          "drift_first_half": 1.214946148709868,
-          "drift_second_half": 1.245284985092245,
+          "fused_ms": 0.024528000503778458,
+          "unfused_ms": 0.025023999623954296,
+          "paired_p50": 1.0283018668106745,
+          "paired_p10": 1.0101910864864276,
+          "paired_p90": 1.0509138450642792,
+          "ratio_of_medians": 1.0202217510595464,
+          "drift_first_half": 1.0222728615389283,
+          "drift_second_half": 1.0373212365300775,
           "n": 40,
-          "graph_fused_ms": 0.014268499799072742,
-          "graph_unfused_ms": 0.019145000725984573,
+          "graph_fused_ms": 0.01403450034558773,
+          "graph_unfused_ms": 0.014648749958723783,
           "ceiling_bytes": 1.324184524437876,
-          "ceiling_launch_aware": 1.024961861014298,
-          "ideal_fused_ms": 0.02964243541446473,
-          "ideal_unfused_ms": 0.03038236576740591,
+          "ceiling_launch_aware": 1.0261431702210622,
+          "ideal_fused_ms": 0.028303007886360115,
+          "ideal_unfused_ms": 0.029042938239301295,
           "invariance": {
             "ok": true,
             "tol": 1e-05,
@@ -948,9 +971,9 @@
           },
           "rel_err_vs_fp32": 0.0026801242493093014,
           "rstd_cfg": {
-            "ROWS": 2,
+            "ROWS": 1,
             "BLOCK_N": 8192,
-            "num_warps": 16,
+            "num_warps": 8,
             "num_stages": 1,
             "grid_cap": null,
             "eps": 1e-05
@@ -966,21 +989,21 @@
           "publishable": false
         },
         "11a_w13": {
-          "fused_ms": 2.874895930290222,
-          "unfused_ms": 2.843503952026367,
-          "paired_p50": 0.9894072977935843,
-          "paired_p10": 0.9870746710592834,
-          "paired_p90": 1.001822143375721,
-          "ratio_of_medians": 0.9890806557784908,
-          "drift_first_half": 0.9892165711311951,
-          "drift_second_half": 0.9894861248096991,
+          "fused_ms": 2.879472017288208,
+          "unfused_ms": 2.83571195602417,
+          "paired_p50": 0.984875537875074,
+          "paired_p10": 0.9841408949689204,
+          "paired_p90": 0.9865072383251763,
+          "ratio_of_medians": 0.9848027482117191,
+          "drift_first_half": 0.9848293746208062,
+          "drift_second_half": 0.9849143890510628,
           "n": 40,
-          "graph_fused_ms": 2.883195996284485,
-          "graph_unfused_ms": 2.8277747631073,
+          "graph_fused_ms": 2.888851523399353,
+          "graph_unfused_ms": 2.8236032724380493,
           "invariance": {
             "ok": false,
             "tol": 1e-05,
-            "worst_rel_err": 0.11317567527294159,
+            "worst_rel_err": 0.1045185774564743,
             "n_untested": 0,
             "n_probed": 5,
             "keys": [
@@ -995,7 +1018,7 @@
                 "key": "BLOCK_M",
                 "from": 16,
                 "to": 64,
-                "rel_err": 0.11317567527294159,
+                "rel_err": 0.1045185774564743,
                 "bitwise": false,
                 "pass": false
               },
@@ -1059,22 +1082,22 @@
       "T": 512,
       "arms": {
         "11b_router": {
-          "fused_ms": 0.029759999364614487,
-          "unfused_ms": 0.02691200003027916,
-          "paired_p50": 0.9019396636211976,
-          "paired_p10": 0.867082050558582,
-          "paired_p90": 0.932038820930068,
-          "ratio_of_medians": 0.9043010955933796,
-          "drift_first_half": 0.9082633457339975,
-          "drift_second_half": 0.896924499379153,
+          "fused_ms": 0.02964800037443638,
+          "unfused_ms": 0.06128000095486641,
+          "paired_p50": 2.037919863752449,
+          "paired_p10": 1.605263099848317,
+          "paired_p90": 2.194174599998154,
+          "ratio_of_medians": 2.066918516626313,
+          "drift_first_half": 2.0550400414339496,
+          "drift_second_half": 1.9567442830662443,
           "n": 40,
-          "graph_fused_ms": 0.024857500568032265,
-          "graph_unfused_ms": 0.015576499979943037,
-          "graph_speedup": 0.6266317861408414,
+          "graph_fused_ms": 0.025012250058352947,
+          "graph_unfused_ms": 0.018066749908030033,
+          "graph_speedup": 0.7223160597659452,
           "ceiling_bytes": 2.263157894736842,
-          "ceiling_launch_aware": 2.03849314782284,
-          "ideal_fused_ms": 0.016023875589585308,
-          "ideal_unfused_ms": 0.032664560590935324,
+          "ceiling_launch_aware": 2.040172131749907,
+          "ideal_fused_ms": 0.015354161825533001,
+          "ideal_unfused_ms": 0.03132513306283071,
           "invariance": {
             "ok": true,
             "tol": 1e-05,
@@ -1134,11 +1157,19 @@
           },
           "self_consistency": {
             "checked": true,
-            "bound": 1.1348001036355726,
-            "wall": 0.9019396636211976,
-            "excess_pct": -20.51995230423026,
-            "ok": true
+            "bound": 1.1434483426890814,
+            "wall": 2.037919863752449,
+            "excess_pct": 78.22579190239698,
+            "ok": false
           },
+          "timing_basis": {
+            "basis": "graph",
+            "host_bound": true,
+            "host_frac_fused": 0.1563596282223657,
+            "host_frac_unfused": 0.7051770622305236,
+            "why": "host-bound: 71% of the slower arm's wall time is not GPU work, so the wall ratio counts Python launches, not the fusion"
+          },
+          "published_speedup": 0.7223160597659452,
           "fused_cfg": {
             "BLOCK_M": 64,
             "BLOCK_N": 32,
@@ -1149,7 +1180,7 @@
           },
           "unfused_gemm_cfg": {
             "BLOCK_M": 64,
-            "BLOCK_N": 32,
+            "BLOCK_N": 64,
             "BLOCK_K": 128,
             "num_warps": 4,
             "num_stages": 4,
@@ -1158,31 +1189,31 @@
           "norm_cfg": {
             "ROWS": 1,
             "BLOCK_N": 8192,
-            "num_warps": 8,
-            "num_stages": 1,
+            "num_warps": 16,
+            "num_stages": 2,
             "grid_cap": null,
             "eps": 1e-05
           },
-          "norm_only_ms": 0.008960000239312649,
-          "gemm_only_ms": 0.021215999498963356,
+          "norm_only_ms": 0.009056000038981438,
+          "gemm_only_ms": 0.021888000890612602,
           "publishable": true
         },
         "11b_half": {
-          "fused_ms": 0.02703999914228916,
-          "unfused_ms": 0.028479999862611294,
-          "paired_p50": 1.059453000255394,
-          "paired_p10": 0.9761363805484551,
-          "paired_p90": 1.09756093578893,
-          "ratio_of_medians": 1.0532544661981902,
-          "drift_first_half": 1.0603147282515977,
-          "drift_second_half": 1.0578399492796122,
+          "fused_ms": 0.03977599926292896,
+          "unfused_ms": 0.05083199962973595,
+          "paired_p50": 1.2821052007257454,
+          "paired_p10": 0.996996974163053,
+          "paired_p90": 1.59201554138848,
+          "ratio_of_medians": 1.2779565710901228,
+          "drift_first_half": 1.2342420265132397,
+          "drift_second_half": 1.2800567007767785,
           "n": 40,
-          "graph_fused_ms": 0.014646250288933516,
-          "graph_unfused_ms": 0.015576499979943037,
+          "graph_fused_ms": 0.01475075026974082,
+          "graph_unfused_ms": 0.018066749908030033,
           "ceiling_bytes": 1.3869220108353282,
-          "ceiling_launch_aware": 1.0474547041125017,
-          "ideal_fused_ms": 0.031184699885052968,
-          "ideal_unfused_ms": 0.032664560590935324,
+          "ceiling_launch_aware": 1.0495844262428995,
+          "ideal_fused_ms": 0.029845272356948355,
+          "ideal_unfused_ms": 0.03132513306283071,
           "invariance": {
             "ok": true,
             "tol": 1e-05,
@@ -1244,8 +1275,8 @@
           "rstd_cfg": {
             "ROWS": 1,
             "BLOCK_N": 8192,
-            "num_warps": 8,
-            "num_stages": 1,
+            "num_warps": 16,
+            "num_stages": 2,
             "grid_cap": null,
             "eps": 1e-05
           },
@@ -1260,21 +1291,21 @@
           "publishable": false
         },
         "11a_w13": {
-          "fused_ms": 3.2239840030670166,
-          "unfused_ms": 2.895951986312866,
-          "paired_p50": 0.8975641308177609,
-          "paired_p10": 0.8772767879164802,
-          "paired_p90": 0.9031809813660208,
-          "ratio_of_medians": 0.8982525916871519,
-          "drift_first_half": 0.892003806998741,
-          "drift_second_half": 0.899974161832779,
+          "fused_ms": 3.1331039667129517,
+          "unfused_ms": 2.904944062232971,
+          "paired_p50": 0.9279325802162643,
+          "paired_p10": 0.9221194109035291,
+          "paired_p90": 0.9353304877010662,
+          "ratio_of_medians": 0.9271776784607147,
+          "drift_first_half": 0.932481534601268,
+          "drift_second_half": 0.9230340977128144,
           "n": 40,
-          "graph_fused_ms": 3.5010228157043457,
-          "graph_unfused_ms": 2.8854594230651855,
+          "graph_fused_ms": 3.225201725959778,
+          "graph_unfused_ms": 2.886834740638733,
           "invariance": {
             "ok": false,
             "tol": 1e-05,
-            "worst_rel_err": 0.0559275783598423,
+            "worst_rel_err": 0.2353670597076416,
             "n_untested": 0,
             "n_probed": 5,
             "keys": [
@@ -1287,19 +1318,19 @@
             "probes": [
               {
                 "key": "BLOCK_M",
-                "from": 64,
+                "from": 32,
+                "to": 64,
+                "rel_err": 0.2353670597076416,
+                "bitwise": false,
+                "pass": false
+              },
+              {
+                "key": "BLOCK_N",
+                "from": 256,
                 "to": 32,
                 "rel_err": 0.0,
                 "bitwise": true,
                 "pass": true
-              },
-              {
-                "key": "BLOCK_N",
-                "from": 64,
-                "to": 32,
-                "rel_err": 0.01686508022248745,
-                "bitwise": false,
-                "pass": false
               },
               {
                 "key": "GROUP_M",
@@ -1311,7 +1342,7 @@
               },
               {
                 "key": "num_stages",
-                "from": 4,
+                "from": 3,
                 "to": 2,
                 "rel_err": 0.0,
                 "bitwise": true,
@@ -1321,19 +1352,19 @@
                 "key": "num_warps",
                 "from": 4,
                 "to": 8,
-                "rel_err": 0.0559275783598423,
-                "bitwise": false,
-                "pass": false
+                "rel_err": 0.0,
+                "bitwise": true,
+                "pass": true
               }
             ],
-            "reason": "output depends on BLOCK_N, num_warps -- mathematically invariant, so this is a codegen defect"
+            "reason": "output depends on BLOCK_M -- mathematically invariant, so this is a codegen defect"
           },
           "fused_cfg": {
-            "BLOCK_M": 64,
-            "BLOCK_N": 64,
-            "BLOCK_K": 128,
+            "BLOCK_M": 32,
+            "BLOCK_N": 256,
+            "BLOCK_K": 64,
             "num_warps": 4,
-            "num_stages": 4,
+            "num_stages": 3,
             "GROUP_M": 8
           },
           "unfused_cfg": {
@@ -1353,22 +1384,22 @@
       "T": 1024,
       "arms": {
         "11b_router": {
-          "fused_ms": 0.13923199474811554,
-          "unfused_ms": 0.24488000571727753,
-          "paired_p50": 1.8428791172116565,
-          "paired_p10": 1.714559896453189,
-          "paired_p90": 1.9163449388671234,
-          "ratio_of_medians": 1.7587911899150026,
-          "drift_first_half": 1.7839386207032908,
-          "drift_second_half": 1.880853334620892,
+          "fused_ms": 0.03046399913728237,
+          "unfused_ms": 0.03144000098109245,
+          "paired_p50": 1.031612218481012,
+          "paired_p10": 0.9806122162911124,
+          "paired_p90": 1.0452155384949102,
+          "ratio_of_medians": 1.032037876557567,
+          "drift_first_half": 1.0288767880831333,
+          "drift_second_half": 1.0300616695165985,
           "n": 40,
-          "graph_fused_ms": 0.025967500172555447,
-          "graph_unfused_ms": 0.02197450026869774,
-          "graph_speedup": 0.8462308702291708,
+          "graph_fused_ms": 0.0256974995136261,
+          "graph_unfused_ms": 0.022269750013947487,
+          "graph_speedup": 0.8666115550323856,
           "ceiling_bytes": 2.5,
-          "ceiling_launch_aware": 2.1119717006480365,
-          "ideal_fused_ms": 0.017627580060173544,
-          "ideal_unfused_ms": 0.03722895023799414,
+          "ceiling_launch_aware": 2.116393777564959,
+          "ideal_fused_ms": 0.016957866296121237,
+          "ideal_unfused_ms": 0.03588952270988953,
           "invariance": {
             "ok": true,
             "tol": 1e-05,
@@ -1428,11 +1459,19 @@
           },
           "self_consistency": {
             "checked": true,
-            "bound": 1.2870775087898965,
-            "wall": 1.8428791172116565,
-            "excess_pct": 43.18322747666703,
-            "ok": false
+            "bound": 1.2230375297516125,
+            "wall": 1.031612218481012,
+            "excess_pct": -15.651630192368449,
+            "ok": true
           },
+          "timing_basis": {
+            "basis": "graph",
+            "host_bound": true,
+            "host_frac_fused": 0.15646335867384356,
+            "host_frac_unfused": 0.29167463998044457,
+            "why": "host-bound: 29% of the slower arm's wall time is not GPU work, so the wall ratio counts Python launches, not the fusion"
+          },
+          "published_speedup": 0.8666115550323856,
           "fused_cfg": {
             "BLOCK_M": 64,
             "BLOCK_N": 64,
@@ -1457,26 +1496,26 @@
             "grid_cap": null,
             "eps": 1e-05
           },
-          "norm_only_ms": 0.012223999947309494,
-          "gemm_only_ms": 0.0226879995316267,
-          "publishable": false
+          "norm_only_ms": 0.01206399966031313,
+          "gemm_only_ms": 0.02252800017595291,
+          "publishable": true
         },
         "11b_half": {
-          "fused_ms": 0.042512000538408756,
-          "unfused_ms": 0.03300799988210201,
-          "paired_p50": 1.1301843881952178,
-          "paired_p10": 1.0453074108523315,
-          "paired_p90": 1.2827195146041863,
-          "ratio_of_medians": 0.7764395809197436,
-          "drift_first_half": 1.1019233781478905,
-          "drift_second_half": 1.1931205009977202,
+          "fused_ms": 0.028960000723600388,
+          "unfused_ms": 0.03179199993610382,
+          "paired_p50": 1.0933476012885128,
+          "paired_p10": 1.073788532205985,
+          "paired_p90": 1.125137204911602,
+          "ratio_of_medians": 1.0977900256126565,
+          "drift_first_half": 1.0970020307237347,
+          "drift_second_half": 1.0883158815273715,
           "n": 40,
-          "graph_fused_ms": 0.018627500161528587,
-          "graph_unfused_ms": 0.02197450026869774,
+          "graph_fused_ms": 0.018685249611735344,
+          "graph_unfused_ms": 0.022269750013947487,
           "ceiling_bytes": 1.4283721579020785,
-          "ceiling_launch_aware": 1.0863667352064645,
-          "ideal_fused_ms": 0.034269228826229445,
-          "ideal_unfused_ms": 0.03722895023799414,
+          "ceiling_launch_aware": 1.0898797227766217,
+          "ideal_fused_ms": 0.032929801298124825,
+          "ideal_unfused_ms": 0.03588952270988953,
           "invariance": {
             "ok": true,
             "tol": 1e-05,
@@ -1554,21 +1593,21 @@
           "publishable": false
         },
         "11a_w13": {
-          "fused_ms": 3.4754079580307007,
-          "unfused_ms": 2.9918400049209595,
-          "paired_p50": 0.8614756231405067,
-          "paired_p10": 0.8588205097800427,
-          "paired_p90": 0.8753259463003885,
-          "ratio_of_medians": 0.8608600892472636,
-          "drift_first_half": 0.8612552221131782,
-          "drift_second_half": 0.8633177469875929,
+          "fused_ms": 3.52345609664917,
+          "unfused_ms": 2.9932479858398438,
+          "paired_p50": 0.8496618927976886,
+          "paired_p10": 0.8437621333598724,
+          "paired_p90": 0.8530101879684464,
+          "ratio_of_medians": 0.8495204434891193,
+          "drift_first_half": 0.8485493864489241,
+          "drift_second_half": 0.8498226559541348,
           "n": 40,
-          "graph_fused_ms": 3.713549256324768,
-          "graph_unfused_ms": 2.9958678483963013,
+          "graph_fused_ms": 3.8462300300598145,
+          "graph_unfused_ms": 2.9951109886169434,
           "invariance": {
             "ok": false,
             "tol": 1e-05,
-            "worst_rel_err": 0.04723282530903816,
+            "worst_rel_err": 0.04007633402943611,
             "n_untested": 0,
             "n_probed": 5,
             "keys": [
@@ -1591,9 +1630,9 @@
                 "key": "BLOCK_N",
                 "from": 64,
                 "to": 32,
-                "rel_err": 0.021708015352487564,
-                "bitwise": false,
-                "pass": false
+                "rel_err": 0.0,
+                "bitwise": true,
+                "pass": true
               },
               {
                 "key": "GROUP_M",
@@ -1605,29 +1644,29 @@
               },
               {
                 "key": "num_stages",
-                "from": 4,
+                "from": 3,
                 "to": 2,
-                "rel_err": 0.0,
-                "bitwise": true,
-                "pass": true
+                "rel_err": 0.03840648755431175,
+                "bitwise": false,
+                "pass": false
               },
               {
                 "key": "num_warps",
-                "from": 4,
-                "to": 8,
-                "rel_err": 0.04723282530903816,
+                "from": 8,
+                "to": 4,
+                "rel_err": 0.04007633402943611,
                 "bitwise": false,
                 "pass": false
               }
             ],
-            "reason": "output depends on BLOCK_N, num_warps -- mathematically invariant, so this is a codegen defect"
+            "reason": "output depends on num_stages, num_warps -- mathematically invariant, so this is a codegen defect"
           },
           "fused_cfg": {
             "BLOCK_M": 64,
             "BLOCK_N": 64,
-            "BLOCK_K": 128,
-            "num_warps": 4,
-            "num_stages": 4,
+            "BLOCK_K": 64,
+            "num_warps": 8,
+            "num_stages": 3,
             "GROUP_M": 8
           },
           "unfused_cfg": {
@@ -1647,22 +1686,22 @@
       "T": 2048,
       "arms": {
         "11b_router": {
-          "fused_ms": 0.031488001346588135,
-          "unfused_ms": 0.03947199881076813,
-          "paired_p50": 1.2485323638587147,
-          "paired_p10": 1.2080925024045708,
-          "paired_p90": 1.302231159727952,
-          "ratio_of_medians": 1.253556819192816,
-          "drift_first_half": 1.248852627482886,
-          "drift_second_half": 1.2464883976187329,
+          "fused_ms": 0.03179199993610382,
+          "unfused_ms": 0.039824001491069794,
+          "paired_p50": 1.2492370237186439,
+          "paired_p10": 1.2013618100906036,
+          "paired_p90": 1.2802419608001911,
+          "ratio_of_medians": 1.252642223550228,
+          "drift_first_half": 1.2425796659894717,
+          "drift_second_half": 1.2457433285373478,
           "n": 40,
-          "graph_fused_ms": 0.026646249927580357,
-          "graph_unfused_ms": 0.03247524984180927,
-          "graph_speedup": 1.218754981660499,
+          "graph_fused_ms": 0.026241999119520187,
+          "graph_unfused_ms": 0.033114250749349594,
+          "graph_speedup": 1.2618798818843593,
           "ceiling_bytes": 2.6551724137931036,
-          "ceiling_launch_aware": 2.224994192658706,
-          "ideal_fused_ms": 0.020834989001350016,
-          "ideal_unfused_ms": 0.04635772953211179,
+          "ceiling_launch_aware": 2.23246652843802,
+          "ideal_fused_ms": 0.020165275237297706,
+          "ideal_unfused_ms": 0.04501830200400718,
           "invariance": {
             "ok": true,
             "tol": 1e-05,
@@ -1722,11 +1761,19 @@
           },
           "self_consistency": {
             "checked": true,
-            "bound": 1.5667555105111184,
-            "wall": 1.2485323638587147,
-            "excess_pct": -20.310963932629832,
+            "bound": 1.456982795221957,
+            "wall": 1.2492370237186439,
+            "excess_pct": -14.25862900952547,
             "ok": true
           },
+          "timing_basis": {
+            "basis": "wall",
+            "host_bound": false,
+            "host_frac_fused": 0.17457224546232175,
+            "host_frac_unfused": 0.1684850966878556,
+            "why": "GPU-bound: at most 17% of wall time is host overhead, so the wall ratio is a measurement of the device"
+          },
+          "published_speedup": 1.2492370237186439,
           "fused_cfg": {
             "BLOCK_M": 64,
             "BLOCK_N": 64,
@@ -1745,32 +1792,32 @@
           },
           "norm_cfg": {
             "ROWS": 1,
-            "BLOCK_N": 8192,
+            "BLOCK_N": 2048,
             "num_warps": 8,
-            "num_stages": 2,
+            "num_stages": 1,
             "grid_cap": null,
             "eps": 1e-05
           },
-          "norm_only_ms": 0.019231999292969704,
-          "gemm_only_ms": 0.026976000517606735,
+          "norm_only_ms": 0.019328000023961067,
+          "gemm_only_ms": 0.027295999228954315,
           "publishable": true
         },
         "11b_half": {
-          "fused_ms": 0.03542400151491165,
-          "unfused_ms": 0.039712000638246536,
-          "paired_p50": 1.1213463220800584,
-          "paired_p10": 1.078621889412438,
-          "paired_p90": 1.1747929451244739,
-          "ratio_of_medians": 1.1210478472210392,
-          "drift_first_half": 1.1152742363053605,
-          "drift_second_half": 1.1273398596013058,
+          "fused_ms": 0.03524800017476082,
+          "unfused_ms": 0.039824001491069794,
+          "paired_p50": 1.1276595813420587,
+          "paired_p10": 1.1099195735558076,
+          "paired_p90": 1.1648148904688078,
+          "ratio_of_medians": 1.1298230053796243,
+          "drift_first_half": 1.1212852105381035,
+          "drift_second_half": 1.134371094580735,
           "n": 40,
-          "graph_fused_ms": 0.02297374978661537,
-          "graph_unfused_ms": 0.03247524984180927,
+          "graph_fused_ms": 0.022877000272274017,
+          "graph_unfused_ms": 0.033114250749349594,
           "ceiling_bytes": 1.4526160648489315,
-          "ceiling_launch_aware": 1.1463821369631149,
-          "ideal_fused_ms": 0.04043828670858238,
-          "ideal_unfused_ms": 0.04635772953211179,
+          "ceiling_launch_aware": 1.151396816879123,
+          "ideal_fused_ms": 0.039098859180477764,
+          "ideal_unfused_ms": 0.04501830200400718,
           "invariance": {
             "ok": true,
             "tol": 1e-05,
@@ -1833,7 +1880,7 @@
             "ROWS": 1,
             "BLOCK_N": 8192,
             "num_warps": 8,
-            "num_stages": 2,
+            "num_stages": 1,
             "grid_cap": null,
             "eps": 1e-05
           },
@@ -1848,21 +1895,21 @@
           "publishable": true
         },
         "11a_w13": {
-          "fused_ms": 4.286752223968506,
-          "unfused_ms": 3.289520025253296,
-          "paired_p50": 0.7701870938527076,
-          "paired_p10": 0.7611926598976034,
-          "paired_p90": 0.779950540054378,
-          "ratio_of_medians": 0.7673688268849811,
-          "drift_first_half": 0.7697001003331463,
-          "drift_second_half": 0.7707725077903108,
+          "fused_ms": 4.788096189498901,
+          "unfused_ms": 3.2635360956192017,
+          "paired_p50": 0.6830602871954947,
+          "paired_p10": 0.6750104664459796,
+          "paired_p90": 0.699884671345561,
+          "ratio_of_medians": 0.6815936786685038,
+          "drift_first_half": 0.6868989641598695,
+          "drift_second_half": 0.6817096356786869,
           "n": 40,
-          "graph_fused_ms": 4.451119422912598,
-          "graph_unfused_ms": 3.3394181728363037,
+          "graph_fused_ms": 4.75008225440979,
+          "graph_unfused_ms": 3.3402605056762695,
           "invariance": {
             "ok": false,
             "tol": 1e-05,
-            "worst_rel_err": 0.07834506779909134,
+            "worst_rel_err": 0.07746478915214539,
             "n_untested": 0,
             "n_probed": 5,
             "keys": [
@@ -1877,51 +1924,51 @@
                 "key": "BLOCK_M",
                 "from": 128,
                 "to": 32,
-                "rel_err": 0.035211268812417984,
-                "bitwise": false,
-                "pass": false
+                "rel_err": 0.0,
+                "bitwise": true,
+                "pass": true
               },
               {
                 "key": "BLOCK_N",
                 "from": 128,
                 "to": 32,
-                "rel_err": 0.035211268812417984,
-                "bitwise": false,
-                "pass": false
+                "rel_err": 0.0,
+                "bitwise": true,
+                "pass": true
               },
               {
                 "key": "GROUP_M",
                 "from": 8,
                 "to": 1,
-                "rel_err": 0.035211268812417984,
-                "bitwise": false,
-                "pass": false
+                "rel_err": 0.0,
+                "bitwise": true,
+                "pass": true
               },
               {
                 "key": "num_stages",
-                "from": 4,
-                "to": 2,
-                "rel_err": 0.046324823051691055,
-                "bitwise": false,
-                "pass": false
+                "from": 2,
+                "to": 3,
+                "rel_err": 0.0,
+                "bitwise": true,
+                "pass": true
               },
               {
                 "key": "num_warps",
                 "from": 4,
                 "to": 8,
-                "rel_err": 0.07834506779909134,
+                "rel_err": 0.07746478915214539,
                 "bitwise": false,
                 "pass": false
               }
             ],
-            "reason": "output depends on BLOCK_M, BLOCK_N, GROUP_M, num_stages, num_warps -- mathematically invariant, so this is a codegen defect"
+            "reason": "output depends on num_warps -- mathematically invariant, so this is a codegen defect"
           },
           "fused_cfg": {
             "BLOCK_M": 128,
             "BLOCK_N": 128,
-            "BLOCK_K": 64,
+            "BLOCK_K": 128,
             "num_warps": 4,
-            "num_stages": 4,
+            "num_stages": 2,
             "GROUP_M": 8
           },
           "unfused_cfg": {
@@ -1941,22 +1988,22 @@
       "T": 8192,
       "arms": {
         "11b_router": {
-          "fused_ms": 0.06969600170850754,
-          "unfused_ms": 0.10652799904346466,
-          "paired_p50": 1.5287408832779157,
-          "paired_p10": 1.5048320126382144,
-          "paired_p90": 1.5468821986612185,
-          "ratio_of_medians": 1.528466431819161,
-          "drift_first_half": 1.5272855887223082,
-          "drift_second_half": 1.5280660975132259,
+          "fused_ms": 0.06968000158667564,
+          "unfused_ms": 0.10620799660682678,
+          "paired_p50": 1.5218994987432084,
+          "paired_p10": 1.506404280249263,
+          "paired_p90": 1.5419564726490365,
+          "ratio_of_medians": 1.5242249452981658,
+          "drift_first_half": 1.5204899714802598,
+          "drift_second_half": 1.5231324162278932,
           "n": 40,
-          "graph_fused_ms": 0.07097550109028816,
-          "graph_unfused_ms": 0.09784024953842163,
-          "graph_speedup": 1.3785073445830096,
+          "graph_fused_ms": 0.0712905004620552,
+          "graph_unfused_ms": 0.098642498254776,
+          "graph_speedup": 1.3836695999529287,
           "ceiling_bytes": 2.794392523364486,
-          "ceiling_launch_aware": 2.523248793252183,
-          "ideal_fused_ms": 0.04007944264840883,
-          "ideal_unfused_ms": 0.10113040529681767,
+          "ceiling_launch_aware": 2.5321406818488548,
+          "ideal_fused_ms": 0.03940972888435653,
+          "ideal_unfused_ms": 0.09979097776871305,
           "invariance": {
             "ok": true,
             "tol": 1e-05,
@@ -2016,11 +2063,19 @@
           },
           "self_consistency": {
             "checked": true,
-            "bound": 1.5148441336969938,
-            "wall": 1.5287408832779157,
-            "excess_pct": 0.9173715811280791,
+            "bound": 1.4557785520962152,
+            "wall": 1.5218994987432084,
+            "excess_pct": 4.541964610742744,
             "ok": true
           },
+          "timing_basis": {
+            "basis": "wall",
+            "host_bound": false,
+            "host_frac_fused": 0.0,
+            "host_frac_unfused": 0.07123285057393211,
+            "why": "GPU-bound: at most 7% of wall time is host overhead, so the wall ratio is a measurement of the device"
+          },
+          "published_speedup": 1.5218994987432084,
           "fused_cfg": {
             "BLOCK_M": 128,
             "BLOCK_N": 128,
@@ -2040,31 +2095,31 @@
           "norm_cfg": {
             "ROWS": 1,
             "BLOCK_N": 8192,
-            "num_warps": 4,
+            "num_warps": 8,
             "num_stages": 2,
             "grid_cap": null,
             "eps": 1e-05
           },
-          "norm_only_ms": 0.05455999821424484,
-          "gemm_only_ms": 0.053599998354911804,
+          "norm_only_ms": 0.054368000477552414,
+          "gemm_only_ms": 0.05462399870157242,
           "publishable": true
         },
         "11b_half": {
-          "fused_ms": 0.23473600298166275,
-          "unfused_ms": 0.27236799895763397,
-          "paired_p50": 1.1562288254903788,
-          "paired_p10": 1.1021325479945487,
-          "paired_p90": 1.216395543332427,
-          "ratio_of_medians": 1.1603162510137441,
-          "drift_first_half": 1.1469675886937716,
-          "drift_second_half": 1.166115493262311,
+          "fused_ms": 0.07905599847435951,
+          "unfused_ms": 0.10711999982595444,
+          "paired_p50": 1.3544610144497875,
+          "paired_p10": 1.3338625862982267,
+          "paired_p90": 1.3779983324395961,
+          "ratio_of_medians": 1.3549888925974038,
+          "drift_first_half": 1.3547204427375472,
+          "drift_second_half": 1.352911634826725,
           "n": 40,
-          "graph_fused_ms": 0.07065474987030029,
-          "graph_unfused_ms": 0.09784024953842163,
+          "graph_fused_ms": 0.07124199718236923,
+          "graph_unfused_ms": 0.098642498254776,
           "ceiling_bytes": 1.4726796983223025,
-          "ceiling_launch_aware": 1.3057064694958243,
-          "ideal_fused_ms": 0.07745263400270001,
-          "ideal_unfused_ms": 0.10113040529681767,
+          "ceiling_launch_aware": 1.3110862410194302,
+          "ideal_fused_ms": 0.07611320647459542,
+          "ideal_unfused_ms": 0.09979097776871305,
           "invariance": {
             "ok": true,
             "tol": 1e-05,
@@ -2122,12 +2177,12 @@
             ],
             "reason": ""
           },
-          "rel_err_vs_fp32": 0.002722573233768344,
+          "rel_err_vs_fp32": 0.002722587902098894,
           "rstd_cfg": {
             "ROWS": 1,
-            "BLOCK_N": 8192,
-            "num_warps": 8,
-            "num_stages": 1,
+            "BLOCK_N": 2048,
+            "num_warps": 4,
+            "num_stages": 2,
             "grid_cap": null,
             "eps": 1e-05
           },
@@ -2139,24 +2194,24 @@
             "num_stages": 4,
             "GROUP_M": 8
           },
-          "publishable": true
+          "publishable": false
         },
         "11a_w13": {
-          "fused_ms": 12.160336017608643,
-          "unfused_ms": 6.84441614151001,
-          "paired_p50": 0.5635225316375153,
-          "paired_p10": 0.5602211695938225,
-          "paired_p90": 0.5692139593141347,
-          "ratio_of_medians": 0.5628476163486787,
-          "drift_first_half": 0.5650851922611424,
-          "drift_second_half": 0.5633605360958649,
+          "fused_ms": 11.074256420135498,
+          "unfused_ms": 6.956223964691162,
+          "paired_p50": 0.6272637390332219,
+          "paired_p10": 0.6232983807805638,
+          "paired_p90": 0.635330204789275,
+          "ratio_of_medians": 0.6281436604667359,
+          "drift_first_half": 0.6261397395995733,
+          "drift_second_half": 0.6285446605397347,
           "n": 40,
-          "graph_fused_ms": 11.323891639709473,
-          "graph_unfused_ms": 7.4912660121917725,
+          "graph_fused_ms": 11.153328895568848,
+          "graph_unfused_ms": 7.460505247116089,
           "invariance": {
             "ok": false,
             "tol": 1e-05,
-            "worst_rel_err": 0.08914728462696075,
+            "worst_rel_err": 0.11285731941461563,
             "n_untested": 0,
             "n_probed": 5,
             "keys": [
@@ -2193,8 +2248,8 @@
               },
               {
                 "key": "num_stages",
-                "from": 2,
-                "to": 3,
+                "from": 3,
+                "to": 2,
                 "rel_err": 0.0,
                 "bitwise": true,
                 "pass": true
@@ -2203,7 +2258,7 @@
                 "key": "num_warps",
                 "from": 4,
                 "to": 8,
-                "rel_err": 0.08914728462696075,
+                "rel_err": 0.11285731941461563,
                 "bitwise": false,
                 "pass": false
               }
@@ -2213,9 +2268,9 @@
           "fused_cfg": {
             "BLOCK_M": 128,
             "BLOCK_N": 128,
-            "BLOCK_K": 128,
+            "BLOCK_K": 32,
             "num_warps": 4,
-            "num_stages": 2,
+            "num_stages": 3,
             "GROUP_M": 8
           },
           "unfused_cfg": {
@@ -2223,7 +2278,7 @@
             "BLOCK_N": 256,
             "BLOCK_K": 64,
             "num_warps": 8,
-            "num_stages": 3,
+            "num_stages": 4,
             "GROUP_M": 8
           },
           "publishable": false
