@@ -267,3 +267,136 @@ consistent with the other two devices; that it is **neutral-to-negative at decod
 accounting is removed; that fusing it into the **w13 grouped GEMM cannot be validated at all**
 on this toolchain; and — from the 2×2 in §6.3 — that **warp specialization does not absorb the
 reduction**, which was the hypothesis H200 was brought in to test.
+
+---
+
+## 8. Root cause found, and the tables filled (2026-08-06, run 3)
+
+§7 left #11 publishable in 3 of 21 cells with a wall ratio of ~2.1x at decode that no byte
+model could justify. Two defects were hiding behind it, both mine, and both are now fixed.
+
+### 8.1 The unfused arm was not a chain
+
+`norm_only` wrote `self.x2_out`; `router_unfused` and `moe_unfused` read `self.x2`. The two
+buffers were never connected, so the "unfused" arm was not a chain — it was two independent
+kernels. After each `flush_l2()` the unfused GEMM therefore paid a cold DRAM read on `x2`
+that its real counterpart, reading a value the preceding norm had just written, never pays.
+The fused arm read a warm buffer. **The fusion was being credited with a cache effect the
+harness had manufactured.**
+
+Fixed by threading `x2_out` through both consumers. The effect was immediate and large at
+prefill, where the arms are GPU-bound and the number is trustworthy:
+
+| | before | after |
+|---|---|---|
+| prefill_t2048 wall | 1.833 | **1.249** |
+| prefill_t2048 graph | 1.377 | **1.219** |
+
+wall and graph converging on each other is the signature of a fixed baseline: with the cold
+read gone, the two estimators agree, because there is no longer a memory artifact for one of
+them to see and the other to miss.
+
+### 8.2 At decode, the wall clock measures Python, not the GPU
+
+The remaining ~2.1x at decode survived 8.1, and it is not a device effect at all. **H200 runs
+these kernels in 16-26 us -- faster than one Triton launch from Python.** Measured host gap
+(wall minus graph, fused arm):
+
+| regime | wall | graph | host gap |
+|---|---|---|---|
+| decode_bs1 | 35.0 us | 24.6 us | **+10.4 us** |
+| decode_bs1024 | 139.2 us | 26.0 us | **+113.3 us** |
+| prefill_t8192 | 69.7 us | 71.0 us | -1.3 us |
+
+At bs1024 the host contributes 113 us on top of 26 us of GPU work: **81 % of the wall clock is
+the launch path.** The unfused arm carries one more launch than the fused arm, so it loses by
+construction, regardless of what the kernels do. This is the same failure that produced the
+negative calibration floor in §8.3 — one cause, two symptoms.
+
+`f11_publish.py` now measures the host fraction per cell and publishes the CUDA-graph ratio
+wherever it exceeds 25 %. This is not a workaround: it is what vLLM and SGLang both do, since
+both capture the decode path in CUDA graphs. The wall clock answers "how fast is this chain
+when driven from Python", which is a real question but not the one this study asks.
+
+### 8.3 The calibration floor was inferred; now it is measured
+
+The floor was derived as `t(1) - (t(8) - t(1))/7`, which returned **-5.602 us** on a node whose
+eight cards were all 0 MiB / 0 % util. A negative value needs `t(8) > 8*t(1)`, i.e. per-launch
+cost *rising* with N — exactly what 8.2 describes. One nop's GPU execution is ~0, so `t(1)`
+captures almost nothing while eight nops expose the CPU-side gaps as GPU-timeline idle; the
+slope measures launch overhead and subtracting it from ~0 goes negative. **The linear model
+assumed the GPU was the slow side, which on this machine it is not.**
+
+An empty timed region *is* the floor, so it is now taken directly. Run 3: **+4.256 us**,
+positive, against a 20 us bar. Two gates were also holed and are now closed: the calibration
+accepted a negative floor (bounded from above only), and the ceiling was checked against the
+discarded wall figure rather than the published one.
+
+### 8.4 Three independent lines of evidence agree
+
+Comparing run 2 against run 3 — same script, same card, different day:
+
+| regime | wall run2 | wall run3 | spread | graph run2 | graph run3 | spread | SC excess |
+|---|---|---|---|---|---|---|---|
+| decode_bs1 | 2.151 | 2.090 | 2.9 % | 0.825 | 0.709 | 16.3 % | **+83.4 %** |
+| decode_bs32 | 2.139 | 2.138 | 0.0 % | 0.657 | 0.683 | 3.9 % | **+89.9 %** |
+| decode_bs256 | 2.101 | 0.870 | **141.6 %** | 0.767 | 0.593 | 29.5 % | -18.7 % |
+| decode_bs512 | 0.902 | 2.038 | **126.0 %** | 0.627 | 0.722 | 15.3 % | **+78.2 %** |
+| decode_bs1024 | 1.843 | 1.032 | **78.6 %** | 0.846 | 0.867 | 2.4 % | -15.7 % |
+| prefill_t2048 | 1.248 | 1.249 | 0.1 % | 1.219 | 1.262 | 3.5 % | -14.3 % |
+| prefill_t8192 | 1.529 | 1.522 | 0.4 % | 1.379 | 1.384 | 0.4 % | +4.5 % |
+
+1. **Reproducibility.** At decode the wall ratio swings 78-142 % between runs; the graph ratio
+   holds to 2.4-29.5 %. At prefill *both* reproduce to under 4 %. A quantity that changes by
+   142 % between identical runs is not measuring the kernel.
+2. **Self-consistency.** With a valid floor the bound is finally computable, and at
+   bs1/bs32/bs512 the wall ratio **exceeds the physical bound by 78-90 %**. Not merely noisy —
+   impossible. (It does not fire at bs256/bs1024 only because the wall figure happened to land
+   low in this run; the host-fraction test catches those. The two tests are complementary and
+   between them cover all five decode cells.)
+3. **Agreement across devices.** The published curve now matches C500 and RTX 4060 in shape,
+   which no artifact of the H200 harness would reproduce on two other vendors' silicon.
+
+### 8.5 What is published
+
+7 of 21 arm-cells, up from 3. **#11b (router) now has a complete curve at every regime.**
+
+| regime | published | basis | host | run-2 agreement |
+|---|---|---|---|---|
+| decode_bs1 | **0.709** | graph | 75 % | 0.825 |
+| decode_bs32 | **0.683** | graph | 76 % | 0.657 |
+| decode_bs256 | **0.593** | graph | 43 % | 0.767 |
+| decode_bs512 | **0.722** | graph | 71 % | 0.627 |
+| decode_bs1024 | **0.867** | graph | 29 % | 0.846 |
+| prefill_t2048 | **1.249** | wall | 17 % | 1.248 |
+| prefill_t8192 | **1.522** | wall | 7 % | 1.529 |
+
+**#11b loses at decode (0.59-0.87) and wins at prefill (1.25-1.52)** — the same shape as C500
+(0.68-1.13) and RTX 4060 (0.74-1.55). Three devices, three vendors, one curve. The mechanism
+is unchanged from LOG-12: the fusion trades a cheap streaming pass for extra work inside a
+GEMM prologue, which pays only when the GEMM is large enough to amortise it.
+
+**#11a stays 0 for 7.** Its invariance screen REJECTs at 5 regimes (`rel_err` up to 2.35e-01
+against tol 1e-5, on `BLOCK_M`, `num_warps`, `num_stages`) and is INCOMPLETE at the other 2.
+The fused output depends on the tiling, which is a Triton wgmma miscompile, not a harness
+defect and not something a measurement fix can reach. This is the §1.1 warp-specialization
+assertion surfacing as a wrong answer rather than a compile failure.
+
+**#11b' (half) stays 0 for 7, and the block is informative.** Its launch-aware ceiling is
+1.000-1.311x (the variant saves almost no traffic) yet it measures 1.04-1.45x. A measurement
+above its own physical ceiling at every single regime is not a speedup; it means the arms are
+not doing equal work. The gate is doing exactly what it was built for.
+
+### 8.6 Residual, recorded not hidden
+
+- `f11_publish.json` carries **two** calibrations: the authoritative top-level one (floor
+  4.256 us, `ok: true`) and a stale `env.calib_health` from the environment probe (floor
+  39.872 us, `contended: true`). The report generator states this in every #11 row's note,
+  because the raw file cannot be edited after the fact.
+- The `11b_half` arm gets no `graph_speedup` or `timing_basis` field from the script; the
+  report generator recomputes both from the raw graph timings. Same result, but the script
+  should emit them.
+- The four layer-level configurations containing #11 (`O`, `P`, `Q`, `R`) still fail the fp32
+  reference and are excluded from `layer_optimal_per_regime.csv`. Those come from the main
+  campaign, which still contains the broken #11a; the gated re-measurement does not feed the
+  combination sweep.
