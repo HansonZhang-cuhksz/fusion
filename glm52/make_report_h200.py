@@ -304,7 +304,12 @@ def fairness_notes(family: str, variant: str, regime: str, pair_meta: dict | Non
         out.append(f"TICK-LIMITED: operands are {tick.get('fused_ticks', 0):.0f} / "
                    f"{tick.get('unfused_ticks', 0):.0f} ticks of the measured "
                    f"{tick.get('timer_tick_us')} us CUDA-event granularity")
-    if family in ("f11", "f06", "f08f09"):
+    # f11 is deliberately NOT in this list any more. TENANT is derived from summary.json's
+    # tenant_events, which belong to the ORIGINAL campaign on card 59aa5198. #11 was repaired
+    # and re-run on 2026-08-05 by run_f11_h200.py, on card b2318e71, with its own GPU record
+    # (f11_rerun_summary.json: pinned, "idlest of 8: 0% utilization", tenant_events []).
+    # Applying the old campaign's co-tenancy flag to it would be a fabricated provenance.
+    if family in ("f06", "f08f09"):
         out.append(TENANT)
     return out
 
@@ -361,6 +366,11 @@ def _campaign_cards() -> dict:
     The first H200 campaign silently split across two cards with harness floors of -5.975 us
     and +42.185 us, so this was hardcoded to expose it. The re-run pinned one idle GPU. Read
     it rather than assert it, so the next split is caught instead of papered over.
+
+    It caught one: `#11` was repaired and re-run SEPARATELY (`run_f11_h200.py`, 2026-08-05)
+    and landed on a different card from the rest of the campaign. The uuid is therefore taken
+    from EACH FILE's own `env.uuid` / `fairness.gpu.uuid`, not from `summary.json` -- reading
+    the campaign-wide uuid is exactly the mistake that would have hidden the split.
     """
     out = {}
     for fam, fn in (("f01", "f01_oproj_resadd"), ("f03", "f03_resadd_rmsnorm"),
@@ -372,12 +382,14 @@ def _campaign_cards() -> dict:
         except Exception:  # noqa: BLE001
             continue
         floor = ((d.get("fairness") or {}).get("timing") or {}).get("harness_floor_us")
-        uu = ""
-        try:
-            uu = str(json.loads((RES / "summary.json").read_text())
-                     .get("_meta", {}).get("gpu_uuid", ""))
-        except Exception:  # noqa: BLE001
-            pass
+        uu = str((d.get("env") or {}).get("uuid")
+                 or ((d.get("fairness") or {}).get("gpu") or {}).get("uuid") or "")
+        if not uu:
+            try:
+                uu = str(json.loads((RES / "summary.json").read_text())
+                         .get("_meta", {}).get("gpu_uuid", ""))
+            except Exception:  # noqa: BLE001
+                pass
         out[fam] = (uu.replace("GPU-", "")[:8], floor)
     return out
 
@@ -408,6 +420,401 @@ def provenance_note(fusion: str, regime: str) -> str:
                   f"BOTH arms, so a ratio understates the true work ratio), which is why the "
                   f"decode numbers here should be read as bounds rather than exact")
     return n
+
+
+# ======================================================================================
+# #11 (lazy pre-norm) -- the REPAIRED re-run, and the caveats the verification raised
+# ======================================================================================
+# The first H200 campaign wrote `f11_lazy_prenorm.json` with `complete: true` and an EMPTY
+# rows array, so this generator emitted four "NOT MEASURED" rows per regime. `#11` was
+# repaired (LOG-16) and re-run on 2026-08-05 by `run_f11_h200.py`; the file now carries 7
+# regimes and per-arm records, and `complete: false` is honest -- one arm failed.
+#
+# Everything below reads that file. Nothing here is carried over from the brief or from
+# LOG-16's prose. Where a caveat comes from OUTSIDE the file it says so and names the tool.
+F11_FILE = "f11_lazy_prenorm.json"
+F11_TOOL = "tools/verify_f11_headline_ws.py"
+
+# What that tool reported when run in this repo (Triton 3.6.0, torch 2.11.0) on 2026-08-05.
+# It is recorded as a fixed string because the RESULT FILE CARRIES NO CODEGEN EVIDENCE of
+# its own: `headline.*.kernel_ws_evidence` is hard-null in all 12 measured cells
+# (bench_f11_lazy_prenorm.py:933-939 assigns `None` instead of calling `K.ws_evidence`), and
+# the file contains no `ttgir_mentions_wgmma` / `ptx_mentions_wgmma` /
+# `*_mentions_warp_specialize` field at all. Re-run the script to re-derive it.
+WS_NOT_APPLIED = (
+    "WARP SPECIALIZATION WAS REQUESTED AND NEVER APPLIED -- so every `*_ws_*` number in "
+    "this file measures something other than warp specialization. Evidence is NOT in the "
+    f"result file (kernel_ws_evidence is null in all 12 measured headline cells); it comes "
+    f"from {F11_TOOL}, which cross-compiles both f11 kernels for sm_90a at each cell's own "
+    "recorded shared_config and first reproduces the H200's recorded kernel_stats "
+    "(shared_bytes AND n_regs) for 26/26 kernels. On that reproduction the WS request "
+    "reaches TTGIR in 12/12 cells and produces a specialized kernel in 0/12: in 9 cells the "
+    "WS-on and WS-off arms are identical PTX once .loc metadata is stripped (identical "
+    "machine code cannot run at a different speed), and in 3 (decode_bs1/bs32/bs512 router) "
+    "the request instead collapsed multi-buffering, shared memory 61440 -> 16384 B, which "
+    "is a DE-PIPELINING regression rather than a specialization effect. Triton 3.6 routes "
+    "sm_90 to `add_hopper_warpspec`, which crashed 493 times in this run's compiler log and "
+    "otherwise emitted nothing"
+)
+
+
+def f11_estimator_spread(d: dict) -> tuple[int, float, str]:
+    """(n cells carrying both estimators, largest |paired/seq - 1|, where it happens).
+
+    The campaign publishes `speedup_source: "speedup"` (sequential) while `paired_speedup`
+    exists on every row, and elsewhere in this campaign the two disagreed by 13.8 %. This
+    measures the disagreement for #11 rather than assuming it is the same.
+    """
+    n, worst, where = 0, 0.0, ""
+    for r in d.get("rows", []):
+        for arm in ("f11b_router", "f11a_w13", "combined"):
+            b = r.get(arm)
+            if not isinstance(b, dict):
+                continue
+            s, p = b.get("speedup"), b.get("paired_speedup")
+            if _nan(s) or _nan(p) or not s:
+                continue
+            n += 1
+            dis = abs(p / s - 1.0)
+            if dis > worst:
+                worst, where = dis, f"{r.get('regime')} / {arm}"
+    return n, worst, where
+
+
+def f11_mainloop_range(d: dict, which: str) -> tuple[float, float, float] | None:
+    """(min, median, max) of headline.<which>.instruction_cost_pct over the regimes."""
+    v = sorted(((r.get("headline") or {}).get(which) or {}).get("instruction_cost_pct")
+               for r in d.get("rows", [])
+               if not _nan((((r.get("headline") or {}).get(which)) or {})
+                           .get("instruction_cost_pct")))
+    if not v:
+        return None
+    mid = v[len(v) // 2] if len(v) % 2 else 0.5 * (v[len(v) // 2 - 1] + v[len(v) // 2])
+    return v[0], mid, v[-1]
+
+
+def _f11_stage_best(entry) -> float | None:
+    """Tuning-phase best_ms for a kernel table that is flat or split coarse/refine."""
+    return best_of(entry)[0]
+
+
+def _f11_table_best(tab) -> float | None:
+    """Tuning-phase best_ms of a jointly-retuned CHAIN table, recorded as [cfg, ms, err]."""
+    if not isinstance(tab, list):
+        return None
+    v = [r[1] for r in tab
+         if isinstance(r, (list, tuple)) and len(r) > 1 and isinstance(r[1], (int, float))]
+    return min(v) if v else None
+
+
+def f11_run_notes(d: dict) -> list[str]:
+    """Provenance and calibration -- identical for every #11 row, all read from the file."""
+    cov = d.get("coverage") or {}
+    env = d.get("env") or {}
+    cal = env.get("calib_health") or {}
+    tcal = (((d.get("fairness") or {}).get("timing") or {}).get("calibration") or {})
+    nfail = len(cov.get("regimes_failed") or {})
+    rerun = load("f11_rerun_summary.json") or {}
+    when = (rerun.get("_meta") or {}).get("recorded_at", "date not recorded")
+    other_card, other_floor = FAMILY_CARD.get("f01", ("", None))
+    out = [
+        f"SOURCE results/h200/{F11_FILE} -- the REPAIRED re-run (run_f11_h200.py, {when}). "
+        f"The previous campaign's file claimed complete=true with an EMPTY rows array; this "
+        f"one records status={d.get('status')!r}, complete={d.get('complete')}, "
+        f"{len(cov.get('regimes_with_rows') or [])}/"
+        f"{len(cov.get('regimes_requested') or [])} regimes with rows, "
+        f"{nfail} regimes failed, n_arms_unmeasurable="
+        f"{cov.get('n_arms_unmeasurable')} (all of them decode_bs32, see that row)",
+
+        f"MEASURED ON A DIFFERENT CARD FROM THE REST OF THIS REPORT: env.uuid "
+        f"{str(env.get('uuid'))[:8]} against {other_card} for every other family, with its "
+        f"own harness floor ({env.get('harness_floor_us'):.3f} us vs "
+        f"{other_floor:.3f} us). #11 is therefore NOT on the same footing as the rows above "
+        f"it, and summary.json's co-tenancy event (recorded on the OTHER card) does not "
+        f"apply to it",
+
+        f"CALIBRATION CONTRADICTS ITSELF INSIDE THE FILE: fairness.timing.calibration says "
+        f"trusted={tcal.get('trusted')}, reason={tcal.get('reason')!r}, while env.calib_health "
+        f"on the identical inputs says launch_trusted={cal.get('launch_trusted')}, "
+        f"timer_tick_trusted={cal.get('timer_tick_trusted')}, contended={cal.get('contended')} "
+        f"-- \"{(cal.get('reasons') or ['?'])[0]}\". glm52_h200/bench/__init__.py's "
+        f"calibration_status() only inspects the floor inside its tick-mismatch branch and "
+        f"timer_tick_match_frac is 1.0 here, so the floor bar was never applied; "
+        f"glm52_h200/config.py's own FLOOR_LAUNCH_RATIO_MAX=3.0 / FLOOR_US_MAX=20.0 both "
+        f"fail on these numbers (ratio "
+        f"{(env.get('harness_floor_us') or 0) / (env.get('launch_us') or 1):.2f})",
+
+        "GPU STATE: the driver pinned an idle card (f11_rerun_summary.json gpu.pinned=true, "
+        "reason \"idlest of 8: 0% utilization, 0.0 GB used, 0 other compute process(es)\", "
+        "tenant_events=[]), while this file's own fairness.gpu.selection says "
+        "requested=null/applied=false because bench_f11 was launched without --gpu. Take the "
+        "driver's record -- and note which way it cuts: if the card WAS idle then the "
+        f"{env.get('harness_floor_us'):.2f} us harness floor is the real floor rather than a "
+        "co-tenant, which is the worse reading for every decode number here",
+    ]
+    return out
+
+
+def f11_est_note(b: dict, d: dict) -> list[str]:
+    """Which estimator the `speedup` column publishes, and where the two disagree."""
+    seq, pair = b.get("speedup"), b.get("paired_speedup")
+    out: list[str] = []
+    if _nan(seq) or _nan(pair):
+        out.append("ESTIMATOR: this arm carries only one of `speedup` / `paired_speedup`, so "
+                   "no cross-check between the sequential and paired statistics is possible")
+        return out
+    dis = (pair - seq) / seq
+    n_cell, worst, where = f11_estimator_spread(d)
+    out.append(
+        f"ESTIMATOR PUBLISHED = PAIRED. The `speedup` column is paired_speedup={pair:.4f} "
+        f"(median of the per-round ratios from the interleaved A/B loop, which cancels "
+        f"monotone drift), NOT the file's own sequential ratio of medians "
+        f"speedup={seq:.4f} (= unfused.p50/fused.p50). They disagree by {dis:+.2%} here"
+        + ("" if abs(dis) < 0.02 else " -- MATERIAL (>=2%)")
+        + f"; over all {n_cell} #11 arm-cells that carry both, the largest disagreement is "
+          f"{worst:.2%} ({where}), far below the 13.8% seen elsewhere in this campaign")
+    pm = b.get("pair_meta") or {}
+    if b.get("paired") is False and pm.get("interleaved"):
+        out.append(
+            f"FIELD MISLABELLED IN THE SOURCE: this row records `paired: false` while its own "
+            f"pair_meta records impl={pm.get('impl')!r}, interleaved={pm.get('interleaved')}, "
+            f"n={pm.get('n')} with a full paired_speedup distribution. It IS a paired "
+            "measurement; any consumer keying off the `paired` field will mislabel it")
+    return out
+
+
+def f11_inv_note(rr: dict, which: str) -> list[str]:
+    """The D-A BLOCK_M-invariance probe for THIS arm's fused kernel, at this regime."""
+    key = f"{which}_fused_blockm_invariance"
+    c = (rr.get("checks") or {}).get(key)
+    if c is None:
+        return [
+            f"D-A INVARIANCE TEST: NOT RUN for this arm here -- checks.{key} is absent. The "
+            "probe is guarded on the arm having already PASSED its correctness check "
+            "(bench_f11_lazy_prenorm.py:1478), so the one regime where a BLOCK_M-dependent "
+            "wrong answer actually landed is the one regime with no invariance probe"]
+    out = [
+        f"D-A INVARIANCE TEST (checks.{key}): ok={c.get('ok')}, rel_err={c.get('rel_err'):.4e} "
+        f"vs tol={c.get('tol')}, bitwise_identical={c.get('bitwise_identical')}, tuned "
+        f"BLOCK_M={c.get('tuned_block_m')} vs probe BLOCK_M={c.get('probe_block_m')}, "
+        f"gate={c.get('gate')} (NON-GATING by design: a failure does not withhold the timing)"]
+    if not c.get("ok"):
+        out.append("THIS ARM'S INVARIANCE TEST FAILED and its timing is published anyway. The "
+                   "kernel's output is invariant to BLOCK_M by construction (sq is a full-K "
+                   "per-row reduction recomputed identically by every n-tile), so a result "
+                   "that depends on BLOCK_M is a codegen defect -- and it is still live")
+    elif c.get("bitwise_identical") is False:
+        out.append("the probe passes only on the 2e-2 tolerance: the output is NOT bitwise "
+                   "invariant to BLOCK_M although the kernel is invariant to it by "
+                   "construction, so a smaller residual of the same defect is present")
+    out.append("SCOPE OF THE PROBE: it varies BLOCK_M only. INVARIANT_CFG_KEYS in "
+               "glm52_h200/kernels/lazy_prenorm.py declares 8 keys invariant (BLOCK_M, "
+               "BLOCK_N, GROUP_M, num_stages, WARP_SPECIALIZE, warp_specialize, WS, "
+               "num_ctas); the other 7 are never probed, and the run's own screen log rejects "
+               "wrong-answer configs that differ from a published winner in num_stages or "
+               "num_warps alone. The module's `invariance_verdict` / `invariance_partner` "
+               "helpers (tol 1e-5, bit-exact) were NOT the code that ran -- the bench uses "
+               "its own `blockm_invariance` at line 1360, which calls common.check() at its "
+               "default tol=2e-2")
+    return out
+
+
+def f11_mainloop_note(rr: dict, which: str) -> list[str]:
+    """rows[].headline: the 2x2 at ONE shared config, which is the only in-mainloop number."""
+    h = (rr.get("headline") or {}).get(which) or {}
+    if h.get("unmeasurable") or _nan(h.get("instruction_cost_pct")):
+        return [f"MAINLOOP ISOLATION (rows[].headline.{which}): UNMEASURABLE here -- "
+                f"{h.get('reason') or h.get('note') or 'not recorded'}. Because "
+                "specialization_study builds all four chains before timing any, a warp-"
+                "specialization compile failure also destroys the classic-mainloop pair that "
+                "needs no specialization at all"]
+    out = [
+        f"MAINLOOP ISOLATION (rows[].headline.{which}, all four arms in ONE rotating "
+        f"interleave at ONE shared config {m(h.get('shared_config'))}): fusing the reduction "
+        f"COSTS {h['instruction_cost_pct']:+.2f}% with the classic mainloop "
+        f"(unfused {h['unfused_ms']:.5f} -> fused {h['fused_nonspecialized_ms']:.5f} ms) and "
+        f"{h['instruction_cost_ws_pct']:+.2f}% with the warp-specialization flag set; the "
+        f"flag itself moved the fused arm {h['ws_gain_fused_pct']:+.2f}% and the unfused arm "
+        f"{h['ws_gain_unfused_pct']:+.2f}%",
+        f"the file's own verdict for this cell, published verbatim and NOT endorsed here: "
+        f"\"{h.get('verdict')}\"",
+        WS_NOT_APPLIED,
+        "the shared config is the FUSED arm's tuned winner in every cell, so the two unfused "
+        "arms of the 2x2 run off their own optimum; and only the fused_ws_off arm is covered "
+        "by a numerical check (rows[].checks) -- `unfused`, `fused_ws_on` and `unfused_ws_on` "
+        "are timed without ever being shown to compute the right answer",
+    ]
+    return out
+
+
+def f11_decomp_note(d: dict, rr: dict, b: dict) -> list[str]:
+    """The decomposition the #11b number needs: how much is the mainloop, how much the
+    eliminated kernel. Every term is read from this file; the arithmetic is stated."""
+    reg = rr["regime"]
+    tt = (d.get("tune_tables") or {}).get(reg, {})
+    env = d.get("env") or {}
+    head = ((rr.get("headline") or {}).get("router") or {})
+    ic = head.get("instruction_cost_pct")
+    rf = _f11_stage_best(tt.get("router_fused"))
+    ru = _f11_stage_best(tt.get("router_unfused"))
+    nm = _f11_stage_best(tt.get("norm"))
+    jt = _f11_table_best(tt.get("router_unfused_joint"))
+    sp = best_speedup(b)[0]
+    out: list[str] = []
+    if not _nan(ic):
+        rng = f11_mainloop_range(d, "router")
+        span = (f"the range over the {len(d.get('rows', []))} regimes is {rng[0]:+.2f}% to "
+                f"{rng[2]:+.2f}%, median {rng[1]:+.2f}%" if rng else "range not computable")
+        out.append(
+            f"DECOMPOSITION, PART 1 -- THE MAINLOOP LOSES. At this regime the in-mainloop "
+            f"cost of the reduction is {ic:+.2f}% (headline, above; {span}). It is positive "
+            f"in EVERY regime, so NONE of #11b's win comes from the fused k-loop: all of it "
+            f"is the removal of the second kernel -- that kernel's launch plus its activation "
+            f"pass")
+    if None not in (rf, ru, nm, jt):
+        overhead = jt - ru - nm
+        tune_sp = jt / rf
+        out.append(
+            f"DECOMPOSITION, PART 2 -- IT IS MOSTLY THE LAUNCH. In the TUNING phase, which is "
+            f"a different measurement window from the published one, the same comparison was "
+            f"timed again: fused best {rf:.5f} ms vs jointly-retuned norm+GEMM chain "
+            f"{jt:.5f} ms = {tune_sp:.3f}x, against the published {sp:.3f}x. Inside that "
+            f"chain the norm kernel alone tunes to {nm:.5f} ms and the GEMM alone to "
+            f"{ru:.5f} ms, so putting a second kernel in the chain costs "
+            f"{overhead * 1000:+.1f} us OVER AND ABOVE both kernels' own standalone times -- "
+            f"against a calibrated launch cost of {env.get('launch_us'):.2f} us and a "
+            f"{env.get('harness_floor_us'):.2f} us harness floor. That per-kernel chain "
+            f"overhead, not the mainloop and not memory traffic, is what #11b removes")
+        if not _nan(sp) and sp > 0:
+            gap = abs(tune_sp / sp - 1.0)
+            if gap >= 0.25:
+                out.append(
+                    f"CONTRADICTED BY THE FILE'S OWN OTHER WINDOW: the tuning phase makes this "
+                    f"comparison {tune_sp:.3f}x and the published paired window makes it "
+                    f"{sp:.3f}x -- {gap:.0%} apart, on the same kernels, the same tensors and "
+                    f"the same host. Both cannot be right and nothing in the file chooses "
+                    f"between them; this cell should not be quoted")
+            else:
+                out.append(
+                    f"the two windows agree to {gap:.0%}, which is the strongest argument that "
+                    f"the published ratio is a real property of the two arms rather than an "
+                    f"artifact of the paired window's drift")
+    if not _nan(b.get("ceiling")) and not _nan(sp):
+        cl = b["ceiling"]
+        over = sp / cl
+        s = (f"DECOMPOSITION, PART 3 -- THE TRAFFIC TERM. The run's own MODELLED byte-traffic "
+             f"ceiling for this cell is {cl:.3f}x (bytes_unfused {b.get('bytes_unfused')} / "
+             f"bytes_fused {b.get('bytes_fused')}), which bounds the activation-pass part of "
+             f"the win. Measured {sp:.3f}x is {over:.2f}x that ceiling")
+        if over > 1.0:
+            s += (" -- ABOVE IT. The traffic model carries no launch term, so the excess is "
+                  "charged to the eliminated launch by elimination, not by measurement")
+        else:
+            s += " -- below it, so a traffic explanation is available at this regime"
+        out.append(s)
+    l2 = env.get("l2_bytes")
+    bu = b.get("bytes_unfused")
+    if l2 and bu:
+        if bu <= l2:
+            out.append(
+                f"L2-RESIDENT: the unfused chain's whole working set ({bu / 2**20:.2f} MB) "
+                f"fits this device's {l2 / 2**20:.0f} MB L2, so NEITHER arm is going to HBM "
+                f"and the ceiling above is not a bound on anything -- glm52_h200/traffic.py's "
+                "own words for this case are that the measured ratio is then \"an "
+                "L2/occupancy/launch story\". The result JSON does not carry an `l2_resident` "
+                "flag per row; this is computed here from bytes_unfused vs env.l2_bytes")
+        else:
+            out.append(f"NOT L2-resident: the unfused chain's working set "
+                       f"({bu / 2**20:.1f} MB) exceeds the {l2 / 2**20:.0f} MB L2, so the "
+                       "traffic ceiling is a real bound here")
+    return out
+
+
+def f11_component_note(d: dict, rr: dict, b: dict) -> list[str]:
+    """Why the per-kernel columns do not decompose unfused_total_ms."""
+    reg = rr["regime"]
+    tt = (d.get("tune_tables") or {}).get(reg, {})
+    nm = _f11_stage_best(tt.get("norm"))
+    ncfg = (tt.get("norm") or {}).get("best_cfg")
+    pub = b.get("norm_only_ms")
+    chain_cfg = b.get("unfused_norm_cfg")
+    out = ["the per-kernel columns are SEPARATE bench_chain measurements taken after the "
+           "paired window (bench_f11_lazy_prenorm.py:1547-1549), each behind its own L2 "
+           "flush, at the STANDALONE tuner's configs -- while the chain inside bench_pair ran "
+           "the JOINTLY retuned configs. They are not a decomposition of unfused_total_ms and "
+           "do not sum to it"]
+    if ncfg and chain_cfg and ncfg != chain_cfg:
+        out.append(f"concretely for the norm kernel: unfused_k1_ms was measured at the "
+                   f"standalone winner ({m(ncfg)}), which is the mapping shown, while the "
+                   f"chain inside bench_pair ran the jointly retuned {m(chain_cfg)} -- the two "
+                   f"differ in 5 of the 7 regimes")
+    if not _nan(nm) and not _nan(pub):
+        allv = [r.get("f11b_router", {}).get("norm_only_ms") for r in d.get("rows", [])]
+        allv = [v for v in allv if not _nan(v)]
+        out.append(
+            f"and they are not reproducible to better than a factor: unfused_k1_ms "
+            f"({pub:.5f} ms) is the SAME kernel at the SAME config as this regime's norm "
+            f"tuner winner ({nm:.5f} ms, tune_tables.{reg}.norm.best_ms, timed by the same "
+            f"bench_chain with the same flush policy and only a different rep count) -- "
+            f"{pub / nm:.2f}x apart. Published norm_only_ms is also nearly flat in T across "
+            f"the campaign ({min(allv):.4f}-{max(allv):.4f} ms over T=1..8192, and it is "
+            f"SMALLER at T=32 than at T=1). No absolute millisecond in this file should be "
+            f"quoted to better than about one significant figure; the within-window RATIOS "
+            f"are what survive")
+    return out
+
+
+def f11_norm_mapping(d: dict, regime: str) -> str:
+    """The config `norm_only_ms` was actually measured at -- the STANDALONE tuner's winner
+    (bench_f11_lazy_prenorm.py:1547 times `prob.norm_fn(norm_cfg)`), NOT the row's
+    `unfused_norm_cfg`, which is the jointly retuned config the chain ran."""
+    return m(((d.get("tune_tables") or {}).get(regime, {}).get("norm") or {}).get("best_cfg"))
+
+
+def f11_floor_note(d: dict, *ms_values) -> str:
+    """Whether the arms of this cell are resolvable above the harness's own floor."""
+    fl = ((d.get("env") or {}).get("harness_floor_us"))
+    vals = [v * 1000.0 for v in ms_values if not _nan(v)]
+    if not fl or not vals:
+        return ""
+    if min(vals) < fl:
+        return (f"BELOW THE HARNESS FLOOR: this cell's arms are "
+                f"{', '.join(f'{v:.1f}' for v in vals)} us against the run's own "
+                f"{fl:.2f} us harness_floor_us. The harness cannot resolve operands it is "
+                f"larger than; this ratio is not a measurement of the kernels")
+    return (f"arm magnitudes {', '.join(f'{v:.1f}' for v in vals)} us against a {fl:.2f} us "
+            f"harness floor (added to BOTH arms, so the ratio understates the work ratio)")
+
+
+def _f11_dev_range(path: Path, arm: str) -> str:
+    """min-max of one arm's speedup on another device, read from that device's own file."""
+    try:
+        dd = json.loads(path.read_text())
+    except Exception:  # noqa: BLE001
+        return ""
+    v = []
+    for r in dd.get("rows", []):
+        e = r.get(arm)
+        if isinstance(e, dict):
+            s = e.get("paired_speedup") if not _nan(e.get("paired_speedup")) else e.get("speedup")
+            if not _nan(s):
+                v.append(float(s))
+    return f"{min(v):.3f}-{max(v):.3f} over {len(v)} regimes" if v else ""
+
+
+def f11a_cross_device_note() -> str:
+    """#11a's record on every device in the study, read from each device's result file."""
+    c500 = _f11_dev_range(ROOT / "results" / "c500" / "f11_lazy_prenorm.json", "f11a_w13")
+    h200 = _f11_dev_range(RES / F11_FILE, "f11a_w13")
+    r4060 = _f11_dev_range(ROOT / "results" / "rtx4060" / "f11_lazy_prenorm.json", "f11a_w13")
+    none4060 = ("no rows -- the 256-expert w13 does not fit in 7.4 GB, so #11a was never "
+                "measured there")
+    return (
+        f"#11a LOSES ON EVERY DEVICE IN THE STUDY THAT COULD RUN IT: C500 "
+        f"{c500 or 'no rows'}; H200 {h200 or 'no rows'}; RTX 4060 {r4060 or none4060}. Read "
+        f"those files, not this sentence. The single H200 value at or above parity "
+        f"(decode_bs1) has a per-round p10-p90 of 0.997-1.733 and is not resolved from 1.0; "
+        f"every other cell on every device is below 1")
 
 
 A = annot()
@@ -712,31 +1119,59 @@ def rows_for(regime: str) -> list[dict]:
                 unfused_k2_mapping=m(ra_cfg))
 
     # ---- #11a / #11b / #11a+b / #11b' -----------------------------------------------
-    d = load("f11_lazy_prenorm.json")
+    # The repaired re-run. Four rows are emitted per regime whatever happened: an arm that
+    # could not be measured gets a row with EMPTY measurement columns and the file's own
+    # reason, because a silently absent row is what this whole repair exists to prevent.
+    d = load(F11_FILE)
     rr = pick(d["rows"], regime=regime) if d else None
     if rr:
         head = rr.get("headline") or {}
+        unm = rr.get("arms_unmeasurable") or {}
+        base = f11_run_notes(d)
+
+        def unmeasurable_note(arm: str) -> str:
+            e = unm.get(arm) or {}
+            fc = e.get("failed_checks") or {}
+            bits = ", ".join(
+                f"{k} rel_err={v.get('rel_err'):.5e} vs tol={v.get('tol')} "
+                f"({v.get('rows_checked', '?')}/{v.get('rows_total', '?')} rows checked, "
+                f"{v.get('unwritten_rows', '?')} unwritten)"
+                for k, v in fc.items() if isinstance(v, dict) and not _nan(v.get("rel_err")))
+            return (f"NOT MEASURED, and NOT a scoping choice: rows[].arms_unmeasurable[{arm!r}]"
+                    f" records reason={e.get('reason')!r}"
+                    + (f" -- {bits}" if bits else "")
+                    + f", published_timing={e.get('published_timing')}. This is the whole of "
+                      "the file's complete=false")
 
         def f11_note(kind: str, b: dict) -> list[str]:
-            n = fairness_notes("f11", kind, regime, b.get("pair_meta"), b.get("tick"))
+            n = list(base)
+            n += f11_est_note(b, d)
+            n += fairness_notes("f11", kind, regime, b.get("pair_meta"), b.get("tick"))
             n.append(hop_note(b.get("fused_cfg"), b.get("unfused_gemm_cfg")))
             n.append(offered_note(d, "f11a_w13_gemm" if kind == "f11a_w13"
                                     else "f11b_router_gemm")
-                     + " -- whether the tuner took them is in the mappings above")
+                     + " -- whether the tuner took them is in the mappings above; the "
+                       "warp_specialize axis was swept on a flag that changes nothing, see "
+                       "the warp-specialization note")
             n.append(f"sum-of-squares redundancy {b.get('sq_redundancy', '?')}x, valid only "
                      "if ALL K=6144 consumers are fused (x2 never materialised)")
-            if not _nan(b.get("ceiling")):
-                n.append(f"modelled ceiling for this cell {b['ceiling']:.3f}x (MODELLED, not "
-                         "measured)")
+            wp = b.get("winner_provenance") or {}
+            if wp:
+                n.append(f"tuned winner re-validated before timing (winner_provenance): "
+                         f"validated={wp.get('validated')}, rank={wp.get('rank')}, "
+                         f"tuned_ms={wp.get('tuned_ms')}, {wp.get('detail')}, "
+                         f"rejected_faster_configs={wp.get('rejected_faster_configs')}")
             return n
 
+        # ---- #11a: lazy pre-norm -> w13 grouped GEMM --------------------------------
         b = rr.get("f11a_w13")
         if b:
             n = f11_note("f11a_w13", b)
-            v = (head.get("moe") or {}).get("verdict")
-            if v:
-                n.append("isolation study at a SHARED config (FUSE on/off, warp-spec "
-                         f'on/off): "{v}"')
+            n += f11_inv_note(rr, "moe")
+            n += f11_mainloop_note(rr, "moe")
+            n.append(f11a_cross_device_note())
+            n.append(f11_floor_note(d, b.get("fused_ms"), b.get("unfused_ms")))
+            n += f11_component_note(d, rr, b)
             n.append(f"vendor lines: cuBLAS grouped {b['vendor_blas_grouped_ms']:.4f} ms, "
                      f"dense 1-expert {b['vendor_blas_dense_1expert_ms']:.4f} ms")
             add(*NAME[("f11", "f11a_w13")], notes=n,
@@ -744,18 +1179,24 @@ def rows_for(regime: str) -> list[dict]:
                 unfused_total_ms=r4(b["unfused_ms"]), speedup=r4(best_speedup(b)[0]),
                 n_unfused_kernels=2,
                 unfused_k1_name="rmsnorm (writes x2)", unfused_k1_ms=r4(b["norm_only_ms"]),
-                unfused_k1_mapping=m(b.get("unfused_norm_cfg")),
+                unfused_k1_mapping=f11_norm_mapping(d, regime),
                 unfused_k2_name="w13 grouped GEMM",
                 unfused_k2_ms=r4(b["unfused_gemm_only_ms"]),
                 unfused_k2_mapping=m(b.get("unfused_gemm_cfg")))
+        else:
+            add(*NAME[("f11", "f11a_w13")],
+                notes=base + [unmeasurable_note("f11a_w13")] + f11_inv_note(rr, "moe")
+                + [f11a_cross_device_note()])
 
+        # ---- #11b: lazy pre-norm -> router GEMM -------------------------------------
         b = rr.get("f11b_router")
         if b:
             n = f11_note("f11b_router", b)
-            v = (head.get("router") or {}).get("verdict")
-            if v:
-                n.append("isolation study at a SHARED config (FUSE on/off, warp-spec "
-                         f'on/off): "{v}"')
+            n += f11_inv_note(rr, "router")
+            n += f11_mainloop_note(rr, "router")
+            n += f11_decomp_note(d, rr, b)
+            n.append(f11_floor_note(d, b.get("fused_ms"), b.get("unfused_ms")))
+            n += f11_component_note(d, rr, b)
             n.append(f"vendor lines: cuBLAS router bf16 {b['vendor_blas_bf16_ms']:.4f} ms, "
                      f"fp32 {b['vendor_blas_fp32_ms']:.4f} ms")
             add(*NAME[("f11", "f11b_router")], notes=n,
@@ -763,41 +1204,77 @@ def rows_for(regime: str) -> list[dict]:
                 unfused_total_ms=r4(b["unfused_ms"]), speedup=r4(best_speedup(b)[0]),
                 n_unfused_kernels=2,
                 unfused_k1_name="rmsnorm (writes x2)", unfused_k1_ms=r4(b["norm_only_ms"]),
-                unfused_k1_mapping=m(b.get("unfused_norm_cfg")),
+                unfused_k1_mapping=f11_norm_mapping(d, regime),
                 unfused_k2_name="router GEMM", unfused_k2_ms=r4(b["unfused_gemm_only_ms"]),
                 unfused_k2_mapping=m(b.get("unfused_gemm_cfg")))
+        else:
+            add(*NAME[("f11", "f11b_router")],
+                notes=base + [unmeasurable_note("f11b_router")])
 
-            h = rr.get("half_fused")
-            if h:
-                n = fairness_notes("f11", "f11b_router", regime, None, None)
-                n = [x for x in n if not x.startswith("paired statistic")]
-                n.insert(0, "NO summary.json cell of its own: #11b' is recorded inside the "
-                            "f11 row as an EXPLORATORY arm, so the flags above are those of "
-                            "the #11b cell it is scored against")
-                n.append(hop_note(h.get("router_cfg"), b.get("unfused_gemm_cfg")))
-                n.append(f"the FUSED side is itself 2 kernels (rstd "
-                         f"{h['rstd_only_ms']:.4f} ms {m(h.get('rstd_cfg'))} + GEMM), and this "
-                         "row is router-only")
-                n.append(f"same technique applied to the w13 GEMM gives "
-                         f"{h['moe_ms']:.4f} ms ({h['moe_speedup_vs_unfused']:.4f}x) and the "
-                         f"two together {h['combined_ms']:.4f} ms "
-                         f"({h['combined_speedup_vs_unfused']:.4f}x)")
-                n.append(h.get("note", ""))
-                add(*HALF, notes=n,
-                    fused_ms=r4(h["router_ms"]),
-                    fused_mapping=f"rstd: {m(h.get('rstd_cfg'))} | "
-                                  f"gemm: {m(h.get('router_cfg'))}",
-                    unfused_total_ms=r4(b["unfused_ms"]),
-                    speedup=r4(h["router_speedup_vs_unfused"]), n_unfused_kernels=2,
-                    unfused_k1_name="rmsnorm (writes x2)", unfused_k1_ms=r4(b["norm_only_ms"]),
-                    unfused_k1_mapping=m(b.get("unfused_norm_cfg")),
-                    unfused_k2_name="router GEMM", unfused_k2_ms=r4(b["unfused_gemm_only_ms"]),
-                    unfused_k2_mapping=m(b.get("unfused_gemm_cfg")))
+        # ---- #11b' half-fused (EXPLORATORY): rstd kernel + epilogue scale -----------
+        h = rr.get("half_fused") or {}
+        b11 = rr.get("f11b_router") or {}
+        if not _nan(h.get("router_speedup_vs_unfused")):
+            n = list(base)
+            n.append("NO summary.json cell of its own: #11b' is recorded inside the f11 row "
+                     "as an EXPLORATORY arm, so it has no fairness flags of its own")
+            n.append(
+                "ESTIMATOR: NOT PAIRED, and it cannot be. half_fused carries no `speedup` / "
+                "`paired_speedup` field at all -- `router_speedup_vs_unfused` is built by the "
+                "bench as t_rt_u.p50_ms / t_rt_h.p50_ms, i.e. the numerator comes from the "
+                "INTERLEAVED window (the #11b pair) and the denominator from a SEPARATE "
+                "bench_chain run afterwards. It is a cross-window ratio of medians; "
+                "best_speedup() has nothing to prefer here")
+            n += fairness_notes("f11", "f11b_router", regime, None, None)
+            n.append(hop_note(h.get("router_cfg"), b11.get("unfused_gemm_cfg")))
+            n.append(f"rel_err vs the fp32 reference: rstd kernel "
+                     f"{h.get('rel_err_rstd'):.3e}, half-fused router "
+                     f"{h.get('rel_err_router'):.3e}")
+            n.append(f"the FUSED side is itself 2 kernels (rstd {h['rstd_only_ms']:.4f} ms "
+                     f"{m(h.get('rstd_cfg'))} + GEMM), so #11b' holds the KERNEL COUNT fixed "
+                     "at two and removes only the activation pass -- it is the control that "
+                     "separates the traffic term from the launch term in #11b, and it lands "
+                     "well below #11b in every regime")
+            if not _nan(h.get("moe_ms")):
+                extra = (f"same technique on the w13 GEMM: {h['moe_ms']:.4f} ms"
+                         + (f" ({h['moe_speedup_vs_unfused']:.4f}x)"
+                            if not _nan(h.get("moe_speedup_vs_unfused")) else ""))
+                if not _nan(h.get("combined_ms")):
+                    extra += f"; the two together {h['combined_ms']:.4f} ms"
+                    if not _nan(h.get("combined_speedup_vs_unfused")):
+                        extra += f" ({h['combined_speedup_vs_unfused']:.4f}x)"
+                    else:
+                        extra += (" (no combined speedup: its unfused denominator was "
+                                  "disqualified with #11a at this regime)")
+                n.append(extra)
+            n.append(h.get("note", ""))
+            n.append(f11_floor_note(d, h.get("router_ms"), b11.get("unfused_ms")))
+            n += f11_component_note(d, rr, b11)
+            add(*HALF, notes=n,
+                fused_ms=r4(h["router_ms"]),
+                fused_mapping=f"rstd: {m(h.get('rstd_cfg'))} | "
+                              f"gemm: {m(h.get('router_cfg'))}",
+                unfused_total_ms=r4(b11.get("unfused_ms")),
+                speedup=r4(h["router_speedup_vs_unfused"]), n_unfused_kernels=2,
+                unfused_k1_name="rmsnorm (writes x2)",
+                unfused_k1_ms=r4(b11.get("norm_only_ms")),
+                unfused_k1_mapping=f11_norm_mapping(d, regime),
+                unfused_k2_name="router GEMM",
+                unfused_k2_ms=r4(b11.get("unfused_gemm_only_ms")),
+                unfused_k2_mapping=m(b11.get("unfused_gemm_cfg")))
+        else:
+            add(*HALF, notes=base + [
+                "NOT MEASURED at this regime: rows[].half_fused carries no "
+                "`router_speedup_vs_unfused`, which the bench writes only when BOTH the "
+                "half-fused router and the unfused chain it is scored against were measured"])
 
+        # ---- #11a + #11b combined (one norm charged once) ---------------------------
         c = rr.get("combined")
-        a11, b11 = rr.get("f11a_w13") or {}, rr.get("f11b_router") or {}
+        a11 = rr.get("f11a_w13") or {}
         if c:
-            n = fairness_notes("f11", "combined", regime, c.get("pair_meta"), c.get("tick"))
+            n = list(base)
+            n += f11_est_note(c, d)
+            n += fairness_notes("f11", "combined", regime, c.get("pair_meta"), c.get("tick"))
             n.append(hop_note({"router": b11.get("fused_cfg"), "w13": a11.get("fused_cfg")},
                               {"router": b11.get("unfused_gemm_cfg"),
                                "w13": a11.get("unfused_gemm_cfg")}))
@@ -810,6 +1287,8 @@ def rows_for(regime: str) -> list[dict]:
             n.append("unfused_k1_ms is EMPTY: the combined row's norm ran a different config "
                      f"({m(c.get('norm_cfg'))}) from the one whose standalone time was "
                      "measured, and it was not re-timed")
+            n += f11_inv_note(rr, "moe")
+            n.append(f11_floor_note(d, c.get("fused_ms"), c.get("unfused_ms")))
             add(*NAME[("f11", "combined")], notes=n,
                 fused_ms=r4(c["fused_ms"]),
                 fused_mapping=f"router: {m(b11.get('fused_cfg'))} | "
@@ -823,15 +1302,17 @@ def rows_for(regime: str) -> list[dict]:
                 unfused_k3_name="w13 grouped GEMM",
                 unfused_k3_ms=r4(a11.get("unfused_gemm_only_ms")),
                 unfused_k3_mapping=m(a11.get("unfused_gemm_cfg")))
+        else:
+            add(*NAME[("f11", "combined")],
+                notes=base + [unmeasurable_note("combined"),
+                              "the combined arm needs BOTH fused GEMMs and BOTH unfused "
+                              "chains; with #11a disqualified there is nothing left to "
+                              "compare, so no timing is published"])
     elif d:
-        why = ("NOT MEASURED at this regime -- and NOT a scoping choice: the fusion was "
-               "attempted and FAILED its correctness screen (tune_tables.<regime>.regime_failed "
-               "records moe_fused rel_err 0.395-0.833 against tol 0.02 at t2048/bs1024/bs512/"
-               "t8192, and KeyError:'ms' at decode_bs1). Earlier wording said bench_f11 "
-               "\"tuned only at\" two regimes, which understated a wrong-answer failure as a "
-               "deliberate limit. For the record: bench_f11 tuned the lazy pre-norm kernels at "
-               "decode_bs32 and decode_bs256 (the two regimes present in "
-               "results/h200/f11_lazy_prenorm.json). No value is estimated here.")
+        cov = d.get("coverage") or {}
+        why = (f"NO ROW for this regime in results/h200/{F11_FILE}: coverage.regimes_with_rows "
+               f"= {cov.get('regimes_with_rows')}, regimes_failed = "
+               f"{cov.get('regimes_failed')}. No value is estimated here.")
         add(NAME[("f11", "f11a_w13")][0], "-", notes=[why])
         add(NAME[("f11", "f11b_router")][0], "-", notes=[why])
         add(HALF[0], "-", notes=[why])

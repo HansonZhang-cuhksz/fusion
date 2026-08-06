@@ -649,6 +649,36 @@ def calibration_status() -> dict:
               "and every tick_limited verdict below becomes answerable."
         )
         return out
+    # The harness floor is an INDEPENDENT contention signal and must be checked even when
+    # the tick is clean. Structuring it inside the low-tick branch (as this did) made it
+    # unreachable exactly when the tick matched perfectly -- which is how a run with
+    # harness_floor_us=39.87 against config.FLOOR_US_MAX=20.0 recorded `trusted: true`.
+    # config.py already owns these thresholds; do not restate them here.
+    floor = out.get("harness_floor_us")
+    launch = out.get("launch_us")
+    try:
+        from glm52_h200 import config as _C  # local: config is another module's to own
+    except Exception:  # noqa: BLE001 -- a missing config must not silence the guard
+        _C = None
+    fmax = getattr(_C, "FLOOR_US_MAX", 20.0)
+    rmax = getattr(_C, "FLOOR_LAUNCH_RATIO_MAX", 3.0)
+    if isinstance(floor, (int, float)):
+        why = None
+        if floor > fmax:
+            why = (f"harness_floor_us={floor:.3f} exceeds config.FLOOR_US_MAX={fmax}: a clean "
+                   f"floor on an idle device is single-digit microseconds")
+        elif isinstance(launch, (int, float)) and launch > 0 and floor > rmax * launch:
+            why = (f"harness_floor_us={floor:.3f} is {floor / launch:.1f}x launch_us="
+                   f"{launch:.3f}, above config.FLOOR_LAUNCH_RATIO_MAX={rmax}")
+        if why:
+            out["trusted"] = False
+            out["reason"] = (
+                why + ". That is the signature of a co-tenant on the GPU, not a timer "
+                "property, and it inflates every absolute millisecond in this file. Ratios "
+                "measured by an interleaved paired loop survive it; sequential ratios and "
+                "any ceiling comparison do not."
+            )
+            return out
     out["trusted"] = True
     return out
 

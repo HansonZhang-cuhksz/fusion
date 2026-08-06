@@ -1,6 +1,6 @@
 # LOG-16 — Repairing fusion #11 (#11a / #11b / #11b′) after the H200 re-run lost it
 
-**Date** 2026-08-04 · **Status** diagnosis + fix in progress
+**Date** 2026-08-04, re-run 2026-08-05 · **Status** repaired and re-measured; verification in progress (§6)
 **Trigger** the H200 re-run wrote `f11_lazy_prenorm.json` with `complete: true` and an **empty
 `rows` array** — the campaign's headline experiment produced nothing.
 
@@ -102,3 +102,83 @@ arity mismatch that silently dropped the device fence. So the verification phase
 **demonstrate the #11a fix by running the correctness repro at E=256 with a real
 router-derived dispatch on the local sm_89 box**, not merely assert it. An unverified kernel
 fix is worse than an acknowledged bug, because it will be trusted.
+
+
+---
+
+## 6. The repaired re-run (2026-08-05)
+
+`run_f11_h200.py` ran on the H200. **All seven regimes produced rows** (previously zero), with
+`unmeasurable: none` and `complete: false` — the last being honest rather than a defect: one
+arm still fails, and the file now says so instead of claiming completeness with an empty body.
+
+### 6.1 The harness fixes worked
+
+The two screens that rejected 100 % of configs in the last campaign now pass everything:
+
+| screen | before | after |
+|---|---|---|
+| `norm` | 164 offered → **0 valid** | 14 → **14 valid** |
+| `rstd` | 124 offered → **0 valid** | 10 → **10 valid** |
+
+Their trigger was never a tolerance — it was `TypeError: 'function' object is not iterable`
+from `screened_autotune` iterating a bare callable, booked as a compile failure and then
+"rescued" by a fallback that published a timing anyway. Both the cause and the rescue are gone.
+
+### 6.2 Results, all three arms
+
+| regime | **#11b** router | **#11a** w13 | **#11b′** half-fused |
+|---|---|---|---|
+| decode_bs1 | 2.155 | 1.010 | 1.564 |
+| decode_bs32 | 0.847 | *(failed)* | 1.056 |
+| decode_bs256 | 2.211 | 0.992 | 1.488 |
+| decode_bs512 | 2.135 | 0.950 | 1.640 |
+| decode_bs1024 | 2.034 | 0.961 | 1.521 |
+| prefill_t2048 | 2.004 | 0.859 | 1.463 |
+| prefill_t8192 | 1.593 | 0.616 | 1.329 |
+
+**#11a still loses**, as it has on every device in this study (C500 0.48–0.60, and here
+0.62–1.01). **#11b′ wins everywhere** (1.06–1.64). **#11b reads 2.0–2.2×**, which is far above
+C500 (0.68–1.13) and the RTX 4060 (0.74–1.55) and is *not yet cleared* — see §6.4.
+
+### 6.3 The headline experiment finally ran, and its answer is negative
+
+This is what the H200 was for. The 2×2 at one shared config, decode_bs256 / router:
+
+| arm | ms |
+|---|---|
+| unfused | 0.05021 |
+| fused, classic mainloop | 0.05181 → **+3.19 %** |
+| unfused + warp specialization | 0.05546 |
+| fused + warp specialization | 0.05702 → **+2.83 %** |
+
+Warp specialization made **both** arms ~10 % slower (−10.07 % fused, −10.45 % unfused) and did
+not absorb the reduction: the fused arm pays ~3 % with it and ~3 % without.
+
+Recorded verdict: *"Specialization does NOT absorb the reduction here."*
+
+That is a direct test of LOG-09's attribution, which blamed C500's +12.4–61.7 % in-mainloop
+cost on the **absence** of a warp-specialization lane. On the first device that has one, the
+lane exists, is applied, and does not help. The reduction's cost on H200 is small (~3 %) — but
+the 2×2 shows that is a property of the device and toolchain, not of warp specialization.
+
+### 6.4 Why #11b's 2.0–2.2× is not yet reportable
+
+#11b compares a **single fused kernel** against an **unfused chain** (a separate rmsnorm
+kernel plus the GEMM). Most of a 2× win at decode should therefore be the eliminated kernel
+launch and activation pass, not the mainloop — the mainloop tax is the +3.19 % measured above.
+Until that decomposition is confirmed from the recorded per-kernel timings, the number is an
+observation, not a result. An adversarial verification is running against the raw JSON, also
+checking:
+
+- whether the **invariance test** (the D-A mitigation) actually ran and passed in every regime,
+  and what `BLOCK_M` each fused winner chose — if every winner landed in {16, 32} it matters
+  whether small tiles won on merit or the grid was restricted, the latter being a one-sided bias;
+- whether **warp specialization was genuinely applied** in the headline 2×2 rather than
+  silently skipped — a "WS does not help" verdict from a kernel where WS never ran is worthless,
+  so `ttgir_mentions_wgmma` / `ptx_mentions_wgmma` must confirm it;
+- whether the **layer merge** added exactly the four previously-excluded configurations
+  (`O_f11ab`, `P_f10_f11ab`, `Q_f8_f11ab`, `R_f1_f10_f11ab`) without disturbing any row that
+  already measured cleanly (a timestamped pre-merge backup exists);
+- **which estimator** each number uses — the campaign publishes the sequential ratio while a
+  paired one exists, and elsewhere they disagreed by up to 13.8 %.
