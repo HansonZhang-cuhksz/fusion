@@ -157,11 +157,33 @@ def calibrate() -> dict:
         torch.cuda.synchronize()
         return s.elapsed_time(e)
 
+    # MEASURE the floor; do not infer it.
+    #
+    # The floor was previously derived as `t(1) - (t(8) - t(1))/7`, which returned -5.6 us on
+    # a provably idle 8-GPU node (every card 0 MiB / 0% util). A negative result needs
+    # t(8) > 8*t(1), i.e. per-launch cost RISING with N -- which is what happens when the
+    # host is the bottleneck: one nop's GPU execution is ~0, while eight expose the CPU-side
+    # inter-launch gaps as idle time on the GPU timeline. The slope then measures Python
+    # launch overhead and subtracting it from ~0 goes negative. The linear model does not
+    # hold, so the floor is now taken directly: an EMPTY timed region is the floor, by
+    # definition.
+    def timed_empty() -> float:
+        flush_l2()
+        s, e = (torch.cuda.Event(enable_timing=True) for _ in range(2))
+        s.record()
+        e.record()
+        torch.cuda.synchronize()
+        return s.elapsed_time(e)
+
     for _ in range(30):
         timed(1)
+        timed_empty()
+    floor = statistics.median([timed_empty() for _ in range(200)])
     pts = {n: statistics.median([timed(n) for _ in range(120)]) for n in (1, 2, 4, 8)}
-    launch = (pts[8] - pts[1]) / 7
-    floor = pts[1] - launch
+    # Marginal cost of one more launch. Reported for the ceiling and the self-consistency
+    # bound; it is a HOST-side cost whenever the kernels are faster than the launch path, and
+    # that is precisely the case the per-cell host-bound test exists to catch.
+    launch = max((pts[8] - pts[1]) / 7, 0.0)
     try:
         src.unlink()
     except OSError:
@@ -812,10 +834,12 @@ def main() -> int:
     log(f"  harness floor {calib['harness_floor_us']:.3f} us "
         f"(bar {calib['floor_bar_us']}) | launch {calib['launch_us']:.3f} us")
     if not calib["ok"]:
-        log(f"  !! FLOOR ABOVE BAR. A floor this size is comparable to the whole decode\n"
-            f"     measurement and is added to BOTH arms, so no ratio taken here bounds the\n"
-            f"     work. This is exactly what blocked the last run (39.87 us).\n"
-            f"     Pick an idle GPU (--gpu auto) or pass --force-calib to record anyway.")
+        for why in calib.get("problems", ["calibration failed"]):
+            log(f"  !! {why}")
+        log(f"     The floor is added to BOTH arms, so a ratio taken against a bad one does "
+            f"not bound the work.\n"
+            f"     Pick an idle GPU (--gpu auto), or pass --force-calib to record anyway "
+            f"(the output is then marked not publishable).")
         if not a.force_calib:
             json.dump({"aborted": "calibration", "calibration": calib},
                       (ROOT / a.out).open("w"), indent=2)
