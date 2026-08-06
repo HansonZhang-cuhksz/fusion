@@ -1,0 +1,166 @@
+# f11_publish.py  2026-08-06 11:03:29
+# gpu: 0 (idlest of 8 (used 0 MiB, util 0%))
+[env] NVIDIA H200 (sm_90) | 132 SM | warp 32 | smem 232448 B | regs/SM 65536 | threads/SM 2048 | L2 60 MB | HBM 139 GB | torch 2.11.0+cu130 triton 3.6.0 cuda 13.0
+
+=== calibration gate ===
+  harness floor 15.321 us (bar 20.0) | launch 8.327 us
+  floor within bar -- ratios measured here are trustworthy
+
+===== decode_bs1 (T=1) =====
+    [routerF] 284 offered -> 267 valid (17 rejected)
+    [routerF] best 0.0323 ms  {'BLOCK_M': 64, 'BLOCK_N': 32, 'BLOCK_K': 128, 'num_warps': 4, 'num_stages': 4, 'GROUP_M': 8}
+    [routerU] 284 offered -> 278 valid (6 rejected)
+    [routerU] best 0.0222 ms  {'BLOCK_M': 64, 'BLOCK_N': 32, 'BLOCK_K': 128, 'num_warps': 4, 'num_stages': 4, 'GROUP_M': 8}
+    [norm] 72 offered -> 72 valid (0 rejected)
+    [norm] best 0.0271 ms  {'ROWS': 4, 'BLOCK_N': 8192, 'num_warps': 4, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05}
+    [rstd] 72 offered -> 72 valid (0 rejected)
+    [rstd] best 0.0433 ms  {'ROWS': 2, 'BLOCK_N': 8192, 'num_warps': 16, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05}
+    [invariance routerF] PASS worst=0.00e+00 over 5 keys
+  #11b  wall 2.118x | graph 0.698x | ceiling(launch-aware) 1.919 | BLOCKED
+  #11b' wall 1.162x | BLOCKED
+    [w13F] 284 offered -> 239 valid (45 rejected)
+    [w13F] best 0.1180 ms  {'BLOCK_M': 16, 'BLOCK_N': 256, 'BLOCK_K': 128, 'num_warps': 4, 'num_stages': 4, 'GROUP_M': 8}
+    [w13U] 284 offered -> 278 valid (6 rejected)
+    [w13U] best 0.1127 ms  {'BLOCK_M': 16, 'BLOCK_N': 128, 'BLOCK_K': 128, 'num_warps': 8, 'num_stages': 4, 'GROUP_M': 8}
+    [invariance w13F] PASS worst=0.00e+00
+  #11a  wall 1.489x | PUBLISHABLE
+
+===== decode_bs32 (T=32) =====
+    [routerF] 284 offered -> 262 valid (22 rejected)
+    [routerF] best 0.0326 ms  {'BLOCK_M': 64, 'BLOCK_N': 32, 'BLOCK_K': 128, 'num_warps': 4, 'num_stages': 4, 'GROUP_M': 8}
+    [routerU] 284 offered -> 278 valid (6 rejected)
+    [routerU] best 0.0214 ms  {'BLOCK_M': 64, 'BLOCK_N': 32, 'BLOCK_K': 128, 'num_warps': 4, 'num_stages': 4, 'GROUP_M': 8}
+    [norm] 72 offered -> 72 valid (0 rejected)
+    [norm] best 0.0182 ms  {'ROWS': 2, 'BLOCK_N': 2048, 'num_warps': 16, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05}
+    [rstd] 72 offered -> 72 valid (0 rejected)
+    [rstd] best 0.0285 ms  {'ROWS': 4, 'BLOCK_N': 8192, 'num_warps': 16, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05}
+    [invariance routerF] PASS worst=0.00e+00 over 5 keys
+  #11b  wall 2.083x | graph 0.653x | ceiling(launch-aware) 1.929 | BLOCKED
+  #11b' wall 1.156x | BLOCKED
+    [w13F] 284 offered -> 222 valid (62 rejected)
+    [w13F] best 1.8236 ms  {'BLOCK_M': 16, 'BLOCK_N': 128, 'BLOCK_K': 128, 'num_warps': 4, 'num_stages': 3, 'GROUP_M': 8}
+    [w13U] 284 offered -> 278 valid (6 rejected)
+    [w13U] best 1.7819 ms  {'BLOCK_M': 32, 'BLOCK_N': 128, 'BLOCK_K': 128, 'num_warps': 4, 'num_stages': 3, 'GROUP_M': 8}
+    [invariance w13F] REJECT worst=1.18e-01
+  #11a  wall 1.011x | BLOCKED (invariance)
+
+===== decode_bs256 (T=256) =====
+    [routerF] 284 offered -> 259 valid (25 rejected)
+    [routerF] best 0.0312 ms  {'BLOCK_M': 64, 'BLOCK_N': 32, 'BLOCK_K': 128, 'num_warps': 4, 'num_stages': 4, 'GROUP_M': 8}
+    [routerU] 284 offered -> 278 valid (6 rejected)
+    [routerU] best 0.0234 ms  {'BLOCK_M': 64, 'BLOCK_N': 64, 'BLOCK_K': 128, 'num_warps': 4, 'num_stages': 4, 'GROUP_M': 8}
+    [norm] 72 offered -> 72 valid (0 rejected)
+    [norm] best 0.0180 ms  {'ROWS': 1, 'BLOCK_N': 2048, 'num_warps': 8, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}
+    [rstd] 72 offered -> 72 valid (0 rejected)
+    [rstd] best 0.0074 ms  {'ROWS': 2, 'BLOCK_N': 8192, 'num_warps': 16, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}
+    [invariance routerF] PASS worst=0.00e+00 over 5 keys
+  #11b  wall 2.197x | graph 0.709x | ceiling(launch-aware) 1.994 | BLOCKED
+  #11b' wall 1.217x | BLOCKED
+    [w13F] 284 offered -> 218 valid (66 rejected)
+    [w13F] best 2.9022 ms  {'BLOCK_M': 16, 'BLOCK_N': 128, 'BLOCK_K': 128, 'num_warps': 4, 'num_stages': 4, 'GROUP_M': 8}
+    [w13U] 284 offered -> 278 valid (6 rejected)
+    [w13U] best 2.8498 ms  {'BLOCK_M': 16, 'BLOCK_N': 128, 'BLOCK_K': 128, 'num_warps': 4, 'num_stages': 4, 'GROUP_M': 8}
+    [invariance w13F] REJECT worst=1.11e-01
+  #11a  wall 1.001x | BLOCKED (invariance)
+
+===== decode_bs512 (T=512) =====
+    [routerF] 284 offered -> 259 valid (25 rejected)
+    [routerF] best 0.0317 ms  {'BLOCK_M': 64, 'BLOCK_N': 32, 'BLOCK_K': 128, 'num_warps': 4, 'num_stages': 4, 'GROUP_M': 8}
+    [routerU] 284 offered -> 278 valid (6 rejected)
+    [routerU] best 0.0235 ms  {'BLOCK_M': 64, 'BLOCK_N': 32, 'BLOCK_K': 128, 'num_warps': 4, 'num_stages': 4, 'GROUP_M': 8}
+    [norm] 72 offered -> 72 valid (0 rejected)
+    [norm] best 0.0183 ms  {'ROWS': 2, 'BLOCK_N': 2048, 'num_warps': 8, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}
+    [rstd] 72 offered -> 72 valid (0 rejected)
+    [rstd] best 0.0085 ms  {'ROWS': 2, 'BLOCK_N': 8192, 'num_warps': 16, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05}
+    [invariance routerF] PASS worst=0.00e+00 over 5 keys
+  #11b  wall 2.122x | graph 0.666x | ceiling(launch-aware) 2.058 | BLOCKED
+  #11b' wall 1.230x | BLOCKED
+    [w13F] 284 offered -> 218 valid (66 rejected)
+    [w13F] best 3.0583 ms  {'BLOCK_M': 64, 'BLOCK_N': 64, 'BLOCK_K': 128, 'num_warps': 4, 'num_stages': 4, 'GROUP_M': 8}
+    [w13U] 284 offered -> 278 valid (6 rejected)
+    [w13U] best 2.8826 ms  {'BLOCK_M': 32, 'BLOCK_N': 128, 'BLOCK_K': 128, 'num_warps': 4, 'num_stages': 3, 'GROUP_M': 8}
+    [invariance w13F] REJECT worst=5.16e-02
+  #11a  wall 0.909x | BLOCKED (invariance)
+
+===== decode_bs1024 (T=1024) =====
+    [routerF] 284 offered -> 259 valid (25 rejected)
+    [routerF] best 0.0300 ms  {'BLOCK_M': 64, 'BLOCK_N': 32, 'BLOCK_K': 128, 'num_warps': 4, 'num_stages': 4, 'GROUP_M': 8}
+    [routerU] 284 offered -> 278 valid (6 rejected)
+    [routerU] best 0.0228 ms  {'BLOCK_M': 64, 'BLOCK_N': 32, 'BLOCK_K': 128, 'num_warps': 4, 'num_stages': 4, 'GROUP_M': 8}
+    [norm] 72 offered -> 72 valid (0 rejected)
+    [norm] best 0.0122 ms  {'ROWS': 1, 'BLOCK_N': 2048, 'num_warps': 8, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05}
+    [rstd] 72 offered -> 72 valid (0 rejected)
+    [rstd] best 0.0099 ms  {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 8, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}
+    [invariance routerF] PASS worst=0.00e+00 over 5 keys
+  #11b  wall 1.147x | graph 0.955x | ceiling(launch-aware) 2.161 | PUBLISHABLE
+  #11b' wall 1.176x | PUBLISHABLE
+    [w13F] 284 offered -> 215 valid (69 rejected)
+    [w13F] best 3.3386 ms  {'BLOCK_M': 64, 'BLOCK_N': 64, 'BLOCK_K': 64, 'num_warps': 8, 'num_stages': 3, 'GROUP_M': 8}
+    [w13U] 284 offered -> 278 valid (6 rejected)
+    [w13U] best 2.9736 ms  {'BLOCK_M': 64, 'BLOCK_N': 128, 'BLOCK_K': 128, 'num_warps': 8, 'num_stages': 4, 'GROUP_M': 8}
+    [invariance w13F] REJECT worst=4.58e-02
+  #11a  wall 0.860x | BLOCKED (invariance)
+
+===== prefill_t2048 (T=2048) =====
+    [routerF] 284 offered -> 257 valid (27 rejected)
+    [routerF] best 0.0324 ms  {'BLOCK_M': 64, 'BLOCK_N': 64, 'BLOCK_K': 128, 'num_warps': 4, 'num_stages': 4, 'GROUP_M': 8}
+    [routerU] 284 offered -> 278 valid (6 rejected)
+    [routerU] best 0.0268 ms  {'BLOCK_M': 64, 'BLOCK_N': 64, 'BLOCK_K': 128, 'num_warps': 4, 'num_stages': 4, 'GROUP_M': 8}
+    [norm] 72 offered -> 72 valid (0 rejected)
+    [norm] best 0.0190 ms  {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 4, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}
+    [rstd] 72 offered -> 72 valid (0 rejected)
+    [rstd] best 0.0137 ms  {'ROWS': 1, 'BLOCK_N': 2048, 'num_warps': 4, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}
+    [invariance routerF] PASS worst=0.00e+00 over 5 keys
+  #11b  wall 1.833x | graph 1.377x | ceiling(launch-aware) 2.303 | PUBLISHABLE
+  #11b' wall 1.148x | PUBLISHABLE
+    [w13F] 284 offered -> 213 valid (71 rejected)
+    [w13F] best 4.3024 ms  {'BLOCK_M': 128, 'BLOCK_N': 128, 'BLOCK_K': 128, 'num_warps': 4, 'num_stages': 2, 'GROUP_M': 8}
+    [w13U] 284 offered -> 278 valid (6 rejected)
+    [w13U] best 3.2452 ms  {'BLOCK_M': 128, 'BLOCK_N': 256, 'BLOCK_K': 64, 'num_warps': 8, 'num_stages': 4, 'GROUP_M': 8}
+    [invariance w13F] REJECT worst=8.89e-02
+  #11a  wall 0.696x | BLOCKED (invariance)
+
+===== prefill_t8192 (T=8192) =====
+    [routerF] 284 offered -> 247 valid (37 rejected)
+    [routerF] best 0.0697 ms  {'BLOCK_M': 128, 'BLOCK_N': 128, 'BLOCK_K': 64, 'num_warps': 4, 'num_stages': 4, 'GROUP_M': 8}
+    [routerU] 284 offered -> 278 valid (6 rejected)
+    [routerU] best 0.0539 ms  {'BLOCK_M': 128, 'BLOCK_N': 128, 'BLOCK_K': 64, 'num_warps': 4, 'num_stages': 4, 'GROUP_M': 8}
+    [norm] 72 offered -> 72 valid (0 rejected)
+    [norm] best 0.0542 ms  {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 8, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05}
+    [rstd] 72 offered -> 72 valid (0 rejected)
+    [rstd] best 0.0345 ms  {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 8, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}
+    [invariance routerF] PASS worst=0.00e+00 over 5 keys
+  #11b  wall 1.569x | graph 1.396x | ceiling(launch-aware) 2.604 | PUBLISHABLE
+  #11b' wall 1.176x | PUBLISHABLE
+    [w13F] 284 offered -> 215 valid (69 rejected)
+    [w13F] best 10.5706 ms  {'BLOCK_M': 128, 'BLOCK_N': 128, 'BLOCK_K': 32, 'num_warps': 4, 'num_stages': 4, 'GROUP_M': 8}
+    [w13U] 284 offered -> 278 valid (6 rejected)
+    [w13U] best 6.4500 ms  {'BLOCK_M': 128, 'BLOCK_N': 256, 'BLOCK_K': 64, 'num_warps': 8, 'num_stages': 3, 'GROUP_M': 8}
+    [invariance w13F] REJECT worst=1.05e-01
+  #11a  wall 0.646x | BLOCKED (invariance)
+
+=== SUMMARY (wall = with launch, graph = launch amortised) ===
+regime         arm              wall    graph   ceiling  verdict
+decode_bs1     11b_router      2.118    0.698     1.919  BLOCKED
+decode_bs1     11b_half        1.162      nan     1.000  BLOCKED
+decode_bs1     11a_w13         1.489      nan       nan  PUBLISHABLE
+decode_bs32    11b_router      2.083    0.653     1.929  BLOCKED
+decode_bs32    11b_half        1.156      nan     1.011  BLOCKED
+decode_bs32    11a_w13         1.011      nan       nan  BLOCKED
+decode_bs256   11b_router      2.197    0.709     1.994  BLOCKED
+decode_bs256   11b_half        1.217      nan     1.081  BLOCKED
+decode_bs256   11a_w13         1.001      nan       nan  BLOCKED
+decode_bs512   11b_router      2.122    0.666     2.058  BLOCKED
+decode_bs512   11b_half        1.230      nan     1.156  BLOCKED
+decode_bs512   11a_w13         0.909      nan       nan  BLOCKED
+decode_bs1024  11b_router      1.147    0.955     2.161  PUBLISHABLE
+decode_bs1024  11b_half        1.176      nan     1.287  PUBLISHABLE
+decode_bs1024  11a_w13         0.860      nan       nan  BLOCKED
+prefill_t2048  11b_router      1.833    1.377     2.303  PUBLISHABLE
+prefill_t2048  11b_half        1.148      nan     1.497  PUBLISHABLE
+prefill_t2048  11a_w13         0.696      nan       nan  BLOCKED
+prefill_t8192  11b_router      1.569    1.396     2.604  PUBLISHABLE
+prefill_t8192  11b_half        1.176      nan     2.100  PUBLISHABLE
+prefill_t8192  11a_w13         0.646      nan       nan  BLOCKED
+
+wrote results/h200/f11_publish.json
