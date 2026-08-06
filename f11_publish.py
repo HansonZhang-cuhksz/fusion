@@ -166,9 +166,23 @@ def calibrate() -> dict:
         src.unlink()
     except OSError:
         pass
-    return {"harness_floor_us": floor * 1e3, "launch_us": launch * 1e3,
-            "floor_bar_us": FLOOR_US_MAX,
-            "ok": (floor * 1e3) <= FLOOR_US_MAX}
+    f_us, l_us = floor * 1e3, launch * 1e3
+    # A floor must be POSITIVE and below the bar. The first version checked only the upper
+    # bound and passed a run whose floor was -5.904 us: that is the `t = O + N*L` fit
+    # over-estimating L, and it silently corrupts every quantity derived from it -- the
+    # launch-aware ceiling AND the self-consistency bound both charge `launch` per kernel.
+    bad = []
+    if f_us < 0:
+        bad.append(f"harness_floor_us={f_us:.3f} is NEGATIVE, which is not physical: the "
+                   f"t = O + N*L fit over-estimated the launch term ({l_us:.3f} us), so the "
+                   f"ceiling and self-consistency bounds built from it are meaningless")
+    elif f_us > FLOOR_US_MAX:
+        bad.append(f"harness_floor_us={f_us:.3f} exceeds the {FLOOR_US_MAX} us bar -- the "
+                   f"signature of a co-tenant, not a timer property")
+    if l_us <= 0:
+        bad.append(f"launch_us={l_us:.3f} is not positive")
+    return {"harness_floor_us": f_us, "launch_us": l_us, "floor_bar_us": FLOOR_US_MAX,
+            "ok": not bad, "problems": bad}
 
 
 # ======================================================================================
@@ -360,6 +374,33 @@ def invariance_screen(run_at, cfg: dict, keys=None, tol: float = INVARIANT_TOL) 
 # ======================================================================================
 # 3. ceilings (B1)
 # ======================================================================================
+#: A wall-clock chain is only a measurement of the GPU while the GPU is the slow side. On
+#: H200 the #11 kernels run in 16-26 us at decode, which is FASTER than the Python-side
+#: Triton launch path -- measured host gaps of 10-113 us against 20-26 us of actual work. The
+#: unfused arm has one more Python launch than the fused one, so it loses by construction and
+#: the "speedup" is the harness, not the fusion. Above this fraction the wall figure is
+#: rejected and the graph figure is the only publishable basis for that cell.
+HOST_BOUND_FRAC = 0.25
+
+
+def timing_basis(wall_f_ms: float, graph_f_ms: "float | None",
+                 wall_u_ms: float, graph_u_ms: "float | None") -> dict:
+    """Which of `wall` / `graph` may be published for this cell, and why."""
+    if not graph_f_ms or not graph_u_ms:
+        return {"basis": "wall", "host_bound": None,
+                "why": "no graph timing (capture failed); wall is all there is"}
+    gf = max(wall_f_ms - graph_f_ms, 0.0) / max(wall_f_ms, 1e-12)
+    gu = max(wall_u_ms - graph_u_ms, 0.0) / max(wall_u_ms, 1e-12)
+    hb = max(gf, gu) > HOST_BOUND_FRAC
+    return {"basis": "graph" if hb else "wall", "host_bound": hb,
+            "host_frac_fused": gf, "host_frac_unfused": gu,
+            "why": (f"host-bound: {max(gf, gu) * 100:.0f}% of the slower arm's wall time is "
+                    f"not GPU work, so the wall ratio counts Python launches, not the fusion"
+                    if hb else
+                    f"GPU-bound: at most {max(gf, gu) * 100:.0f}% of wall time is host "
+                    f"overhead, so the wall ratio is a measurement of the device")}
+
+
 def self_consistency(wall_ratio: float, graph_f: "float | None", graph_u: "float | None",
                      n_kern_f: int, n_kern_u: int, launch_s: float, floor_s: float,
                      tol: float = 0.05) -> dict:
@@ -613,16 +654,24 @@ def run_regime(name: str, T: int, args, env, calib, log) -> dict:
         b_u = (T * H * 2 * 2) + (T * H * 2 + H * ER * 2 + T * ER * 4)
         cl = ceilings(b_f, b_u, 1, 2, bw, launch_s)
         sc = self_consistency(p["paired_p50"], gf, gu, 1, 2, launch_s,
-                              calib["harness_floor_us"] * 1e-6)
+                              max(calib["harness_floor_us"], 0.0) * 1e-6)
+        tb = timing_basis(p["fused_ms"], gf, p["unfused_ms"], gu)
+        published = ((gu / gf) if (tb["basis"] == "graph" and gf and gu)
+                     else p["paired_p50"])
         row["arms"]["11b_router"] = {
             **p, "graph_fused_ms": gf, "graph_unfused_ms": gu,
             "graph_speedup": (gu / gf) if (gf and gu) else None,
-            **cl, "invariance": inv, "self_consistency": sc,
+            **cl, "invariance": inv, "self_consistency": sc, "timing_basis": tb,
+            "published_speedup": published,
             "fused_cfg": tf["cfg"], "unfused_gemm_cfg": tu["cfg"], "norm_cfg": tn["cfg"],
             "norm_only_ms": tn["ms"], "gemm_only_ms": tu["ms"],
-            "publishable": bool(inv["ok"]
-                                and p["paired_p50"] <= cl["ceiling_launch_aware"]
-                                and sc.get("ok", False)),
+            # The gates apply to the figure actually being published. A host-bound cell
+            # publishes its graph ratio, so it is the graph ratio the ceiling must bound --
+            # checking the discarded wall figure would block cells that are perfectly sound
+            # on the basis they are reported on.
+            "publishable": bool(inv["ok"] and calib["ok"]
+                                and published <= cl["ceiling_launch_aware"]
+                                and (tb["basis"] == "graph" or sc.get("ok", False))),
         }
         a = row["arms"]["11b_router"]
         log(f"  #11b  wall {p['paired_p50']:.3f}x | graph "

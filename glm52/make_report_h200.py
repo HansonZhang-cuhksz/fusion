@@ -663,6 +663,39 @@ def f11p_invariance(a: dict) -> tuple[str, list[str]]:
     return "PASS", n
 
 
+#: Above this fraction of wall time spent off-GPU, the wall ratio is a measurement of the
+#: Python launch path rather than of the fusion. On H200 the #11 kernels run in 16-26 us at
+#: decode -- FASTER than a Triton launch from Python -- and the unfused arm has one more
+#: launch than the fused one, so it loses by construction. Measured host fractions were
+#: 42-91% at decode against 8-18% at prefill.
+F11P_HOST_BOUND_FRAC = 0.25
+
+
+def f11p_basis(a: dict) -> tuple:
+    """(published_ratio, basis, host_frac, why) for one #11 arm.
+
+    Publishes the CUDA-graph ratio for host-bound cells and the wall ratio otherwise. Both
+    are measurements; they answer different questions, and which one is meaningful is decided
+    by whether the GPU or the host was the slow side -- not by which is larger.
+    """
+    w = a.get("paired_p50")
+    gf, gu = a.get("graph_fused_ms"), a.get("graph_unfused_ms")
+    wf, wu = a.get("fused_ms"), a.get("unfused_ms")
+    if not gf or not gu or _nan(wf) or _nan(wu):
+        return w, "wall", None, "no graph timing (capture failed); wall is all there is"
+    hf = max(float(wf) - float(gf), 0.0) / max(float(wf), 1e-12)
+    hu = max(float(wu) - float(gu), 0.0) / max(float(wu), 1e-12)
+    h = max(hf, hu)
+    if h > F11P_HOST_BOUND_FRAC:
+        return (float(gu) / float(gf)), "graph", h, (
+            f"HOST-BOUND ({h * 100:.0f}% of the slower arm's wall time is not GPU work): the "
+            f"wall ratio {float(w):.4f}x counts Python launches, not the fusion, so the "
+            f"CUDA-graph ratio is published instead")
+    return w, "wall", h, (
+        f"GPU-bound ({h * 100:.0f}% host overhead): the wall ratio is a measurement of the "
+        f"device and is published as-is")
+
+
 def f11p_gate(row: dict, arm_key: str, a: dict, cal: dict) -> list[str]:
     """Every reason this cell may NOT be published, re-derived from the raw fields.
 
@@ -701,9 +734,9 @@ def f11p_gate(row: dict, arm_key: str, a: dict, cal: dict) -> list[str]:
                    "`ceilings()` on this arm, so neither `ceiling_launch_aware` nor "
                    "`ceiling_bytes` exists for it and the measured ratio was never bounded "
                    "by anything (D2)")
-    w = a.get("paired_p50")
+    w, _basis, _hf, _bwhy = f11p_basis(a)
     if not _nan(cl) and not _nan(w) and float(w) > float(cl):
-        why.append(f"BLOCKED -- measured wall ratio {float(w):.4f}x EXCEEDS its own "
+        why.append(f"BLOCKED -- published {_basis} ratio {float(w):.4f}x EXCEEDS its own "
                    f"launch-aware ceiling {float(cl):.4f}x by "
                    f"{100.0 * (float(w) / float(cl) - 1):.1f}%. The ceiling charges each arm "
                    f"its ideal traffic time PLUS its launches; a measurement above it is not "
@@ -884,9 +917,14 @@ def f11p_emit(d: dict, regime: str, add) -> None:
         n.append("unfused_k1_ms / unfused_k2_ms are EMPTY on purpose: the per-kernel "
                  "component times in this file are wall-clock measurements, and putting them "
                  "beside a graph-replay total would mix two timing bases in one row")
+        pub, basis, hfrac, bwhy = f11p_basis(a)
+        n.insert(0, f"TIMING BASIS: {basis.upper()}. {bwhy}")
         add(fusion, variant, notes=n,
-            fused_ms=r4(a.get("graph_fused_ms")), fused_mapping=fused_mapping,
-            unfused_total_ms=r4(a.get("graph_unfused_ms")), speedup=r4(g),
+            fused_ms=r4(a.get("graph_fused_ms") if basis == "graph" else a.get("fused_ms")),
+            fused_mapping=fused_mapping,
+            unfused_total_ms=r4(a.get("graph_unfused_ms") if basis == "graph"
+                                else a.get("unfused_ms")),
+            speedup=r4(pub),
             n_unfused_kernels=2,
             unfused_k1_name=k1_name, unfused_k1_mapping=k1_mapping,
             unfused_k2_name=k2_name, unfused_k2_mapping=k2_mapping)
@@ -1863,8 +1901,11 @@ def main() -> None:
                           f"{why[0].replace('BLOCKED -- ', '')[:96]}")
                 else:
                     npub += 1
+                    _pub, _bas, _hf, _ = f11p_basis(a)
                     print(f"    PUBLISHED {r['regime']:<14} {arm_key:<11} "
-                          f"graph {g:.4f}x (wall {a['paired_p50']:.4f}x NOT published)")
+                          f"{_bas} {float(_pub):.4f}x  (wall {a['paired_p50']:.4f}x / "
+                          f"graph {g:.4f}x; host "
+                          f"{('%.0f%%' % (_hf * 100)) if _hf is not None else 'n/a'})")
         print(f"    -> {npub} published, {nblk} blocked, of "
               f"{npub + nblk} arm-cells; the #11a+#11b combined row is blocked at all "
               f"{len(F11P.get('rows', []))} regimes (no combined arm in the file)")
