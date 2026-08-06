@@ -1,6 +1,6 @@
 {
   "id": "f11_publish",
-  "generated": "2026-08-06 11:03:30",
+  "generated": "2026-08-06 12:58:46",
   "gpu": {
     "index": 0,
     "why": "idlest of 8 (used 0 MiB, util 0%)",
@@ -165,8 +165,8 @@
     }
   },
   "calibration": {
-    "harness_floor_us": 15.321143503699984,
-    "launch_us": 8.32685681858233,
+    "harness_floor_us": -5.903999986393111,
+    "launch_us": 13.679999824879426,
     "floor_bar_us": 20.0,
     "ok": true
   },
@@ -177,26 +177,27 @@
       "T": 1,
       "arms": {
         "11b_router": {
-          "fused_ms": 0.055215999484062195,
-          "unfused_ms": 0.11683199927210808,
-          "paired_p50": 2.117647002986931,
-          "paired_p10": 1.9866898482268929,
-          "paired_p90": 2.196114230363237,
-          "ratio_of_medians": 2.115908438926855,
-          "drift_first_half": 2.082412246706107,
-          "drift_second_half": 2.1223196663238397,
+          "fused_ms": 0.0350399985909462,
+          "unfused_ms": 0.07393599674105644,
+          "paired_p50": 2.1508378325939046,
+          "paired_p10": 1.98813880785608,
+          "paired_p90": 2.2861416780335073,
+          "ratio_of_medians": 2.1100456539447574,
+          "drift_first_half": 2.0892619890076007,
+          "drift_second_half": 2.1529641501859738,
           "n": 40,
-          "graph_fused_ms": 0.024565250612795353,
-          "graph_unfused_ms": 0.017143499106168747,
-          "graph_speedup": 0.6978760109713343,
+          "graph_fused_ms": 0.02459099981933832,
+          "graph_unfused_ms": 0.02028174977749586,
+          "graph_speedup": 0.8247631217314851,
           "ceiling_bytes": 1.0077795786061587,
-          "ceiling_launch_aware": 1.9186871110454429,
-          "ideal_fused_ms": 0.009070160347994094,
-          "ideal_unfused_ms": 0.01740279975481172,
+          "ceiling_launch_aware": 1.9488660175092938,
+          "ideal_fused_ms": 0.01442330335429119,
+          "ideal_unfused_ms": 0.028109085767405912,
           "invariance": {
             "ok": true,
             "tol": 1e-05,
             "worst_rel_err": 0.0,
+            "n_untested": 0,
             "n_probed": 5,
             "keys": [
               "BLOCK_M",
@@ -249,6 +250,13 @@
             ],
             "reason": ""
           },
+          "self_consistency": {
+            "checked": true,
+            "bound": 1.2895155523249622,
+            "wall": 2.1508378325939046,
+            "excess_pct": 66.79425298252522,
+            "ok": false
+          },
           "fused_cfg": {
             "BLOCK_M": 64,
             "BLOCK_N": 32,
@@ -258,7 +266,7 @@
             "GROUP_M": 8
           },
           "unfused_gemm_cfg": {
-            "BLOCK_M": 64,
+            "BLOCK_M": 16,
             "BLOCK_N": 32,
             "BLOCK_K": 128,
             "num_warps": 4,
@@ -267,34 +275,92 @@
           },
           "norm_cfg": {
             "ROWS": 4,
-            "BLOCK_N": 8192,
+            "BLOCK_N": 1024,
             "num_warps": 4,
             "num_stages": 2,
             "grid_cap": null,
             "eps": 1e-05
           },
-          "norm_only_ms": 0.027103999629616737,
-          "gemm_only_ms": 0.022207999601960182,
+          "norm_only_ms": 0.01929599978029728,
+          "gemm_only_ms": 0.02271999977529049,
           "publishable": false
         },
         "11b_half": {
-          "fused_ms": 0.2272000014781952,
-          "unfused_ms": 0.26390400528907776,
-          "paired_p50": 1.16231977082652,
-          "paired_p10": 1.1288753370428275,
-          "paired_p90": 1.2224570501597505,
-          "ratio_of_medians": 1.161549311496836,
-          "drift_first_half": 1.1489494221116634,
-          "drift_second_half": 1.1673498426343103,
+          "fused_ms": 0.23235199600458145,
+          "unfused_ms": 0.2657279968261719,
+          "paired_p50": 1.143450829097443,
+          "paired_p10": 1.0988254910562087,
+          "paired_p90": 1.1990886385231834,
+          "ratio_of_medians": 1.1436441321594342,
+          "drift_first_half": 1.1431251834775364,
+          "drift_second_half": 1.1433686898839022,
           "n": 40,
-          "graph_fused_ms": 0.01586174964904785,
-          "graph_unfused_ms": 0.017143499106168747,
-          "ceiling_bytes": 1.0077783025497586,
-          "ceiling_launch_aware": 1.0003323355199731,
-          "ideal_fused_ms": 0.017397018107752897,
-          "ideal_unfused_ms": 0.01740279975481172,
+          "graph_fused_ms": 0.016341250389814377,
+          "graph_unfused_ms": 0.02028174977749586,
+          "ceiling_bytes": 1.0038734512816696,
+          "ceiling_launch_aware": 1.000102836862071,
+          "ideal_fused_ms": 0.028106195414464734,
+          "ideal_unfused_ms": 0.028109085767405912,
+          "invariance": {
+            "ok": true,
+            "tol": 1e-05,
+            "worst_rel_err": 0.0,
+            "n_untested": 0,
+            "n_probed": 5,
+            "keys": [
+              "BLOCK_M",
+              "BLOCK_N",
+              "GROUP_M",
+              "num_stages",
+              "num_warps"
+            ],
+            "probes": [
+              {
+                "key": "BLOCK_M",
+                "from": 64,
+                "to": 32,
+                "rel_err": 0.0,
+                "bitwise": true,
+                "pass": true
+              },
+              {
+                "key": "BLOCK_N",
+                "from": 32,
+                "to": 64,
+                "rel_err": 0.0,
+                "bitwise": true,
+                "pass": true
+              },
+              {
+                "key": "GROUP_M",
+                "from": 8,
+                "to": 1,
+                "rel_err": 0.0,
+                "bitwise": true,
+                "pass": true
+              },
+              {
+                "key": "num_stages",
+                "from": 4,
+                "to": 2,
+                "rel_err": 0.0,
+                "bitwise": true,
+                "pass": true
+              },
+              {
+                "key": "num_warps",
+                "from": 4,
+                "to": 8,
+                "rel_err": 0.0,
+                "bitwise": true,
+                "pass": true
+              }
+            ],
+            "reason": ""
+          },
+          "rel_err_vs_fp32": 0.0024893167428672314,
           "rstd_cfg": {
-            "ROWS": 2,
+            "ROWS": 4,
             "BLOCK_N": 8192,
             "num_warps": 16,
             "num_stages": 2,
@@ -312,21 +378,22 @@
           "publishable": false
         },
         "11a_w13": {
-          "fused_ms": 0.20931200683116913,
-          "unfused_ms": 0.31113599240779877,
-          "paired_p50": 1.488533171217932,
-          "paired_p10": 1.45403160359076,
-          "paired_p90": 1.5399297854670675,
-          "ratio_of_medians": 1.4864698739368583,
-          "drift_first_half": 1.4875581668477955,
-          "drift_second_half": 1.4865691772901717,
+          "fused_ms": 0.20444799959659576,
+          "unfused_ms": 0.3028159886598587,
+          "paired_p50": 1.4796028870566602,
+          "paired_p10": 1.4348767579799173,
+          "paired_p90": 1.5203483941700777,
+          "ratio_of_medians": 1.4811394058995764,
+          "drift_first_half": 1.4863596791467595,
+          "drift_second_half": 1.4758893983117338,
           "n": 40,
-          "graph_fused_ms": 0.09959575161337852,
-          "graph_unfused_ms": 0.09618650004267693,
+          "graph_fused_ms": 0.09764150157570839,
+          "graph_unfused_ms": 0.10140375047922134,
           "invariance": {
-            "ok": true,
+            "ok": false,
             "tol": 1e-05,
-            "worst_rel_err": 0.0,
+            "worst_rel_err": 0.7255154848098755,
+            "n_untested": 0,
             "n_probed": 5,
             "keys": [
               "BLOCK_M",
@@ -338,8 +405,11 @@
             "probes": [
               {
                 "key": "BLOCK_M",
-                "partner": 64,
-                "ran": false
+                "from": 16,
+                "to": 64,
+                "rel_err": 0.7255154848098755,
+                "bitwise": false,
+                "pass": false
               },
               {
                 "key": "BLOCK_N",
@@ -359,7 +429,7 @@
               },
               {
                 "key": "num_stages",
-                "from": 4,
+                "from": 3,
                 "to": 2,
                 "rel_err": 0.0,
                 "bitwise": true,
@@ -374,14 +444,14 @@
                 "pass": true
               }
             ],
-            "reason": ""
+            "reason": "output depends on BLOCK_M -- mathematically invariant, so this is a codegen defect"
           },
           "fused_cfg": {
             "BLOCK_M": 16,
             "BLOCK_N": 256,
             "BLOCK_K": 128,
             "num_warps": 4,
-            "num_stages": 4,
+            "num_stages": 3,
             "GROUP_M": 8
           },
           "unfused_cfg": {
@@ -389,10 +459,10 @@
             "BLOCK_N": 128,
             "BLOCK_K": 128,
             "num_warps": 8,
-            "num_stages": 4,
+            "num_stages": 3,
             "GROUP_M": 8
           },
-          "publishable": true
+          "publishable": false
         }
       }
     },
@@ -401,26 +471,27 @@
       "T": 32,
       "arms": {
         "11b_router": {
-          "fused_ms": 0.05430399999022484,
-          "unfused_ms": 0.11233600229024887,
-          "paired_p50": 2.082840319022078,
-          "paired_p10": 1.9659024250727801,
-          "paired_p90": 2.3226146549767765,
-          "ratio_of_medians": 2.0686506023583946,
-          "drift_first_half": 2.0671292088276245,
-          "drift_second_half": 2.1009171895244814,
+          "fused_ms": 0.0339680016040802,
+          "unfused_ms": 0.07310399785637856,
+          "paired_p50": 2.1389925079356806,
+          "paired_p10": 2.019038918179767,
+          "paired_p90": 2.328298009157302,
+          "ratio_of_medians": 2.1521430288556447,
+          "drift_first_half": 2.1351333716682284,
+          "drift_second_half": 2.138335256084111,
           "n": 40,
-          "graph_fused_ms": 0.024291500449180603,
-          "graph_unfused_ms": 0.015866749919950962,
-          "graph_speedup": 0.6531811385280721,
+          "graph_fused_ms": 0.024453500285744667,
+          "graph_unfused_ms": 0.01607574988156557,
+          "graph_speedup": 0.6574007685491569,
           "ceiling_bytes": 1.2201834862385321,
-          "ceiling_launch_aware": 1.9285108063276115,
-          "ideal_fused_ms": 0.009167259642111741,
-          "ideal_unfused_ms": 0.017679159284223485,
+          "ceiling_launch_aware": 1.9548662653599476,
+          "ideal_fused_ms": 0.014520402648408837,
+          "ideal_unfused_ms": 0.028385445296817677,
           "invariance": {
             "ok": true,
             "tol": 1e-05,
             "worst_rel_err": 0.0,
+            "n_untested": 0,
             "n_probed": 5,
             "keys": [
               "BLOCK_M",
@@ -473,6 +544,13 @@
             ],
             "reason": ""
           },
+          "self_consistency": {
+            "checked": true,
+            "bound": 1.164515409803516,
+            "wall": 2.1389925079356806,
+            "excess_pct": 83.68091052539907,
+            "ok": false
+          },
           "fused_cfg": {
             "BLOCK_M": 64,
             "BLOCK_N": 32,
@@ -482,7 +560,7 @@
             "GROUP_M": 8
           },
           "unfused_gemm_cfg": {
-            "BLOCK_M": 64,
+            "BLOCK_M": 16,
             "BLOCK_N": 32,
             "BLOCK_K": 128,
             "num_warps": 4,
@@ -490,38 +568,96 @@
             "GROUP_M": 8
           },
           "norm_cfg": {
-            "ROWS": 2,
-            "BLOCK_N": 2048,
-            "num_warps": 16,
-            "num_stages": 2,
+            "ROWS": 4,
+            "BLOCK_N": 8192,
+            "num_warps": 8,
+            "num_stages": 1,
             "grid_cap": null,
             "eps": 1e-05
           },
-          "norm_only_ms": 0.018239999189972878,
-          "gemm_only_ms": 0.021376000717282295,
+          "norm_only_ms": 0.01587199978530407,
+          "gemm_only_ms": 0.02377600036561489,
           "publishable": false
         },
         "11b_half": {
-          "fused_ms": 0.23084799945354462,
-          "unfused_ms": 0.2653760015964508,
-          "paired_p50": 1.1559858015847342,
-          "paired_p10": 1.0931871968066162,
-          "paired_p90": 1.2056393956615648,
-          "ratio_of_medians": 1.1495702896479054,
-          "drift_first_half": 1.1472684672068238,
-          "drift_second_half": 1.159053887072055,
+          "fused_ms": 0.21724800020456314,
+          "unfused_ms": 0.24399999529123306,
+          "paired_p50": 1.1438574021212784,
+          "paired_p10": 1.0655062226826613,
+          "paired_p90": 1.2013278263959075,
+          "ratio_of_medians": 1.1231403514024523,
+          "drift_first_half": 1.1356648807842322,
+          "drift_second_half": 1.14952244152629,
           "n": 40,
-          "graph_fused_ms": 0.015149750281125307,
-          "graph_unfused_ms": 0.015866749919950962,
-          "ceiling_bytes": 1.2201397598996595,
-          "ceiling_launch_aware": 1.0105756919923954,
-          "ideal_fused_ms": 0.01749414657834113,
-          "ideal_unfused_ms": 0.017679159284223485,
+          "graph_fused_ms": 0.01452975021675229,
+          "graph_unfused_ms": 0.01607574988156557,
+          "ceiling_bytes": 1.0991380701811022,
+          "ceiling_launch_aware": 1.0032690575225485,
+          "ideal_fused_ms": 0.02829295400270003,
+          "ideal_unfused_ms": 0.028385445296817677,
+          "invariance": {
+            "ok": true,
+            "tol": 1e-05,
+            "worst_rel_err": 0.0,
+            "n_untested": 0,
+            "n_probed": 5,
+            "keys": [
+              "BLOCK_M",
+              "BLOCK_N",
+              "GROUP_M",
+              "num_stages",
+              "num_warps"
+            ],
+            "probes": [
+              {
+                "key": "BLOCK_M",
+                "from": 64,
+                "to": 32,
+                "rel_err": 0.0,
+                "bitwise": true,
+                "pass": true
+              },
+              {
+                "key": "BLOCK_N",
+                "from": 32,
+                "to": 64,
+                "rel_err": 0.0,
+                "bitwise": true,
+                "pass": true
+              },
+              {
+                "key": "GROUP_M",
+                "from": 8,
+                "to": 1,
+                "rel_err": 0.0,
+                "bitwise": true,
+                "pass": true
+              },
+              {
+                "key": "num_stages",
+                "from": 4,
+                "to": 2,
+                "rel_err": 0.0,
+                "bitwise": true,
+                "pass": true
+              },
+              {
+                "key": "num_warps",
+                "from": 4,
+                "to": 8,
+                "rel_err": 0.0,
+                "bitwise": true,
+                "pass": true
+              }
+            ],
+            "reason": ""
+          },
+          "rel_err_vs_fp32": 0.003081423230469227,
           "rstd_cfg": {
-            "ROWS": 4,
+            "ROWS": 2,
             "BLOCK_N": 8192,
             "num_warps": 16,
-            "num_stages": 2,
+            "num_stages": 1,
             "grid_cap": null,
             "eps": 1e-05
           },
@@ -536,21 +672,22 @@
           "publishable": false
         },
         "11a_w13": {
-          "fused_ms": 1.825663983821869,
-          "unfused_ms": 1.8468480110168457,
-          "paired_p50": 1.0107537890149039,
-          "paired_p10": 1.0047913219180085,
-          "paired_p90": 1.021171577440818,
-          "ratio_of_medians": 1.0116034644834422,
-          "drift_first_half": 1.0120058493769752,
-          "drift_second_half": 1.009044812594118,
+          "fused_ms": 1.8151519894599915,
+          "unfused_ms": 1.8181439638137817,
+          "paired_p50": 1.0016902132325003,
+          "paired_p10": 0.9985037064366068,
+          "paired_p90": 1.0045090419957274,
+          "ratio_of_medians": 1.0016483326857275,
+          "drift_first_half": 1.001612076204267,
+          "drift_second_half": 1.0016295956938535,
           "n": 40,
-          "graph_fused_ms": 1.7911549806594849,
-          "graph_unfused_ms": 1.7598232626914978,
+          "graph_fused_ms": 1.793417751789093,
+          "graph_unfused_ms": 1.753928542137146,
           "invariance": {
             "ok": false,
             "tol": 1e-05,
-            "worst_rel_err": 0.11828512698411942,
+            "worst_rel_err": 0.11208678036928177,
+            "n_untested": 0,
             "n_probed": 5,
             "keys": [
               "BLOCK_M",
@@ -564,7 +701,7 @@
                 "key": "BLOCK_M",
                 "from": 16,
                 "to": 64,
-                "rel_err": 0.11828512698411942,
+                "rel_err": 0.11208678036928177,
                 "bitwise": false,
                 "pass": false
               },
@@ -612,11 +749,11 @@
             "GROUP_M": 8
           },
           "unfused_cfg": {
-            "BLOCK_M": 32,
-            "BLOCK_N": 128,
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
             "BLOCK_K": 128,
             "num_warps": 4,
-            "num_stages": 3,
+            "num_stages": 4,
             "GROUP_M": 8
           },
           "publishable": false
@@ -628,26 +765,27 @@
       "T": 256,
       "arms": {
         "11b_router": {
-          "fused_ms": 0.032816000282764435,
-          "unfused_ms": 0.07195200026035309,
-          "paired_p50": 2.1966892934066196,
-          "paired_p10": 2.037545645304918,
-          "paired_p90": 2.3296088380255355,
-          "ratio_of_medians": 2.192588970025808,
-          "drift_first_half": 2.204255975622572,
-          "drift_second_half": 2.1805348420269635,
+          "fused_ms": 0.03619199991226196,
+          "unfused_ms": 0.0756480023264885,
+          "paired_p50": 2.101143306948592,
+          "paired_p10": 1.979451899144467,
+          "paired_p90": 2.260950634696756,
+          "ratio_of_medians": 2.0901857457415254,
+          "drift_first_half": 2.106636295864842,
+          "drift_second_half": 2.0782746575540734,
           "n": 40,
-          "graph_fused_ms": 0.024838000535964966,
-          "graph_unfused_ms": 0.01760675013065338,
-          "graph_speedup": 0.7088634250232474,
+          "graph_fused_ms": 0.024944249540567398,
+          "graph_unfused_ms": 0.019145000725984573,
+          "graph_speedup": 0.7675115939987942,
           "ceiling_bytes": 1.96,
-          "ceiling_launch_aware": 1.9937499555165843,
-          "ideal_fused_ms": 0.009868880347994094,
-          "ideal_unfused_ms": 0.01967607975481172,
+          "ceiling_launch_aware": 1.99594791443024,
+          "ideal_fused_ms": 0.01522202335429119,
+          "ideal_unfused_ms": 0.03038236576740591,
           "invariance": {
             "ok": true,
             "tol": 1e-05,
             "worst_rel_err": 0.0,
+            "n_untested": 0,
             "n_probed": 5,
             "keys": [
               "BLOCK_M",
@@ -700,6 +838,13 @@
             ],
             "reason": ""
           },
+          "self_consistency": {
+            "checked": true,
+            "bound": 1.2408524127979772,
+            "wall": 2.101143306948592,
+            "excess_pct": 69.33063797738517,
+            "ok": false
+          },
           "fused_cfg": {
             "BLOCK_M": 64,
             "BLOCK_N": 32,
@@ -709,41 +854,99 @@
             "GROUP_M": 8
           },
           "unfused_gemm_cfg": {
-            "BLOCK_M": 64,
-            "BLOCK_N": 64,
+            "BLOCK_M": 16,
+            "BLOCK_N": 32,
             "BLOCK_K": 128,
             "num_warps": 4,
             "num_stages": 4,
             "GROUP_M": 8
           },
           "norm_cfg": {
-            "ROWS": 1,
-            "BLOCK_N": 2048,
-            "num_warps": 8,
-            "num_stages": 1,
+            "ROWS": 4,
+            "BLOCK_N": 1024,
+            "num_warps": 16,
+            "num_stages": 2,
             "grid_cap": null,
             "eps": 1e-05
           },
-          "norm_only_ms": 0.017952000722289085,
-          "gemm_only_ms": 0.023423999547958374,
+          "norm_only_ms": 0.019007999449968338,
+          "gemm_only_ms": 0.024480000138282776,
           "publishable": false
         },
         "11b_half": {
-          "fused_ms": 0.058879999443888664,
-          "unfused_ms": 0.07207999750971794,
-          "paired_p50": 1.2174628607316673,
-          "paired_p10": 1.118620058139439,
-          "paired_p90": 1.2939560427259582,
-          "ratio_of_medians": 1.2241847518767146,
-          "drift_first_half": 1.2240107432935892,
-          "drift_second_half": 1.2107395799850142,
+          "fused_ms": 0.06054399907588959,
+          "unfused_ms": 0.07521599903702736,
+          "paired_p50": 1.2340993224889758,
+          "paired_p10": 1.1132980946450406,
+          "paired_p90": 1.3052123287894033,
+          "ratio_of_medians": 1.2423361552768752,
+          "drift_first_half": 1.214946148709868,
+          "drift_second_half": 1.245284985092245,
           "n": 40,
-          "graph_fused_ms": 0.014184500090777874,
-          "graph_unfused_ms": 0.01760675013065338,
-          "ceiling_bytes": 1.959693797844087,
-          "ceiling_launch_aware": 1.0813422415818463,
-          "ideal_fused_ms": 0.018195978107752895,
-          "ideal_unfused_ms": 0.01967607975481172,
+          "graph_fused_ms": 0.014268499799072742,
+          "graph_unfused_ms": 0.019145000725984573,
+          "ceiling_bytes": 1.324184524437876,
+          "ceiling_launch_aware": 1.024961861014298,
+          "ideal_fused_ms": 0.02964243541446473,
+          "ideal_unfused_ms": 0.03038236576740591,
+          "invariance": {
+            "ok": true,
+            "tol": 1e-05,
+            "worst_rel_err": 0.0,
+            "n_untested": 0,
+            "n_probed": 5,
+            "keys": [
+              "BLOCK_M",
+              "BLOCK_N",
+              "GROUP_M",
+              "num_stages",
+              "num_warps"
+            ],
+            "probes": [
+              {
+                "key": "BLOCK_M",
+                "from": 64,
+                "to": 32,
+                "rel_err": 0.0,
+                "bitwise": true,
+                "pass": true
+              },
+              {
+                "key": "BLOCK_N",
+                "from": 32,
+                "to": 64,
+                "rel_err": 0.0,
+                "bitwise": true,
+                "pass": true
+              },
+              {
+                "key": "GROUP_M",
+                "from": 8,
+                "to": 1,
+                "rel_err": 0.0,
+                "bitwise": true,
+                "pass": true
+              },
+              {
+                "key": "num_stages",
+                "from": 4,
+                "to": 2,
+                "rel_err": 0.0,
+                "bitwise": true,
+                "pass": true
+              },
+              {
+                "key": "num_warps",
+                "from": 4,
+                "to": 8,
+                "rel_err": 0.0,
+                "bitwise": true,
+                "pass": true
+              }
+            ],
+            "reason": ""
+          },
+          "rel_err_vs_fp32": 0.0026801242493093014,
           "rstd_cfg": {
             "ROWS": 2,
             "BLOCK_N": 8192,
@@ -763,21 +966,22 @@
           "publishable": false
         },
         "11a_w13": {
-          "fused_ms": 2.903503894805908,
-          "unfused_ms": 2.9068959951400757,
-          "paired_p50": 1.001267575955605,
-          "paired_p10": 0.99693286557356,
-          "paired_p90": 1.0049329838848433,
-          "ratio_of_medians": 1.0011682782104188,
-          "drift_first_half": 1.002176093966518,
-          "drift_second_half": 1.0007447737247703,
+          "fused_ms": 2.874895930290222,
+          "unfused_ms": 2.843503952026367,
+          "paired_p50": 0.9894072977935843,
+          "paired_p10": 0.9870746710592834,
+          "paired_p90": 1.001822143375721,
+          "ratio_of_medians": 0.9890806557784908,
+          "drift_first_half": 0.9892165711311951,
+          "drift_second_half": 0.9894861248096991,
           "n": 40,
-          "graph_fused_ms": 2.881708025932312,
-          "graph_unfused_ms": 2.824382781982422,
+          "graph_fused_ms": 2.883195996284485,
+          "graph_unfused_ms": 2.8277747631073,
           "invariance": {
             "ok": false,
             "tol": 1e-05,
-            "worst_rel_err": 0.11148648709058762,
+            "worst_rel_err": 0.11317567527294159,
+            "n_untested": 0,
             "n_probed": 5,
             "keys": [
               "BLOCK_M",
@@ -791,7 +995,7 @@
                 "key": "BLOCK_M",
                 "from": 16,
                 "to": 64,
-                "rel_err": 0.11148648709058762,
+                "rel_err": 0.11317567527294159,
                 "bitwise": false,
                 "pass": false
               },
@@ -855,26 +1059,27 @@
       "T": 512,
       "arms": {
         "11b_router": {
-          "fused_ms": 0.03432000055909157,
-          "unfused_ms": 0.07262400165200233,
-          "paired_p50": 2.1217888172834334,
-          "paired_p10": 1.9431721427123467,
-          "paired_p90": 2.286282409690754,
-          "ratio_of_medians": 2.1160839297470178,
-          "drift_first_half": 2.1113621204029056,
-          "drift_second_half": 2.129065641774993,
+          "fused_ms": 0.029759999364614487,
+          "unfused_ms": 0.02691200003027916,
+          "paired_p50": 0.9019396636211976,
+          "paired_p10": 0.867082050558582,
+          "paired_p90": 0.932038820930068,
+          "ratio_of_medians": 0.9043010955933796,
+          "drift_first_half": 0.9082633457339975,
+          "drift_second_half": 0.896924499379153,
           "n": 40,
-          "graph_fused_ms": 0.024882249534130096,
-          "graph_unfused_ms": 0.016575000248849392,
-          "graph_speedup": 0.666137530134245,
+          "graph_fused_ms": 0.024857500568032265,
+          "graph_unfused_ms": 0.015576499979943037,
+          "graph_speedup": 0.6266317861408414,
           "ceiling_bytes": 2.263157894736842,
-          "ceiling_launch_aware": 2.057803848700202,
-          "ideal_fused_ms": 0.010670732583288213,
-          "ideal_unfused_ms": 0.021958274578341132,
+          "ceiling_launch_aware": 2.03849314782284,
+          "ideal_fused_ms": 0.016023875589585308,
+          "ideal_unfused_ms": 0.032664560590935324,
           "invariance": {
             "ok": true,
             "tol": 1e-05,
             "worst_rel_err": 0.0,
+            "n_untested": 0,
             "n_probed": 5,
             "keys": [
               "BLOCK_M",
@@ -927,6 +1132,13 @@
             ],
             "reason": ""
           },
+          "self_consistency": {
+            "checked": true,
+            "bound": 1.1348001036355726,
+            "wall": 0.9019396636211976,
+            "excess_pct": -20.51995230423026,
+            "ok": true
+          },
           "fused_cfg": {
             "BLOCK_M": 64,
             "BLOCK_N": 32,
@@ -944,38 +1156,96 @@
             "GROUP_M": 8
           },
           "norm_cfg": {
-            "ROWS": 2,
-            "BLOCK_N": 2048,
+            "ROWS": 1,
+            "BLOCK_N": 8192,
             "num_warps": 8,
             "num_stages": 1,
             "grid_cap": null,
             "eps": 1e-05
           },
-          "norm_only_ms": 0.018303999677300453,
-          "gemm_only_ms": 0.02348800003528595,
-          "publishable": false
+          "norm_only_ms": 0.008960000239312649,
+          "gemm_only_ms": 0.021215999498963356,
+          "publishable": true
         },
         "11b_half": {
-          "fused_ms": 0.05801599845290184,
-          "unfused_ms": 0.07203200086951256,
-          "paired_p50": 1.2299168414078914,
-          "paired_p10": 1.148108759573951,
-          "paired_p90": 1.3132387548266433,
-          "ratio_of_medians": 1.2415885753994063,
-          "drift_first_half": 1.2348918008878211,
-          "drift_second_half": 1.228297961638407,
+          "fused_ms": 0.02703999914228916,
+          "unfused_ms": 0.028479999862611294,
+          "paired_p50": 1.059453000255394,
+          "paired_p10": 0.9761363805484551,
+          "paired_p90": 1.09756093578893,
+          "ratio_of_medians": 1.0532544661981902,
+          "drift_first_half": 1.0603147282515977,
+          "drift_second_half": 1.0578399492796122,
           "n": 40,
-          "graph_fused_ms": 0.01469149999320507,
-          "graph_unfused_ms": 0.016575000248849392,
-          "ceiling_bytes": 2.262692702980473,
-          "ceiling_launch_aware": 1.1558159904671945,
-          "ideal_fused_ms": 0.018998071284223483,
-          "ideal_unfused_ms": 0.021958274578341132,
+          "graph_fused_ms": 0.014646250288933516,
+          "graph_unfused_ms": 0.015576499979943037,
+          "ceiling_bytes": 1.3869220108353282,
+          "ceiling_launch_aware": 1.0474547041125017,
+          "ideal_fused_ms": 0.031184699885052968,
+          "ideal_unfused_ms": 0.032664560590935324,
+          "invariance": {
+            "ok": true,
+            "tol": 1e-05,
+            "worst_rel_err": 0.0,
+            "n_untested": 0,
+            "n_probed": 5,
+            "keys": [
+              "BLOCK_M",
+              "BLOCK_N",
+              "GROUP_M",
+              "num_stages",
+              "num_warps"
+            ],
+            "probes": [
+              {
+                "key": "BLOCK_M",
+                "from": 64,
+                "to": 32,
+                "rel_err": 0.0,
+                "bitwise": true,
+                "pass": true
+              },
+              {
+                "key": "BLOCK_N",
+                "from": 32,
+                "to": 64,
+                "rel_err": 0.0,
+                "bitwise": true,
+                "pass": true
+              },
+              {
+                "key": "GROUP_M",
+                "from": 8,
+                "to": 1,
+                "rel_err": 0.0,
+                "bitwise": true,
+                "pass": true
+              },
+              {
+                "key": "num_stages",
+                "from": 4,
+                "to": 2,
+                "rel_err": 0.0,
+                "bitwise": true,
+                "pass": true
+              },
+              {
+                "key": "num_warps",
+                "from": 4,
+                "to": 8,
+                "rel_err": 0.0,
+                "bitwise": true,
+                "pass": true
+              }
+            ],
+            "reason": ""
+          },
+          "rel_err_vs_fp32": 0.0028518035542219877,
           "rstd_cfg": {
-            "ROWS": 2,
+            "ROWS": 1,
             "BLOCK_N": 8192,
-            "num_warps": 16,
-            "num_stages": 2,
+            "num_warps": 8,
+            "num_stages": 1,
             "grid_cap": null,
             "eps": 1e-05
           },
@@ -990,21 +1260,22 @@
           "publishable": false
         },
         "11a_w13": {
-          "fused_ms": 3.221216082572937,
-          "unfused_ms": 2.936160087585449,
-          "paired_p50": 0.9094088584111321,
-          "paired_p10": 0.8953844078886632,
-          "paired_p90": 0.923568098385665,
-          "ratio_of_medians": 0.9115067143338611,
-          "drift_first_half": 0.9026259437164791,
-          "drift_second_half": 0.9099238193969796,
+          "fused_ms": 3.2239840030670166,
+          "unfused_ms": 2.895951986312866,
+          "paired_p50": 0.8975641308177609,
+          "paired_p10": 0.8772767879164802,
+          "paired_p90": 0.9031809813660208,
+          "ratio_of_medians": 0.8982525916871519,
+          "drift_first_half": 0.892003806998741,
+          "drift_second_half": 0.899974161832779,
           "n": 40,
-          "graph_fused_ms": 3.5386159420013428,
-          "graph_unfused_ms": 2.8894777297973633,
+          "graph_fused_ms": 3.5010228157043457,
+          "graph_unfused_ms": 2.8854594230651855,
           "invariance": {
             "ok": false,
             "tol": 1e-05,
-            "worst_rel_err": 0.0515873022377491,
+            "worst_rel_err": 0.0559275783598423,
+            "n_untested": 0,
             "n_probed": 5,
             "keys": [
               "BLOCK_M",
@@ -1026,7 +1297,7 @@
                 "key": "BLOCK_N",
                 "from": 64,
                 "to": 32,
-                "rel_err": 0.011904762126505375,
+                "rel_err": 0.01686508022248745,
                 "bitwise": false,
                 "pass": false
               },
@@ -1050,7 +1321,7 @@
                 "key": "num_warps",
                 "from": 4,
                 "to": 8,
-                "rel_err": 0.0515873022377491,
+                "rel_err": 0.0559275783598423,
                 "bitwise": false,
                 "pass": false
               }
@@ -1082,26 +1353,27 @@
       "T": 1024,
       "arms": {
         "11b_router": {
-          "fused_ms": 0.029872000217437744,
-          "unfused_ms": 0.03433600068092346,
-          "paired_p50": 1.1466524378524974,
-          "paired_p10": 1.098547743022115,
-          "paired_p90": 1.1706263276265312,
-          "ratio_of_medians": 1.1494376148564656,
-          "drift_first_half": 1.1501577995629564,
-          "drift_second_half": 1.1366940580886784,
+          "fused_ms": 0.13923199474811554,
+          "unfused_ms": 0.24488000571727753,
+          "paired_p50": 1.8428791172116565,
+          "paired_p10": 1.714559896453189,
+          "paired_p90": 1.9163449388671234,
+          "ratio_of_medians": 1.7587911899150026,
+          "drift_first_half": 1.7839386207032908,
+          "drift_second_half": 1.880853334620892,
           "n": 40,
-          "graph_fused_ms": 0.025097500532865524,
-          "graph_unfused_ms": 0.023971499875187874,
-          "graph_speedup": 0.9551349483506082,
+          "graph_fused_ms": 0.025967500172555447,
+          "graph_unfused_ms": 0.02197450026869774,
+          "graph_speedup": 0.8462308702291708,
           "ceiling_bytes": 2.5,
-          "ceiling_launch_aware": 2.160804940298562,
-          "ideal_fused_ms": 0.012274437053876448,
-          "ideal_unfused_ms": 0.026522664225399954,
+          "ceiling_launch_aware": 2.1119717006480365,
+          "ideal_fused_ms": 0.017627580060173544,
+          "ideal_unfused_ms": 0.03722895023799414,
           "invariance": {
             "ok": true,
             "tol": 1e-05,
             "worst_rel_err": 0.0,
+            "n_untested": 0,
             "n_probed": 5,
             "keys": [
               "BLOCK_M",
@@ -1121,8 +1393,8 @@
               },
               {
                 "key": "BLOCK_N",
-                "from": 32,
-                "to": 64,
+                "from": 64,
+                "to": 32,
                 "rel_err": 0.0,
                 "bitwise": true,
                 "pass": true
@@ -1154,9 +1426,16 @@
             ],
             "reason": ""
           },
+          "self_consistency": {
+            "checked": true,
+            "bound": 1.2870775087898965,
+            "wall": 1.8428791172116565,
+            "excess_pct": 43.18322747666703,
+            "ok": false
+          },
           "fused_cfg": {
             "BLOCK_M": 64,
-            "BLOCK_N": 32,
+            "BLOCK_N": 64,
             "BLOCK_K": 128,
             "num_warps": 4,
             "num_stages": 4,
@@ -1174,64 +1453,35 @@
             "ROWS": 1,
             "BLOCK_N": 2048,
             "num_warps": 8,
-            "num_stages": 2,
-            "grid_cap": null,
-            "eps": 1e-05
-          },
-          "norm_only_ms": 0.012160000391304493,
-          "gemm_only_ms": 0.022752000018954277,
-          "publishable": true
-        },
-        "11b_half": {
-          "fused_ms": 0.029215999878942966,
-          "unfused_ms": 0.03404799848794937,
-          "paired_p50": 1.1759465210325728,
-          "paired_p10": 1.119226672138562,
-          "paired_p90": 1.2214612183142834,
-          "ratio_of_medians": 1.165388781114043,
-          "drift_first_half": 1.182302907335802,
-          "drift_second_half": 1.1705523926261496,
-          "n": 40,
-          "graph_fused_ms": 0.019448500126600266,
-          "graph_unfused_ms": 0.023971499875187874,
-          "ceiling_bytes": 2.499389797412741,
-          "ceiling_launch_aware": 1.2873668843726818,
-          "ideal_fused_ms": 0.020602257637164657,
-          "ideal_unfused_ms": 0.026522664225399954,
-          "rstd_cfg": {
-            "ROWS": 1,
-            "BLOCK_N": 8192,
-            "num_warps": 8,
             "num_stages": 1,
             "grid_cap": null,
             "eps": 1e-05
           },
-          "router_cfg": {
-            "BLOCK_M": 64,
-            "BLOCK_N": 32,
-            "BLOCK_K": 128,
-            "num_warps": 4,
-            "num_stages": 4,
-            "GROUP_M": 8
-          },
-          "publishable": true
+          "norm_only_ms": 0.012223999947309494,
+          "gemm_only_ms": 0.0226879995316267,
+          "publishable": false
         },
-        "11a_w13": {
-          "fused_ms": 3.5045599937438965,
-          "unfused_ms": 3.022271990776062,
-          "paired_p50": 0.8604434467701527,
-          "paired_p10": 0.8530769218100761,
-          "paired_p90": 0.8719061110066154,
-          "ratio_of_medians": 0.8623827231296418,
-          "drift_first_half": 0.8645723830588351,
-          "drift_second_half": 0.8572099231330554,
+        "11b_half": {
+          "fused_ms": 0.042512000538408756,
+          "unfused_ms": 0.03300799988210201,
+          "paired_p50": 1.1301843881952178,
+          "paired_p10": 1.0453074108523315,
+          "paired_p90": 1.2827195146041863,
+          "ratio_of_medians": 0.7764395809197436,
+          "drift_first_half": 1.1019233781478905,
+          "drift_second_half": 1.1931205009977202,
           "n": 40,
-          "graph_fused_ms": 3.8333113193511963,
-          "graph_unfused_ms": 2.9941612482070923,
+          "graph_fused_ms": 0.018627500161528587,
+          "graph_unfused_ms": 0.02197450026869774,
+          "ceiling_bytes": 1.4283721579020785,
+          "ceiling_launch_aware": 1.0863667352064645,
+          "ideal_fused_ms": 0.034269228826229445,
+          "ideal_unfused_ms": 0.03722895023799414,
           "invariance": {
-            "ok": false,
+            "ok": true,
             "tol": 1e-05,
-            "worst_rel_err": 0.04580152779817581,
+            "worst_rel_err": 0.0,
+            "n_untested": 0,
             "n_probed": 5,
             "keys": [
               "BLOCK_M",
@@ -1261,35 +1511,123 @@
                 "key": "GROUP_M",
                 "from": 8,
                 "to": 1,
-                "rel_err": 0.02755248174071312,
-                "bitwise": false,
-                "pass": false
+                "rel_err": 0.0,
+                "bitwise": true,
+                "pass": true
               },
               {
                 "key": "num_stages",
-                "from": 3,
+                "from": 4,
                 "to": 2,
-                "rel_err": 0.042223282158374786,
+                "rel_err": 0.0,
+                "bitwise": true,
+                "pass": true
+              },
+              {
+                "key": "num_warps",
+                "from": 4,
+                "to": 8,
+                "rel_err": 0.0,
+                "bitwise": true,
+                "pass": true
+              }
+            ],
+            "reason": ""
+          },
+          "rel_err_vs_fp32": 0.0029749306850135326,
+          "rstd_cfg": {
+            "ROWS": 1,
+            "BLOCK_N": 8192,
+            "num_warps": 8,
+            "num_stages": 2,
+            "grid_cap": null,
+            "eps": 1e-05
+          },
+          "router_cfg": {
+            "BLOCK_M": 64,
+            "BLOCK_N": 64,
+            "BLOCK_K": 128,
+            "num_warps": 4,
+            "num_stages": 4,
+            "GROUP_M": 8
+          },
+          "publishable": false
+        },
+        "11a_w13": {
+          "fused_ms": 3.4754079580307007,
+          "unfused_ms": 2.9918400049209595,
+          "paired_p50": 0.8614756231405067,
+          "paired_p10": 0.8588205097800427,
+          "paired_p90": 0.8753259463003885,
+          "ratio_of_medians": 0.8608600892472636,
+          "drift_first_half": 0.8612552221131782,
+          "drift_second_half": 0.8633177469875929,
+          "n": 40,
+          "graph_fused_ms": 3.713549256324768,
+          "graph_unfused_ms": 2.9958678483963013,
+          "invariance": {
+            "ok": false,
+            "tol": 1e-05,
+            "worst_rel_err": 0.04723282530903816,
+            "n_untested": 0,
+            "n_probed": 5,
+            "keys": [
+              "BLOCK_M",
+              "BLOCK_N",
+              "GROUP_M",
+              "num_stages",
+              "num_warps"
+            ],
+            "probes": [
+              {
+                "key": "BLOCK_M",
+                "from": 64,
+                "to": 32,
+                "rel_err": 0.0,
+                "bitwise": true,
+                "pass": true
+              },
+              {
+                "key": "BLOCK_N",
+                "from": 64,
+                "to": 32,
+                "rel_err": 0.021708015352487564,
                 "bitwise": false,
                 "pass": false
               },
               {
-                "key": "num_warps",
+                "key": "GROUP_M",
                 "from": 8,
-                "to": 4,
-                "rel_err": 0.04580152779817581,
+                "to": 1,
+                "rel_err": 0.0,
+                "bitwise": true,
+                "pass": true
+              },
+              {
+                "key": "num_stages",
+                "from": 4,
+                "to": 2,
+                "rel_err": 0.0,
+                "bitwise": true,
+                "pass": true
+              },
+              {
+                "key": "num_warps",
+                "from": 4,
+                "to": 8,
+                "rel_err": 0.04723282530903816,
                 "bitwise": false,
                 "pass": false
               }
             ],
-            "reason": "output depends on GROUP_M, num_stages, num_warps -- mathematically invariant, so this is a codegen defect"
+            "reason": "output depends on BLOCK_N, num_warps -- mathematically invariant, so this is a codegen defect"
           },
           "fused_cfg": {
             "BLOCK_M": 64,
             "BLOCK_N": 64,
-            "BLOCK_K": 64,
-            "num_warps": 8,
-            "num_stages": 3,
+            "BLOCK_K": 128,
+            "num_warps": 4,
+            "num_stages": 4,
             "GROUP_M": 8
           },
           "unfused_cfg": {
@@ -1309,26 +1647,27 @@
       "T": 2048,
       "arms": {
         "11b_router": {
-          "fused_ms": 0.12788799405097961,
-          "unfused_ms": 0.23812799900770187,
-          "paired_p50": 1.8328235663530534,
-          "paired_p10": 1.7450439497800934,
-          "paired_p90": 1.9509485146297545,
-          "ratio_of_medians": 1.8620043325785345,
-          "drift_first_half": 1.7940025721614092,
-          "drift_second_half": 1.875239565835719,
+          "fused_ms": 0.031488001346588135,
+          "unfused_ms": 0.03947199881076813,
+          "paired_p50": 1.2485323638587147,
+          "paired_p10": 1.2080925024045708,
+          "paired_p90": 1.302231159727952,
+          "ratio_of_medians": 1.253556819192816,
+          "drift_first_half": 1.248852627482886,
+          "drift_second_half": 1.2464883976187329,
           "n": 40,
-          "graph_fused_ms": 0.026251749135553837,
-          "graph_unfused_ms": 0.03613650053739548,
-          "graph_speedup": 1.376536868107364,
+          "graph_fused_ms": 0.026646249927580357,
+          "graph_unfused_ms": 0.03247524984180927,
+          "graph_speedup": 1.218754981660499,
           "ceiling_bytes": 2.6551724137931036,
-          "ceiling_launch_aware": 2.302790218357016,
-          "ideal_fused_ms": 0.015481845995052918,
-          "ideal_unfused_ms": 0.0356514435195176,
+          "ceiling_launch_aware": 2.224994192658706,
+          "ideal_fused_ms": 0.020834989001350016,
+          "ideal_unfused_ms": 0.04635772953211179,
           "invariance": {
             "ok": true,
             "tol": 1e-05,
             "worst_rel_err": 0.0,
+            "n_untested": 0,
             "n_probed": 5,
             "keys": [
               "BLOCK_M",
@@ -1381,6 +1720,13 @@
             ],
             "reason": ""
           },
+          "self_consistency": {
+            "checked": true,
+            "bound": 1.5667555105111184,
+            "wall": 1.2485323638587147,
+            "excess_pct": -20.310963932629832,
+            "ok": true
+          },
           "fused_cfg": {
             "BLOCK_M": 64,
             "BLOCK_N": 64,
@@ -1400,36 +1746,94 @@
           "norm_cfg": {
             "ROWS": 1,
             "BLOCK_N": 8192,
-            "num_warps": 4,
-            "num_stages": 1,
+            "num_warps": 8,
+            "num_stages": 2,
             "grid_cap": null,
             "eps": 1e-05
           },
-          "norm_only_ms": 0.019007999449968338,
-          "gemm_only_ms": 0.02675200067460537,
+          "norm_only_ms": 0.019231999292969704,
+          "gemm_only_ms": 0.026976000517606735,
           "publishable": true
         },
         "11b_half": {
-          "fused_ms": 0.22579200565814972,
-          "unfused_ms": 0.2592479884624481,
-          "paired_p50": 1.1483889343187241,
-          "paired_p10": 1.1043918440658416,
-          "paired_p90": 1.1968662135440915,
-          "ratio_of_medians": 1.1481716888371634,
-          "drift_first_half": 1.142454334447354,
-          "drift_second_half": 1.158926109983959,
+          "fused_ms": 0.03542400151491165,
+          "unfused_ms": 0.039712000638246536,
+          "paired_p50": 1.1213463220800584,
+          "paired_p10": 1.078621889412438,
+          "paired_p90": 1.1747929451244739,
+          "ratio_of_medians": 1.1210478472210392,
+          "drift_first_half": 1.1152742363053605,
+          "drift_second_half": 1.1273398596013058,
           "n": 40,
-          "graph_fused_ms": 0.02107074949890375,
-          "graph_unfused_ms": 0.03613650053739548,
-          "ceiling_bytes": 2.654457312146512,
-          "ceiling_launch_aware": 1.4972910421049919,
-          "ideal_fused_ms": 0.023810630343047014,
-          "ideal_unfused_ms": 0.0356514435195176,
+          "graph_fused_ms": 0.02297374978661537,
+          "graph_unfused_ms": 0.03247524984180927,
+          "ceiling_bytes": 1.4526160648489315,
+          "ceiling_launch_aware": 1.1463821369631149,
+          "ideal_fused_ms": 0.04043828670858238,
+          "ideal_unfused_ms": 0.04635772953211179,
+          "invariance": {
+            "ok": true,
+            "tol": 1e-05,
+            "worst_rel_err": 0.0,
+            "n_untested": 0,
+            "n_probed": 5,
+            "keys": [
+              "BLOCK_M",
+              "BLOCK_N",
+              "GROUP_M",
+              "num_stages",
+              "num_warps"
+            ],
+            "probes": [
+              {
+                "key": "BLOCK_M",
+                "from": 64,
+                "to": 32,
+                "rel_err": 0.0,
+                "bitwise": true,
+                "pass": true
+              },
+              {
+                "key": "BLOCK_N",
+                "from": 64,
+                "to": 32,
+                "rel_err": 0.0,
+                "bitwise": true,
+                "pass": true
+              },
+              {
+                "key": "GROUP_M",
+                "from": 8,
+                "to": 1,
+                "rel_err": 0.0,
+                "bitwise": true,
+                "pass": true
+              },
+              {
+                "key": "num_stages",
+                "from": 4,
+                "to": 2,
+                "rel_err": 0.0,
+                "bitwise": true,
+                "pass": true
+              },
+              {
+                "key": "num_warps",
+                "from": 4,
+                "to": 8,
+                "rel_err": 0.0,
+                "bitwise": true,
+                "pass": true
+              }
+            ],
+            "reason": ""
+          },
+          "rel_err_vs_fp32": 0.003071996383368969,
           "rstd_cfg": {
             "ROWS": 1,
-            "BLOCK_N": 2048,
-            "num_warps": 4,
-            "num_stages": 1,
+            "BLOCK_N": 8192,
+            "num_warps": 8,
+            "num_stages": 2,
             "grid_cap": null,
             "eps": 1e-05
           },
@@ -1444,21 +1848,316 @@
           "publishable": true
         },
         "11a_w13": {
-          "fused_ms": 4.735712051391602,
-          "unfused_ms": 3.277567982673645,
-          "paired_p50": 0.6958255120040266,
-          "paired_p10": 0.6879089695750283,
-          "paired_p90": 0.7035177393710144,
-          "ratio_of_medians": 0.6920961298123105,
-          "drift_first_half": 0.6959608796395118,
-          "drift_second_half": 0.693366393149542,
+          "fused_ms": 4.286752223968506,
+          "unfused_ms": 3.289520025253296,
+          "paired_p50": 0.7701870938527076,
+          "paired_p10": 0.7611926598976034,
+          "paired_p90": 0.779950540054378,
+          "ratio_of_medians": 0.7673688268849811,
+          "drift_first_half": 0.7697001003331463,
+          "drift_second_half": 0.7707725077903108,
           "n": 40,
-          "graph_fused_ms": 4.741251230239868,
-          "graph_unfused_ms": 3.339197516441345,
+          "graph_fused_ms": 4.451119422912598,
+          "graph_unfused_ms": 3.3394181728363037,
           "invariance": {
             "ok": false,
             "tol": 1e-05,
-            "worst_rel_err": 0.08890844881534576,
+            "worst_rel_err": 0.07834506779909134,
+            "n_untested": 0,
+            "n_probed": 5,
+            "keys": [
+              "BLOCK_M",
+              "BLOCK_N",
+              "GROUP_M",
+              "num_stages",
+              "num_warps"
+            ],
+            "probes": [
+              {
+                "key": "BLOCK_M",
+                "from": 128,
+                "to": 32,
+                "rel_err": 0.035211268812417984,
+                "bitwise": false,
+                "pass": false
+              },
+              {
+                "key": "BLOCK_N",
+                "from": 128,
+                "to": 32,
+                "rel_err": 0.035211268812417984,
+                "bitwise": false,
+                "pass": false
+              },
+              {
+                "key": "GROUP_M",
+                "from": 8,
+                "to": 1,
+                "rel_err": 0.035211268812417984,
+                "bitwise": false,
+                "pass": false
+              },
+              {
+                "key": "num_stages",
+                "from": 4,
+                "to": 2,
+                "rel_err": 0.046324823051691055,
+                "bitwise": false,
+                "pass": false
+              },
+              {
+                "key": "num_warps",
+                "from": 4,
+                "to": 8,
+                "rel_err": 0.07834506779909134,
+                "bitwise": false,
+                "pass": false
+              }
+            ],
+            "reason": "output depends on BLOCK_M, BLOCK_N, GROUP_M, num_stages, num_warps -- mathematically invariant, so this is a codegen defect"
+          },
+          "fused_cfg": {
+            "BLOCK_M": 128,
+            "BLOCK_N": 128,
+            "BLOCK_K": 64,
+            "num_warps": 4,
+            "num_stages": 4,
+            "GROUP_M": 8
+          },
+          "unfused_cfg": {
+            "BLOCK_M": 128,
+            "BLOCK_N": 256,
+            "BLOCK_K": 64,
+            "num_warps": 8,
+            "num_stages": 4,
+            "GROUP_M": 8
+          },
+          "publishable": false
+        }
+      }
+    },
+    {
+      "regime": "prefill_t8192",
+      "T": 8192,
+      "arms": {
+        "11b_router": {
+          "fused_ms": 0.06969600170850754,
+          "unfused_ms": 0.10652799904346466,
+          "paired_p50": 1.5287408832779157,
+          "paired_p10": 1.5048320126382144,
+          "paired_p90": 1.5468821986612185,
+          "ratio_of_medians": 1.528466431819161,
+          "drift_first_half": 1.5272855887223082,
+          "drift_second_half": 1.5280660975132259,
+          "n": 40,
+          "graph_fused_ms": 0.07097550109028816,
+          "graph_unfused_ms": 0.09784024953842163,
+          "graph_speedup": 1.3785073445830096,
+          "ceiling_bytes": 2.794392523364486,
+          "ceiling_launch_aware": 2.523248793252183,
+          "ideal_fused_ms": 0.04007944264840883,
+          "ideal_unfused_ms": 0.10113040529681767,
+          "invariance": {
+            "ok": true,
+            "tol": 1e-05,
+            "worst_rel_err": 0.0,
+            "n_untested": 0,
+            "n_probed": 5,
+            "keys": [
+              "BLOCK_M",
+              "BLOCK_N",
+              "GROUP_M",
+              "num_stages",
+              "num_warps"
+            ],
+            "probes": [
+              {
+                "key": "BLOCK_M",
+                "from": 128,
+                "to": 32,
+                "rel_err": 0.0,
+                "bitwise": true,
+                "pass": true
+              },
+              {
+                "key": "BLOCK_N",
+                "from": 128,
+                "to": 32,
+                "rel_err": 0.0,
+                "bitwise": true,
+                "pass": true
+              },
+              {
+                "key": "GROUP_M",
+                "from": 8,
+                "to": 1,
+                "rel_err": 0.0,
+                "bitwise": true,
+                "pass": true
+              },
+              {
+                "key": "num_stages",
+                "from": 4,
+                "to": 2,
+                "rel_err": 0.0,
+                "bitwise": true,
+                "pass": true
+              },
+              {
+                "key": "num_warps",
+                "from": 4,
+                "to": 8,
+                "rel_err": 0.0,
+                "bitwise": true,
+                "pass": true
+              }
+            ],
+            "reason": ""
+          },
+          "self_consistency": {
+            "checked": true,
+            "bound": 1.5148441336969938,
+            "wall": 1.5287408832779157,
+            "excess_pct": 0.9173715811280791,
+            "ok": true
+          },
+          "fused_cfg": {
+            "BLOCK_M": 128,
+            "BLOCK_N": 128,
+            "BLOCK_K": 64,
+            "num_warps": 4,
+            "num_stages": 4,
+            "GROUP_M": 8
+          },
+          "unfused_gemm_cfg": {
+            "BLOCK_M": 128,
+            "BLOCK_N": 128,
+            "BLOCK_K": 64,
+            "num_warps": 4,
+            "num_stages": 4,
+            "GROUP_M": 8
+          },
+          "norm_cfg": {
+            "ROWS": 1,
+            "BLOCK_N": 8192,
+            "num_warps": 4,
+            "num_stages": 2,
+            "grid_cap": null,
+            "eps": 1e-05
+          },
+          "norm_only_ms": 0.05455999821424484,
+          "gemm_only_ms": 0.053599998354911804,
+          "publishable": true
+        },
+        "11b_half": {
+          "fused_ms": 0.23473600298166275,
+          "unfused_ms": 0.27236799895763397,
+          "paired_p50": 1.1562288254903788,
+          "paired_p10": 1.1021325479945487,
+          "paired_p90": 1.216395543332427,
+          "ratio_of_medians": 1.1603162510137441,
+          "drift_first_half": 1.1469675886937716,
+          "drift_second_half": 1.166115493262311,
+          "n": 40,
+          "graph_fused_ms": 0.07065474987030029,
+          "graph_unfused_ms": 0.09784024953842163,
+          "ceiling_bytes": 1.4726796983223025,
+          "ceiling_launch_aware": 1.3057064694958243,
+          "ideal_fused_ms": 0.07745263400270001,
+          "ideal_unfused_ms": 0.10113040529681767,
+          "invariance": {
+            "ok": true,
+            "tol": 1e-05,
+            "worst_rel_err": 0.0,
+            "n_untested": 0,
+            "n_probed": 5,
+            "keys": [
+              "BLOCK_M",
+              "BLOCK_N",
+              "GROUP_M",
+              "num_stages",
+              "num_warps"
+            ],
+            "probes": [
+              {
+                "key": "BLOCK_M",
+                "from": 128,
+                "to": 32,
+                "rel_err": 0.0,
+                "bitwise": true,
+                "pass": true
+              },
+              {
+                "key": "BLOCK_N",
+                "from": 128,
+                "to": 32,
+                "rel_err": 0.0,
+                "bitwise": true,
+                "pass": true
+              },
+              {
+                "key": "GROUP_M",
+                "from": 8,
+                "to": 1,
+                "rel_err": 0.0,
+                "bitwise": true,
+                "pass": true
+              },
+              {
+                "key": "num_stages",
+                "from": 4,
+                "to": 2,
+                "rel_err": 0.0,
+                "bitwise": true,
+                "pass": true
+              },
+              {
+                "key": "num_warps",
+                "from": 4,
+                "to": 8,
+                "rel_err": 0.0,
+                "bitwise": true,
+                "pass": true
+              }
+            ],
+            "reason": ""
+          },
+          "rel_err_vs_fp32": 0.002722573233768344,
+          "rstd_cfg": {
+            "ROWS": 1,
+            "BLOCK_N": 8192,
+            "num_warps": 8,
+            "num_stages": 1,
+            "grid_cap": null,
+            "eps": 1e-05
+          },
+          "router_cfg": {
+            "BLOCK_M": 128,
+            "BLOCK_N": 128,
+            "BLOCK_K": 64,
+            "num_warps": 4,
+            "num_stages": 4,
+            "GROUP_M": 8
+          },
+          "publishable": true
+        },
+        "11a_w13": {
+          "fused_ms": 12.160336017608643,
+          "unfused_ms": 6.84441614151001,
+          "paired_p50": 0.5635225316375153,
+          "paired_p10": 0.5602211695938225,
+          "paired_p90": 0.5692139593141347,
+          "ratio_of_medians": 0.5628476163486787,
+          "drift_first_half": 0.5650851922611424,
+          "drift_second_half": 0.5633605360958649,
+          "n": 40,
+          "graph_fused_ms": 11.323891639709473,
+          "graph_unfused_ms": 7.4912660121917725,
+          "invariance": {
+            "ok": false,
+            "tol": 1e-05,
+            "worst_rel_err": 0.08914728462696075,
+            "n_untested": 0,
             "n_probed": 5,
             "keys": [
               "BLOCK_M",
@@ -1504,7 +2203,7 @@
                 "key": "num_warps",
                 "from": 4,
                 "to": 8,
-                "rel_err": 0.08890844881534576,
+                "rel_err": 0.08914728462696075,
                 "bitwise": false,
                 "pass": false
               }
@@ -1517,233 +2216,6 @@
             "BLOCK_K": 128,
             "num_warps": 4,
             "num_stages": 2,
-            "GROUP_M": 8
-          },
-          "unfused_cfg": {
-            "BLOCK_M": 128,
-            "BLOCK_N": 256,
-            "BLOCK_K": 64,
-            "num_warps": 8,
-            "num_stages": 4,
-            "GROUP_M": 8
-          },
-          "publishable": false
-        }
-      }
-    },
-    {
-      "regime": "prefill_t8192",
-      "T": 8192,
-      "arms": {
-        "11b_router": {
-          "fused_ms": 0.17243199795484543,
-          "unfused_ms": 0.27137599885463715,
-          "paired_p50": 1.5688125971354754,
-          "paired_p10": 1.5430985722145971,
-          "paired_p90": 1.622081753580896,
-          "ratio_of_medians": 1.573814617201745,
-          "drift_first_half": 1.5687183104233133,
-          "drift_second_half": 1.5740912360835817,
-          "n": 40,
-          "graph_fused_ms": 0.07060874998569489,
-          "graph_unfused_ms": 0.09859875217080116,
-          "graph_speedup": 1.3964098244307819,
-          "ceiling_bytes": 2.794392523364486,
-          "ceiling_launch_aware": 2.6039088591681776,
-          "ideal_fused_ms": 0.03472629964211174,
-          "ideal_unfused_ms": 0.09042411928422348,
-          "invariance": {
-            "ok": true,
-            "tol": 1e-05,
-            "worst_rel_err": 0.0,
-            "n_probed": 5,
-            "keys": [
-              "BLOCK_M",
-              "BLOCK_N",
-              "GROUP_M",
-              "num_stages",
-              "num_warps"
-            ],
-            "probes": [
-              {
-                "key": "BLOCK_M",
-                "from": 128,
-                "to": 32,
-                "rel_err": 0.0,
-                "bitwise": true,
-                "pass": true
-              },
-              {
-                "key": "BLOCK_N",
-                "from": 128,
-                "to": 32,
-                "rel_err": 0.0,
-                "bitwise": true,
-                "pass": true
-              },
-              {
-                "key": "GROUP_M",
-                "from": 8,
-                "to": 1,
-                "rel_err": 0.0,
-                "bitwise": true,
-                "pass": true
-              },
-              {
-                "key": "num_stages",
-                "from": 4,
-                "to": 2,
-                "rel_err": 0.0,
-                "bitwise": true,
-                "pass": true
-              },
-              {
-                "key": "num_warps",
-                "from": 4,
-                "to": 8,
-                "rel_err": 0.0,
-                "bitwise": true,
-                "pass": true
-              }
-            ],
-            "reason": ""
-          },
-          "fused_cfg": {
-            "BLOCK_M": 128,
-            "BLOCK_N": 128,
-            "BLOCK_K": 64,
-            "num_warps": 4,
-            "num_stages": 4,
-            "GROUP_M": 8
-          },
-          "unfused_gemm_cfg": {
-            "BLOCK_M": 128,
-            "BLOCK_N": 128,
-            "BLOCK_K": 64,
-            "num_warps": 4,
-            "num_stages": 4,
-            "GROUP_M": 8
-          },
-          "norm_cfg": {
-            "ROWS": 1,
-            "BLOCK_N": 8192,
-            "num_warps": 8,
-            "num_stages": 2,
-            "grid_cap": null,
-            "eps": 1e-05
-          },
-          "norm_only_ms": 0.05417599901556969,
-          "gemm_only_ms": 0.053888000547885895,
-          "publishable": true
-        },
-        "11b_half": {
-          "fused_ms": 0.205424003303051,
-          "unfused_ms": 0.24319999665021896,
-          "paired_p50": 1.1760916269386545,
-          "paired_p10": 1.1330946070203658,
-          "paired_p90": 1.238820851199236,
-          "ratio_of_medians": 1.183892791201421,
-          "drift_first_half": 1.1585372013672481,
-          "drift_second_half": 1.1872232448719562,
-          "n": 40,
-          "graph_fused_ms": 0.07042774930596352,
-          "graph_unfused_ms": 0.09859875217080116,
-          "ceiling_bytes": 2.7935766423357666,
-          "ceiling_launch_aware": 2.099914062800242,
-          "ideal_fused_ms": 0.043060866578341135,
-          "ideal_unfused_ms": 0.09042411928422348,
-          "rstd_cfg": {
-            "ROWS": 1,
-            "BLOCK_N": 8192,
-            "num_warps": 8,
-            "num_stages": 1,
-            "grid_cap": null,
-            "eps": 1e-05
-          },
-          "router_cfg": {
-            "BLOCK_M": 128,
-            "BLOCK_N": 128,
-            "BLOCK_K": 64,
-            "num_warps": 4,
-            "num_stages": 4,
-            "GROUP_M": 8
-          },
-          "publishable": true
-        },
-        "11a_w13": {
-          "fused_ms": 11.04051160812378,
-          "unfused_ms": 7.1324639320373535,
-          "paired_p50": 0.6461259969996846,
-          "paired_p10": 0.6353217239748435,
-          "paired_p90": 0.6541423812038529,
-          "ratio_of_medians": 0.646026577861589,
-          "drift_first_half": 0.6465360252413509,
-          "drift_second_half": 0.645540683359966,
-          "n": 40,
-          "graph_fused_ms": 11.03095006942749,
-          "graph_unfused_ms": 7.491444826126099,
-          "invariance": {
-            "ok": false,
-            "tol": 1e-05,
-            "worst_rel_err": 0.10465116053819656,
-            "n_probed": 5,
-            "keys": [
-              "BLOCK_M",
-              "BLOCK_N",
-              "GROUP_M",
-              "num_stages",
-              "num_warps"
-            ],
-            "probes": [
-              {
-                "key": "BLOCK_M",
-                "from": 128,
-                "to": 32,
-                "rel_err": 0.02628391422331333,
-                "bitwise": false,
-                "pass": false
-              },
-              {
-                "key": "BLOCK_N",
-                "from": 128,
-                "to": 32,
-                "rel_err": 0.02628391422331333,
-                "bitwise": false,
-                "pass": false
-              },
-              {
-                "key": "GROUP_M",
-                "from": 8,
-                "to": 1,
-                "rel_err": 0.02628391422331333,
-                "bitwise": false,
-                "pass": false
-              },
-              {
-                "key": "num_stages",
-                "from": 4,
-                "to": 2,
-                "rel_err": 0.02628391422331333,
-                "bitwise": false,
-                "pass": false
-              },
-              {
-                "key": "num_warps",
-                "from": 4,
-                "to": 8,
-                "rel_err": 0.10465116053819656,
-                "bitwise": false,
-                "pass": false
-              }
-            ],
-            "reason": "output depends on BLOCK_M, BLOCK_N, GROUP_M, num_stages, num_warps -- mathematically invariant, so this is a codegen defect"
-          },
-          "fused_cfg": {
-            "BLOCK_M": 128,
-            "BLOCK_N": 128,
-            "BLOCK_K": 32,
-            "num_warps": 4,
-            "num_stages": 4,
             "GROUP_M": 8
           },
           "unfused_cfg": {
