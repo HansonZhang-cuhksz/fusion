@@ -469,6 +469,7 @@ def run_regime(regime, quick: bool, fair: B.Fairness) -> tuple[dict, dict]:
     chk_v = check(vout, ref, label=f"{regime.name}/vendor-addmm")
 
     flops = 2.0 * M * N_OUT * K
+    tmodel = B.traffic_ceilings(regime)
     row = speedup_row(
         regime.name,
         tim_f,
@@ -480,9 +481,9 @@ def run_regime(regime, quick: bool, fair: B.Fairness) -> tuple[dict, dict]:
             "variant": "triton",
             "fused_cfg": {**f_cfg, "EPI": f_epi},
             "unfused_cfg": {**u_cfg, "EPI": u_epi},
-            "paired_speedup": pair.get("paired_speedup_p50"),
-            "paired_speedup_trimmed": pair.get("paired_speedup_trimmed_mean"),
-            "pair_meta": pair,
+            "paired_speedup": pair.ratio_p50,
+            "paired_speedup_trimmed": pair.ratio_trimmed,
+            "pair_meta": pair.as_dict(),
             "tick": B.tick_report(tim_f.p50_ms, tim_u.p50_ms),
             "rel_err": chk_f["rel_err"],
             "rel_err_unfused": chk_u["rel_err"],
@@ -490,7 +491,7 @@ def run_regime(regime, quick: bool, fair: B.Fairness) -> tuple[dict, dict]:
             "ok": bool(chk_f["ok"] and chk_u["ok"]),
             "vendor_fused_ms": tim_vf.p50_ms,
             "vendor_unfused_ms": tim_vu.p50_ms,
-            "vendor_speedup": pair_v.get("paired_speedup_p50"),
+            "vendor_speedup": pair_v.ratio_p50,
             "vendor_rel_err": chk_v["rel_err"],
             "vendor_fused_p10_p90": [tim_vf.p10_ms, tim_vf.p90_ms],
             "vendor_unfused_p10_p90": [tim_vu.p10_ms, tim_vu.p90_ms],
@@ -500,7 +501,13 @@ def run_regime(regime, quick: bool, fair: B.Fairness) -> tuple[dict, dict]:
             "triton_vs_vendor": tim_vf.p50_ms / tim_f.p50_ms,
             "resid_bytes_saved": M * N_OUT * 2,
             "gemm_min_bytes": (M * K + K * N_OUT) * 2,
+            "ceiling": (tmodel.get("F1_oproj_resadd") or {}).get("roofline_ceiling"),
+            "ceiling_with_launch": (tmodel.get("F1_oproj_resadd") or {})
+            .get("roofline_ceiling_with_launch"),
+            "traffic_ratio_model": (tmodel.get("F1_oproj_resadd") or {})
+            .get("traffic_ratio"),
         },
+        pair=pair,  # headline `speedup` = PAIRED median; `speedup_sequential` kept
     )
     print(
         f"  RESULT {regime.name}: triton fused {tim_f.p50_ms:.4f} / unfused "
@@ -552,6 +559,7 @@ def main() -> None:
 
     env = C.env()
     B.banner(env)
+    B.calibration_gate(args)
     B.exact_fp32_matmul()
     B.check_preflight_device(env)
     B.resolve_units(UNITS, args.only)

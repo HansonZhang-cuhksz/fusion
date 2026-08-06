@@ -77,6 +77,18 @@ backend -- on C500/MACA mode 1 won the router and mode 2 won w13 (log/LOG-07 sec
   wgmma-operand use too, and mode 3 is not a way to give the reduction its own copy of A.
   That matters beyond tuning -- see the campaign-1 section below, where "give the reduction
   a separate load" was the obvious workaround and this is the measurement that rules it out.
+* ``4`` -- the reduction's own **transposed** load: ``a2 = tl.load(...)`` of shape
+  ``[BLOCK_K, BLOCK_M]`` (``a2[k, m] = a[m, k]``), then ``sq += tl.sum(a2f * a2f, axis=0)``
+  sums over the k axis and recovers the per-row sum of squares.  Same addresses as the
+  dot-operand load, but a *different shape*, so Triton cannot CSE it the way it merges
+  mode 3's second load -- a load and its transpose are different ops.  The reduction's
+  input therefore comes from an independent global (L2-resident) load with its own buffer
+  lifetime, sharing neither the wgmma staged-operand path nor the pipeliner's register
+  copy with the MMA.  This is the structural property the campaign-1 mechanism section
+  below identifies as the thing a fix must have: the fused arm's reduction must not read
+  the same staged A copy that the MMA consumes.  Added for the campaign-v2 #11a repair
+  (LOG-17); verified bit-stable across BLOCK_M/BLOCK_N/GROUP_M/num_stages on sm_89 and
+  selected by the H200 probe if it clears the invariance screen there.
 
 The mode is picked by a documented pre-study (recorded as ``sq_mode_study`` in the result
 JSON) and then held FIXED so that the fused and unfused tuning grids have identical size.
@@ -846,6 +858,28 @@ def moe_gateup_prenorm_kernel(
                         )
                     a2f = a2.to(tl.float32)
                     sq += tl.sum(a2f * a2f, axis=1)
+                elif SQ_MODE == 4:
+                    # The reduction's own transposed load: a2[k, m] = a[m, k].  Same
+                    # addresses as the dot-operand load but a DIFFERENT shape, so Triton
+                    # cannot CSE it (mode 3's same-shape second load IS CSE'd), and the
+                    # sum-of-squares never shares a register/SMEM copy with the MMA --
+                    # which is exactly what the campaign-v2 #11a repair requires (LOG-17).
+                    if even_Ks:
+                        a2 = tl.load(
+                            a_ptr + (k_start + offs_k[:, None]) * stride_ak
+                            + (safe_token[None, :] // top_k) * stride_am,
+                            mask=token_mask[None, :],
+                            other=0.0,
+                        )
+                    else:
+                        a2 = tl.load(
+                            a_ptr + (k_start + offs_k[:, None]) * stride_ak
+                            + (safe_token[None, :] // top_k) * stride_am,
+                            mask=token_mask[None, :] & (offs_k[:, None] < K - k_start),
+                            other=0.0,
+                        )
+                    a2f = a2.to(tl.float32)
+                    sq += tl.sum(a2f * a2f, axis=0)
                 else:
                     af = a.to(tl.float32)
                     if SQ_MODE == 1:
@@ -894,6 +928,23 @@ def moe_gateup_prenorm_kernel(
                         )
                     a2f = a2.to(tl.float32)
                     sq += tl.sum(a2f * a2f, axis=1)
+                elif SQ_MODE == 4:
+                    if even_Ks:
+                        a2 = tl.load(
+                            a_ptr + (k_start + offs_k[:, None]) * stride_ak
+                            + (safe_token[None, :] // top_k) * stride_am,
+                            mask=token_mask[None, :],
+                            other=0.0,
+                        )
+                    else:
+                        a2 = tl.load(
+                            a_ptr + (k_start + offs_k[:, None]) * stride_ak
+                            + (safe_token[None, :] // top_k) * stride_am,
+                            mask=token_mask[None, :] & (offs_k[:, None] < K - k_start),
+                            other=0.0,
+                        )
+                    a2f = a2.to(tl.float32)
+                    sq += tl.sum(a2f * a2f, axis=0)
                 else:
                     af = a.to(tl.float32)
                     if SQ_MODE == 1:
@@ -1017,6 +1068,27 @@ def router_gemm_kernel(
                         )
                     a2f = a2.to(tl.float32)
                     sq += tl.sum(a2f * a2f, axis=1)
+                elif SQ_MODE == 4:
+                    # Transposed independent load; see the twin branch in
+                    # `moe_gateup_prenorm_kernel`.  a2[k, m] = a[m, k]; a different shape
+                    # than the dot-operand load, so it cannot be CSE'd and the reduction
+                    # reads its own global copy instead of the MMA's staged A.
+                    if even_Ks:
+                        a2 = tl.load(
+                            a_ptr + (k_start + offs_k[:, None]) * stride_ak
+                            + safe_m[None, :] * stride_am,
+                            mask=m_mask[None, :],
+                            other=0.0,
+                        )
+                    else:
+                        a2 = tl.load(
+                            a_ptr + (k_start + offs_k[:, None]) * stride_ak
+                            + safe_m[None, :] * stride_am,
+                            mask=m_mask[None, :] & (offs_k[:, None] < K - k_start),
+                            other=0.0,
+                        )
+                    a2f = a2.to(tl.float32)
+                    sq += tl.sum(a2f * a2f, axis=0)
                 else:
                     af = a.to(tl.float32)
                     if SQ_MODE == 1:
@@ -1061,6 +1133,23 @@ def router_gemm_kernel(
                         )
                     a2f = a2.to(tl.float32)
                     sq += tl.sum(a2f * a2f, axis=1)
+                elif SQ_MODE == 4:
+                    if even_Ks:
+                        a2 = tl.load(
+                            a_ptr + (k_start + offs_k[:, None]) * stride_ak
+                            + safe_m[None, :] * stride_am,
+                            mask=m_mask[None, :],
+                            other=0.0,
+                        )
+                    else:
+                        a2 = tl.load(
+                            a_ptr + (k_start + offs_k[:, None]) * stride_ak
+                            + safe_m[None, :] * stride_am,
+                            mask=m_mask[None, :] & (offs_k[:, None] < K - k_start),
+                            other=0.0,
+                        )
+                    a2f = a2.to(tl.float32)
+                    sq += tl.sum(a2f * a2f, axis=0)
                 else:
                     af = a.to(tl.float32)
                     if SQ_MODE == 1:
@@ -1481,6 +1570,16 @@ def launch_flags(cfg: dict, fuse_norm: bool, sq_mode: int = 0, rstd=None,
 #     -- one ulp of fp32, exactly the predicted lane-repartition effect, invisible once the
 #        w13 result rounds to bf16.  A bit-equality screen over num_warps on an fp32 output
 #        would therefore have produced a FALSE defect, which is why it is a separate tuple.
+#
+#   LOG-17 re-measured the last-ulp class with H2-shrunk w13 (E=256 kept, K=512, real
+#   dispatch) and found the bf16 rounding-boundary flip: BLOCK_M 128 -> 32 and num_warps
+#   4 -> 16 both moved ONE element by one bf16 ulp (max_rel 8.6e-4 .. 1.7e-3), while
+#   BLOCK_M 64 <-> 128 (same side of the threshold) and every BLOCK_N pair stayed
+#   bit-exact.  The class is bounded by ~2^-7 relative (one bf16 ulp at the max element)
+#   and is NOT a defect: SQ_MODE=2 (whose "reduce" is a tensor-core dot, no tree) was
+#   bit-exact across every key, confirming the mechanism.  Screens must therefore use a
+#   dtype-aware tolerance: 1e-5 for fp32 outputs, 2e-2 for bf16 outputs (5x above the
+#   worst legit case, 18x below the 0.37 defect class campaign 1 shipped).
 #
 # Campaign 1's failures were 0.37 to 0.77 relative -- six orders of magnitude above that
 # ulp -- so the screen has an enormous margin and no threshold to argue about.

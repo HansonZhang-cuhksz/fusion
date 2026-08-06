@@ -823,18 +823,25 @@ def run_regime(regime, w2, gate_w, quick: bool, units: list[str],
                                     rel_err_unfused=chk_u9["rel_err"])),
         }
         rows = []
+        tmodel = B.traffic_ceilings(regime)
         for v in units:
             extra = dict(common, variant=v, **meta[v])
-            extra["paired_speedup"] = pairs[v].get("paired_speedup_p50")
-            extra["paired_speedup_trimmed"] = pairs[v].get("paired_speedup_trimmed_mean")
-            extra["pair_meta"] = pairs[v]
+            _trow = tmodel.get("F8_down_merge" if v.startswith("f8")
+                               else "F9_down_merge_resadd") or {}
+            extra["ceiling"] = _trow.get("roofline_ceiling")
+            extra["ceiling_with_launch"] = _trow.get("roofline_ceiling_with_launch")
+            extra["traffic_ratio_model"] = _trow.get("traffic_ratio")
+            extra["paired_speedup"] = pairs[v].ratio_p50
+            extra["paired_speedup_trimmed"] = pairs[v].ratio_trimmed
+            extra["pair_meta"] = pairs[v].as_dict()
             extra["tick"] = B.tick_report(tf[v].p50_ms, tu[v].p50_ms)
             if v.startswith("f9"):
                 extra["speedup_vs_2kernel"] = t_u9b.p50_ms / tf[v].p50_ms
             if v == "f8_atomic":
                 extra["kernel_stats"] = B.kernel_stats(
                     prob.atomic_fn(f8a_best["gemm"]), getattr(KD, "moe_down_kernel", None))
-            rows.append(speedup_row(regime.name, tf[v], tu[v], extra=extra))
+            rows.append(speedup_row(regime.name, tf[v], tu[v], extra=extra,
+                                   pair=pairs[v]))  # headline `speedup` = PAIRED median
 
         tuning.update({
             "unfused_gemm_coarse": tu_c.as_dict(),
@@ -882,6 +889,7 @@ def main() -> None:
 
     env = C.env()
     B.banner(env)
+    B.calibration_gate(args)
     B.exact_fp32_matmul()
     B.check_preflight_device(env)
     units = B.resolve_units(UNITS, args.only)

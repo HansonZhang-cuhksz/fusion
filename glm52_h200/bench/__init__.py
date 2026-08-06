@@ -683,6 +683,110 @@ def calibration_status() -> dict:
     return out
 
 
+def calibrate_live() -> dict:
+    """Re-measure the harness floor and per-launch cost RIGHT NOW, not from the preflight.
+
+    The preflight's numbers are static data; a co-tenant can arrive after it ran.  A regime
+    sweep takes minutes, so spending ~0.5 s re-measuring the floor before trusting any
+    ratio is cheap.  The definition is exactly f11_publish's: an EMPTY timed region is the
+    floor (the earlier t = O + N*L linear fit went negative on a provably idle device and
+    was dropped), and the launch is the marginal cost of one more nop launch, floored at
+    zero.  The floor must be POSITIVE and below config.FLOOR_US_MAX, or the device is not
+    idle enough to trust.
+    """
+    import triton  # noqa: PLC0415 -- the gate is a run-time guard, not an import-time one
+    import triton.language as tl  # noqa: PLC0415, F401
+
+    @triton.jit
+    def _nop(P):  # noqa: ANN001, ANN202 -- signature is dictated by triton.jit
+        pass
+
+    buf = torch.zeros(1, device="cuda")
+
+    def timed(n: int) -> float:
+        _flush_l2()
+        s, e = (torch.cuda.Event(enable_timing=True) for _ in range(2))
+        s.record()
+        for _ in range(n):
+            _nop[(1,)](buf)
+        e.record()
+        torch.cuda.synchronize()
+        return s.elapsed_time(e)
+
+    def timed_empty() -> float:
+        _flush_l2()
+        s, e = (torch.cuda.Event(enable_timing=True) for _ in range(2))
+        s.record()
+        e.record()
+        torch.cuda.synchronize()
+        return s.elapsed_time(e)
+
+    for _ in range(30):
+        timed(1)
+        timed_empty()
+    floor = statistics.median([timed_empty() for _ in range(200)])
+    pts = {n: statistics.median([timed(n) for _ in range(120)]) for n in (1, 2, 4, 8)}
+    launch = max((pts[8] - pts[1]) / 7, 0.0)
+    f_us, l_us = floor * 1e3, launch * 1e3
+    try:
+        from glm52_h200 import config as _C  # local: config is another module's to own
+        fmax = float(_C.FLOOR_US_MAX)
+    except Exception:  # noqa: BLE001 -- a missing config must not silence the guard
+        fmax = 20.0
+    bad = []
+    if f_us < 0:
+        bad.append(f"harness_floor_us={f_us:.3f} is NEGATIVE, which is not physical: the "
+                   f"t = O + N*L fit over-estimated the launch term ({l_us:.3f} us), so the "
+                   f"ceiling and self-consistency bounds built from it are meaningless")
+    elif f_us > fmax:
+        bad.append(f"harness_floor_us={f_us:.3f} exceeds the {fmax} us bar -- the signature "
+                   f"of a co-tenant, not a timer property")
+    if l_us <= 0:
+        bad.append(f"launch_us={l_us:.3f} is not positive")
+    return {"harness_floor_us": f_us, "launch_us": l_us, "floor_bar_us": fmax,
+            "ok": not bad, "problems": bad}
+
+
+def calibration_gate(args) -> dict:
+    """B4 gate: refuse to start a timing campaign whose calibration cannot be believed.
+
+    Two checks, because they catch different failures:
+
+      * the preflight on disk must be trusted (device match + timer tick lattice + the
+        static floor/launch bars -- see `calibration_status`), otherwise every ceiling
+        comparison in the output is meaningless;
+      * the LIVE floor/launch re-measurement must also pass, because a co-tenant can
+        arrive after the preflight ran and the preflight cannot know about it.
+
+    `--skip-calib` bypasses both, for smoke-testing the driver end to end only.  Returns
+    the live calibration dict ({} when skipped), for the caller to record in the env
+    block, so a skipped gate is visible in the result file rather than silent.
+    """
+    if getattr(args, "skip_calib", False):
+        print("[calib] --skip-calib: B4 calibration gate DISABLED (smoke runs only; "
+              "reportable numbers must NOT use it)", flush=True)
+        return {}
+    st = calibration_status()
+    if st.get("trusted") is not True:
+        raise SystemExit(
+            "[calib] B4 gate: preflight calibration not trusted.\n"
+            f"  {st.get('reason')}\n"
+            "  Re-run `python3 glm52_h200/preflight.py` on an IDLE device, then re-run "
+            "this bench.  (`--skip-calib` bypasses the gate, for smoke runs only.)"
+        )
+    live = calibrate_live()
+    if not live["ok"]:
+        raise SystemExit(
+            "[calib] B4 gate: LIVE re-measurement failed (a co-tenant probably arrived "
+            "after the preflight ran).\n  " + "\n  ".join(live["problems"])
+            + "\n  Re-run on an idle device.  (`--skip-calib` bypasses the gate, for "
+              "smoke runs only.)"
+        )
+    print(f"[calib] B4 gate: preflight trusted; live floor {live['harness_floor_us']:.2f} "
+          f"us, launch {live['launch_us']:.2f} us", flush=True)
+    return live
+
+
 def warn_calibration_once() -> None:
     """One line, once per process, when the tick/launch calibration cannot be believed."""
     global _CALIB_WARNED
@@ -2187,6 +2291,12 @@ def add_std_args(ap: argparse.ArgumentParser, units: Sequence[str] = ()) -> None
     ap.add_argument(
         "--force", action="store_true",
         help="ignore existing checkpoints and re-measure every regime",
+    )
+    ap.add_argument(
+        "--skip-calib", action="store_true",
+        help="bypass the B4 calibration gate (preflight trust + live floor/launch "
+             "re-measurement). For smoke-testing the driver end to end ONLY -- a "
+             "reportable number must come from a gated run.",
     )
     ap.add_argument(
         "--list", action="store_true", help="print the regimes and variants and exit",

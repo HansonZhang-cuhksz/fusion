@@ -1419,7 +1419,11 @@ def collect_cells(log: Log, key: str, path: Path, tick_us: float,
             f_ms = u_ms = None
 
         sp, sp_src = None, None
-        for k in ("speedup", "paired_speedup", "speedup_paired"):
+        # Explicit paired markers win over the bare `speedup` key: a row that records
+        # both is saying "here is my interleaved number, use it".  After the paired
+        # upgrade `speedup` itself already holds the paired median, so the order only
+        # matters for rows that carry both spellings.
+        for k in ("paired_speedup", "speedup_paired", "speedup"):
             v = r.get(k)
             try:
                 if v is not None and float(v) > 0:
@@ -1469,6 +1473,10 @@ def collect_cells(log: Log, key: str, path: Path, tick_us: float,
         for k in ("speedup_of_medians", "speedup_trimmed", "speedup_p10_p90"):
             if k in r:
                 cell[k] = r[k]
+        # The sequential ratio the paired number replaced: kept so a report can show
+        # both, and so the paired upgrade is auditable in the raw cell.
+        if "speedup_sequential" in r:
+            cell["speedup_sequential"] = r["speedup_sequential"]
         som = r.get("speedup_of_medians")
         try:
             if sp and som and abs(float(som) - sp) / sp > 0.02:
@@ -1487,6 +1495,9 @@ def collect_cells(log: Log, key: str, path: Path, tick_us: float,
         except (TypeError, ValueError):
             pass
         for k in ("rel_err", "rel_err_fused", "correct", "n_tried", "n_failed"):
+            if k in r:
+                cell[k] = r[k]
+        for k in ("ceiling_with_launch", "traffic_ratio_model"):
             if k in r:
                 cell[k] = r[k]
         cell["speedup"] = cell["speedup_raw"] if cell["resolved"] else None

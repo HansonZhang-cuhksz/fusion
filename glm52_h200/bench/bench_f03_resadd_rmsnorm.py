@@ -306,16 +306,22 @@ def run_regime(regime, quick: bool, fair: B.Fairness) -> tuple:
     h1_bytes = T * row_bytes
     l2_bytes = B.env_int(_ENV, "l2_bytes")
 
+    tmodel = B.traffic_ceilings(regime)
     row = speedup_row(
         regime.name, t_fused, t_unfused,
         {
             "T": T,
             "variant": "f3",
+            "ceiling": (tmodel.get("F3_resadd_rmsnorm") or {}).get("roofline_ceiling"),
+            "ceiling_with_launch": (tmodel.get("F3_resadd_rmsnorm") or {})
+            .get("roofline_ceiling_with_launch"),
+            "traffic_ratio_model": (tmodel.get("F3_resadd_rmsnorm") or {})
+            .get("traffic_ratio"),
             "fused_cfg": f_cfg,
             "unfused_cfg": u_cfg,
-            "paired_speedup": pair.get("paired_speedup_p50"),
-            "paired_speedup_trimmed": pair.get("paired_speedup_trimmed_mean"),
-            "pair_meta": pair,
+            "paired_speedup": pair.ratio_p50,
+            "paired_speedup_trimmed": pair.ratio_trimmed,
+            "pair_meta": pair.as_dict(),
             "tick": B.tick_report(t_fused.p50_ms, t_unfused.p50_ms),
             "rel_err_fused_x2": chk["fused_x2"]["rel_err"],
             "rel_err_fused_h1": chk["fused_h1"]["rel_err"],
@@ -338,6 +344,7 @@ def run_regime(regime, quick: bool, fair: B.Fairness) -> tuple:
             "add_only_ms": a_ms,
             "norm_only_ms": n_ms,
         },
+        pair=pair,  # headline `speedup` = PAIRED median; `speedup_sequential` kept
     )
     print(
         f"    fused {t_fused.p50_ms:.4f} ms ({gbps(b_fused, t_fused.p50_ms):.0f} GB/s)"
@@ -379,6 +386,7 @@ def main() -> None:
 
     env = C.env()
     B.banner(env)
+    B.calibration_gate(args)
     B.exact_fp32_matmul()
     B.check_preflight_device(env)
     B.resolve_units(UNITS, args.only)

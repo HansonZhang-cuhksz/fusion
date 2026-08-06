@@ -418,16 +418,22 @@ def run_regime(regime, w13, gate_w, quick: bool, fair: B.Fairness) -> tuple[dict
 
         rows_n = prob.rows
         flops = 2.0 * rows_n * (2 * I) * H
+        tmodel = B.traffic_ceilings(regime)
         row = speedup_row(regime.name, t_fused, t_unfused, extra={
             "T": regime.T,
             "variant": "f6",
+            "ceiling": (tmodel.get("F6_upgate_swiglu") or {}).get("roofline_ceiling"),
+            "ceiling_with_launch": (tmodel.get("F6_upgate_swiglu") or {})
+            .get("roofline_ceiling_with_launch"),
+            "traffic_ratio_model": (tmodel.get("F6_upgate_swiglu") or {})
+            .get("traffic_ratio"),
             "moe_rows": rows_n,
             "fused_cfg": fused_cfg,
             "unfused_gemm_cfg": gemm_cfg,
             "unfused_act_cfg": act_cfg,
-            "paired_speedup": pair.get("paired_speedup_p50"),
-            "paired_speedup_trimmed": pair.get("paired_speedup_trimmed_mean"),
-            "pair_meta": pair,
+            "paired_speedup": pair.ratio_p50,
+            "paired_speedup_trimmed": pair.ratio_trimmed,
+            "pair_meta": pair.as_dict(),
             "tick": B.tick_report(t_fused.p50_ms, t_unfused.p50_ms),
             "unfused_gemm_ms": t_gemm_only.p50_ms,
             "unfused_act_ms": t_act_only.p50_ms,
@@ -468,7 +474,7 @@ def run_regime(regime, w13, gate_w, quick: bool, fair: B.Fairness) -> tuple[dict
                 prob.fused_fn(fused_cfg), getattr(KG, "moe_gateup_kernel", None)),
             "unfused_kernel_stats": B.kernel_stats(
                 prob.gemm_fn(gemm_cfg), getattr(KG, "moe_gateup_kernel", None)),
-        })
+        }, pair=pair)  # headline `speedup` = PAIRED median; `speedup_sequential` kept
         tuning = {
             "fused_coarse": tf_c.as_dict(),
             "fused_refine": tf_r.as_dict(),
@@ -500,6 +506,7 @@ def main() -> None:
 
     env = C.env()
     B.banner(env)
+    B.calibration_gate(args)
     B.exact_fp32_matmul()
     B.check_preflight_device(env)
     B.resolve_units(UNITS, args.only)

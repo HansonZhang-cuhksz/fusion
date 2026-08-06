@@ -605,9 +605,9 @@ def run_regime(regime, quick: bool, units: list[str], fair: B.Fairness) -> tuple
             "T": T,
             "ceiling": cell.get("roofline_ceiling"),
             "traffic_ratio_model": cell.get("traffic_ratio"),
-            "paired_speedup": pairs[key].get("paired_speedup_p50"),
-            "paired_speedup_trimmed": pairs[key].get("paired_speedup_trimmed_mean"),
-            "pair_meta": pairs[key],
+            "paired_speedup": pairs[key].ratio_p50,
+            "paired_speedup_trimmed": pairs[key].ratio_trimmed,
+            "pair_meta": pairs[key].as_dict(),
             "tick": B.tick_report(f.p50_ms, u.p50_ms),
             "bytes_fused": bf,
             "bytes_unfused": bu,
@@ -624,7 +624,7 @@ def run_regime(regime, quick: bool, units: list[str], fair: B.Fairness) -> tuple
             "torch_ref_ms": (t_torch5 if key.startswith("F5") else t_torch4).p50_ms,
             "blas_router_fp32_ms": t_blas_fp32.p50_ms,
             "blas_router_bf16_ms": t_blas_bf16.p50_ms,
-        }))
+        }, pair=pairs[key]))  # headline `speedup` = PAIRED median; `speedup_sequential` kept
 
     for r in rows:
         c = r["ceiling"]
@@ -680,6 +680,7 @@ def main() -> None:
 
     env = C.env()
     B.banner(env)
+    B.calibration_gate(args)
     B.exact_fp32_matmul()
     B.check_preflight_device(env)
     units = B.resolve_units(UNITS, args.only)

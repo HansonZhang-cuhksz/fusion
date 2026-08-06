@@ -786,8 +786,13 @@ def vendor_moe_chain(prob: Problem):
 #   1  sqt += af*af  -> one reduce at the end (a [BM, BK] fp32 tile of extra state)
 #   2  sqd += tl.dot(a*a, ones[BK,16])      sum of squares on the TENSOR CORE
 #   3  a re-loaded separately, then mode 0  (isolates the dot-operand layout hypothesis)
+#   4  transposed independent load, then mode 0 (gives the reduction its OWN global
+#      copy of A, which mode 3 cannot do: a same-shape second load is CSE'd by Triton).
+#      Added for the campaign-v2 #11a repair (LOG-17); on sm_90 the reduction must not
+#      read the MMA's staged A copy, and this is the mode with that property.
 # ======================================================================================
-SQ_NAMES = {0: "per-step tl.sum", 1: "tile-accum", 2: "tensor-core dot", 3: "2nd load"}
+SQ_NAMES = {0: "per-step tl.sum", 1: "tile-accum", 2: "tensor-core dot", 3: "2nd load",
+            4: "transposed load"}
 
 
 # ======================================================================================
@@ -953,7 +958,7 @@ def sq_study(prob: Problem) -> tuple[dict, list]:
         dict(BLOCK_M=64, BLOCK_N=256, BLOCK_K=64, num_warps=8, num_stages=2, GROUP_M=8),
         dict(BLOCK_M=128, BLOCK_N=256, BLOCK_K=32, num_warps=8, num_stages=2, GROUP_M=8),
     ]
-    modes = (0, 1, 2, 3)
+    modes = (0, 1, 2, 3, 4)
     tab, pick = [], {}
     fams = [("router", cfgs_r, prob.router_fused)]
     if prob.has_w13:
@@ -1740,9 +1745,9 @@ def run_regime(prob: Problem, sq_mode: dict, quick: bool, fair: B.Fairness) -> t
             "fused_cfg": rt_f_cfg,
             "unfused_gemm_cfg": rt_u_gemm,
             "unfused_norm_cfg": rt_u_norm,
-            "paired_speedup": pair_rt.get("paired_speedup_p50"),
-            "paired_speedup_trimmed": pair_rt.get("paired_speedup_trimmed_mean"),
-            "pair_meta": pair_rt,
+            "paired_speedup": getattr(pair_rt, "ratio_p50", None),
+            "paired_speedup_trimmed": getattr(pair_rt, "ratio_trimmed", None),
+            "pair_meta": pair_rt.as_dict() if not isinstance(pair_rt, dict) else pair_rt,
             "tick": B.tick_report(t_rt_f.p50_ms, t_rt_u.p50_ms),
             "unfused_gemm_only_ms": t_rt_gemm.p50_ms if t_rt_gemm else None,
             "norm_only_ms": t_norm.p50_ms if t_norm else None,
@@ -1758,7 +1763,7 @@ def run_regime(prob: Problem, sq_mode: dict, quick: bool, fair: B.Fairness) -> t
             "bytes_fused": act + H * E * 2 + T * E * 4,
             "bytes_unfused": 2 * act + act + H * E * 2 + T * E * 4,
             "winner_provenance": provenance.get("router_fused"),
-        })
+        }, pair=pair_rt)  # headline `speedup` = PAIRED median; `speedup_sequential` kept
     if w13 and status["f11a_w13"][0] and t_mo_f is not None and t_mo_u is not None:
         mo_ntiles = triton.cdiv(NW13, mo_f_cfg["BLOCK_N"])
         f_moe = 2.0 * prob.rows * H * NW13
@@ -1767,8 +1772,8 @@ def run_regime(prob: Problem, sq_mode: dict, quick: bool, fair: B.Fairness) -> t
             "fused_cfg": mo_f_cfg,
             "unfused_gemm_cfg": mo_u_gemm,
             "unfused_norm_cfg": mo_u_norm,
-            "paired_speedup": pair_mo.get("paired_speedup_p50"),
-            "pair_meta": pair_mo,
+            "paired_speedup": getattr(pair_mo, "ratio_p50", None),
+            "pair_meta": pair_mo.as_dict() if not isinstance(pair_mo, dict) else pair_mo,
             "tick": B.tick_report(t_mo_f.p50_ms, t_mo_u.p50_ms),
             "unfused_gemm_only_ms": t_mo_gemm.p50_ms if t_mo_gemm else None,
             "norm_only_ms": t_norm.p50_ms if t_norm else None,
@@ -1788,7 +1793,7 @@ def run_regime(prob: Problem, sq_mode: dict, quick: bool, fair: B.Fairness) -> t
             / (t_blas_moe_dense.p50_ms * 1e-3) / 1e12,
             "blockm_invariance": chk.get("moe_fused_blockm_invariance"),
             "winner_provenance": provenance.get("moe_fused"),
-        })
+        }, pair=pair_mo)  # headline `speedup` = PAIRED median; `speedup_sequential` kept
     if w13:
         row["moe_rows"] = prob.rows
         row["grid_sizes"].update({
@@ -1802,10 +1807,10 @@ def run_regime(prob: Problem, sq_mode: dict, quick: bool, fair: B.Fairness) -> t
             "note": "unfused = 1 norm + router GEMM + w13 GEMM; fused = router GEMM + w13 "
                     "GEMM (x2 never materialized)",
             "norm_cfg": norm_cfg,
-            "paired_speedup": pair_comb.get("paired_speedup_p50"),
-            "pair_meta": pair_comb,
+            "paired_speedup": getattr(pair_comb, "ratio_p50", None),
+            "pair_meta": pair_comb.as_dict() if not isinstance(pair_comb, dict) else pair_comb,
             "tick": B.tick_report(t_comb_f.p50_ms, t_comb_u.p50_ms),
-        })
+        }, pair=pair_comb)  # headline `speedup` = PAIRED median; `speedup_sequential` kept
     # `half_fused` is published per family, and its ABSOLUTE numbers do not depend on the
     # norm kernel or on the unfused chain -- only its `*_speedup_vs_unfused` fields do, and
     # those are dropped individually rather than taking the arm down with them.
@@ -1933,6 +1938,7 @@ def main() -> None:
 
     env = C.env()
     B.banner(env)
+    B.calibration_gate(args)
     B.exact_fp32_matmul()
     B.check_preflight_device(env)
     units = B.resolve_units(UNITS, args.only)

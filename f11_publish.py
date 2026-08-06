@@ -82,6 +82,17 @@ from glm52_h200.kernels import lazy_prenorm as K  # noqa: E402
 EPS = 1e-5
 TOPK = 8
 INVARIANT_TOL = 1e-5  # the tolerance the API documents; NOT check()'s 2e-2 default
+#: bf16-OUTPUT screens must use this instead (LOG-17).  The invariant keys repartition the
+#: per-row reduce across lanes/rows; that legitimately moves the fp32 partial sums by a
+#: last ulp, and once the w13 result rounds to bf16 a single element at a rounding
+#: boundary flips one bf16 ulp.  Measured on sm_89 (real dispatch, H2-shrunk w13): the
+#: class peaks at 1.7e-3 relative, and its bound is ~2^-7 ~ 7.8e-3 (one bf16 ulp at the
+#: max-magnitude element).  The defect class campaign 1 shipped was 0.37-0.77 -- two
+#: orders above.  A screen for a bf16-output family that uses 1e-5 therefore reports the
+#: legitimate class as a defect; 2e-2 sits 5x above the worst legit case and 18x below
+#: the defect class.  fp32 outputs (the router) keep INVARIANT_TOL: their ulp class is
+#: 1.8e-7, 56x below 1e-5.
+INVARIANT_TOL_BF16 = 2e-2
 FLOOR_US_MAX = getattr(C, "FLOOR_US_MAX", 20.0)
 
 
@@ -773,7 +784,7 @@ def run_regime(name: str, T: int, args, env, calib, log) -> dict:
                 except Exception:  # noqa: BLE001
                     return None
 
-            inv = invariance_screen(run_at_moe, mf["cfg"])
+            inv = invariance_screen(run_at_moe, mf["cfg"], tol=INVARIANT_TOL_BF16)
             log(f"    [invariance w13F] {'PASS' if inv['ok'] else 'REJECT'} "
                 f"worst={inv.get('worst_rel_err', float('nan')):.2e}")
             fused = prob.moe_fused(mf["cfg"])

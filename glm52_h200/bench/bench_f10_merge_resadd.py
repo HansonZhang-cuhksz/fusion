@@ -324,14 +324,20 @@ def run_regime(regime, quick: bool, fair: B.Fairness) -> tuple:
     gbps = lambda b, ms: b / (ms * 1e-3) / 1e9  # noqa: E731
     l2 = B.env_int(_ENV, "l2_bytes")
 
+    tmodel = B.traffic_ceilings(regime)
     row = speedup_row(regime.name, t_fused, t_unfused, {
         "T": T,
         "variant": "f10",
+        "ceiling": (tmodel.get("F10_merge_resadd") or {}).get("roofline_ceiling"),
+        "ceiling_with_launch": (tmodel.get("F10_merge_resadd") or {})
+        .get("roofline_ceiling_with_launch"),
+        "traffic_ratio_model": (tmodel.get("F10_merge_resadd") or {})
+        .get("traffic_ratio"),
         "fused_cfg": f_cfg,
         "unfused_cfg": u_cfg,
-        "paired_speedup": pair.get("paired_speedup_p50"),
-        "paired_speedup_trimmed": pair.get("paired_speedup_trimmed_mean"),
-        "pair_meta": pair,
+        "paired_speedup": pair.ratio_p50,
+        "paired_speedup_trimmed": pair.ratio_trimmed,
+        "pair_meta": pair.as_dict(),
         "tick": B.tick_report(t_fused.p50_ms, t_unfused.p50_ms),
         "rel_err_fused": chk["fused_out"]["rel_err"],
         "rel_err_unfused": chk["unfused_out"]["rel_err"],
@@ -356,7 +362,7 @@ def run_regime(regime, quick: bool, fair: B.Fairness) -> tuple:
         "torch_compile_check": compile_chk,
         "merge_only_ms": m_ms,
         "resadd_only_ms": a_ms,
-    })
+    }, pair=pair)  # headline `speedup` = PAIRED median; `speedup_sequential` kept
     sp = row.get("paired_speedup") or row["speedup"]
     row["pct_of_ceiling"] = (sp - 1.0) / 0.20
     print(
@@ -399,6 +405,7 @@ def main() -> None:
 
     env = C.env()
     B.banner(env)
+    B.calibration_gate(args)
     B.exact_fp32_matmul()
     B.check_preflight_device(env)
     B.resolve_units(UNITS, args.only)
