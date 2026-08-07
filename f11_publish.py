@@ -37,11 +37,15 @@ and re-implementing them would be the actual mistake.
          failure REJECTS the config rather than annotating it.
 
   B4  **The calibration said `trusted: true` on a contended card.**  harness_floor_us=39.87
-      against config.FLOOR_US_MAX=20.0.  A floor that size is comparable to the entire decode
-      measurement, and it is added to BOTH arms, so a ratio built on it is not a ratio of the
-      work.
-      -> This script measures the floor itself before anything else and REFUSES TO RUN if it
-         is above the bar, rather than recording a verdict nobody reads.
+      against the old config.FLOOR_US_MAX=20.0.  A floor that size is comparable to the
+      entire decode measurement, and it is added to BOTH arms, so a ratio built on it is
+      not a ratio of the work.
+      -> This script measures the floor itself before anything else and REFUSES TO RUN if
+         it is above the bar, rather than recording a verdict nobody reads.
+      (2026-08-07: that 39.87 us floor is now known to be a NORMAL idle-H200 floor --
+       every clean H200 preflight measures 37-42 us -- and config's bars were raised to
+       50 us / 8x launch.  The bar this script enforces comes from config, so it follows
+       the fix automatically.)
 
 WHAT IT MEASURES, AND WHY TWICE
 ===============================
@@ -93,7 +97,7 @@ INVARIANT_TOL = 1e-5  # the tolerance the API documents; NOT check()'s 2e-2 defa
 #: the defect class.  fp32 outputs (the router) keep INVARIANT_TOL: their ulp class is
 #: 1.8e-7, 56x below 1e-5.
 INVARIANT_TOL_BF16 = 2e-2
-FLOOR_US_MAX = getattr(C, "FLOOR_US_MAX", 20.0)
+FLOOR_US_MAX = getattr(C, "FLOOR_US_MAX", 50.0)
 
 
 # ======================================================================================

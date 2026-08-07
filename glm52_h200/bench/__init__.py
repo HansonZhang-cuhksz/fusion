@@ -563,11 +563,11 @@ def calibration_status() -> dict:
     """Is the preflight's launch/tick calibration usable, and if not, why not.
 
     The H200 preflight reported `launch_us 8.89`, `harness_floor_us 40.55` and
-    `timer_tick_us 0.256` **with a match fraction of 0.03**.  A 40 us floor on a card whose
-    kernels resolve in single-digit microseconds is not physical, and a quantum that fits
-    3 % of samples is not a quantum; both are what measuring a shared GPU looks like.  The
-    device block of that same file says 98.8 GB free of 150 GB, i.e. ~51 GB belonged to
-    someone else while the probe ran.
+    `timer_tick_us 0.256` **with a match fraction of 0.03**.  The 40 us floor alone proves
+    nothing -- every CLEAN H200 preflight measures 37-42 us (see config.py) -- but a
+    quantum that fits 3 % of samples is not a quantum, and 98.8 GB free of 150 GB means
+    ~51 GB belonged to someone else while the probe ran.  Both are what measuring a shared
+    GPU looks like.
 
     So these two numbers are treated as UNKNOWN rather than as data.  The consequence that
     matters is in `tick_report`: with an invented tick, a decode cell either gets flagged
@@ -590,6 +590,12 @@ def calibration_status() -> dict:
     if isinstance(free, (int, float)) and isinstance(total, (int, float)) and total:
         out["mem_in_use_by_others_bytes"] = int(total) - int(free)
         out["mem_in_use_by_others_frac"] = 1.0 - float(free) / float(total)
+    try:
+        from glm52_h200 import config as _C  # local: config is another module's to own
+    except Exception:  # noqa: BLE001 -- a missing config must not silence the guard
+        _C = None
+    fmax = getattr(_C, "FLOOR_US_MAX", 50.0)
+    rmax = getattr(_C, "FLOOR_LAUNCH_RATIO_MAX", 8.0)
     if not preflight():
         out["reason"] = "no preflight_h200.json; nothing was calibrated"
         return out
@@ -618,7 +624,7 @@ def calibration_status() -> dict:
         except (TypeError, ValueError):
             best_any = frac
         floor = out.get("harness_floor_us")
-        floor_sane = isinstance(floor, (int, float)) and floor < 15.0
+        floor_sane = isinstance(floor, (int, float)) and floor < fmax
         idle = not (isinstance(used, int) and used > 2**30)
         if floor_sane and idle and best_any < TICK_MATCH_MIN:
             out["trusted"] = True
@@ -656,20 +662,16 @@ def calibration_status() -> dict:
     # config.py already owns these thresholds; do not restate them here.
     floor = out.get("harness_floor_us")
     launch = out.get("launch_us")
-    try:
-        from glm52_h200 import config as _C  # local: config is another module's to own
-    except Exception:  # noqa: BLE001 -- a missing config must not silence the guard
-        _C = None
-    fmax = getattr(_C, "FLOOR_US_MAX", 20.0)
-    rmax = getattr(_C, "FLOOR_LAUNCH_RATIO_MAX", 3.0)
     if isinstance(floor, (int, float)):
         why = None
         if floor > fmax:
-            why = (f"harness_floor_us={floor:.3f} exceeds config.FLOOR_US_MAX={fmax}: a clean "
-                   f"floor on an idle device is single-digit microseconds")
+            why = (f"harness_floor_us={floor:.3f} exceeds config.FLOOR_US_MAX={fmax}: no "
+                   f"idle device measures a floor this high (clean H200 is 37-42 us, "
+                   f"4060 is 2.8 us)")
         elif isinstance(launch, (int, float)) and launch > 0 and floor > rmax * launch:
             why = (f"harness_floor_us={floor:.3f} is {floor / launch:.1f}x launch_us="
-                   f"{launch:.3f}, above config.FLOOR_LAUNCH_RATIO_MAX={rmax}")
+                   f"{launch:.3f}, above config.FLOOR_LAUNCH_RATIO_MAX={rmax} (idle H200 "
+                   f"is ~3.6-4.7x, 4060 ~0.8x)")
         if why:
             out["trusted"] = False
             out["reason"] = (
@@ -732,7 +734,7 @@ def calibrate_live() -> dict:
         from glm52_h200 import config as _C  # local: config is another module's to own
         fmax = float(_C.FLOOR_US_MAX)
     except Exception:  # noqa: BLE001 -- a missing config must not silence the guard
-        fmax = 20.0
+        fmax = 50.0
     bad = []
     if f_us < 0:
         bad.append(f"harness_floor_us={f_us:.3f} is NEGATIVE, which is not physical: the "

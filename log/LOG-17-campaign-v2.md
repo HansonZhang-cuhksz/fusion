@@ -210,3 +210,63 @@ PairTiming; the original `.get(...)` on the dict was CORRECT.)
    `python3 run_h200.py --gpu N --force-rerun`.
 2. Copy back results/h200/ + preflight + log/run_h200/.
 3. `tools/verify_campaign_v2.py` (expect 0 FAIL), regenerate report_glm52_h200/.
+
+### 2026-08-07 — second re-run gate-refused everything: the floor bars were miscalibrated
+- Commit 47b454e ("bug fixed") carried the pair fix to the H200; re-run 3c4a7b3
+  ("h200 done") FAILED again, differently: all 8 families "failed" in ~10 s each
+  (layer ran 25.5 min, then crashed).  Working tree was clean; fix commit verified
+  locally on 4060 first.
+- Driver preflight 2026-08-07 10:30:37 on GPU-b2318e71 (same box as c5b8a22):
+  harness_floor_us=36.914, launch_us=10.32, timer tick 0.032 us matching 100 % of
+  samples, launch_timer_trustworthy=True, zero foreign processes, ~0.5 GB/150 GB
+  used.  Preflight flagged NOTHING (its own doubt rule is floor > 8x launch,
+  preflight.py:934-935; 36.91/10.32 = 3.58x).
+- The B4 gate (bench/__init__.py calibration_gate) refused anyway: calibration_status
+  applied config.FLOOR_US_MAX=20.0 (and ratio 3.0x) -> "contended".  All 7 gated
+  benches (f01/f03/f04f05/f06/f08f09/f10/f11) exited at the gate.  bench_layer.py
+  had NO calibration_gate call (only B.banner, line 752) so it ran, rewrote a partial
+  layer_configurations.json (crashed mid-pass1 on Triton MLIR
+  TritonGPURemoveLayoutConversions errors in kernels/moe_gateup.py:641/506,
+  moe_down_merge.py:506), and its O/P/Q/R_f11ab configs fail correctness (relerr
+  ~7e-2, expected -> excluded).
+- WHY THE BARS WERE WRONG: the 20 us/3x bars were 4060-derived.  Every CLEAN H200
+  preflight in history measured floor 36.9-42.2 us with tick match 1.0 and no tenants
+  (96a66b2: 5.73/0.18 but different box; 0f3a163: 37.67; 5718d34: 42.19; c5b8a22:
+  39.87 on THIS box; 1153a07: 40.55 but tick 0.03 + 51 GB used = genuinely
+  contended).  The real contention signal was ALWAYS the tick match fraction (0.03
+  contended vs 1.0 clean), never the floor.  The config docstring's claim that a
+  ~40 us floor "is not physical on an idle H200" was the misdiagnosis that produced
+  the bars.
+
+### Fix (all committed-ready, verified locally on the returned preflight)
+- config.py: FLOOR_US_MAX 20.0 -> 50.0, FLOOR_LAUNCH_RATIO_MAX 3.0 -> 8.0 (aligns
+  with preflight's own 8x rule); docstring corrected with the H200 evidence.
+- bench/__init__.py: hoisted the config import; the low-tick "finer timer" branch's
+  hardcoded floor<15.0 sanity check now uses config's bar; the floor-exceeded "why"
+  text no longer claims "a clean floor is single-digit microseconds" (false on H200).
+  Fallback bars 50/8 when config import fails.
+- bench/bench_layer.py: added B.calibration_gate(args) after B.banner(env) (was the
+  only bench without the gate -- it must not spend 25 minutes writing a partial
+  layer_configurations.json on a machine the suite refuses).
+- tools/verify_campaign_v2.py: FLOOR_US_MAX 20.0 -> 50.0 (its own copy; sync note
+  added).  f11_publish.py: same fallback fix + B4 docstring correction.
+- glm52/make_report_h200.py: the "CALIBRATION CONTRADICTS ITSELF" note no longer
+  claims calibration_status() never applied the floor bar / that 3.0/20.0 bars fail
+  on H200 floors (both now false).
+- Local verification (this machine, against the RETURNED preflight):
+    calibration_status()        -> trusted=True (floor 36.91 us, tick 1.0)
+    config.calibration_health() -> launch_trusted=True tick_trusted=True contended=False
+    verify_campaign_v2.py       -> calibration PASS (floor 36.91/launch 10.32/tick 0.032);
+                                   3 remaining FAILs are stale-data artifacts (f11 missing,
+                                   84/84 sequential, 19 above ceiling) -- what the re-run
+                                   fixes.  Driver tick logic (launch_timer_trustworthy)
+                                   also trusts this preflight.  All edited files compile.
+
+### Next (H200 re-run, round 3)
+1. Commit this fix; sync to the H200 box (git pull); run
+   `python3 run_h200.py --gpu N --force-rerun` on an IDLE H200 -- the new preflight
+   will again measure floor ~37-42 us and the gate now ACCEPTS it; f01..f10 top-level
+   jsons are stale Aug-4 sequential data and the device-fenced resume would skip
+   them without --force-rerun.
+2. Copy back results/h200/ + preflight + log/run_h200/.
+3. `tools/verify_campaign_v2.py` (expect 0 FAIL), regenerate report_glm52_h200/.

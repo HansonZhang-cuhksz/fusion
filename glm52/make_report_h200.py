@@ -1062,12 +1062,13 @@ def f11_run_notes(d: dict) -> list[str]:
         f"trusted={tcal.get('trusted')}, reason={tcal.get('reason')!r}, while env.calib_health "
         f"on the identical inputs says launch_trusted={cal.get('launch_trusted')}, "
         f"timer_tick_trusted={cal.get('timer_tick_trusted')}, contended={cal.get('contended')} "
-        f"-- \"{(cal.get('reasons') or ['?'])[0]}\". glm52_h200/bench/__init__.py's "
-        f"calibration_status() only inspects the floor inside its tick-mismatch branch and "
-        f"timer_tick_match_frac is 1.0 here, so the floor bar was never applied; "
-        f"glm52_h200/config.py's own FLOOR_LAUNCH_RATIO_MAX=3.0 / FLOOR_US_MAX=20.0 both "
-        f"fail on these numbers (ratio "
-        f"{(env.get('harness_floor_us') or 0) / (env.get('launch_us') or 1):.2f})",
+        f"-- \"{(cal.get('reasons') or ['?'])[0]}\". NOTE (2026-08-07): a "
+        f"{env.get('harness_floor_us'):.1f} us harness floor is NORMAL for an idle H200 "
+        f"(37-42 us on every clean preflight; ratio here "
+        f"{(env.get('harness_floor_us') or 0) / (env.get('launch_us') or 1):.2f}x), so the "
+        f"old FLOOR_LAUNCH_RATIO_MAX=3.0 / FLOOR_US_MAX=20.0 bars falsely called it "
+        f"contended; config now owns 8.0 / 50.0 and the real contention detector is "
+        f"timer_tick_match_frac (<0.9 = a tenant)",
 
         "GPU STATE: the driver pinned an idle card (f11_rerun_summary.json gpu.pinned=true, "
         "reason \"idlest of 8: 0% utilization, 0.0 GB used, 0 other compute process(es)\", "

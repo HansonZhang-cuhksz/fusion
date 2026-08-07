@@ -19,7 +19,10 @@ import json
 import sys
 from pathlib import Path
 
-FLOOR_US_MAX = 20.0
+#: Absolute harness-floor sanity bar -- same value as glm52_h200/config.py:FLOOR_US_MAX,
+#: which owns the number (idle H200 floors are 37-42 us; 50 is deliberately generous and
+#: the preflight's tick match is the real co-tenant detector). Keep them in sync.
+FLOOR_US_MAX = 50.0
 TICK_MATCH_MIN = 0.9
 #: The 12 (family, variant) groups that make up the 84-cell layer-level report.
 EXPECTED_GROUPS = [

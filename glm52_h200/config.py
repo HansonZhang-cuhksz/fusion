@@ -251,14 +251,22 @@ def preflight_status() -> str:
 #
 # The 2026-08-03 H200 preflight is exactly that case. It reports launch_us 8.89 but
 # harness_floor_us 40.55, and a timer tick of 0.256 us that matched only 3 % of samples when
-# the detector needs 98 % to call a tick. Neither is physical on an idle H200; both are what
-# you get next to a co-tenant, and `device.mem_free_bytes` confirms one (98.8 of 150 GB free,
-# so ~51 GB was already somebody else's). So we keep the numbers -- deleting a measurement is
-# its own kind of lie -- and mark them, so a bench can say "tick-limited: unknown" instead of
-# flagging (or not flagging) cells against a tick nobody actually measured.
+# the detector needs 98 % to call a tick. Both are what you get next to a co-tenant, and
+# `device.mem_free_bytes` confirms one (98.8 of 150 GB free, so ~51 GB was already somebody
+# else's). So we keep the numbers -- deleting a measurement is its own kind of lie -- and
+# mark them, so a bench can say "tick-limited: unknown" instead of flagging (or not flagging)
+# cells against a tick nobody actually measured.
+#
+# IMPORTANT -- what a high harness floor does NOT mean, learned the hard way (2026-08-07):
+# the 2026-08-03 diagnosis blamed the 40.55 us floor itself, but every CLEAN H200 preflight
+# since (36.9-42.2 us, tick match 1.0, no tenants) measures the same ~40 us floor. On H200
+# the harness floor is genuinely ~4x the launch cost (fixed event-pair + first-kernel
+# pipeline), so the absolute/ratio floor bars must be machine-generous. The signal that
+# actually separates clean from contended is the TICK MATCH fraction (1.0 clean, 0.03-0.18
+# contended), not the floor. The bars below are sanity bounds, not co-tenant detectors.
 TICK_MATCH_MIN = 0.98  # preflight's own bar for declaring a tick found
-FLOOR_LAUNCH_RATIO_MAX = 3.0  # a harness floor is a launch plus sync, not 5x a launch
-FLOOR_US_MAX = 20.0  # absolute sanity bound; a clean floor is single-digit us
+FLOOR_LAUNCH_RATIO_MAX = 8.0  # floor/launch: 4060 ~0.8x, idle H200 3.6-4.7x, co-tenant >>8x
+FLOOR_US_MAX = 50.0  # absolute sanity bound: idle H200 floors are 37-42 us, 4060 is 2.8 us
 # Both must be exceeded before memory occupancy counts as contention: a display server or a
 # CUDA context holds a gigabyte on any desktop GPU, which is 13 % of an 8 GB laptop card and
 # means nothing. 4 GiB *and* 5 % is a tenant. (A small-but-busy co-tenant is caught by the

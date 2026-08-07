@@ -750,6 +750,7 @@ def main() -> None:
 
     env = C.env()
     B.banner(env)
+    B.calibration_gate(args)
     B.exact_fp32_matmul()
     B.check_preflight_device(env)
     regimes = B.resolve_regimes(C, args.regimes)
