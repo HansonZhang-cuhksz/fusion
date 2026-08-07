@@ -80,8 +80,14 @@ DEFAULT_RESULTS = REPO / "results" / "h200"
 DEFAULT_LOGDIR = REPO / "log" / "run_h200"
 
 # The H200 has 143 GB, so unlike the 4060 port every regime and every fusion is in scope.
+# The bs2/4/8/16 ladder resolves the bs1 -> bs32 fusion-gain cliff; those four were measured
+# by the `run_bs_extra_h200.py` overlay rather than the original campaign.
 KNOWN_REGIMES = [
     "decode_bs1",
+    "decode_bs2",
+    "decode_bs4",
+    "decode_bs8",
+    "decode_bs16",
     "decode_bs32",
     "decode_bs256",
     "decode_bs512",
@@ -89,9 +95,13 @@ KNOWN_REGIMES = [
     "prefill_t2048",
     "prefill_t8192",
 ]
-# Short column headers -- seven full regime names do not fit in a terminal row.
+# Short column headers -- eleven full regime names do not fit in a terminal row.
 REGIME_ABBR = {
     "decode_bs1": "d1",
+    "decode_bs2": "d2",
+    "decode_bs4": "d4",
+    "decode_bs8": "d8",
+    "decode_bs16": "d16",
     "decode_bs32": "d32",
     "decode_bs256": "d256",
     "decode_bs512": "d512",

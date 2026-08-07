@@ -775,12 +775,14 @@ def model(regime: C.Regime) -> list[Traffic]:
     return out
 
 
-# The seven regimes the H200 suite reports. Named rather than filtered by `T`, because the
-# H200 adds decode_bs512/bs1024 (which the 4060 could not hold) and the model must not
-# silently drop a regime if `config.py` renumbers the sweep. Unknown names are skipped and
-# an empty selection degrades to every regime config defines, so this never returns [].
+# The regimes the H200 suite reports. Named rather than filtered by `T`, because the
+# H200 adds the bs2/4/8/16 ladder and decode_bs512/bs1024 (which the 4060 could not hold)
+# and the model must not silently drop a regime if `config.py` renumbers the sweep.
+# Unknown names are skipped and an empty selection degrades to every regime config
+# defines, so this never returns [].
 HEADLINE_REGIMES = (
-    "decode_bs1", "decode_bs32", "decode_bs256", "decode_bs512", "decode_bs1024",
+    "decode_bs1", "decode_bs2", "decode_bs4", "decode_bs8", "decode_bs16",
+    "decode_bs32", "decode_bs256", "decode_bs512", "decode_bs1024",
     "prefill_t2048", "prefill_t8192",
 )
 

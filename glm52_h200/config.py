@@ -150,16 +150,19 @@ class Regime:
         return self.oproj_k == OPROJ_K_PREFILL
 
 
-# The seven regimes of the H200 study. Unlike `glm52/config.py` -- which carried a wider
-# ladder that each bench then filtered down to five -- these seven ARE the study set, so a
+# The regimes of the H200 study. Unlike `glm52/config.py` -- which carried a wider
+# ladder that each bench then filtered down to five -- these ARE the study set, so a
 # bench should iterate `ALL_REGIMES` directly rather than re-filtering by `T`.
 # bs512/bs1024 are new: they are the batch sizes at which the routed-expert GEMMs stop being
 # skinny (moe_rows = 4096 / 8192 against MOE_INTERMEDIATE 2048), i.e. where a decode kernel
 # starts to behave like a prefill one. That transition is only measurable on a device whose
 # memory holds all 256 experts, which is why it appears for the first time here.
+# bs2/bs4/bs8/bs16 were added after the campaign to resolve the bs1 -> bs32 cliff in the
+# whole-layer fusion gains (launch-latency-bound at bs1, compute-bound by bs32): they were
+# measured by the dedicated `run_bs_extra_h200.py` overlay, never by a full re-campaign.
 DECODE_REGIMES = [
     Regime(f"decode_bs{t}", t, OPROJ_K_DECODE, kv_len=4096)
-    for t in (1, 32, 256, 512, 1024)
+    for t in (1, 2, 4, 8, 16, 32, 256, 512, 1024)
 ]
 PREFILL_REGIMES = [
     Regime(f"prefill_t{t}", t, OPROJ_K_PREFILL, kv_len=t) for t in (2048, 8192)

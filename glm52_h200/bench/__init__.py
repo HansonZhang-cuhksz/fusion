@@ -2208,15 +2208,22 @@ def kernel_stats(run: Callable[[], object], jit_fn=None) -> dict:
 # ======================================================================================
 # CLI + regimes
 # ======================================================================================
-#: The seven regimes this study reports.  H200 has 143 GB, so unlike the 4060 port none of
-#: them is dropped for capacity and the whole layer fits.
+#: The regimes this study reports.  H200 has 143 GB, so unlike the 4060 port none of
+#: them is dropped for capacity and the whole layer fits.  The eleven regimes are
+#: `config.py`'s sweep; the intermediate bs ladder resolves the bs1 -> bs32 fusion-gain
+#: cliff that the campaign's sparse decode ladder could only bound.
 REGIME_NAMES = [
-    "decode_bs1", "decode_bs32", "decode_bs256", "decode_bs512", "decode_bs1024",
+    "decode_bs1", "decode_bs2", "decode_bs4", "decode_bs8", "decode_bs16",
+    "decode_bs32", "decode_bs256", "decode_bs512", "decode_bs1024",
     "prefill_t2048", "prefill_t8192",
 ]
 
 _REGIME_SHAPE = {
     "decode_bs1": (1, "decode", 4096),
+    "decode_bs2": (2, "decode", 4096),
+    "decode_bs4": (4, "decode", 4096),
+    "decode_bs8": (8, "decode", 4096),
+    "decode_bs16": (16, "decode", 4096),
     "decode_bs32": (32, "decode", 4096),
     "decode_bs256": (256, "decode", 4096),
     "decode_bs512": (512, "decode", 4096),
@@ -2227,7 +2234,7 @@ _REGIME_SHAPE = {
 
 
 def all_regimes(C) -> list:
-    """The seven study regimes as `config.Regime` objects.
+    """The study regimes as `config.Regime` objects.
 
     Prefers the objects `config` already defines (so any future field it grows comes along);
     synthesises the rest from `config`'s own constants.  It never invents a shape: `T` and

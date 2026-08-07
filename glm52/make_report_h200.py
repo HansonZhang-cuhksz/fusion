@@ -32,7 +32,8 @@ RES = ROOT / "results" / "h200"
 OUT = ROOT / "report_glm52_h200"
 C500 = ROOT / "report_glm52_c500"
 
-REGIMES = ["decode_bs1", "decode_bs32", "decode_bs256", "decode_bs512", "decode_bs1024",
+REGIMES = ["decode_bs1", "decode_bs2", "decode_bs4", "decode_bs8", "decode_bs16",
+           "decode_bs32", "decode_bs256", "decode_bs512", "decode_bs1024",
            "prefill_t2048", "prefill_t8192"]
 
 FIELDS = ["fusion", "variant", "replicates", "coda_correspondence", "fused_ms",

@@ -211,8 +211,10 @@ Verbatim from `zai-org/GLM-5.2` `config.json` (`glm_moe_dsa`):
 | layers | 78, first 3 dense |
 | o_proj K | **16384** prefill (non-absorbed MLA, 64 heads × 256) / **32768** decode (absorbed, 64 × 512) |
 
-**Regimes:** `decode_bs1`, `decode_bs32`, `decode_bs256`, `decode_bs512`, `decode_bs1024`,
-`prefill_t2048`, `prefill_t8192`.
+**Regimes:** `decode_bs1`, `decode_bs2`, `decode_bs4`, `decode_bs8`, `decode_bs16`,
+`decode_bs32`, `decode_bs256`, `decode_bs512`, `decode_bs1024`, `prefill_t2048`,
+`prefill_t8192`. The `bs2/4/8/16` ladder was added after the campaign by
+`run_bs_extra_h200.py` to resolve the `bs1 → bs32` cliff in whole-layer fusion gains.
 
 ---
 

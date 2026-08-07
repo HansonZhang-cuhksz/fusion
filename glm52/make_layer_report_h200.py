@@ -111,7 +111,8 @@ NAMES = {
     "R_f1_f10_f11ab": "#1 + #10 + #11a + #11b",
 }
 
-ORDER = ["decode_bs1", "decode_bs32", "decode_bs256", "decode_bs512", "decode_bs1024",
+ORDER = ["decode_bs1", "decode_bs2", "decode_bs4", "decode_bs8", "decode_bs16",
+         "decode_bs32", "decode_bs256", "decode_bs512", "decode_bs1024",
          "prefill_t2048", "prefill_t8192"]
 
 BASE = "A_all_unfused"
