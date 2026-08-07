@@ -851,9 +851,9 @@ def main() -> None:
                 "head": head,
                 "head_ms": tf.p50_ms,
                 "all_unfused_ms": tu.p50_ms,
-                "paired_speedup_p50": pm.ratio_p50,
-                "paired_speedup_trimmed": pm.ratio_trimmed,
-                "pair_meta": pm.as_dict(),
+                "paired_speedup_p50": pm.get("paired_speedup_p50"),
+                "paired_speedup_trimmed": pm.get("paired_speedup_trimmed_mean"),
+                "pair_meta": pm,
                 "tick": B.tick_report(tf.p50_ms, tu.p50_ms),
             }
             print(f"      paired head-vs-baseline: "

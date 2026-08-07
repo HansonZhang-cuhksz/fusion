@@ -1362,7 +1362,10 @@ def speedup_row(
     Prefer `paired_row()`.  This form is kept for per-kernel breakdowns and for tuning
     tables, where the two numbers were never meant to be divided under drift.  Passing
     `pair=` upgrades the row: `speedup` then becomes the PAIRED median and the sequential
-    ratio is retained as `speedup_sequential` for comparison.
+    ratio is retained as `speedup_sequential` for comparison.  `pair` is either a
+    `PairTiming` (from `common.bench_pair`) or the canonical meta dict returned by the
+    `glm52_h200.bench.bench_pair` wrapper; the empty dict is the benches' documented
+    "no pair" default and leaves the row sequential.
     """
     row = {
         "regime": regime,
@@ -1373,6 +1376,8 @@ def speedup_row(
         "unfused_p10_p90": [unfused.p10_ms, unfused.p90_ms],
         "paired": False,
     }
+    if pair is not None and isinstance(pair, dict) and not pair:
+        pair = None  # the benches' no-pair default `{}`: keep the row sequential
     if pair is not None:
         row["speedup_sequential"] = row["speedup"]
         row.update(_paired_fields(pair))
@@ -1381,21 +1386,50 @@ def speedup_row(
     return row
 
 
-def _paired_fields(p: PairTiming) -> dict:
+def _pfield(p, key, aliases=(), default=None):
+    """Read one paired-statistic field from a PairTiming or a canonical pair-meta dict.
+
+    The benches call `B.bench_pair` (the `glm52_h200.bench` wrapper), which normalises
+    `common.bench_pair`'s PairTiming onto a plain dict whose canonical keys are
+    `paired_speedup_p50` / `paired_speedup_trimmed_mean` (with the raw `ratio_*` names
+    harvested alongside).  `_paired_fields` must read BOTH spellings; the dict form is
+    what actually arrives from every bench, and treating it as a PairTiming was the
+    whole-campaign crash on the H200.
+    """
+    if isinstance(p, dict):
+        if p.get(key) is not None:
+            return p[key]
+        for a in aliases:
+            if p.get(a) is not None:
+                return p[a]
+        return default
+    return getattr(p, key, default)
+
+
+def _paired_fields(p) -> dict:
+    p10_p90 = _pfield(p, "paired_speedup_p10_p90")
+    if p10_p90 is None:
+        p10_p90 = [_pfield(p, "ratio_p10", ("paired_speedup_p10",)),
+                   _pfield(p, "ratio_p90", ("paired_speedup_p90",))]
+    machine = _pfield(p, "machine", default={}) or {}
     return {
-        "speedup": p.ratio_p50,
-        "speedup_p10_p90": [p.ratio_p10, p.ratio_p90],
-        "speedup_trimmed": p.ratio_trimmed,
-        "speedup_of_medians": p.ratio_of_medians,
-        "n_pairs": p.n,
-        "frac_fused_faster": p.frac_fused_faster,
-        "order_gap_frac": p.order_gap_frac,
-        "drift_frac": [p.drift_frac_fused, p.drift_frac_unfused],
-        "ratio_halves": [p.ratio_p50_first_half, p.ratio_p50_second_half],
-        "tick": p.tick,
+        "speedup": _pfield(p, "ratio_p50", ("paired_speedup_p50",)),
+        "speedup_p10_p90": p10_p90,
+        "speedup_trimmed": _pfield(p, "ratio_trimmed",
+                                   ("paired_speedup_trimmed_mean",)),
+        "speedup_of_medians": _pfield(p, "ratio_of_medians",
+                                      ("unpaired_speedup_of_medians",)),
+        "n_pairs": _pfield(p, "n", ("n_pairs",)),
+        "frac_fused_faster": _pfield(p, "frac_fused_faster"),
+        "order_gap_frac": _pfield(p, "order_gap_frac"),
+        "drift_frac": [_pfield(p, "drift_frac_fused"),
+                       _pfield(p, "drift_frac_unfused")],
+        "ratio_halves": [_pfield(p, "ratio_p50_first_half"),
+                         _pfield(p, "ratio_p50_second_half")],
+        "tick": _pfield(p, "tick", default={}),
         # One boolean the report can filter on, with the full comparison kept alongside.
-        "machine_suspect": bool((p.machine or {}).get("compare", {}).get("suspect")),
-        "machine": p.machine,
+        "machine_suspect": bool((machine or {}).get("compare", {}).get("suspect")),
+        "machine": machine,
         "paired": True,
     }
 

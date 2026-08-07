@@ -831,9 +831,9 @@ def run_regime(regime, w2, gate_w, quick: bool, units: list[str],
             extra["ceiling"] = _trow.get("roofline_ceiling")
             extra["ceiling_with_launch"] = _trow.get("roofline_ceiling_with_launch")
             extra["traffic_ratio_model"] = _trow.get("traffic_ratio")
-            extra["paired_speedup"] = pairs[v].ratio_p50
-            extra["paired_speedup_trimmed"] = pairs[v].ratio_trimmed
-            extra["pair_meta"] = pairs[v].as_dict()
+            extra["paired_speedup"] = pairs[v].get("paired_speedup_p50")
+            extra["paired_speedup_trimmed"] = pairs[v].get("paired_speedup_trimmed_mean")
+            extra["pair_meta"] = pairs[v]
             extra["tick"] = B.tick_report(tf[v].p50_ms, tu[v].p50_ms)
             if v.startswith("f9"):
                 extra["speedup_vs_2kernel"] = t_u9b.p50_ms / tf[v].p50_ms

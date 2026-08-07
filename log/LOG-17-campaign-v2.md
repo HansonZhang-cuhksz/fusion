@@ -145,3 +145,68 @@ Run `python3 run_h200.py --gpu N` on an idle H200 (preflight runs first, benches
 on it, cells come out paired + ceiling-gated), copy back `results/h200/` + preflight
 + `log/run_h200/`, run `tools/verify_campaign_v2.py` (expect 0 FAIL), then regenerate
 `report_glm52_h200/`.
+
+---
+
+## 2026-08-07 H200 run returned: f11 crashed (0/7 regimes) -> full re-run required
+
+### What came back (commit 80d1fe4 "h200 done", 2026-08-07 10:07:14 +0800)
+- `log/run_h200/f11.log`: NEW harness ran on H200 (GPU-3aa1, CUDA_VISIBLE_DEVICES=7);
+  B4 calibration gate PASSED at start (live floor 12.75 us, launch 14.57 us); SQ_MODE
+  study ran; then EVERY regime's final timing crashed:
+  `AttributeError: 'dict' object has no attribute 'ratio_p50'` at common.py:1386
+  (`_paired_fields`).  `specialization_study` PassManager failures were recorded but
+  not fatal.  Result: f11_lazy_prenorm.json complete=False, 0/7 regimes.
+- `summary.json`: preflight ts 2026-08-06 19:01:29, floor **-5.58 us (negative, invalid)**
+  -- the preflight itself ran on a contended machine (f11.log also shows 4x
+  SwPowerCap "machine moved" events mid-run).  Device H200 GPU-3aa1, tick 0.032 us.
+  84 cells but ALL 84 paired=False SEQUENTIAL + 19 ABOVE CEILING, missing_families
+  ['f11'], quarantined=True (driver quarantined the foreign Aug-4 `_ckpt` dirs:
+  recorded_device=None vs present NVIDIA H200).
+- Only f11 has `started: 2026-08-06 19:01:40` in the new summary; f01..f10 carry
+  `started: None` -> their cells come from the OLD Aug-4 top-level jsons (sequential,
+  not the paired protocol).  So the returned campaign is NOT publishable and contains
+  ZERO paired cells; verify_campaign_v2.py would fail it.
+
+### Root cause (local repro on 4060 reproduced exactly)
+There are TWO bench_pair implementations:
+- `glm52_h200/common.py:672` `bench_pair` -> returns `PairTiming` dataclass.
+- `glm52_h200/bench/__init__.py:1743` `B.bench_pair(fused_fns, unfused_fns, warmup,
+  rep, label)` is a WRAPPER: calls common.bench_pair (or `_local_bench_pair`
+  fallback), normalises to `(Timing, Timing, meta_DICT)` via `_normalise_pair` /
+  `_canonicalise_pair_meta`, canonical keys `paired_speedup_p50`,
+  `paired_speedup_trimmed_mean`, etc.  Every bench gets the meta DICT back.
+
+The paired-upgrade edits (commit e155f94) had changed bench `.get("paired_speedup_p50")`
+calls into `getattr(pair, "ratio_p50")` and passed `pair=` (the meta dict) down to
+`speedup_row` -> `_paired_fields`, which did `p.ratio_p50` on a dict -> AttributeError.
+(My earlier "f08f09 pairs[v].get fix" session had misread the wrapper as returning
+PairTiming; the original `.get(...)` on the dict was CORRECT.)
+
+### Fix (uncommitted in working tree, all verified locally on 4060)
+- `common.py`: rewrote `_paired_fields` to accept EITHER a PairTiming or the canonical
+  meta dict (new `_pfield(p, key, aliases, default)` helper reads
+  paired_speedup_p50 / ratio_p50 / unpaired_speedup_of_medians /
+  paired_speedup_p10_p90 / paired_speedup_trimmed_mean).  `machine` default {}.
+- `common.py speedup_row`: `if pair is not None and isinstance(pair, dict) and not
+  pair: pair = None` -> documented "no pair" default {} yields a sequential row.
+- Reverted ALL benches (f01, f03, f04f05, f06, f08f09, f10, f11, layer) back to
+  dict `.get("paired_speedup_p50")` / `.get("paired_speedup_trimmed_mean")` and
+  `pair_meta: pair` (dict serialises as-is).  Removed the f11 debug print.
+- Verified: f11 quick repro -> OK 1/1 regimes, row paired=True, speedup == paired
+  median, pair_meta impl=common.bench_pair, n_pairs=12.  f01 quick repro -> paired
+  1.0064x + vendor 1.0219x rows.  All 8 bench files + common.py compile.
+- NOTE: my first local repro used the default results dir and overwrote
+  results/h200/f11_lazy_prenorm.json -> restored from HEAD; subsequent repros used
+  GLM52_H200_RESULTS_DIR=/tmp.  Working tree now: only the 9 source files modified.
+
+### Next (H200 re-run)
+1. Commit the fix, sync to H200 box (git pull), `python3 run_h200.py --gpu N` on an
+   IDLE H200 (Aug-6 preflight floor was negative/contended; SwPowerCap throttling
+   during f11).  The driver will quarantine the old foreign ckpts again; f01..f10
+   MUST be re-measured (their top-level jsons are pre-paired-protocol Aug-4 data and
+   the driver's device-fenced resume will skip them as "already exists on this
+   device") -- use run_h200.py's --force-rerun flag so every cell is fresh + paired:
+   `python3 run_h200.py --gpu N --force-rerun`.
+2. Copy back results/h200/ + preflight + log/run_h200/.
+3. `tools/verify_campaign_v2.py` (expect 0 FAIL), regenerate report_glm52_h200/.
