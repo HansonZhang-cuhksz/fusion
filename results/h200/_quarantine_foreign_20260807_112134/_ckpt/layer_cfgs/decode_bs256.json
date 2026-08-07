@@ -1,0 +1,162 @@
+{
+  "oproj_gemm": {
+    "BLOCK_M": 128,
+    "BLOCK_N": 128,
+    "BLOCK_K": 128,
+    "GROUP_M": 4,
+    "num_warps": 4,
+    "num_stages": 3
+  },
+  "oproj_gemm_fused": {
+    "BLOCK_M": 128,
+    "BLOCK_N": 128,
+    "BLOCK_K": 128,
+    "GROUP_M": 4,
+    "num_warps": 8,
+    "num_stages": 3
+  },
+  "oproj_epi": {
+    "BLOCK": 512,
+    "num_warps": 1,
+    "num_stages": 2
+  },
+  "oproj_epi_fused": {
+    "BLOCK": 512,
+    "num_warps": 1,
+    "num_stages": 2
+  },
+  "add": {
+    "ROWS": 4,
+    "BLOCK_N": 2048,
+    "num_warps": 16,
+    "num_stages": 1,
+    "grid_cap": null,
+    "eps": 1e-05
+  },
+  "norm": {
+    "ROWS": 8,
+    "BLOCK_N": 256,
+    "num_warps": 8,
+    "num_stages": 3,
+    "grid_cap": null,
+    "eps": 1e-05
+  },
+  "addnorm": {
+    "ROWS": 2,
+    "BLOCK_N": 2048,
+    "num_warps": 8,
+    "num_stages": 2,
+    "grid_cap": null,
+    "eps": 1e-05
+  },
+  "router": {
+    "BLOCK_M": 128,
+    "BLOCK_K": 64,
+    "BLOCK_E": 64,
+    "num_warps": 8,
+    "num_stages": 4
+  },
+  "topk": {
+    "BLOCK_M": 8,
+    "BLOCK_K": 32,
+    "BLOCK_E": 256,
+    "num_warps": 8,
+    "num_stages": 3
+  },
+  "f5": {
+    "BLOCK_M": 16,
+    "BLOCK_K": 128,
+    "BLOCK_E": 64,
+    "num_warps": 8,
+    "num_stages": 3
+  },
+  "f4": {
+    "BLOCK_M": 16,
+    "BLOCK_K": 128,
+    "BLOCK_E": 64,
+    "num_warps": 8,
+    "num_stages": 3
+  },
+  "w13": {
+    "BLOCK_M": 32,
+    "BLOCK_N": 256,
+    "BLOCK_K": 128,
+    "GROUP_M": 1,
+    "num_warps": 8,
+    "num_stages": 3
+  },
+  "w13_fused": {
+    "BLOCK_M": 32,
+    "BLOCK_N": 128,
+    "BLOCK_K": 128,
+    "GROUP_M": 1,
+    "num_warps": 8,
+    "num_stages": 3
+  },
+  "act": {
+    "BLOCK_M": 4,
+    "BLOCK_N": 1024,
+    "num_warps": 8,
+    "num_stages": 2
+  },
+  "w2": {
+    "BLOCK_M": 16,
+    "BLOCK_N": 128,
+    "BLOCK_K": 128,
+    "GROUP_M": 1,
+    "num_warps": 4,
+    "num_stages": 2
+  },
+  "w2_fused8": {
+    "BLOCK_M": 16,
+    "BLOCK_N": 128,
+    "BLOCK_K": 128,
+    "GROUP_M": 1,
+    "num_warps": 8,
+    "num_stages": 2
+  },
+  "w2_fused9": {
+    "BLOCK_M": 16,
+    "BLOCK_N": 128,
+    "BLOCK_K": 128,
+    "GROUP_M": 1,
+    "num_warps": 8,
+    "num_stages": 2
+  },
+  "moe_sum": {
+    "BLOCK_M": 4,
+    "BLOCK_DIM": 512,
+    "num_warps": 8,
+    "num_stages": 2
+  },
+  "resadd2": {
+    "BLOCK_M": 4,
+    "BLOCK_N": 128,
+    "num_warps": 4,
+    "num_stages": 2
+  },
+  "router_prenorm": {
+    "BLOCK_M": 64,
+    "BLOCK_N": 64,
+    "BLOCK_K": 128,
+    "GROUP_M": 8,
+    "num_warps": 8,
+    "num_stages": 3
+  },
+  "w13_prenorm": {
+    "BLOCK_M": 64,
+    "BLOCK_N": 256,
+    "BLOCK_K": 128,
+    "GROUP_M": 8,
+    "num_warps": 8,
+    "num_stages": 3
+  },
+  "sq_router": 0,
+  "sq_moe": 0,
+  "device": "NVIDIA H200",
+  "device_uuid": "b2318e71-edbf-aa1b-dcf3-3cc3e6ea7db0",
+  "torch": "2.11.0+cu130",
+  "triton": "3.6.0",
+  "saved_at": "2026-08-07 10:37:37",
+  "_ckpt_schema": 1
+}
