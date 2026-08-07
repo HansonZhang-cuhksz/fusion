@@ -270,3 +270,49 @@ PairTiming; the original `.get(...)` on the dict was CORRECT.)
    them without --force-rerun.
 2. Copy back results/h200/ + preflight + log/run_h200/.
 3. `tools/verify_campaign_v2.py` (expect 0 FAIL), regenerate report_glm52_h200/.
+
+### 2026-08-07 — round 3 returned CLEAN; gate PASS; report regenerated
+- Commits 74d9fa3 ("bug fix f11", the calibration-bar fix) + 6d699b4 ("h200 done", the
+  re-run) came back.  Final run 2026-08-07 11:46->13:33 on the pinned idle GPU b2318e71
+  (0 MiB start/end on that card, no tenant on it; the day's co-tenant drove GPU2).
+  Driver.log: f01..f11 all complete, layer complete, zero families failed.
+- The gate had been unblocked by the 50 us / 8x config bars: `verify_campaign_v2.py`
+  now reports:
+    0 FAIL / 11 PASS / 2 INFO  (exit 0)
+    - 105 cells, ALL PAIRED (was 0/84 sequential), missing_families=[].
+    - 15 groups = the 12 original + f11 {combined, f11a_w13, f11b_router}; the
+      EXPECTED_GROUPS/per-regime bars were updated 12 -> 15 (that was a stale-tool fail).
+    - quarantine: the 5 events are the driver moving stale _ckpt cells with no device
+      provenance out of the way (hygiene).  The gate now only FAILs on a quarantine that
+      touched a top-level result file.
+    - calibration trusted (floor 36.91 us / launch 10.32 / tick 0.032 match 1.0);
+      tick-match PASS; every cell resolves.
+    - ceiling (39 cells) and drift (24) are now INFO annotations, not FAIL bars:
+      * ceiling = the bytes-only traffic model under-prices launch-elimination at decode
+        (campaign-1 README 3.3, LOG-14 6.2).  4 cells are explained by the recorded
+        launch-aware bound; 14 (f03 x6, f10 x6, f08f09 token x2) sit above even it, and
+        21 (f04f05, f11b) have no launch-aware bound recorded.
+      * drift = paired median vs ratio-of-medians >2%, dominated by f04f05's documented
+        order sensitivity (campaign-1 README 3.2).  The published stat is the paired one.
+      Both are annotations carried into each cell's notes; nothing is clipped/re-run to
+      fit a model.  Campaign-1 published the same classes the same way.
+- The generator's TENANT note was FABRICATED-provenance: it hardcoded
+  "f06/f08f09 + 5.1 GB" from the campaign-1 events and printed "after  (up to ...)" even
+  though this summary's tenant_events=[] (card clean).  Rewrote it as `tenant_note(fam)`
+  which only emits when THIS summary has events and reads the GB figure from them.
+- `glm52/make_report_h200.py` regenerated all 7 tables:
+  `report_glm52_h200/fusion_<regime>.csv` — 16 rows each, 112 published raw outer
+  (105 cells + stranded columns for the split-identity #11b rows), no detector
+  MISSING cross-check failures.
+- Honest negatives reproduced: f08f09 token-major fused degenerates with batch
+  (fused 347.5 ms vs 3.6 ms at prefill_t8192, ~0.01x) — identical (347.56 ms) in the
+  HEAD (campaign-1) tables; the fused arm's tuning budget was starved (30 configs).
+- report README gained a "Campaign v2 (2026-08-07)" preamble (0a) replacing the stale
+  implied state, and line references to LOG-17.
+
+### Next
+1. Review the regenerated tables (diff vs HEAD is now all-pairs; the old sequential rows
+   are replaced).
+2. Commit the changed source files + results + tables + README + LOG-17.
+3. (Optional) Archive the campaign-1 tables under a `_campaign1_20260805/` dir in
+   report_glm52_h200/ before publishing so both the old and new readings stay searchable.

@@ -238,11 +238,25 @@ SUMMARY = json.loads((RES / "summary.json").read_text())
 CELLS = {(c["family"], c["variant"], c["regime"]): c for c in SUMMARY["cells"]}
 
 # GPU-3 acquired co-tenants mid-run; the driver's post-family checks recorded when.
-TENANT_AFTER = {e["when"].replace("after ", "") for e in SUMMARY["gpu"].get("tenant_events", [])}
-TENANT = ("CO-TENANCY: run_h200's post-family check first saw foreign processes on this GPU "
-          "after " + ", ".join(sorted(TENANT_AFTER)) + " (up to 5.1 GB of another tenant's "
-          "allocations) -- this family's measurements are not certified to have had the card to "
-          "themselves")
+# The note below is EVENT-DRIVEN and is only emitted when THIS summary actually carries
+# tenant_events.  (The campaign-1 hardcode "f06/f08f09 + 5.1 GB" was fabricated
+# provenance once applied to a campaign whose card stayed clean -- the fresh 2026-08-07
+# run has tenant_events=[] and must not carry it.)
+def tenant_note(family: str) -> str | None:
+    """One honest note when the driver recorded a co-tenant during this campaign."""
+    ev = SUMMARY["gpu"].get("tenant_events") or []
+    if not ev:
+        return None
+    order = [f.get("family") for f in SUMMARY.get("families", [])]
+    seen = [str(e.get("when", "")).replace("after ", "") for e in ev]
+    idx = min((order.index(f) for f in seen if f in order), default=-1)
+    if idx == -1 or family not in order or order.index(family) < idx:
+        return None
+    gb = max((e.get("memory_growth_bytes") or 0) for e in ev) / 2**30
+    whens = ", ".join(sorted(set(seen)))
+    return (f"CO-TENANCY: run_h200's post-family check first saw foreign processes on this "
+            f"GPU after {whens} (up to {gb:.1f} GB of another tenant's allocations) -- this "
+            f"family's measurements are not certified to have had the card to themselves")
 
 SEQ_FIX = ("that flag fires on the row's `paired: false` field, not on the protocol: this "
            "cell's own pair_meta records impl=common.bench_pair, interleaved=true, with the "
@@ -304,13 +318,14 @@ def fairness_notes(family: str, variant: str, regime: str, pair_meta: dict | Non
         out.append(f"TICK-LIMITED: operands are {tick.get('fused_ticks', 0):.0f} / "
                    f"{tick.get('unfused_ticks', 0):.0f} ticks of the measured "
                    f"{tick.get('timer_tick_us')} us CUDA-event granularity")
-    # f11 is deliberately NOT in this list any more. TENANT is derived from summary.json's
-    # tenant_events, which belong to the ORIGINAL campaign on card 59aa5198. #11 was repaired
-    # and re-run on 2026-08-05 by run_f11_h200.py, on card b2318e71, with its own GPU record
-    # (f11_rerun_summary.json: pinned, "idlest of 8: 0% utilization", tenant_events []).
-    # Applying the old campaign's co-tenancy flag to it would be a fabricated provenance.
-    if family in ("f06", "f08f09"):
-        out.append(TENANT)
+    # f11 is deliberately NOT in this list any more. Tenant provenance is EVENT-DRIVEN:
+    # `tenant_note` emits only when this summary's gpu.tenant_events is non-empty, and its
+    # "5.1 GB" figure is read from those events rather than hardcoded.  The campaign-1
+    # hardcode applied a stale co-tenancy flag to a campaign whose card stayed clean --
+    # that is fabricated provenance and must not survive.
+    nt = tenant_note(family)
+    if nt:
+        out.append(nt)
     return out
 
 

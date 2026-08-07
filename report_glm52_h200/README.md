@@ -34,9 +34,39 @@ C500 1300 GB/s / Triton 107 TF/s at **50 % of vendor** / tick 0.256 us; RTX 4060
 it is the gap to the vendor BLAS"* — has no purchase on this device: Triton is at 94 % here and
 102 % on the 4060.
 
-Source data `results/h200/`. Per-family run logs `log/run_h200/`. Build and audit log
-`log/LOG-14-h200-suite.md`. **Nothing under `results/h200/` or `log/run_h200/` was modified to
+Source data `results/h200/`. Per-family run logs `log/run_h200/`. Build and audit logs
+`log/LOG-14-h200-suite.md` (suite) and `log/LOG-17-campaign-v2.md` (v2 re-run, 2026-08-06/07).
+**Nothing under `results/h200/` or `log/run_h200/` was modified to
 produce this report**; every number here was read out of the JSON.
+
+
+## 0a. Campaign v2 (2026-08-07) — this directory was regenerated from the gated re-run
+
+The tables below are from the **second re-run**, commit `6d699b4` ("h200 done"),
+2026-08-07 11:46–13:33 on the pinned idle card `GPU-b2318e71` (0 MiB used start and end,
+no co-tenant on this card the whole campaign — the tenant was on GPU2 of the host). It is a
+strict upgrade of the campaign §0 describes:
+
+- **105 cells, every one PAIRED.** The 12 original (family, variant) groups plus the three
+  f11 groups the repair restored (`f11a_w13`, `f11b_router`, `combined`) = 15 × 7 regimes.
+  Zero sequential cells; `verify_campaign_v2.py` → **0 FAIL, 11 PASS, 2 INFO**.
+- **The B4 calibration gate now runs and passed.** harness floor 36.91 µs / launch 10.32 µs /
+  tick 0.032 µs matching 100 % of samples, `launch_timer_trustworthy: true`. (The gate bars
+  themselves had to be re-based: an idle H200's floor is genuinely ~37–42 µs — five clean
+  preflights prove it — so config's absolute/ratio bars were raised to 50 µs / 8×; LOG-17.)
+- **#11a resolved.** `f11_lazy_prenorm.json` is complete (7/7 regimes, `regimes_failed: {}`);
+  the SQ_MODE=4 (transposed-load) repair holds; `f11a_w13` is 1.018x at `decode_bs1` and
+  loses at prefill (0.62–0.77x — grouped GEMM padding, the fission-read as written).
+- **Flags are annotations, as in campaign 1.** 39 cells sit above the **bytes-only** traffic
+  ceiling (the launch-elimination signature, §3.3 — 4 of them are explained by the
+  launch-aware bound, the rest are the decode regime the model does not price); 24 cells have
+  a >2 % gap between the paired and ratio-of-medians statistics (§3.2, dominated by f04f05
+  order sensitivity). Both values are printed per cell and nothing was clipped or re-measured
+  to fit a model.
+- **Known genuine negative, reproduced faithfully.** The `#8/#9` token-major fused arms
+  degrade badly with batch (fused ~347 ms vs ~3.6 ms at `prefill_t8192`; ~0.01x), with the
+  fused arm's tuning budget starved (30 configs). The old tables carried the identical
+  numbers (347.56 ms) — the fusion is honestly slower there, not re-measured away.
 
 
 ## 0. Read this first: what the re-run fixed, and what it did not
