@@ -1565,3 +1565,296 @@
 18:33:26   2. /home/guancheng/zsh/fusion/glm52_h200/preflight_h200.json
 18:33:26   3. /home/guancheng/zsh/fusion/log/run_h200             (driver.log + one log per family)
 18:33:26   total wall 2.18 h
+19:01:29 ============================================================================================
+19:01:29 GPU SELECTION -- 8 card(s) on this host
+19:01:29 ============================================================================================
+19:01:29   rank idx   util   used GB   free GB proc  temp  state
+19:01:29   -----------------------------------------------------
+19:01:29      0   0     0%       0.0     139.8    0    28  idle
+19:01:29      1   1     0%       0.0     139.8    0    34  idle
+19:01:29      2   2     0%       0.0     139.8    0    32  idle
+19:01:29      3   3     0%       0.0     139.8    0    29  idle
+19:01:29      4   4     0%       0.0     139.8    0    31  idle
+19:01:29      5   5     0%       0.0     139.8    0    32  idle
+19:01:29      6   7     0%       0.0     139.8    0    29  idle
+19:01:29      7   6     0%      55.2      84.6    1    37  BUSY: 1 other compute process(es): pid 231151 sgl_diffusion::scheduler (55.1 GB); 55.2 GB already allocated by
+19:01:29        gpu 0  NVIDIA H200  uuid GPU-b2318e71-edbf-aa1b-dcf3-3cc3e6ea7db0
+19:01:29        gpu 1  NVIDIA H200  uuid GPU-59aa5198-70aa-0e6f-16b9-a6d483af9c4e
+19:01:29        gpu 2  NVIDIA H200  uuid GPU-3eb2bc50-6290-2508-4dc5-e01f05c85e5f
+19:01:29        gpu 3  NVIDIA H200  uuid GPU-6c4cc3d3-e0bc-949d-16be-822af843e49f
+19:01:29        gpu 4  NVIDIA H200  uuid GPU-c20464a7-77aa-f6f2-9a70-207c42f6b4a1
+19:01:29        gpu 5  NVIDIA H200  uuid GPU-2c1d24fb-c9a6-9d6c-fa91-28ea2b50e17f
+19:01:29        gpu 7  NVIDIA H200  uuid GPU-3aa19cef-f7a3-bd28-1b5e-2e6d8b8ca670
+19:01:29        gpu 6  NVIDIA H200  uuid GPU-338e7fe0-5ca6-f37f-b9b6-ea4ea6c5358b
+19:01:29 
+19:01:29   [gpu] pinning GPU 7 (NVIDIA H200) uuid GPU-3aa19cef-f7a3-bd28-1b5e-2e6d8b8ca670
+19:01:29   [gpu] --gpu 7 as requested
+19:01:29   [gpu] every child gets CUDA_VISIBLE_DEVICES=7 and CUDA_DEVICE_ORDER=PCI_BUS_ID, so each one sees exactly this card as cuda:0 -- which is why no bench needed changing.
+19:01:29 !! cached preflight does not describe the pinned GPU: same model but a different card (probe b2318e71-edbf-aa1b-dcf3-3cc3e6ea7db0, pinned 3aa19cef-f7a3-bd28-1b5e-2e6d8b8ca670) -- re-probing before anything is tuned.
+19:01:29     running preflight: /usr/bin/python /home/guancheng/zsh/fusion/glm52_h200/preflight.py --gpu 7
+19:01:39     preflight exit=0, log -> /home/guancheng/zsh/fusion/log/run_h200/preflight.log
+19:01:39 ============================================================================================
+19:01:39 GLM-5.2 MoE fusion study -- H200 campaign
+19:01:39 ============================================================================================
+19:01:39   repo            /home/guancheng/zsh/fusion
+19:01:39   results dir     /home/guancheng/zsh/fusion/results/h200
+19:01:39   driver started  2026-08-06 19:01:39
+19:01:39   gpu             7  uuid GPU-3aa19cef-f7a3-bd28-1b5e-2e6d8b8ca670  (--gpu 7 as requested)
+19:01:39 
+19:01:39   [device] NVIDIA H200  sm_90 | 132 SM | warp 32 | smem/block 232448 B | regs/SM 65536 | L2 60 MB | VRAM 139.8 GB
+19:01:39   [stack]  torch 2.11.0+cu130 (cuda 13.0) | triton 3.6.0
+19:01:39   [triton features, compiled AND launched] +baseline_elementwise +tl_dot_bf16 +warp_specialize_tl_range -warp_specialize_num_consumer_groups +tma_host_descriptor +tma_device_descriptor +thread_block_cluster_num_ctas
+19:01:39   [calib]  copy_1024MB_GBs=4240  rmw_1024MB_GBs=4237  read_1024MB_GBs=4598  copy_2048MB_GBs=4242  rmw_2048MB_GBs=4253  read_2048MB_GBs=4645   cublas_4096x16384x6144_TFs=822.9  triton_4096x16384x6144_TFs=766.5  cublas_8192x16384x6144_TFs=776.8  triton_8192x16384x6144_TFs=677.6
+19:01:39   [calib]  launch 10.45 us | timer tick 0.032 us (measured by preflight)
+19:01:39   [capacity] expert weights 18.0 GB | fit=True | whole layer feasible=True
+19:01:39 
+19:01:39   [hwinfo@start] GPU0 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 28 C | 76.86/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+19:01:39   [hwinfo@start] GPU1 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 34 C | 78.62/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+19:01:39   [hwinfo@start] GPU2 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 32 C | 76.13/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+19:01:39   [hwinfo@start] GPU3 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 29 C | 77.24/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+19:01:39   [hwinfo@start] GPU4 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 31 C | 77.71/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+19:01:39   [hwinfo@start] GPU5 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 32 C | 75.48/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+19:01:39   [hwinfo@start] GPU6 NVIDIA H200 | sm 1980/1980 MHz | mem 3201/3201 MHz | 37 C | 122.46/700 W | used 56503/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000000
+19:01:39   [hwinfo@start] GPU7 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 29 C | 77.78/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+19:01:39 
+19:01:39   [gate] sm_90 confirmed (NVIDIA H200). Hopper paths (TMA, clusters, warp specialisation) are eligible; each is still chosen at RUNTIME from the probe.
+19:01:39 !! quarantined _ckpt/f01_oproj_resadd/decode_bs1.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/f01_oproj_resadd/decode_bs1.json
+19:01:39 !! quarantined _ckpt/f01_oproj_resadd/decode_bs1024.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/f01_oproj_resadd/decode_bs1024.json
+19:01:39 !! quarantined _ckpt/f01_oproj_resadd/decode_bs256.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/f01_oproj_resadd/decode_bs256.json
+19:01:39 !! quarantined _ckpt/f01_oproj_resadd/decode_bs32.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/f01_oproj_resadd/decode_bs32.json
+19:01:39 !! quarantined _ckpt/f01_oproj_resadd/decode_bs512.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/f01_oproj_resadd/decode_bs512.json
+19:01:39 !! quarantined _ckpt/f01_oproj_resadd/prefill_t2048.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/f01_oproj_resadd/prefill_t2048.json
+19:01:39 !! quarantined _ckpt/f01_oproj_resadd/prefill_t8192.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/f01_oproj_resadd/prefill_t8192.json
+19:01:39 !! quarantined _ckpt/f03_resadd_rmsnorm/decode_bs1.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/f03_resadd_rmsnorm/decode_bs1.json
+19:01:39 !! quarantined _ckpt/f03_resadd_rmsnorm/decode_bs1024.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/f03_resadd_rmsnorm/decode_bs1024.json
+19:01:39 !! quarantined _ckpt/f03_resadd_rmsnorm/decode_bs256.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/f03_resadd_rmsnorm/decode_bs256.json
+19:01:39 !! quarantined _ckpt/f03_resadd_rmsnorm/decode_bs32.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/f03_resadd_rmsnorm/decode_bs32.json
+19:01:39 !! quarantined _ckpt/f03_resadd_rmsnorm/decode_bs512.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/f03_resadd_rmsnorm/decode_bs512.json
+19:01:39 !! quarantined _ckpt/f03_resadd_rmsnorm/prefill_t2048.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/f03_resadd_rmsnorm/prefill_t2048.json
+19:01:39 !! quarantined _ckpt/f03_resadd_rmsnorm/prefill_t8192.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/f03_resadd_rmsnorm/prefill_t8192.json
+19:01:39 !! quarantined _ckpt/f04f05_norm_router/decode_bs1.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/f04f05_norm_router/decode_bs1.json
+19:01:39 !! quarantined _ckpt/f04f05_norm_router/decode_bs1024.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/f04f05_norm_router/decode_bs1024.json
+19:01:39 !! quarantined _ckpt/f04f05_norm_router/decode_bs256.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/f04f05_norm_router/decode_bs256.json
+19:01:39 !! quarantined _ckpt/f04f05_norm_router/decode_bs32.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/f04f05_norm_router/decode_bs32.json
+19:01:39 !! quarantined _ckpt/f04f05_norm_router/decode_bs512.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/f04f05_norm_router/decode_bs512.json
+19:01:40 !! quarantined _ckpt/f04f05_norm_router/prefill_t2048.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/f04f05_norm_router/prefill_t2048.json
+19:01:40 !! quarantined _ckpt/f04f05_norm_router/prefill_t8192.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/f04f05_norm_router/prefill_t8192.json
+19:01:40 !! quarantined _ckpt/f06_upgate_swiglu/decode_bs1.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/f06_upgate_swiglu/decode_bs1.json
+19:01:40 !! quarantined _ckpt/f06_upgate_swiglu/decode_bs1024.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/f06_upgate_swiglu/decode_bs1024.json
+19:01:40 !! quarantined _ckpt/f06_upgate_swiglu/decode_bs256.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/f06_upgate_swiglu/decode_bs256.json
+19:01:40 !! quarantined _ckpt/f06_upgate_swiglu/decode_bs32.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/f06_upgate_swiglu/decode_bs32.json
+19:01:40 !! quarantined _ckpt/f06_upgate_swiglu/decode_bs512.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/f06_upgate_swiglu/decode_bs512.json
+19:01:40 !! quarantined _ckpt/f06_upgate_swiglu/prefill_t2048.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/f06_upgate_swiglu/prefill_t2048.json
+19:01:40 !! quarantined _ckpt/f06_upgate_swiglu/prefill_t8192.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/f06_upgate_swiglu/prefill_t8192.json
+19:01:40 !! quarantined _ckpt/f08f09_down_merge_resadd/decode_bs1.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/f08f09_down_merge_resadd/decode_bs1.json
+19:01:40 !! quarantined _ckpt/f08f09_down_merge_resadd/decode_bs1024.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/f08f09_down_merge_resadd/decode_bs1024.json
+19:01:40 !! quarantined _ckpt/f08f09_down_merge_resadd/decode_bs256.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/f08f09_down_merge_resadd/decode_bs256.json
+19:01:40 !! quarantined _ckpt/f08f09_down_merge_resadd/decode_bs32.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/f08f09_down_merge_resadd/decode_bs32.json
+19:01:40 !! quarantined _ckpt/f08f09_down_merge_resadd/decode_bs512.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/f08f09_down_merge_resadd/decode_bs512.json
+19:01:40 !! quarantined _ckpt/f08f09_down_merge_resadd/prefill_t2048.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/f08f09_down_merge_resadd/prefill_t2048.json
+19:01:40 !! quarantined _ckpt/f08f09_down_merge_resadd/prefill_t8192.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/f08f09_down_merge_resadd/prefill_t8192.json
+19:01:40 !! quarantined _ckpt/f10_merge_resadd/decode_bs1.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/f10_merge_resadd/decode_bs1.json
+19:01:40 !! quarantined _ckpt/f10_merge_resadd/decode_bs1024.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/f10_merge_resadd/decode_bs1024.json
+19:01:40 !! quarantined _ckpt/f10_merge_resadd/decode_bs256.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/f10_merge_resadd/decode_bs256.json
+19:01:40 !! quarantined _ckpt/f10_merge_resadd/decode_bs32.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/f10_merge_resadd/decode_bs32.json
+19:01:40 !! quarantined _ckpt/f10_merge_resadd/decode_bs512.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/f10_merge_resadd/decode_bs512.json
+19:01:40 !! quarantined _ckpt/f10_merge_resadd/prefill_t2048.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/f10_merge_resadd/prefill_t2048.json
+19:01:40 !! quarantined _ckpt/f10_merge_resadd/prefill_t8192.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/f10_merge_resadd/prefill_t8192.json
+19:01:40 !! quarantined _ckpt/f11_lazy_prenorm/decode_bs1.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/f11_lazy_prenorm/decode_bs1.json
+19:01:40 !! quarantined _ckpt/f11_lazy_prenorm/decode_bs1024.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/f11_lazy_prenorm/decode_bs1024.json
+19:01:40 !! quarantined _ckpt/f11_lazy_prenorm/decode_bs256.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/f11_lazy_prenorm/decode_bs256.json
+19:01:40 !! quarantined _ckpt/f11_lazy_prenorm/decode_bs32.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/f11_lazy_prenorm/decode_bs32.json
+19:01:40 !! quarantined _ckpt/f11_lazy_prenorm/decode_bs512.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/f11_lazy_prenorm/decode_bs512.json
+19:01:40 !! quarantined _ckpt/f11_lazy_prenorm/prefill_t2048.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/f11_lazy_prenorm/prefill_t2048.json
+19:01:40 !! quarantined _ckpt/f11_lazy_prenorm/prefill_t8192.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/f11_lazy_prenorm/prefill_t8192.json
+19:01:40 !! quarantined _ckpt/layer_cfgs/decode_bs1.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/layer_cfgs/decode_bs1.json
+19:01:40 !! quarantined _ckpt/layer_cfgs/decode_bs1024.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/layer_cfgs/decode_bs1024.json
+19:01:40 !! quarantined _ckpt/layer_cfgs/decode_bs256.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/layer_cfgs/decode_bs256.json
+19:01:40 !! quarantined _ckpt/layer_cfgs/decode_bs32.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/layer_cfgs/decode_bs32.json
+19:01:40 !! quarantined _ckpt/layer_cfgs/decode_bs512.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/layer_cfgs/decode_bs512.json
+19:01:40 !! quarantined _ckpt/layer_cfgs/prefill_t2048.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/layer_cfgs/prefill_t2048.json
+19:01:40 !! quarantined _ckpt/layer_cfgs/prefill_t8192.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_ckpt/layer_cfgs/prefill_t8192.json
+19:01:40 !! quarantined _f11_layer_rerun/_ckpt/layer_cfgs/decode_bs1.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_f11_layer_rerun/_ckpt/layer_cfgs/decode_bs1.json
+19:01:40 !! quarantined _f11_layer_rerun/_ckpt/layer_cfgs/decode_bs1024.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_f11_layer_rerun/_ckpt/layer_cfgs/decode_bs1024.json
+19:01:40 !! quarantined _f11_layer_rerun/_ckpt/layer_cfgs/decode_bs256.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_f11_layer_rerun/_ckpt/layer_cfgs/decode_bs256.json
+19:01:40 !! quarantined _f11_layer_rerun/_ckpt/layer_cfgs/decode_bs32.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_f11_layer_rerun/_ckpt/layer_cfgs/decode_bs32.json
+19:01:40 !! quarantined _f11_layer_rerun/_ckpt/layer_cfgs/decode_bs512.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_f11_layer_rerun/_ckpt/layer_cfgs/decode_bs512.json
+19:01:40 !! quarantined _f11_layer_rerun/_ckpt/layer_cfgs/prefill_t2048.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_f11_layer_rerun/_ckpt/layer_cfgs/prefill_t2048.json
+19:01:40 !! quarantined _f11_layer_rerun/_ckpt/layer_cfgs/prefill_t8192.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/_f11_layer_rerun/_ckpt/layer_cfgs/prefill_t8192.json
+19:01:40 !! quarantined f11_publish.json: recorded device 'MISSING' != present 'NVIDIA H200' -> /home/guancheng/zsh/fusion/results/h200/_quarantine_foreign_20260806_190139/f11_publish.json
+19:01:40    (64 file(s) moved to _quarantine_foreign_20260806_190139 -- they will be re-measured)
+19:01:40 ============================================================================================
+19:01:40 RUNNING 8 FAMILIES SERIALLY (order = cheapest failure first; whole-layer last)
+19:01:40 ============================================================================================
+19:01:40 
+19:01:40 --- [1/8] f03: #3  ResAdd+RMSNorm ----------------------
+19:01:40   note    pure vector; smoke-tests the whole stack
+19:01:40   skip: f03_resadd_rmsnorm.json already exists on this device (complete). --force-rerun to redo it.
+19:01:40 
+19:01:40 --- [2/8] f10: #10 ExpertMerge+ResAdd ------------------
+19:01:40   note    needs the [T*topk, 6144] intermediate, not the expert weights
+19:01:40   skip: f10_merge_resadd.json already exists on this device (complete). --force-rerun to redo it.
+19:01:40 
+19:01:40 --- [3/8] f01: #1  o_proj+ResAdd -----------------------
+19:01:40   note    first GEMM family; K=16384 prefill / 32768 decode
+19:01:40   skip: f01_oproj_resadd.json already exists on this device (complete). --force-rerun to redo it.
+19:01:40 
+19:01:40 --- [4/8] f04f05: #4  ResAdd+RMSNorm+Router / #5 RMSNorm+Router 
+19:01:40   skip: f04f05_norm_router.json already exists on this device (complete). --force-rerun to redo it.
+19:01:40 
+19:01:40 --- [5/8] f11: #11a LazyPreNorm->w13 / #11b LazyPreNorm->router 
+19:01:40   note    #11a needs the 12 GB w13; fits here, unlike the 4060
+19:01:40   f11_lazy_prenorm.json exists but is not reusable: payload says complete=false -- re-running.
+19:01:40   cmd     /usr/bin/python /home/guancheng/zsh/fusion/glm52_h200/bench/bench_f11_lazy_prenorm.py
+19:01:40   log     /home/guancheng/zsh/fusion/log/run_h200/f11.log
+19:01:40   timeout 10.0 h
+19:01:40   [hw before] GPU7 NVIDIA H200 | sm 600/1980 MHz | mem 3201/3201 MHz | 31 C | 123.66/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+19:02:40     [f11]    1.0 min |     [grid f11b/T1] 226 legal -> 180 sampled (budget 180)
+19:03:40     [f11]    2.0 min |     [grid f11b/T1] 226 legal -> 180 sampled (budget 180)
+19:04:40     [f11]    3.0 min |     [routerF/coarse] 180/180 cfgs timed -> 0.0315 ms  {'BLOCK_M': 16, 'BLOCK_N': 64, 'BLOCK_K': 128, 'num_warp
+19:05:40     [f11]    4.0 min |     [grid f11a/small] 722 legal -> 180 sampled (budget 180)
+19:06:40     [f11]    5.0 min |     [w13F/coarse ] 132/180 cfgs timed -> 0.1086 ms  {'BLOCK_M': 16, 'BLOCK_N': 128, 'BLOCK_K': 128, 'num_warps
+19:07:40     [f11]    6.0 min |     [screen w13U/coarse ] 180 offered -> 153 valid (27 compile-fail, 0 wrong-answer)
+19:08:40     [f11]    7.0 min |   w13 unfused: coarse 180(27f) + refine 28(0f) -> 0.1054 ms {'BLOCK_M': 16, 'BLOCK_N': 128, 'BLOCK_K': 128, 'n
+19:09:40     [f11]    8.0 min |     [grid f11b/T32] 488 legal -> 180 sampled (budget 180)
+19:10:40     [f11]    9.0 min |     [grid f11b/T32] 488 legal -> 180 sampled (budget 180)
+19:11:40     [f11]   10.0 min |     [routerF/coarse] 180/180 cfgs timed -> 0.0375 ms  {'BLOCK_M': 32, 'BLOCK_N': 32, 'BLOCK_K': 64, 'num_warps
+19:12:40     [f11]   11.0 min |     [grid f11a/small] 722 legal -> 180 sampled (budget 180)
+19:13:40     [f11]   12.0 min |         wrong-answer: {'BLOCK_M': 64, 'BLOCK_N': 128, 'BLOCK_K': 32, 'num_warps': 4, 'num_stages': 4, 'GROUP_M
+19:14:40     [f11]   13.0 min | /home/guancheng/zsh/fusion/glm52_h200/kernels/lazy_prenorm.py:735:0: note: Pipeline failed while executing [`N
+19:15:40     [f11]   14.0 min |     [w13U/coarse ] 153/180 cfgs timed -> 1.8724 ms  {'BLOCK_M': 16, 'BLOCK_N': 128, 'BLOCK_K': 128, 'num_warps
+19:16:40     [f11]   15.0 min |   w13 unfused: coarse 180(27f) + refine 28(0f) -> 1.8667 ms {'BLOCK_M': 16, 'BLOCK_N': 128, 'BLOCK_K': 128, 'n
+19:17:40     [f11]   16.0 min |     [grid f11b/T256] 1010 legal -> 180 sampled (budget 180)
+19:18:40     [f11]   17.0 min |     [routerF/coarse] 168/180 cfgs timed -> 0.0375 ms  {'BLOCK_M': 64, 'BLOCK_N': 64, 'BLOCK_K': 128, 'num_warp
+19:19:40     [f11]   18.0 min | /home/guancheng/zsh/fusion/glm52_h200/kernels/lazy_prenorm.py:735:0: note: Pipeline failed while executing [`N
+19:20:40     [f11]   19.0 min |     [screen w13U/coarse ] 180 offered -> 153 valid (27 compile-fail, 0 wrong-answer)
+19:21:40     [f11]   20.0 min |     [rstd        ] 124/124 cfgs timed -> 0.0075 ms  {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 8, 'num_stages':
+19:22:40     [f11]   21.0 min |         wrong-answer: {'BLOCK_M': 64, 'BLOCK_N': 128, 'BLOCK_K': 32, 'num_warps': 4, 'num_stages': 4, 'GROUP_M
+19:23:40     [f11]   22.0 min |     [screen w13U/coarse ] 180 offered -> 153 valid (27 compile-fail, 0 wrong-answer)
+19:24:40     [f11]   23.0 min |     [screen routerF/coarse] 180 offered -> 168 valid (12 compile-fail, 0 wrong-answer)
+19:25:40     [f11]   24.0 min | /home/guancheng/zsh/fusion/glm52_h200/kernels/lazy_prenorm.py:735:0: note: Pipeline failed while executing [`N
+19:26:40     [f11]   25.0 min |   rel_err  router_fused=3.08e-03 router_unfused=8.20e-06 moe_fused=4.46e-03 moe_unfused=1.98e-03 | topk agree 
+19:27:40     [f11]   26.0 min |     [grid f11a/big] 686 legal -> 180 sampled (budget 180)
+19:28:40     [f11]   27.0 min |         wrong-answer: {'BLOCK_M': 64, 'BLOCK_N': 128, 'BLOCK_K': 64, 'num_warps': 4, 'num_stages': 4, 'GROUP_M
+19:29:40     [f11]   28.0 min |         wrong-answer: {'BLOCK_M': 64, 'BLOCK_N': 128, 'BLOCK_K': 64, 'num_warps': 4, 'num_stages': 4, 'GROUP_M
+19:30:40     [f11]   29.0 min | /home/guancheng/zsh/fusion/glm52_h200/kernels/lazy_prenorm.py:735:0: note: Pipeline failed while executing [`T
+19:31:40     [f11]   30.0 min |         wrong-answer: {'BLOCK_M': 64, 'BLOCK_N': 256, 'BLOCK_K': 64, 'num_warps': 32, 'num_stages': 3, 'GROUP_
+19:32:40     [f11]   31.0 min |     [routerF/refine]  16/20 cfgs timed -> 0.0941 ms  {'BLOCK_M': 128, 'BLOCK_N': 128, 'BLOCK_K': 128, 'num_war
+19:33:40     [f11]   32.0 min |         wrong-answer: {'BLOCK_M': 64, 'BLOCK_N': 64, 'BLOCK_K': 128, 'num_warps': 16, 'num_stages': 3, 'GROUP_
+19:34:40     [f11]   33.0 min |     [screen w13U/coarse ] 180 offered -> 155 valid (25 compile-fail, 0 wrong-answer)
+19:35:40     [f11]   34.0 min |         wrong-answer: {'BLOCK_M': 64, 'BLOCK_N': 256, 'BLOCK_K': 64, 'num_warps': 16, 'num_stages': 3, 'GROUP_
+19:36:06   [hw after ] GPU7 NVIDIA H200 | sm 1980/1980 MHz | mem 3201/3201 MHz | 48 C | 135.53/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000000
+19:36:06   !! SM clock moved +230.0% during this family (600 -> 1980 MHz) -- interleaved A/B timing is what protects the ratio from this; check the bench recorded a paired statistic.
+19:36:06   exit=0 status=ok wall=34.4 min
+19:36:06     | AttributeError: 'dict' object has no attribute 'ratio_p50'
+19:36:06     | wrote f11_lazy_prenorm.json
+19:36:06     | regime            F11b rt   ceil  F11a w13   ceil  combined
+19:36:06     | PARTIAL: 0/7 regimes produced rows; regimes lost entirely: decode_bs1, decode_bs32, decode_bs256, decode_bs512, decode_bs1024, prefill_t2048
+19:36:06 
+19:36:06 --- [6/8] f06: #6  UpGate+SwiGLU -----------------------
+19:36:06   note    needs 256-expert w13 (12 GB)
+19:36:06   skip: f06_upgate_swiglu.json already exists on this device (complete). --force-rerun to redo it.
+19:36:06 
+19:36:06 --- [7/8] f08f09: #8  Down+ExpertMerge / #9 Down+Merge+ResAdd2 
+19:36:06   note    needs 256-expert w2 (6 GB); four variants x seven regimes
+19:36:06   skip: f08f09_down_merge_resadd.json already exists on this device (complete). --force-rerun to redo it.
+19:36:06 
+19:36:06 --- [8/8] layer: whole-layer combination benchmark -------
+19:36:06   note    LAST: most expensive; needs the whole 19.3 GB expert set resident
+19:36:06   skip: layer_configurations.json already exists on this device (complete). --force-rerun to redo it.
+19:36:06 ============================================================================================
+19:36:06 COLLECTING RESULTS
+19:36:06 ============================================================================================
+19:36:06   f03     f03_resadd_rmsnorm.json                  7 cells   ok
+19:36:06   f10     f10_merge_resadd.json                    7 cells   ok
+19:36:06   f01     f01_oproj_resadd.json                    7 cells   ok
+19:36:07   f04f05  f04f05_norm_router.json                 28 cells   ok
+19:36:07   f11     f11_lazy_prenorm.json                    0 cells   UNTRUSTED: payload says complete=false
+19:36:07   f06     f06_upgate_swiglu.json                   7 cells   ok
+19:36:07   f08f09  f08f09_down_merge_resadd.json           28 cells   ok
+19:36:07   layer   layer_configurations.json                0 cells   ok
+19:36:08 ============================================================================================
+19:36:08 SPEEDUP TABLE  (fused / unfused, per fusion per regime)
+19:36:08 ============================================================================================
+19:36:08 fusion / variant                                d1      d32     d256     d512    d1024    p2048    p8192
+19:36:08 --------------------------------------------------------------------------------------------------------
+19:36:08 #3  ResAdd+RMSNorm  [f3]                    2.169s   2.250s   2.072s   2.087s   2.031s   1.965s   1.336s
+19:36:08 #10 ExpertMerge+ResAdd  [f10]               2.238s   2.220s   2.036s   2.063s   1.890s   1.573s   1.197s
+19:36:08 #1  o_proj+ResAdd  [triton]                 0.999s   0.992s   1.000s   1.009s   0.998s   1.006s   1.007s
+19:36:08 #4  ResAdd+RMSNorm+Router  [F4]            1.670s!  1.693s!   1.416s  1.618s!   1.470s   1.342s   0.746s
+19:36:08 #4  ResAdd+RMSNorm+Router  [F4_topk]        0.544s  1.741s!  1.734s!  1.957s!  1.839s!  1.832s!   0.957s
+19:36:08 #5  RMSNorm+Router  [F5]                   1.853s!  1.804s!  1.728s!  1.740s!  1.690s!   1.506s   1.041s
+19:36:08 #5  RMSNorm+Router  [F5_topk]              1.993s!  1.832s!  1.793s!  2.066s!  2.184s!  2.105s!   1.401s
+19:36:08 #6  UpGate+SwiGLU  [f6]                     1.008s   1.001s   1.007s   1.016s   1.011s   1.032s   0.977s
+19:36:08 #8  Down+ExpertMerge  [f8_atomic]           1.084s   1.004s   1.002s   0.999s   0.997s   0.922s   0.941s
+19:36:08 #8  Down+ExpertMerge  [f8_token_major]      1.606s   0.641s   0.133s   0.069s   0.036s   0.020s   0.010s
+19:36:08 #9  Down+Merge+ResAdd2  [f9_atomic]         1.415s   1.006s   1.005s   1.008s   1.001s   0.949s   0.970s
+19:36:08 #9  Down+Merge+ResAdd2  [f9_token_major]    2.123s   0.644s   0.134s   0.069s   0.036s   0.020s   0.011s
+19:36:08 --------------------------------------------------------------------------------------------------------
+19:36:08 columns: d1=decode_bs1  d32=decode_bs32  d256=decode_bs256  d512=decode_bs512  d1024=decode_bs1024  p2048=prefill_t2048  p8192=prefill_t8192
+19:36:08 UNRES = the two arms differ by < 3 CUDA-event ticks (tick = 0.032 us, measured by preflight); the ratio is not resolvable, so no ratio is printed.
+19:36:08 ~ = shorter arm is under 10 ticks, so the printed ratio is coarsely quantised.   * = paired and sequential ratios disagree by >2 % (the machine moved).
+19:36:08 s = arms were NOT interleaved A/B/A/B, so drift does not cancel.   ! = speedup exceeds its own modelled traffic ceiling: treat as suspect.
+19:36:08 flagged cells: ABOVE CEILING=19, SEQUENTIAL=84  (of 84 total)
+19:36:08 
+19:36:08 ============================================================================================
+19:36:08 FAMILY STATUS
+19:36:08 ============================================================================================
+19:36:08   f03     skipped_existing           0.0 min   /home/guancheng/zsh/fusion/results/h200/f03_resadd_rmsnorm.json
+19:36:08   f10     skipped_existing           0.0 min   /home/guancheng/zsh/fusion/results/h200/f10_merge_resadd.json
+19:36:08   f01     skipped_existing           0.0 min   /home/guancheng/zsh/fusion/results/h200/f01_oproj_resadd.json
+19:36:08   f04f05  skipped_existing           0.0 min   /home/guancheng/zsh/fusion/results/h200/f04f05_norm_router.json
+19:36:08   f11     ok                        34.4 min   /home/guancheng/zsh/fusion/results/h200/f11_lazy_prenorm.json
+19:36:08   f06     skipped_existing           0.0 min   /home/guancheng/zsh/fusion/results/h200/f06_upgate_swiglu.json
+19:36:08   f08f09  skipped_existing           0.0 min   /home/guancheng/zsh/fusion/results/h200/f08f09_down_merge_resadd.json
+19:36:08   layer   skipped_existing           0.0 min   /home/guancheng/zsh/fusion/results/h200/layer_configurations.json
+19:36:08 
+19:36:08   !! MISSING / UNTRUSTED: f11
+19:36:08      logs for these are in /home/guancheng/zsh/fusion/log/run_h200; re-running the driver resumes at the first missing family.
+19:36:08 
+19:36:08 ============================================================================================
+19:36:08 HWINFO -- START vs END (clock and thermal drift across the whole run)
+19:36:08 ============================================================================================
+19:36:08   (this campaign ran on GPU 7, uuid GPU-3aa19cef-f7a3-bd28-1b5e-2e6d8b8ca670; the other rows are context, not this run)
+19:36:08   start GPU0 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 28 C | 76.86/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+19:36:08   start GPU1 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 34 C | 78.62/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+19:36:08   start GPU2 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 32 C | 76.13/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+19:36:08   start GPU3 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 29 C | 77.24/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+19:36:08   start GPU4 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 31 C | 77.71/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+19:36:08   start GPU5 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 32 C | 75.48/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+19:36:08   start GPU6 NVIDIA H200 | sm 1980/1980 MHz | mem 3201/3201 MHz | 37 C | 122.46/700 W | used 56503/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000000
+19:36:08   start GPU7 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 29 C | 77.78/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+19:36:08   end   GPU0 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 27 C | 76.61/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+19:36:08   end   GPU1 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 32 C | 77.99/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+19:36:08   end   GPU2 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 31 C | 75.98/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+19:36:08   end   GPU3 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 28 C | 77.02/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+19:36:08   end   GPU4 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 31 C | 77.54/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+19:36:08   end   GPU5 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 31 C | 75.03/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+19:36:08   end   GPU6 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 45 C | 80.26/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+19:36:08   end   GPU7 NVIDIA H200 | sm 1980/1980 MHz | mem 3201/3201 MHz | 47 C | 134.73/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000000
+19:36:08   GPU0 SM clock +0.0%, temperature -1 C, throttle 0x0000000000000001 -> 0x0000000000000001
+19:36:08   GPU1 SM clock +0.0%, temperature -2 C, throttle 0x0000000000000001 -> 0x0000000000000001
+19:36:08   GPU2 SM clock +0.0%, temperature -1 C, throttle 0x0000000000000001 -> 0x0000000000000001
+19:36:08   GPU3 SM clock +0.0%, temperature -1 C, throttle 0x0000000000000001 -> 0x0000000000000001
+19:36:08   GPU4 SM clock +0.0%, temperature +0 C, throttle 0x0000000000000001 -> 0x0000000000000001
+19:36:08   GPU5 SM clock +0.0%, temperature -1 C, throttle 0x0000000000000001 -> 0x0000000000000001
+19:36:08   GPU6 SM clock -82.6%, temperature +8 C, throttle 0x0000000000000000 -> 0x0000000000000001
+19:36:08   !! The GPU did not hold its clock across this run. Every final timing in this suite is interleaved A/B/A/B and reported as a paired statistic precisely so monotone drift cancels -- but any number NOT taken that way (coarse tuning passes, single-shot diagnostics) is suspect.
+19:36:08   GPU7 SM clock +473.9%, temperature +18 C, throttle 0x0000000000000001 -> 0x0000000000000000
+19:36:08   !! The GPU did not hold its clock across this run. Every final timing in this suite is interleaved A/B/A/B and reported as a paired statistic precisely so monotone drift cancels -- but any number NOT taken that way (coarse tuning passes, single-shot diagnostics) is suspect.
+19:36:08 
+19:36:08   wrote /home/guancheng/zsh/fusion/results/h200/summary.json
+19:36:08 
+19:36:08 ============================================================================================
+19:36:08 WARNINGS (also in summary.json)
+19:36:08 ============================================================================================
+19:36:08   - 64 pre-existing result file(s) were from another device and were quarantined under _quarantine_foreign_20260806_190139; they will be re-measured
+19:36:08   - f11: result present but not trusted (payload says complete=false)
+19:36:08 
+19:36:08 ============================================================================================
+19:36:08 SEND BACK
+19:36:08 ============================================================================================
+19:36:08   1. /home/guancheng/zsh/fusion/results/h200            (every result JSON + summary.json)
+19:36:08   2. /home/guancheng/zsh/fusion/glm52_h200/preflight_h200.json
+19:36:08   3. /home/guancheng/zsh/fusion/log/run_h200             (driver.log + one log per family)
+19:36:08   total wall 0.58 h
