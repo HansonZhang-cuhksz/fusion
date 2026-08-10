@@ -1,0 +1,232 @@
+# /usr/bin/python /home/guancheng/zsh/fusion/glm52_h200/bench/bench_f03_resadd_rmsnorm.py
+# started 2026-08-07 16:22:09
+/home/guancheng/.local/lib/python3.10/site-packages/torch/_subclasses/functional_tensor.py:307: UserWarning: Failed to initialize NumPy: No module named 'numpy' (Triggered internally at /pytorch/torch/csrc/utils/tensor_numpy.cpp:84.)
+  cpu = _conversion_method_template(device=torch.device("cpu"))
+[harness] NVIDIA H200 sm9.0 | 132 SM | L2 60 MB | flush 256 MB | tick 3.2e-05 ms | hopper feats [tma,clusters,warp_specialize] | preflight ok | results -> /home/guancheng/zsh/fusion/results/h200/_bs_extra_rerun
+[hw] NVIDIA H200  sm_90  132 SM  140 GB  uuid b2318e71-edbf-aa1b-d
+[hw] driver 580.173.02  vbios 96.00.A5.00.03  cuda 13.0  torch 2.11.0+cu130  triton 3.6.0  python 3.10.12
+[hw] clocks SM 1980 MHz / 1980 MHz max (100%)  MEM 3201 MHz / 3201 MHz max (100%)  -> unlocked
+[hw] pstate P0  power 117.64 W of 700.00 W  temp 30 C (mem 27)  util 0 %
+[hw] ecc Enabled  mig Disabled  persistence Enabled  compute-mode Default  pcie gen5x16
+[hw] host hgx-h200-233  192 cpu  visible GPUs 1  CUDA_VISIBLE_DEVICES=0
+[hw] physical GPU: nvidia-smi index 0  cuda ordinal 0  matched by uuid  order=PCI_BUS_ID
+[hw] clock basis: application clocks equal their defaults
+[env] NVIDIA H200 (sm_90) | 132 SM | warp 32 | smem 232448 B | regs/SM 65536 | threads/SM 2048 | L2 60 MB | HBM 139 GB | torch 2.11.0+cu130 triton 3.6.0 cuda 13.0
+[preflight] 2026-08-07 10:30:37 | baseline_elementwise=ok, tl_dot_bf16=ok, warp_specialize_tl_range=ok, warp_specialize_num_consumer_groups=no, tma_host_descriptor=ok, tma_device_descriptor=ok, thread_block_cluster_num_ctas=ok
+[preflight] timer tick 0.032 us | launch 10.317714618785041 us | L2 60 MB
+[smem] ceiling 232448 B | staging model max(2, num_stages - 0) * 2*BK*(BM+BN) (fitted to 5 preflight smem_probe observations)
+[hopper] NVIDIA H200 (sm_90) gpu=b2318e71 | tma=True(device) ws=True(range) clusters=True wgmma=True | src preflight | probe skipped
+[calib] B4 gate: preflight trusted; live floor 2.88 us, launch 10.01 us
+  == decode_bs1 (T=1) ==
+    [h200 axes] none offered for glm52_h200.kernels.add_rmsnorm: grids are the classic ones
+    [screen fused/coarse] 164 offered -> 164 valid (0 compile-fail, 0 wrong-answer)
+    [fused/coarse] 164/164 cfgs timed -> 0.0084 ms  {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 16, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}  [1s]
+    [screen fused/refine]  46 offered ->  46 valid (0 compile-fail, 0 wrong-answer)
+    [fused/refine]  46/46 cfgs timed -> 0.0080 ms  {'ROWS': 2, 'BLOCK_N': 8192, 'num_warps': 8, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05, 'EVICT': 1}  [0s]
+    [fused] coarse 164 cfgs (0 rej) -> 0.0084 ms | refine 46 (0 rej) -> 0.0080 ms | best 0.0080 ms {'ROWS': 2, 'BLOCK_N': 8192, 'num_warps': 8, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05, 'EVICT': 1}  [2s]
+    [screen add/coarse  ] 164 offered -> 164 valid (0 compile-fail, 0 wrong-answer)
+    [add/coarse  ] 164/164 cfgs timed -> 0.0081 ms  {'ROWS': 8, 'BLOCK_N': 2048, 'num_warps': 32, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05}  [1s]
+    [screen add/refine  ]  70 offered ->  70 valid (0 compile-fail, 0 wrong-answer)
+    [add/refine  ]  70/70 cfgs timed -> 0.0076 ms  {'ROWS': 4, 'BLOCK_N': 4096, 'num_warps': 32, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05, 'EVICT': 1}  [5s]
+    [add] coarse 164 cfgs (0 rej) -> 0.0081 ms | refine 70 (0 rej) -> 0.0076 ms | best 0.0076 ms {'ROWS': 4, 'BLOCK_N': 4096, 'num_warps': 32, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05, 'EVICT': 1}  [6s]
+    [screen norm/coarse ] 164 offered -> 164 valid (0 compile-fail, 0 wrong-answer)
+    [norm/coarse ] 164/164 cfgs timed -> 0.0077 ms  {'ROWS': 2, 'BLOCK_N': 8192, 'num_warps': 32, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05}  [1s]
+    [screen norm/refine ]  56 offered ->  56 valid (0 compile-fail, 0 wrong-answer)
+    [norm/refine ]  56/56 cfgs timed -> 0.0072 ms  {'ROWS': 2, 'BLOCK_N': 8192, 'num_warps': 32, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05, 'EVICT': 1}  [0s]
+    [norm] coarse 164 cfgs (0 rej) -> 0.0077 ms | refine 56 (0 rej) -> 0.0072 ms | best 0.0072 ms {'ROWS': 2, 'BLOCK_N': 8192, 'num_warps': 32, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05, 'EVICT': 1}  [2s]
+    [chain] joint 16 pairs -> 0.0497 ms (independent-best sum would be 0.0148 ms)
+    fused 0.0681 ms (1 GB/s) | unfused 0.1412 ms (0 GB/s) | paired 2.050x | eager 0.1473 | compile 0.0411
+  == decode_bs2 (T=2) ==
+    [screen fused/coarse] 164 offered -> 164 valid (0 compile-fail, 0 wrong-answer)
+    [fused/coarse] 164/164 cfgs timed -> 0.0093 ms  {'ROWS': 1, 'BLOCK_N': 4096, 'num_warps': 32, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05}  [1s]
+    [screen fused/refine]  50 offered ->  50 valid (0 compile-fail, 0 wrong-answer)
+    [fused/refine]  50/50 cfgs timed -> 0.0103 ms  {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 16, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05, 'EVICT': 1}  [2s]
+    [fused] coarse 164 cfgs (0 rej) -> 0.0093 ms | refine 50 (0 rej) -> 0.0103 ms | best 0.0093 ms {'ROWS': 1, 'BLOCK_N': 4096, 'num_warps': 32, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05}  [2s]
+    [screen add/coarse  ] 164 offered -> 164 valid (0 compile-fail, 0 wrong-answer)
+    [add/coarse  ] 164/164 cfgs timed -> 0.0081 ms  {'ROWS': 4, 'BLOCK_N': 2048, 'num_warps': 8, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}  [1s]
+    [screen add/refine  ]  82 offered ->  82 valid (0 compile-fail, 0 wrong-answer)
+    [add/refine  ]  82/82 cfgs timed -> 0.0095 ms  {'ROWS': 2, 'BLOCK_N': 1024, 'num_warps': 8, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05, 'EVICT': 1}  [2s]
+    [add] coarse 164 cfgs (0 rej) -> 0.0081 ms | refine 82 (0 rej) -> 0.0095 ms | best 0.0081 ms {'ROWS': 4, 'BLOCK_N': 2048, 'num_warps': 8, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}  [3s]
+    [screen norm/coarse ] 164 offered -> 164 valid (0 compile-fail, 0 wrong-answer)
+    [norm/coarse ] 164/164 cfgs timed -> 0.0083 ms  {'ROWS': 2, 'BLOCK_N': 8192, 'num_warps': 8, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05}  [1s]
+    [screen norm/refine ]  50 offered ->  50 valid (0 compile-fail, 0 wrong-answer)
+    [norm/refine ]  50/50 cfgs timed -> 0.0088 ms  {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 4, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05, 'EVICT': 1}  [0s]
+    [norm] coarse 164 cfgs (0 rej) -> 0.0083 ms | refine 50 (0 rej) -> 0.0088 ms | best 0.0083 ms {'ROWS': 2, 'BLOCK_N': 8192, 'num_warps': 8, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05}  [1s]
+    [chain] joint 16 pairs -> 0.0523 ms (independent-best sum would be 0.0164 ms)
+    fused 0.0593 ms (2 GB/s) | unfused 0.1251 ms (1 GB/s) | paired 2.152x | eager 0.1555 | compile 0.0569
+  == decode_bs4 (T=4) ==
+    [screen fused/coarse] 164 offered -> 164 valid (0 compile-fail, 0 wrong-answer)
+    [fused/coarse] 164/164 cfgs timed -> 0.0095 ms  {'ROWS': 1, 'BLOCK_N': 4096, 'num_warps': 8, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05}  [1s]
+    [screen fused/refine]  60 offered ->  60 valid (0 compile-fail, 0 wrong-answer)
+    [fused/refine]  60/60 cfgs timed -> 0.0098 ms  {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 4, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05, 'EVICT': 1}  [0s]
+    [fused] coarse 164 cfgs (0 rej) -> 0.0095 ms | refine 60 (0 rej) -> 0.0098 ms | best 0.0095 ms {'ROWS': 1, 'BLOCK_N': 4096, 'num_warps': 8, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05}  [1s]
+    [screen add/coarse  ] 164 offered -> 164 valid (0 compile-fail, 0 wrong-answer)
+    [add/coarse  ] 164/164 cfgs timed -> 0.0091 ms  {'ROWS': 8, 'BLOCK_N': 8192, 'num_warps': 32, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05}  [1s]
+    [screen add/refine  ]  38 offered ->  38 valid (0 compile-fail, 0 wrong-answer)
+    [add/refine  ]  38/38 cfgs timed -> 0.0099 ms  {'ROWS': 4, 'BLOCK_N': 8192, 'num_warps': 32, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05, 'EVICT': 1}  [0s]
+    [add] coarse 164 cfgs (0 rej) -> 0.0091 ms | refine 38 (0 rej) -> 0.0099 ms | best 0.0091 ms {'ROWS': 8, 'BLOCK_N': 8192, 'num_warps': 32, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05}  [1s]
+    [screen norm/coarse ] 164 offered -> 164 valid (0 compile-fail, 0 wrong-answer)
+    [norm/coarse ] 164/164 cfgs timed -> 0.0086 ms  {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 4, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}  [1s]
+    [screen norm/refine ]  28 offered ->  28 valid (0 compile-fail, 0 wrong-answer)
+    [norm/refine ]  28/28 cfgs timed -> 0.0100 ms  {'ROWS': 1, 'BLOCK_N': 4096, 'num_warps': 4, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}  [0s]
+    [norm] coarse 164 cfgs (0 rej) -> 0.0086 ms | refine 28 (0 rej) -> 0.0100 ms | best 0.0086 ms {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 4, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}  [1s]
+    [chain] joint 12 pairs -> 0.0538 ms (independent-best sum would be 0.0177 ms)
+    fused 0.0604 ms (3 GB/s) | unfused 0.1293 ms (2 GB/s) | paired 2.173x | eager 0.1583 | compile 0.0665
+  == decode_bs8 (T=8) ==
+    [screen fused/coarse] 164 offered -> 164 valid (0 compile-fail, 0 wrong-answer)
+    [fused/coarse] 164/164 cfgs timed -> 0.0101 ms  {'ROWS': 2, 'BLOCK_N': 8192, 'num_warps': 16, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}  [1s]
+    [screen fused/refine]  66 offered ->  66 valid (0 compile-fail, 0 wrong-answer)
+    [fused/refine]  66/66 cfgs timed -> 0.0095 ms  {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 16, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05, 'EVICT': 1}  [0s]
+    [fused] coarse 164 cfgs (0 rej) -> 0.0101 ms | refine 66 (0 rej) -> 0.0095 ms | best 0.0095 ms {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 16, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05, 'EVICT': 1}  [1s]
+    [screen add/coarse  ] 164 offered -> 164 valid (0 compile-fail, 0 wrong-answer)
+    [add/coarse  ] 164/164 cfgs timed -> 0.0093 ms  {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 32, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05}  [1s]
+    [screen add/refine  ]  38 offered ->  38 valid (0 compile-fail, 0 wrong-answer)
+    [add/refine  ]  38/38 cfgs timed -> 0.0094 ms  {'ROWS': 2, 'BLOCK_N': 4096, 'num_warps': 32, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05}  [0s]
+    [add] coarse 164 cfgs (0 rej) -> 0.0093 ms | refine 38 (0 rej) -> 0.0094 ms | best 0.0093 ms {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 32, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05}  [1s]
+    [screen norm/coarse ] 164 offered -> 164 valid (0 compile-fail, 0 wrong-answer)
+    [norm/coarse ] 164/164 cfgs timed -> 0.0096 ms  {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 8, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05}  [1s]
+    [screen norm/refine ]  44 offered ->  44 valid (0 compile-fail, 0 wrong-answer)
+    [norm/refine ]  44/44 cfgs timed -> 0.0096 ms  {'ROWS': 2, 'BLOCK_N': 8192, 'num_warps': 8, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05}  [0s]
+    [norm] coarse 164 cfgs (0 rej) -> 0.0096 ms | refine 44 (0 rej) -> 0.0096 ms | best 0.0096 ms {'ROWS': 2, 'BLOCK_N': 8192, 'num_warps': 8, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05}  [1s]
+    [chain] joint 16 pairs -> 0.0538 ms (independent-best sum would be 0.0188 ms)
+    fused 0.0569 ms (7 GB/s) | unfused 0.1231 ms (4 GB/s) | paired 2.154x | eager 0.1404 | compile 0.0631
+  == decode_bs16 (T=16) ==
+    [screen fused/coarse] 164 offered -> 164 valid (0 compile-fail, 0 wrong-answer)
+    [fused/coarse] 164/164 cfgs timed -> 0.0105 ms  {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 8, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}  [1s]
+    [screen fused/refine]  44 offered ->  44 valid (0 compile-fail, 0 wrong-answer)
+    [fused/refine]  44/44 cfgs timed -> 0.0104 ms  {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 4, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}  [0s]
+    [fused] coarse 164 cfgs (0 rej) -> 0.0105 ms | refine 44 (0 rej) -> 0.0104 ms | best 0.0104 ms {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 4, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}  [1s]
+    [screen add/coarse  ] 164 offered -> 164 valid (0 compile-fail, 0 wrong-answer)
+    [add/coarse  ] 164/164 cfgs timed -> 0.0092 ms  {'ROWS': 4, 'BLOCK_N': 2048, 'num_warps': 32, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05}  [1s]
+    [screen add/refine  ]  72 offered ->  72 valid (0 compile-fail, 0 wrong-answer)
+    [add/refine  ]  72/72 cfgs timed -> 0.0096 ms  {'ROWS': 4, 'BLOCK_N': 2048, 'num_warps': 32, 'num_stages': 3, 'grid_cap': None, 'eps': 1e-05, 'EVICT': 1}  [1s]
+    [add] coarse 164 cfgs (0 rej) -> 0.0092 ms | refine 72 (0 rej) -> 0.0096 ms | best 0.0092 ms {'ROWS': 4, 'BLOCK_N': 2048, 'num_warps': 32, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05}  [2s]
+    [screen norm/coarse ] 164 offered -> 164 valid (0 compile-fail, 0 wrong-answer)
+    [norm/coarse ] 164/164 cfgs timed -> 0.0085 ms  {'ROWS': 4, 'BLOCK_N': 8192, 'num_warps': 16, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05}  [1s]
+    [screen norm/refine ]  50 offered ->  50 valid (0 compile-fail, 0 wrong-answer)
+    [norm/refine ]  50/50 cfgs timed -> 0.0099 ms  {'ROWS': 4, 'BLOCK_N': 8192, 'num_warps': 16, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05, 'EVICT': 1}  [2s]
+    [norm] coarse 164 cfgs (0 rej) -> 0.0085 ms | refine 50 (0 rej) -> 0.0099 ms | best 0.0085 ms {'ROWS': 4, 'BLOCK_N': 8192, 'num_warps': 16, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05}  [2s]
+    [chain] joint 16 pairs -> 0.0537 ms (independent-best sum would be 0.0178 ms)
+    fused 0.0651 ms (12 GB/s) | unfused 0.1375 ms (7 GB/s) | paired 2.099x | eager 0.1561 | compile 0.0746
+  == decode_bs32 (T=32) ==
+    [screen fused/coarse] 164 offered -> 164 valid (0 compile-fail, 0 wrong-answer)
+    [fused/coarse] 164/164 cfgs timed -> 0.0092 ms  {'ROWS': 4, 'BLOCK_N': 8192, 'num_warps': 16, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05}  [1s]
+    [screen fused/refine]  50 offered ->  50 valid (0 compile-fail, 0 wrong-answer)
+    [fused/refine]  50/50 cfgs timed -> 0.0095 ms  {'ROWS': 4, 'BLOCK_N': 8192, 'num_warps': 16, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05, 'EVICT': 1}  [1s]
+    [fused] coarse 164 cfgs (0 rej) -> 0.0092 ms | refine 50 (0 rej) -> 0.0095 ms | best 0.0092 ms {'ROWS': 4, 'BLOCK_N': 8192, 'num_warps': 16, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05}  [2s]
+    [screen add/coarse  ] 164 offered -> 164 valid (0 compile-fail, 0 wrong-answer)
+    [add/coarse  ] 164/164 cfgs timed -> 0.0091 ms  {'ROWS': 8, 'BLOCK_N': 4096, 'num_warps': 16, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05}  [1s]
+    [screen add/refine  ]  60 offered ->  60 valid (0 compile-fail, 0 wrong-answer)
+    [add/refine  ]  60/60 cfgs timed -> 0.0095 ms  {'ROWS': 8, 'BLOCK_N': 4096, 'num_warps': 16, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05, 'EVICT': 1}  [2s]
+    [add] coarse 164 cfgs (0 rej) -> 0.0091 ms | refine 60 (0 rej) -> 0.0095 ms | best 0.0091 ms {'ROWS': 8, 'BLOCK_N': 4096, 'num_warps': 16, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05}  [3s]
+    [screen norm/coarse ] 164 offered -> 164 valid (0 compile-fail, 0 wrong-answer)
+    [norm/coarse ] 164/164 cfgs timed -> 0.0093 ms  {'ROWS': 2, 'BLOCK_N': 8192, 'num_warps': 8, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}  [1s]
+    [screen norm/refine ]  50 offered ->  50 valid (0 compile-fail, 0 wrong-answer)
+    [norm/refine ]  50/50 cfgs timed -> 0.0092 ms  {'ROWS': 2, 'BLOCK_N': 4096, 'num_warps': 16, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05, 'EVICT': 1}  [0s]
+    [norm] coarse 164 cfgs (0 rej) -> 0.0093 ms | refine 50 (0 rej) -> 0.0092 ms | best 0.0092 ms {'ROWS': 2, 'BLOCK_N': 4096, 'num_warps': 16, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05, 'EVICT': 1}  [1s]
+    [chain] joint 16 pairs -> 0.0520 ms (independent-best sum would be 0.0183 ms)
+    fused 0.0667 ms (24 GB/s) | unfused 0.1374 ms (14 GB/s) | paired 2.074x | eager 0.1375 | compile 0.0649
+  == decode_bs256 (T=256) ==
+    [screen fused/coarse] 164 offered -> 164 valid (0 compile-fail, 0 wrong-answer)
+    [fused/coarse] 164/164 cfgs timed -> 0.0100 ms  {'ROWS': 2, 'BLOCK_N': 8192, 'num_warps': 8, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}  [1s]
+    [screen fused/refine]  50 offered ->  50 valid (0 compile-fail, 0 wrong-answer)
+    [fused/refine]  50/50 cfgs timed -> 0.0099 ms  {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 8, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05, 'EVICT': 1}  [1s]
+    [fused] coarse 164 cfgs (0 rej) -> 0.0100 ms | refine 50 (0 rej) -> 0.0099 ms | best 0.0099 ms {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 8, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05, 'EVICT': 1}  [1s]
+    [screen add/coarse  ] 164 offered -> 164 valid (0 compile-fail, 0 wrong-answer)
+    [add/coarse  ] 164/164 cfgs timed -> 0.0091 ms  {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 16, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}  [1s]
+    [screen add/refine  ]  46 offered ->  46 valid (0 compile-fail, 0 wrong-answer)
+    [add/refine  ]  46/46 cfgs timed -> 0.0108 ms  {'ROWS': 2, 'BLOCK_N': 8192, 'num_warps': 16, 'num_stages': 1, 'grid_cap': 2112, 'eps': 1e-05, 'EVICT': 1}  [0s]
+    [add] coarse 164 cfgs (0 rej) -> 0.0091 ms | refine 46 (0 rej) -> 0.0108 ms | best 0.0091 ms {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 16, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}  [1s]
+    [screen norm/coarse ] 164 offered -> 164 valid (0 compile-fail, 0 wrong-answer)
+    [norm/coarse ] 164/164 cfgs timed -> 0.0094 ms  {'ROWS': 2, 'BLOCK_N': 8192, 'num_warps': 8, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}  [1s]
+    [screen norm/refine ]  50 offered ->  50 valid (0 compile-fail, 0 wrong-answer)
+    [norm/refine ]  50/50 cfgs timed -> 0.0092 ms  {'ROWS': 2, 'BLOCK_N': 8192, 'num_warps': 8, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05, 'EVICT': 1}  [0s]
+    [norm] coarse 164 cfgs (0 rej) -> 0.0094 ms | refine 50 (0 rej) -> 0.0092 ms | best 0.0092 ms {'ROWS': 2, 'BLOCK_N': 8192, 'num_warps': 8, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05, 'EVICT': 1}  [1s]
+    [chain] joint 16 pairs -> 0.0543 ms (independent-best sum would be 0.0184 ms)
+    fused 0.0899 ms (140 GB/s) | unfused 0.1747 ms (90 GB/s) | paired 1.946x | eager 0.1794 | compile 0.0922
+  == decode_bs512 (T=512) ==
+    [screen fused/coarse] 164 offered -> 164 valid (0 compile-fail, 0 wrong-answer)
+    [fused/coarse] 164/164 cfgs timed -> 0.0118 ms  {'ROWS': 2, 'BLOCK_N': 8192, 'num_warps': 16, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}  [1s]
+    [screen fused/refine]  66 offered ->  66 valid (0 compile-fail, 0 wrong-answer)
+    [fused/refine]  66/66 cfgs timed -> 0.0119 ms  {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 8, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05, 'EVICT': 1}  [1s]
+    [fused] coarse 164 cfgs (0 rej) -> 0.0118 ms | refine 66 (0 rej) -> 0.0119 ms | best 0.0118 ms {'ROWS': 2, 'BLOCK_N': 8192, 'num_warps': 16, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}  [2s]
+    [screen add/coarse  ] 164 offered -> 164 valid (0 compile-fail, 0 wrong-answer)
+    [add/coarse  ] 164/164 cfgs timed -> 0.0111 ms  {'ROWS': 2, 'BLOCK_N': 8192, 'num_warps': 16, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05}  [1s]
+    [screen add/refine  ]  66 offered ->  66 valid (0 compile-fail, 0 wrong-answer)
+    [add/refine  ]  66/66 cfgs timed -> 0.0106 ms  {'ROWS': 2, 'BLOCK_N': 8192, 'num_warps': 8, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05, 'EVICT': 1}  [1s]
+    [add] coarse 164 cfgs (0 rej) -> 0.0111 ms | refine 66 (0 rej) -> 0.0106 ms | best 0.0106 ms {'ROWS': 2, 'BLOCK_N': 8192, 'num_warps': 8, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05, 'EVICT': 1}  [1s]
+    [screen norm/coarse ] 164 offered -> 164 valid (0 compile-fail, 0 wrong-answer)
+    [norm/coarse ] 164/164 cfgs timed -> 0.0097 ms  {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 16, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}  [1s]
+    [screen norm/refine ]  46 offered ->  46 valid (0 compile-fail, 0 wrong-answer)
+    [norm/refine ]  46/46 cfgs timed -> 0.0094 ms  {'ROWS': 1, 'BLOCK_N': 4096, 'num_warps': 8, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}  [0s]
+    [norm] coarse 164 cfgs (0 rej) -> 0.0097 ms | refine 46 (0 rej) -> 0.0094 ms | best 0.0094 ms {'ROWS': 1, 'BLOCK_N': 4096, 'num_warps': 8, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}  [1s]
+    [chain] joint 16 pairs -> 0.0532 ms (independent-best sum would be 0.0200 ms)
+    fused 0.0735 ms (343 GB/s) | unfused 0.1524 ms (206 GB/s) | paired 2.085x | eager 0.1771 | compile 0.0875
+  == decode_bs1024 (T=1024) ==
+    [screen fused/coarse] 164 offered -> 164 valid (0 compile-fail, 0 wrong-answer)
+    [fused/coarse] 164/164 cfgs timed -> 0.0180 ms  {'ROWS': 1, 'BLOCK_N': 4096, 'num_warps': 4, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}  [1s]
+    [screen fused/refine]  54 offered ->  54 valid (0 compile-fail, 0 wrong-answer)
+    [fused/refine]  54/54 cfgs timed -> 0.0177 ms  {'ROWS': 2, 'BLOCK_N': 2048, 'num_warps': 4, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05, 'EVICT': 1}  [0s]
+    [fused] coarse 164 cfgs (0 rej) -> 0.0180 ms | refine 54 (0 rej) -> 0.0177 ms | best 0.0177 ms {'ROWS': 2, 'BLOCK_N': 2048, 'num_warps': 4, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05, 'EVICT': 1}  [1s]
+    [screen add/coarse  ] 164 offered -> 164 valid (0 compile-fail, 0 wrong-answer)
+    [add/coarse  ] 164/164 cfgs timed -> 0.0150 ms  {'ROWS': 8, 'BLOCK_N': 8192, 'num_warps': 32, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}  [1s]
+    [screen add/refine  ]  38 offered ->  38 valid (0 compile-fail, 0 wrong-answer)
+    [add/refine  ]  38/38 cfgs timed -> 0.0194 ms  {'ROWS': 8, 'BLOCK_N': 8192, 'num_warps': 32, 'num_stages': 1, 'grid_cap': 2112, 'eps': 1e-05, 'EVICT': 1}  [1s]
+    [add] coarse 164 cfgs (0 rej) -> 0.0150 ms | refine 38 (0 rej) -> 0.0194 ms | best 0.0150 ms {'ROWS': 8, 'BLOCK_N': 8192, 'num_warps': 32, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}  [1s]
+    [screen norm/coarse ] 164 offered -> 164 valid (0 compile-fail, 0 wrong-answer)
+    [norm/coarse ] 164/164 cfgs timed -> 0.0122 ms  {'ROWS': 1, 'BLOCK_N': 2048, 'num_warps': 8, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}  [1s]
+    [screen norm/refine ]  62 offered ->  62 valid (0 compile-fail, 0 wrong-answer)
+    [norm/refine ]  62/62 cfgs timed -> 0.0124 ms  {'ROWS': 1, 'BLOCK_N': 2048, 'num_warps': 8, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}  [0s]
+    [norm] coarse 164 cfgs (0 rej) -> 0.0122 ms | refine 62 (0 rej) -> 0.0124 ms | best 0.0122 ms {'ROWS': 1, 'BLOCK_N': 2048, 'num_warps': 8, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}  [1s]
+    [chain] joint 12 pairs -> 0.0526 ms (independent-best sum would be 0.0272 ms)
+    fused 0.0871 ms (578 GB/s) | unfused 0.1717 ms (366 GB/s) | paired 1.982x | eager 0.2031 | compile 0.1041
+  == prefill_t2048 (T=2048) ==
+    [screen fused/coarse] 164 offered -> 164 valid (0 compile-fail, 0 wrong-answer)
+    [fused/coarse] 164/164 cfgs timed -> 0.0300 ms  {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 4, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05}  [1s]
+    [screen fused/refine]  28 offered ->  28 valid (0 compile-fail, 0 wrong-answer)
+    [fused/refine]  28/28 cfgs timed -> 0.0367 ms  {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 4, 'num_stages': 2, 'grid_cap': 528, 'eps': 1e-05, 'EVICT': 1}  [1s]
+    [fused] coarse 164 cfgs (0 rej) -> 0.0300 ms | refine 28 (0 rej) -> 0.0367 ms | best 0.0300 ms {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 4, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05}  [2s]
+    [screen add/coarse  ] 164 offered -> 164 valid (0 compile-fail, 0 wrong-answer)
+    [add/coarse  ] 164/164 cfgs timed -> 0.0243 ms  {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 4, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}  [1s]
+    [screen add/refine  ]  28 offered ->  28 valid (0 compile-fail, 0 wrong-answer)
+    [add/refine  ]  28/28 cfgs timed -> 0.0336 ms  {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 4, 'num_stages': 1, 'grid_cap': 1056, 'eps': 1e-05, 'EVICT': 1}  [1s]
+    [add] coarse 164 cfgs (0 rej) -> 0.0243 ms | refine 28 (0 rej) -> 0.0336 ms | best 0.0243 ms {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 4, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}  [1s]
+    [screen norm/coarse ] 164 offered -> 164 valid (0 compile-fail, 0 wrong-answer)
+    [norm/coarse ] 164/164 cfgs timed -> 0.0191 ms  {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 4, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05}  [1s]
+    [screen norm/refine ]  28 offered ->  28 valid (0 compile-fail, 0 wrong-answer)
+    [norm/refine ]  28/28 cfgs timed -> 0.0186 ms  {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 8, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05, 'EVICT': 1}  [0s]
+    [norm] coarse 164 cfgs (0 rej) -> 0.0191 ms | refine 28 (0 rej) -> 0.0186 ms | best 0.0186 ms {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 8, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05, 'EVICT': 1}  [1s]
+    [chain] joint 16 pairs -> 0.0529 ms (independent-best sum would be 0.0429 ms)
+    fused 0.1132 ms (890 GB/s) | unfused 0.2112 ms (596 GB/s) | paired 1.867x | eager 0.2167 | compile 0.1156
+  == prefill_t8192 (T=8192) ==
+    [screen fused/coarse] 164 offered -> 164 valid (0 compile-fail, 0 wrong-answer)
+    [fused/coarse] 164/164 cfgs timed -> 0.1024 ms  {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 4, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}  [1s]
+    [screen fused/refine]  28 offered ->  28 valid (0 compile-fail, 0 wrong-answer)
+    [fused/refine]  28/28 cfgs timed -> 0.1020 ms  {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 4, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}  [0s]
+    [fused] coarse 164 cfgs (0 rej) -> 0.1024 ms | refine 28 (0 rej) -> 0.1020 ms | best 0.1020 ms {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 4, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}  [1s]
+    [screen add/coarse  ] 164 offered -> 164 valid (0 compile-fail, 0 wrong-answer)
+    [add/coarse  ] 164/164 cfgs timed -> 0.0762 ms  {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 4, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05}  [1s]
+    [screen add/refine  ]  28 offered ->  28 valid (0 compile-fail, 0 wrong-answer)
+    [add/refine  ]  28/28 cfgs timed -> 0.0764 ms  {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 4, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05}  [0s]
+    [add] coarse 164 cfgs (0 rej) -> 0.0762 ms | refine 28 (0 rej) -> 0.0764 ms | best 0.0762 ms {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 4, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05}  [1s]
+    [screen norm/coarse ] 164 offered -> 164 valid (0 compile-fail, 0 wrong-answer)
+    [norm/coarse ] 164/164 cfgs timed -> 0.0541 ms  {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 8, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}  [1s]
+    [screen norm/refine ]  44 offered ->  44 valid (0 compile-fail, 0 wrong-answer)
+    [norm/refine ]  44/44 cfgs timed -> 0.0545 ms  {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 8, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05}  [0s]
+    [norm] coarse 164 cfgs (0 rej) -> 0.0541 ms | refine 44 (0 rej) -> 0.0545 ms | best 0.0541 ms {'ROWS': 1, 'BLOCK_N': 8192, 'num_warps': 8, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}  [1s]
+    [chain] joint 9 pairs -> 0.1269 ms (independent-best sum would be 0.1303 ms)
+    fused 0.1740 ms (2315 GB/s) | unfused 0.2357 ms (2136 GB/s) | paired 1.333x | eager 0.7253 | compile 0.1206
+
+wrote f03_resadd_rmsnorm.json
+regime               fused   unfused   paired     eager   compile  L2res
+decode_bs1          0.0681    0.1412    2.050    0.1473    0.0411    yes
+decode_bs2          0.0593    0.1251    2.152    0.1555    0.0569    yes
+decode_bs4          0.0604    0.1293    2.173    0.1583    0.0665    yes
+decode_bs8          0.0569    0.1231    2.154    0.1404    0.0631    yes
+decode_bs16         0.0651    0.1375    2.099    0.1561    0.0746    yes
+decode_bs32         0.0667    0.1374    2.074    0.1375    0.0649    yes
+decode_bs256        0.0899    0.1747    1.946    0.1794    0.0922    yes
+decode_bs512        0.0735    0.1524    2.085    0.1771    0.0875    yes
+decode_bs1024       0.0871    0.1717    1.982    0.2031    0.1041    yes
+prefill_t2048       0.1132    0.2112    1.867    0.2167    0.1156    yes
+prefill_t8192       0.1740    0.2357    1.333    0.7253    0.1206     no
