@@ -913,7 +913,7 @@ def main(argv: list[str] | None = None) -> int:
         else:
             if not (args.merge_only or args.dry_run):
                 layer_stage = run_layer_stage(log, args, layer_script, layer_staging,
-                                              logdir, gpu, scope)
+                                              logdir, gpu, scope, warnings)
                 R.check_tenants(log, gpu, "after the layer stage", warnings)
                 save()
             fresh, err = load_json(layer_staging / "layer_rerun_accumulated.json")
