@@ -168,6 +168,17 @@ def family_canonical(fam: R.Family, results: Path) -> Path:
     return got if got is not None else results / f"{fam.key}.json"
 
 
+def staged_family_path(fam: R.Family, staging: Path, results: Path) -> Path:
+    """The result file a bench writes into `staging` for `fam`.
+
+    Benches name their file after their own RESULT_ID (f03_resadd_rmsnorm.json), NOT after
+    the family key (f03.json). The driver used `f"{fam.key}.json"` and every merge refused
+    with "missing" while the staged file sat next to it under its RESULT_ID name -- the
+    reason the whole first run merged nothing.
+    """
+    return staging / family_canonical(fam, results).name
+
+
 def canonical_mult(fam: R.Family, results: Path) -> int:
     """Rows-per-regime the canonical file carries (the modal count over its completed
     regimes); the completeness bar used for the new regimes too."""
@@ -205,6 +216,14 @@ def launch(log: R.Log, args: argparse.Namespace, key: str, title: str,
                    timeout_s=timeout_s, note=note)
     sub = argparse.Namespace(**vars(args))
     sub.regimes = ",".join(regimes)
+    extra = list(extra)
+    if "--regimes" not in R.script_flags(script):
+        # The benches register --regimes inside add_std_args() (glm52_h200/bench/__init__.py);
+        # run_h200.script_flags() only scans the bench's own source and cannot see it, so
+        # run_family falls back to the GLM52_REGIMES env, which NO bench reads: with the
+        # campaign's 7 + our 4 regimes in REGIME_NAMES, every bench silently measured all 11
+        # into the staging tree last run. The explicit flag is the only thing that works.
+        extra += ["--regimes", ",".join(regimes)]
     return R.run_family(log, fam, script, sub, results, logdir, extra, gpu)
 
 
@@ -220,7 +239,7 @@ def run_family_stage(log, args, fam: R.Family, script: Path, results: Path,
     so the loop is bounded by `len(scope)` whichever way the bench fails.
     """
     R.rule(log, f"{fam.key} -- {fam.title} over {len(scope)} regime(s)")
-    result_path = staging / f"{fam.key}.json"
+    result_path = staged_family_path(fam, staging, results)
     mult = canonical_mult(fam, results)
     poisoned: dict[str, str] = {}
     attempts: list[dict] = []
@@ -845,60 +864,80 @@ def main(argv: list[str] | None = None) -> int:
             warnings.append("--allow-concurrent: another bench process was detected")
 
     # --- measure the families into staging, merge the new rows --------------------------
+    summary_path = results / "bs_extra_summary.json"
     fam_stages: dict[str, dict] = {}
-    for key in FAMILY_KEYS:
-        fam = R.FAMILY_BY_KEY[key]
-        script = R.find_script(fam)
-        if script is None:
-            warnings.append(f"no script found for {key}")
-            log(f"!! no bench found for {key} -- skipped.")
-            continue
-        canonical_path = family_canonical(fam, results)
-        staged_path = staging / f"{fam.key}.json"
-        if not (args.merge_only or args.layer_only or args.dry_run):
-            R.rule(log, f"STAGE {key} -- measuring new regimes into the staging tree")
-            rec = run_family_stage(log, args, fam, script, results, staging, logdir,
-                                   gpu, scope, [], warnings)
-            R.check_tenants(log, gpu, f"after {key}", warnings)
-            fam_stages[key] = rec
-        if not args.layer_only:
-            if args.merge_only:
-                fam_stages.setdefault(key, {})
-            report = merge_family(log, canonical_path, staged_path, args, key, scope,
-                                  warnings, device_name)
-            fam_stages.setdefault(key, {})["merge"] = report
-
-    # --- the whole-layer stage ----------------------------------------------------------
-    layer_script = R.find_script(R.FAMILY_BY_KEY["layer"])
     layer_canonical = family_canonical(R.FAMILY_BY_KEY["layer"], results)
     layer_stage: dict = {}
     merge_report: dict = {}
-    if args.families_only or layer_script is None:
-        if layer_script is None:
-            warnings.append("bench_layer.py not found; layer stage skipped")
-            log("!! no layer bench found -- layer stage skipped.")
-        else:
-            log("  layer stage skipped (--families-only).")
-    else:
-        if not (args.merge_only or args.dry_run):
-            layer_stage = run_layer_stage(log, args, layer_script, layer_staging, logdir,
-                                          gpu, scope)
-            R.check_tenants(log, gpu, "after the layer stage", warnings)
-        fresh, err = load_json(layer_staging / "layer_rerun_accumulated.json")
-        if fresh is None:
-            log(f"  !! no accumulated layer payload to merge: {err}")
-        else:
-            R.rule(log, f"MERGE into {layer_staging.name} -> {layer_canonical.name}")
-            merge_report = merge_layer(log, layer_canonical, fresh, args, scope,
-                                       warnings, device_name)
+    save = lambda: (None if args.dry_run
+                    else atomic_write_json(summary_path, {
+                        "driver": "run_bs_extra_h200.py", "schema": 1,
+                        "regimes": scope, "families": list(FAMILY_KEYS),
+                        "quick": bool(args.quick), "device": device_name or "",
+                        "fam_stages": fam_stages, "layer_merge": merge_report,
+                        "warnings": warnings, "wall_s": time.time() - t_start,
+                        "live": True}))
+    try:
+        for key in FAMILY_KEYS:
+            fam = R.FAMILY_BY_KEY[key]
+            script = R.find_script(fam)
+            if script is None:
+                warnings.append(f"no script found for {key}")
+                log(f"!! no bench found for {key} -- skipped.")
+                continue
+            canonical_path = family_canonical(fam, results)
+            staged_path = staged_family_path(fam, staging, results)
+            if not (args.merge_only or args.layer_only or args.dry_run):
+                R.rule(log, f"STAGE {key} -- measuring new regimes into the staging tree")
+                rec = run_family_stage(log, args, fam, script, results, staging, logdir,
+                                       gpu, scope, [], warnings)
+                R.check_tenants(log, gpu, f"after {key}", warnings)
+                fam_stages[key] = rec
+                save()
+            if not args.layer_only:
+                if args.merge_only:
+                    fam_stages.setdefault(key, {})
+                report = merge_family(log, canonical_path, staged_path, args, key, scope,
+                                      warnings, device_name)
+                fam_stages.setdefault(key, {})["merge"] = report
+                save()
 
-    # --- regenerate summary if asked ----------------------------------------------------
-    if args.regen_summary and not args.dry_run:
-        R.rule(log, "REGENERATING summary.json")
-        sum_rec = regen_summary(log, args, results, gpu)
-        if sum_rec.get("returncode") != 0:
-            warnings.append(f"summary regen exited {sum_rec.get('returncode')}")
-        log(f"  {sum_rec.get('tail', '')[-400:]}")
+        # --- the whole-layer stage ------------------------------------------------------
+        layer_script = R.find_script(R.FAMILY_BY_KEY["layer"])
+        if args.families_only or layer_script is None:
+            if layer_script is None:
+                warnings.append("bench_layer.py not found; layer stage skipped")
+                log("!! no layer bench found -- layer stage skipped.")
+            else:
+                log("  layer stage skipped (--families-only).")
+        else:
+            if not (args.merge_only or args.dry_run):
+                layer_stage = run_layer_stage(log, args, layer_script, layer_staging,
+                                              logdir, gpu, scope)
+                R.check_tenants(log, gpu, "after the layer stage", warnings)
+                save()
+            fresh, err = load_json(layer_staging / "layer_rerun_accumulated.json")
+            if fresh is None:
+                log(f"  !! no accumulated layer payload to merge: {err}")
+            else:
+                R.rule(log, f"MERGE into {layer_staging.name} -> {layer_canonical.name}")
+                merge_report = merge_layer(log, layer_canonical, fresh, args, scope,
+                                           warnings, device_name)
+                save()
+
+        # --- regenerate summary if asked ------------------------------------------------
+        if args.regen_summary and not args.dry_run:
+            R.rule(log, "REGENERATING summary.json")
+            sum_rec = regen_summary(log, args, results, gpu)
+            if sum_rec.get("returncode") != 0:
+                warnings.append(f"summary regen exited {sum_rec.get('returncode')}")
+            log(f"  {sum_rec.get('tail', '')[-400:]}")
+    except Exception as exc:  # noqa: BLE001 -- a driver must not die silently mid-run
+        warnings.append(f"run aborted: {type(exc).__name__}: {exc}")
+        log(f"!! RUN ABORTED: {type(exc).__name__}: {exc}")
+        import traceback
+        log(traceback.format_exc()[-3000:])
+        save()
 
     # --- final report ------------------------------------------------------------------
     hw_end = R.hwinfo()
@@ -926,9 +965,10 @@ def main(argv: list[str] | None = None) -> int:
         "quick": bool(args.quick), "device": device_name or "",
         "fam_stages": fam_stages, "layer_merge": merge_report,
         "warnings": warnings, "wall_s": time.time() - t_start,
+        "live": False,
     }
     if not args.dry_run:
-        atomic_write_json(results / "bs_extra_summary.json", summary)
+        atomic_write_json(summary_path, summary)
     log.close()
     incomplete = sum(len(v.get("regimes_missing") or []) for v in fam_stages.values())
     layer_missing = 0
