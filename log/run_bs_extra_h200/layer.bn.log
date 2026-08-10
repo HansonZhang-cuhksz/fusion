@@ -1,0 +1,307 @@
+# /usr/bin/python /home/guancheng/zsh/fusion/glm52_h200/bench/bench_layer.py --rounds 8 --rep 15 --regimes decode_bs2,decode_bs4,decode_bs8,decode_bs16
+# started 2026-08-10 11:56:26
+/home/guancheng/.local/lib/python3.10/site-packages/torch/_subclasses/functional_tensor.py:307: UserWarning: Failed to initialize NumPy: No module named 'numpy' (Triggered internally at /pytorch/torch/csrc/utils/tensor_numpy.cpp:84.)
+  cpu = _conversion_method_template(device=torch.device("cpu"))
+[harness] NVIDIA H200 sm9.0 | 132 SM | L2 60 MB | flush 256 MB | tick 3.2e-05 ms | hopper feats [tma,clusters,warp_specialize] | preflight ok | results -> /home/guancheng/zsh/fusion/results/h200/_bs_extra_layer_rerun
+[hw] NVIDIA H200  sm_90  132 SM  140 GB  uuid 3aa19cef-f7a3-bd28-1
+[hw] driver 580.173.02  vbios 96.00.A5.00.03  cuda 13.0  torch 2.11.0+cu130  triton 3.6.0  python 3.10.12
+[hw] clocks SM 1980 MHz / 1980 MHz max (100%)  MEM 3201 MHz / 3201 MHz max (100%)  -> unlocked
+[hw] pstate P0  power 119.93 W of 700.00 W  temp 31 C (mem 29)  util 0 %
+[hw] ecc Enabled  mig Disabled  persistence Enabled  compute-mode Default  pcie gen5x16
+[hw] host hgx-h200-233  192 cpu  visible GPUs 1  CUDA_VISIBLE_DEVICES=7
+[hw] physical GPU: nvidia-smi index 7  cuda ordinal 0  matched by uuid  order=PCI_BUS_ID
+[hw] clock basis: application clocks equal their defaults
+[env] NVIDIA H200 (sm_90) | 132 SM | warp 32 | smem 232448 B | regs/SM 65536 | threads/SM 2048 | L2 60 MB | HBM 139 GB | torch 2.11.0+cu130 triton 3.6.0 cuda 13.0
+[preflight] 2026-08-10 11:33:19 | baseline_elementwise=ok, tl_dot_bf16=ok, warp_specialize_tl_range=ok, warp_specialize_num_consumer_groups=no, tma_host_descriptor=ok, tma_device_descriptor=ok, thread_block_cluster_num_ctas=ok
+[preflight] timer tick 0.032 us | launch 10.46399985040937 us | L2 60 MB
+[smem] ceiling 232448 B | staging model max(2, num_stages - 0) * 2*BK*(BM+BN) (fitted to 5 preflight smem_probe observations)
+[hopper] NVIDIA H200 (sm_90) gpu=3aa19cef | tma=True(device) ws=True(range) clusters=True wgmma=True | src preflight | probe skipped
+[calib] B4 gate: preflight trusted; live floor 3.04 us, launch 10.53 us
+[mem] w13 + w2 + folded w13: need 30.00 GB, free 138.94 GB of 139.80 GB -> ok
+
+===== decode_bs2 =====
+  [cfgs] oproj gemm         tile sweep    0.1567 ms (46 cfgs, 0 fail)
+  [cfgs] oproj gemm            0.1439 ms  (39 cfgs tried)  {'BLOCK_M': 16, 'BLOCK_N': 64, 'BLOCK_K': 128, 'GROUP_M': 1, 'num_warps': 2, 'num_stages': 4}
+  [cfgs] oproj gemm+res     tile sweep    0.1576 ms (46 cfgs, 0 fail)
+  [cfgs] oproj gemm+res        0.1450 ms  (39 cfgs tried)  {'BLOCK_M': 16, 'BLOCK_N': 64, 'BLOCK_K': 128, 'GROUP_M': 1, 'num_warps': 2, 'num_stages': 4}
+  [cfgs] oproj epi             0.0056 ms  (12 cfgs tried)  {'BLOCK': 512, 'num_warps': 32, 'num_stages': 1}
+  [cfgs] add                   0.0146 ms  (16 cfgs tried)  {'ROWS': 2, 'BLOCK_N': 256, 'num_warps': 8, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05}
+  [cfgs] rmsnorm               0.0236 ms  (16 cfgs tried)  {'ROWS': 8, 'BLOCK_N': 256, 'num_warps': 8, 'num_stages': 4, 'grid_cap': None, 'eps': 1e-05}
+  [cfgs] add+rmsnorm           0.0084 ms  (16 cfgs tried)  {'ROWS': 1, 'BLOCK_N': 2048, 'num_warps': 8, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05}
+  [cfgs] router gemm           0.0222 ms  (30 cfgs tried)  {'BLOCK_M': 16, 'BLOCK_K': 128, 'BLOCK_E': 64, 'num_warps': 4, 'num_stages': 4}
+  [cfgs] topk                  0.0098 ms  (17 cfgs tried)  {'BLOCK_M': 8, 'BLOCK_K': 32, 'BLOCK_E': 256, 'num_warps': 16, 'num_stages': 4}
+  [cfgs] f5 norm+router        0.0532 ms  (30 cfgs tried)  {'BLOCK_M': 16, 'BLOCK_K': 128, 'BLOCK_E': 64, 'num_warps': 8, 'num_stages': 4}
+  [cfgs] f4 add+norm+rt        0.0551 ms  (30 cfgs tried)  {'BLOCK_M': 16, 'BLOCK_K': 128, 'BLOCK_E': 64, 'num_warps': 8, 'num_stages': 4}
+  [cfgs] w13 gemm           tile sweep    0.1935 ms (46 cfgs, 0 fail)
+  [cfgs] w13 gemm              0.1934 ms  (33 cfgs tried)  {'BLOCK_M': 16, 'BLOCK_N': 256, 'BLOCK_K': 128, 'GROUP_M': 8, 'num_warps': 8, 'num_stages': 3}
+  [cfgs] w13+swiglu         tile sweep    0.1934 ms (43 cfgs, 2 fail)
+  [cfgs] w13+swiglu            0.1927 ms  (31 cfgs tried)  {'BLOCK_M': 16, 'BLOCK_N': 128, 'BLOCK_K': 128, 'GROUP_M': 16, 'num_warps': 8, 'num_stages': 3}
+  [cfgs] silu_and_mul          0.0057 ms  (17 cfgs tried)  {'BLOCK_M': 32, 'BLOCK_N': 32, 'num_warps': 8, 'num_stages': 2}
+  [cfgs] w2 gemm            tile sweep    0.1064 ms (46 cfgs, 0 fail)
+  [cfgs] w2 gemm               0.1059 ms  (39 cfgs tried)  {'BLOCK_M': 16, 'BLOCK_N': 128, 'BLOCK_K': 128, 'GROUP_M': 1, 'num_warps': 8, 'num_stages': 3}
+  [cfgs] w2+merge(atomic)   tile sweep    0.1073 ms (46 cfgs, 0 fail)
+  [cfgs] w2+merge(atomic)      0.1071 ms  (39 cfgs tried)  {'BLOCK_M': 16, 'BLOCK_N': 128, 'BLOCK_K': 128, 'GROUP_M': 4, 'num_warps': 8, 'num_stages': 3}
+  [cfgs] moe_sum               0.0058 ms  (15 cfgs tried)  {'BLOCK_M': 4, 'BLOCK_DIM': 256, 'num_warps': 16, 'num_stages': 2}
+  [cfgs] resadd                0.0056 ms  (17 cfgs tried)  {'BLOCK_M': 4, 'BLOCK_N': 64, 'num_warps': 2, 'num_stages': 2}
+  [cfgs] router prenorm     tile sweep    0.1204 ms (46 cfgs, 0 fail)
+  [cfgs] router prenorm        0.1174 ms  (37 cfgs tried)  {'BLOCK_M': 64, 'BLOCK_N': 32, 'BLOCK_K': 128, 'GROUP_M': 8, 'num_warps': 8, 'num_stages': 3}
+  [cfgs] w13 prenorm        tile sweep    0.1978 ms (48 cfgs, 1 fail)
+  [cfgs] w13 prenorm           0.1974 ms  (19 cfgs tried)  {'BLOCK_M': 64, 'BLOCK_N': 256, 'BLOCK_K': 128, 'GROUP_M': 8, 'num_warps': 8, 'num_stages': 3}
+  [shared] tuning w13 (48), act (18), w2 (48)
+  [shared] w13 0.1427 {'BLOCK_M': 64, 'BLOCK_N': 64, 'BLOCK_K': 32, 'GROUP_M': 8, 'num_warps': 8, 'num_stages': 3} | act 0.0287 | w2 0.0244 {'BLOCK_M': 64, 'BLOCK_N': 64, 'BLOCK_K': 64, 'GROUP_M': 8, 'num_warps': 8, 'num_stages': 3}
+  A_all_unfused      ok  (14 kernels)  relerr 8.85e-03
+  B_f3               ok  (13 kernels)  relerr 8.85e-03
+  C_f1               ok  (13 kernels)  relerr 6.64e-03
+  D_f6               ok  (13 kernels)  relerr 8.85e-03
+  E_f10              ok  (13 kernels)  relerr 8.85e-03
+  F_f8               ok  (14 kernels)  relerr 8.85e-03
+  G_f9               ok  (13 kernels)  relerr 8.85e-03
+  H_f3_f10           ok  (12 kernels)  relerr 8.85e-03
+  I_f3_f9            ok  (12 kernels)  relerr 8.85e-03
+  J_greedy_all       ok  (11 kernels)  relerr 6.64e-03
+  K_f3_f8            ok  (13 kernels)  relerr 8.85e-03
+  L_f5               ok  (13 kernels)  relerr 8.85e-03
+  M_f4               ok  (12 kernels)  relerr 8.85e-03
+  N_f11b             ok  (14 kernels)  relerr 8.85e-03
+  O_f11ab            !! FAILS CORRECTNESS relerr=2.627e-01 -- excluded
+  P_f10_f11ab        !! FAILS CORRECTNESS relerr=2.201e-01 -- excluded
+  Q_f8_f11ab         !! FAILS CORRECTNESS relerr=2.174e-01 -- excluded
+  R_f1_f10_f11ab     !! FAILS CORRECTNESS relerr=2.146e-01 -- excluded
+    pass1 round 0: A_all_unfused=1.3560  B_f3=1.0160  C_f1=0.7863  D_f6=0.7115  E_f10=0.6204  F_f8=0.5860  G_f9=0.5588  H_f3_f10=0.5352  I_f3_f9=0.5363  J_greedy_all=0.5452  K_f3_f8=0.5395  L_f5=0.5634  M_f4=0.5659  N_f11b=0.5724
+    pass1 round 1: A_all_unfused=0.5578  B_f3=0.5366  C_f1=0.5513  D_f6=0.5573  E_f10=0.5604  F_f8=0.5613  G_f9=0.5595  H_f3_f10=0.5353  I_f3_f9=0.5360  J_greedy_all=0.5457  K_f3_f8=0.5381  L_f5=0.5633  M_f4=0.5650  N_f11b=0.5739
+    pass1 round 2: A_all_unfused=0.5587  B_f3=0.5371  C_f1=0.5512  D_f6=0.5575  E_f10=0.5609  F_f8=0.5614  G_f9=0.5586  H_f3_f10=0.5345  I_f3_f9=0.5368  J_greedy_all=0.5449  K_f3_f8=0.5390  L_f5=0.5629  M_f4=0.5663  N_f11b=0.5736
+    pass1 round 3: A_all_unfused=0.5594  B_f3=0.5369  C_f1=0.5501  D_f6=0.5571  E_f10=0.5606  F_f8=0.5607  G_f9=0.5581  H_f3_f10=0.5365  I_f3_f9=0.5355  J_greedy_all=0.5458  K_f3_f8=0.5385  L_f5=0.5644  M_f4=0.5652  N_f11b=0.5736
+    pass1 round 4: A_all_unfused=0.5583  B_f3=0.5381  C_f1=0.5501  D_f6=0.5568  E_f10=0.5594  F_f8=0.5614  G_f9=0.5586  H_f3_f10=0.5354  I_f3_f9=0.5374  J_greedy_all=0.5452  K_f3_f8=0.5386  L_f5=0.5633  M_f4=0.5644  N_f11b=0.5738
+    pass1 round 5: A_all_unfused=0.5593  B_f3=0.5384  C_f1=0.5506  D_f6=0.5575  E_f10=0.5607  F_f8=0.5634  G_f9=0.5596  H_f3_f10=0.5360  I_f3_f9=0.5352  J_greedy_all=0.5462  K_f3_f8=0.5392  L_f5=0.5634  M_f4=0.5651  N_f11b=0.5741
+    pass1 round 6: A_all_unfused=0.5588  B_f3=0.5373  C_f1=0.5513  D_f6=0.5580  E_f10=0.5598  F_f8=0.5620  G_f9=0.5591  H_f3_f10=0.5344  I_f3_f9=0.5364  J_greedy_all=0.5458  K_f3_f8=0.5396  L_f5=0.5627  M_f4=0.5656  N_f11b=0.5735
+    pass1 round 7: A_all_unfused=0.5594  B_f3=0.5375  C_f1=0.5513  D_f6=0.5573  E_f10=0.5603  F_f8=0.5584  G_f9=0.5591  H_f3_f10=0.5349  I_f3_f9=0.5370  J_greedy_all=0.5454  K_f3_f8=0.5380  L_f5=0.5628  M_f4=0.5645  N_f11b=0.5738
+    pass2 round 0: A_all_unfused=0.5592  B_f3=0.5377  C_f1=0.5520  D_f6=0.5574  E_f10=0.5589  F_f8=0.5613  G_f9=0.5587  H_f3_f10=0.5359  I_f3_f9=0.5363  J_greedy_all=0.5451  K_f3_f8=0.5388  L_f5=0.5636  M_f4=0.5651  N_f11b=0.5745
+    pass2 round 1: A_all_unfused=0.5587  B_f3=0.5367  C_f1=0.5518  D_f6=0.5571  E_f10=0.5603  F_f8=0.5610  G_f9=0.5589  H_f3_f10=0.5354  I_f3_f9=0.5357  J_greedy_all=0.5450  K_f3_f8=0.5382  L_f5=0.5638  M_f4=0.5657  N_f11b=0.5734
+    pass2 round 2: A_all_unfused=0.5587  B_f3=0.5373  C_f1=0.5509  D_f6=0.5570  E_f10=0.5594  F_f8=0.5608  G_f9=0.5597  H_f3_f10=0.5351  I_f3_f9=0.5361  J_greedy_all=0.5453  K_f3_f8=0.5377  L_f5=0.5637  M_f4=0.5653  N_f11b=0.5741
+    pass2 round 3: A_all_unfused=0.5579  B_f3=0.5372  C_f1=0.5518  D_f6=0.5573  E_f10=0.5602  F_f8=0.5610  G_f9=0.5589  H_f3_f10=0.5354  I_f3_f9=0.5359  J_greedy_all=0.5441  K_f3_f8=0.5372  L_f5=0.5623  M_f4=0.5652  N_f11b=0.5742
+    pass2 round 4: A_all_unfused=0.5585  B_f3=0.5374  C_f1=0.5509  D_f6=0.5570  E_f10=0.5605  F_f8=0.5613  G_f9=0.5602  H_f3_f10=0.5351  I_f3_f9=0.5369  J_greedy_all=0.5446  K_f3_f8=0.5369  L_f5=0.5641  M_f4=0.5649  N_f11b=0.5728
+    pass2 round 5: A_all_unfused=0.5597  B_f3=0.5378  C_f1=0.5515  D_f6=0.5562  E_f10=0.5587  F_f8=0.5610  G_f9=0.5592  H_f3_f10=0.5358  I_f3_f9=0.5361  J_greedy_all=0.5457  K_f3_f8=0.5382  L_f5=0.5638  M_f4=0.5657  N_f11b=0.5736
+    pass2 round 6: A_all_unfused=0.5593  B_f3=0.5373  C_f1=0.5519  D_f6=0.5580  E_f10=0.5592  F_f8=0.5620  G_f9=0.5590  H_f3_f10=0.5351  I_f3_f9=0.5368  J_greedy_all=0.5449  K_f3_f8=0.5369  L_f5=0.5637  M_f4=0.5664  N_f11b=0.5748
+    pass2 round 7: A_all_unfused=0.5588  B_f3=0.5368  C_f1=0.5510  D_f6=0.5578  E_f10=0.5594  F_f8=0.5618  G_f9=0.5592  H_f3_f10=0.5349  I_f3_f9=0.5369  J_greedy_all=0.5445  K_f3_f8=0.5381  L_f5=0.5644  M_f4=0.5662  N_f11b=0.5732
+  --> TIED: B_f3, H_f3_f10, I_f3_f9
+      pass1: best H_f3_f10 gap 0.00106 ms vs round noise 0.00224 ms -> tied with H_f3_f10, I_f3_f9, B_f3
+      pass2: best H_f3_f10 gap 0.00090 ms vs round noise 0.00118 ms -> tied with H_f3_f10, I_f3_f9
+      best/all-unfused = 1.0401x
+      paired head-vs-baseline: 1.0834x
+
+===== decode_bs4 =====
+  [cfgs] oproj gemm         tile sweep    0.1561 ms (46 cfgs, 0 fail)
+  [cfgs] oproj gemm            0.1385 ms  (38 cfgs tried)  {'BLOCK_M': 16, 'BLOCK_N': 32, 'BLOCK_K': 128, 'GROUP_M': 4, 'num_warps': 2, 'num_stages': 4}
+  [cfgs] oproj gemm+res     tile sweep    0.1570 ms (46 cfgs, 0 fail)
+  [cfgs] oproj gemm+res        0.1179 ms  (38 cfgs tried)  {'BLOCK_M': 16, 'BLOCK_N': 64, 'BLOCK_K': 128, 'GROUP_M': 1, 'num_warps': 2, 'num_stages': 4}
+  [cfgs] oproj epi             0.0340 ms  (12 cfgs tried)  {'BLOCK': 512, 'num_warps': 32, 'num_stages': 1}
+  [cfgs] add                   0.0439 ms  (16 cfgs tried)  {'ROWS': 4, 'BLOCK_N': 128, 'num_warps': 16, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05}
+  [cfgs] rmsnorm               0.0304 ms  (16 cfgs tried)  {'ROWS': 8, 'BLOCK_N': 256, 'num_warps': 32, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}
+  [cfgs] add+rmsnorm           0.0090 ms  (15 cfgs tried)  {'ROWS': 2, 'BLOCK_N': 2048, 'num_warps': 8, 'num_stages': 4, 'grid_cap': None, 'eps': 1e-05}
+  [cfgs] router gemm           0.0214 ms  (30 cfgs tried)  {'BLOCK_M': 16, 'BLOCK_K': 128, 'BLOCK_E': 64, 'num_warps': 4, 'num_stages': 4}
+  [cfgs] topk                  0.0120 ms  (17 cfgs tried)  {'BLOCK_M': 16, 'BLOCK_K': 64, 'BLOCK_E': 256, 'num_warps': 16, 'num_stages': 1}
+  [cfgs] f5 norm+router        0.0526 ms  (30 cfgs tried)  {'BLOCK_M': 16, 'BLOCK_K': 128, 'BLOCK_E': 64, 'num_warps': 8, 'num_stages': 4}
+  [cfgs] f4 add+norm+rt        0.0561 ms  (30 cfgs tried)  {'BLOCK_M': 16, 'BLOCK_K': 128, 'BLOCK_E': 64, 'num_warps': 8, 'num_stages': 4}
+  [cfgs] w13 gemm           tile sweep    0.3676 ms (46 cfgs, 0 fail)
+  [cfgs] w13 gemm              0.3651 ms  (39 cfgs tried)  {'BLOCK_M': 16, 'BLOCK_N': 64, 'BLOCK_K': 128, 'GROUP_M': 4, 'num_warps': 4, 'num_stages': 4}
+  [cfgs] w13+swiglu         tile sweep    0.3682 ms (43 cfgs, 2 fail)
+  [cfgs] w13+swiglu            0.3667 ms  (31 cfgs tried)  {'BLOCK_M': 16, 'BLOCK_N': 128, 'BLOCK_K': 128, 'GROUP_M': 16, 'num_warps': 8, 'num_stages': 3}
+  [cfgs] silu_and_mul          0.0196 ms  (17 cfgs tried)  {'BLOCK_M': 32, 'BLOCK_N': 64, 'num_warps': 8, 'num_stages': 2}
+  [cfgs] w2 gemm            tile sweep    0.1934 ms (46 cfgs, 0 fail)
+  [cfgs] w2 gemm               0.1929 ms  (39 cfgs tried)  {'BLOCK_M': 16, 'BLOCK_N': 128, 'BLOCK_K': 128, 'GROUP_M': 4, 'num_warps': 8, 'num_stages': 2}
+  [cfgs] w2+merge(atomic)   tile sweep    0.1959 ms (46 cfgs, 0 fail)
+  [cfgs] w2+merge(atomic)      0.1939 ms  (39 cfgs tried)  {'BLOCK_M': 16, 'BLOCK_N': 128, 'BLOCK_K': 128, 'GROUP_M': 8, 'num_warps': 8, 'num_stages': 2}
+  [cfgs] moe_sum               0.0060 ms  (15 cfgs tried)  {'BLOCK_M': 4, 'BLOCK_DIM': 256, 'num_warps': 16, 'num_stages': 2}
+  [cfgs] resadd                0.0055 ms  (17 cfgs tried)  {'BLOCK_M': 4, 'BLOCK_N': 256, 'num_warps': 8, 'num_stages': 2}
+  [cfgs] router prenorm     tile sweep    0.0344 ms (46 cfgs, 0 fail)
+  [cfgs] router prenorm        0.0339 ms  (37 cfgs tried)  {'BLOCK_M': 64, 'BLOCK_N': 32, 'BLOCK_K': 128, 'GROUP_M': 16, 'num_warps': 8, 'num_stages': 3}
+  [cfgs] w13 prenorm        tile sweep    0.3747 ms (48 cfgs, 1 fail)
+  [cfgs] w13 prenorm           0.3742 ms  (19 cfgs tried)  {'BLOCK_M': 64, 'BLOCK_N': 256, 'BLOCK_K': 128, 'GROUP_M': 8, 'num_warps': 8, 'num_stages': 3}
+  [shared] tuning w13 (48), act (18), w2 (48)
+  [shared] w13 0.0542 {'BLOCK_M': 16, 'BLOCK_N': 64, 'BLOCK_K': 64, 'GROUP_M': 8, 'num_warps': 4, 'num_stages': 3} | act 0.0055 | w2 0.0239 {'BLOCK_M': 16, 'BLOCK_N': 64, 'BLOCK_K': 64, 'GROUP_M': 8, 'num_warps': 8, 'num_stages': 3}
+  A_all_unfused      ok  (14 kernels)  relerr 7.09e-03
+  B_f3               ok  (13 kernels)  relerr 7.09e-03
+  C_f1               ok  (13 kernels)  relerr 7.09e-03
+  D_f6               ok  (13 kernels)  relerr 7.09e-03
+  E_f10              ok  (13 kernels)  relerr 7.09e-03
+  F_f8               ok  (14 kernels)  relerr 7.09e-03
+  G_f9               ok  (13 kernels)  relerr 7.65e-03
+  H_f3_f10           ok  (12 kernels)  relerr 7.09e-03
+  I_f3_f9            ok  (12 kernels)  relerr 7.09e-03
+  J_greedy_all       ok  (11 kernels)  relerr 7.09e-03
+  K_f3_f8            ok  (13 kernels)  relerr 7.09e-03
+  L_f5               ok  (13 kernels)  relerr 7.09e-03
+  M_f4               ok  (12 kernels)  relerr 7.09e-03
+  N_f11b             ok  (14 kernels)  relerr 7.09e-03
+  O_f11ab            !! FAILS CORRECTNESS relerr=1.862e-01 -- excluded
+  P_f10_f11ab        !! FAILS CORRECTNESS relerr=1.809e-01 -- excluded
+  Q_f8_f11ab         !! FAILS CORRECTNESS relerr=1.631e-01 -- excluded
+  R_f1_f10_f11ab     !! FAILS CORRECTNESS relerr=1.941e-01 -- excluded
+    pass1 round 0: A_all_unfused=1.5135  B_f3=0.9537  C_f1=0.8041  D_f6=0.7998  E_f10=0.7992  F_f8=0.8039  G_f9=0.8022  H_f3_f10=0.7661  I_f3_f9=0.7653  J_greedy_all=0.7758  K_f3_f8=0.7686  L_f5=0.8031  M_f4=0.7945  N_f11b=0.8166
+    pass1 round 1: A_all_unfused=0.8042  B_f3=0.7679  C_f1=0.7798  D_f6=0.8011  E_f10=0.7997  F_f8=0.8039  G_f9=0.8024  H_f3_f10=0.7653  I_f3_f9=0.7661  J_greedy_all=0.7756  K_f3_f8=0.7683  L_f5=0.8020  M_f4=0.7950  N_f11b=0.8170
+    pass1 round 2: A_all_unfused=0.8044  B_f3=0.7686  C_f1=0.7800  D_f6=0.8013  E_f10=0.7996  F_f8=0.8040  G_f9=0.8023  H_f3_f10=0.7658  I_f3_f9=0.7663  J_greedy_all=0.7755  K_f3_f8=0.7684  L_f5=0.8024  M_f4=0.7943  N_f11b=0.8161
+    pass1 round 3: A_all_unfused=0.8039  B_f3=0.7685  C_f1=0.7796  D_f6=0.8023  E_f10=0.7997  F_f8=0.8039  G_f9=0.8024  H_f3_f10=0.7660  I_f3_f9=0.7660  J_greedy_all=0.7759  K_f3_f8=0.7682  L_f5=0.8026  M_f4=0.7955  N_f11b=0.8161
+    pass1 round 4: A_all_unfused=0.8030  B_f3=0.7679  C_f1=0.7799  D_f6=0.8021  E_f10=0.8011  F_f8=0.8031  G_f9=0.8020  H_f3_f10=0.7654  I_f3_f9=0.7660  J_greedy_all=0.7757  K_f3_f8=0.7684  L_f5=0.8029  M_f4=0.7948  N_f11b=0.8162
+    pass1 round 5: A_all_unfused=0.8027  B_f3=0.7677  C_f1=0.7794  D_f6=0.8007  E_f10=0.8004  F_f8=0.8038  G_f9=0.8029  H_f3_f10=0.7664  I_f3_f9=0.7665  J_greedy_all=0.7755  K_f3_f8=0.7691  L_f5=0.8023  M_f4=0.7942  N_f11b=0.8160
+    pass1 round 6: A_all_unfused=0.8034  B_f3=0.7676  C_f1=0.7792  D_f6=0.8008  E_f10=0.7999  F_f8=0.8048  G_f9=0.8028  H_f3_f10=0.7659  I_f3_f9=0.7659  J_greedy_all=0.7751  K_f3_f8=0.7681  L_f5=0.8022  M_f4=0.7946  N_f11b=0.8169
+    pass1 round 7: A_all_unfused=0.8037  B_f3=0.7673  C_f1=0.7798  D_f6=0.8020  E_f10=0.7997  F_f8=0.8043  G_f9=0.8023  H_f3_f10=0.7657  I_f3_f9=0.7658  J_greedy_all=0.7758  K_f3_f8=0.7687  L_f5=0.8016  M_f4=0.7947  N_f11b=0.8158
+    pass2 round 0: A_all_unfused=0.8035  B_f3=0.7688  C_f1=0.7800  D_f6=0.8002  E_f10=0.8004  F_f8=0.8034  G_f9=0.8023  H_f3_f10=0.7651  I_f3_f9=0.7655  J_greedy_all=0.7756  K_f3_f8=0.7684  L_f5=0.8025  M_f4=0.7945  N_f11b=0.8163
+    pass2 round 1: A_all_unfused=0.8041  B_f3=0.7676  C_f1=0.7801  D_f6=0.8017  E_f10=0.7996  F_f8=0.8041  G_f9=0.8026  H_f3_f10=0.7651  I_f3_f9=0.7660  J_greedy_all=0.7755  K_f3_f8=0.7678  L_f5=0.8025  M_f4=0.7948  N_f11b=0.8163
+    pass2 round 2: A_all_unfused=0.8040  B_f3=0.7679  C_f1=0.7800  D_f6=0.8020  E_f10=0.7999  F_f8=0.8036  G_f9=0.8032  H_f3_f10=0.7649  I_f3_f9=0.7656  J_greedy_all=0.7755  K_f3_f8=0.7681  L_f5=0.8015  M_f4=0.7941  N_f11b=0.8170
+    pass2 round 3: A_all_unfused=0.8034  B_f3=0.7683  C_f1=0.7797  D_f6=0.8016  E_f10=0.7993  F_f8=0.8037  G_f9=0.8021  H_f3_f10=0.7660  I_f3_f9=0.7662  J_greedy_all=0.7755  K_f3_f8=0.7679  L_f5=0.8024  M_f4=0.7953  N_f11b=0.8165
+    pass2 round 4: A_all_unfused=0.8029  B_f3=0.7682  C_f1=0.7800  D_f6=0.8018  E_f10=0.8001  F_f8=0.8031  G_f9=0.8022  H_f3_f10=0.7653  I_f3_f9=0.7652  J_greedy_all=0.7753  K_f3_f8=0.7692  L_f5=0.8012  M_f4=0.7951  N_f11b=0.8176
+    pass2 round 5: A_all_unfused=0.8044  B_f3=0.7683  C_f1=0.7800  D_f6=0.8020  E_f10=0.8004  F_f8=0.8041  G_f9=0.8014  H_f3_f10=0.7659  I_f3_f9=0.7650  J_greedy_all=0.7755  K_f3_f8=0.7675  L_f5=0.8019  M_f4=0.7950  N_f11b=0.8173
+    pass2 round 6: A_all_unfused=0.8041  B_f3=0.7681  C_f1=0.7806  D_f6=0.8016  E_f10=0.8007  F_f8=0.8042  G_f9=0.8030  H_f3_f10=0.7653  I_f3_f9=0.7651  J_greedy_all=0.7768  K_f3_f8=0.7681  L_f5=0.8018  M_f4=0.7942  N_f11b=0.8170
+    pass2 round 7: A_all_unfused=0.8040  B_f3=0.7689  C_f1=0.7798  D_f6=0.8004  E_f10=0.7989  F_f8=0.8034  G_f9=0.8024  H_f3_f10=0.7660  I_f3_f9=0.7658  J_greedy_all=0.7757  K_f3_f8=0.7688  L_f5=0.8024  M_f4=0.7946  N_f11b=0.8163
+  --> TIED: H_f3_f10, I_f3_f9
+      pass1: best H_f3_f10 gap 0.00021 ms vs round noise 0.00115 ms -> tied with H_f3_f10, I_f3_f9
+      pass2: best H_f3_f10 gap 0.00026 ms vs round noise 0.00115 ms -> tied with H_f3_f10, I_f3_f9
+      best/all-unfused = 1.0501x
+      paired head-vs-baseline: 1.1060x
+
+===== decode_bs8 =====
+  [cfgs] oproj gemm         tile sweep    0.1566 ms (46 cfgs, 0 fail)
+  [cfgs] oproj gemm            0.1178 ms  (38 cfgs tried)  {'BLOCK_M': 16, 'BLOCK_N': 64, 'BLOCK_K': 128, 'GROUP_M': 4, 'num_warps': 2, 'num_stages': 4}
+  [cfgs] oproj gemm+res     tile sweep    0.1571 ms (46 cfgs, 0 fail)
+  [cfgs] oproj gemm+res        0.1180 ms  (38 cfgs tried)  {'BLOCK_M': 16, 'BLOCK_N': 64, 'BLOCK_K': 128, 'GROUP_M': 8, 'num_warps': 2, 'num_stages': 4}
+  [cfgs] oproj epi             0.0337 ms  (12 cfgs tried)  {'BLOCK': 256, 'num_warps': 16, 'num_stages': 1}
+  [cfgs] add                   0.0934 ms  (16 cfgs tried)  {'ROWS': 4, 'BLOCK_N': 128, 'num_warps': 32, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05}
+  [cfgs] rmsnorm               0.0792 ms  (16 cfgs tried)  {'ROWS': 8, 'BLOCK_N': 256, 'num_warps': 8, 'num_stages': 3, 'grid_cap': None, 'eps': 1e-05}
+  [cfgs] add+rmsnorm           0.0309 ms  (16 cfgs tried)  {'ROWS': 8, 'BLOCK_N': 256, 'num_warps': 4, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}
+  [cfgs] router gemm           0.0213 ms  (30 cfgs tried)  {'BLOCK_M': 16, 'BLOCK_K': 128, 'BLOCK_E': 64, 'num_warps': 4, 'num_stages': 4}
+  [cfgs] topk                  0.0120 ms  (17 cfgs tried)  {'BLOCK_M': 16, 'BLOCK_K': 32, 'BLOCK_E': 256, 'num_warps': 16, 'num_stages': 4}
+  [cfgs] f5 norm+router        0.0534 ms  (30 cfgs tried)  {'BLOCK_M': 16, 'BLOCK_K': 128, 'BLOCK_E': 64, 'num_warps': 8, 'num_stages': 4}
+  [cfgs] f4 add+norm+rt        0.0559 ms  (30 cfgs tried)  {'BLOCK_M': 16, 'BLOCK_K': 128, 'BLOCK_E': 64, 'num_warps': 8, 'num_stages': 4}
+  [cfgs] w13 gemm           tile sweep    0.6520 ms (46 cfgs, 0 fail)
+  [cfgs] w13 gemm              0.6477 ms  (39 cfgs tried)  {'BLOCK_M': 32, 'BLOCK_N': 128, 'BLOCK_K': 128, 'GROUP_M': 16, 'num_warps': 4, 'num_stages': 3}
+  [cfgs] w13+swiglu         tile sweep    0.6510 ms (42 cfgs, 1 fail)
+  [cfgs] w13+swiglu            0.6476 ms  (37 cfgs tried)  {'BLOCK_M': 32, 'BLOCK_N': 64, 'BLOCK_K': 128, 'GROUP_M': 1, 'num_warps': 4, 'num_stages': 3}
+  [cfgs] silu_and_mul          0.0060 ms  (17 cfgs tried)  {'BLOCK_M': 4, 'BLOCK_N': 256, 'num_warps': 16, 'num_stages': 2}
+  [cfgs] w2 gemm            tile sweep    0.3363 ms (46 cfgs, 0 fail)
+  [cfgs] w2 gemm               0.3333 ms  (37 cfgs tried)  {'BLOCK_M': 16, 'BLOCK_N': 64, 'BLOCK_K': 128, 'GROUP_M': 16, 'num_warps': 4, 'num_stages': 4}
+  [cfgs] w2+merge(atomic)   tile sweep    0.3366 ms (46 cfgs, 0 fail)
+  [cfgs] w2+merge(atomic)      0.3369 ms  (39 cfgs tried)  {'BLOCK_M': 16, 'BLOCK_N': 128, 'BLOCK_K': 128, 'GROUP_M': 8, 'num_warps': 16, 'num_stages': 3}
+  [cfgs] moe_sum               0.0137 ms  (15 cfgs tried)  {'BLOCK_M': 32, 'BLOCK_DIM': 512, 'num_warps': 8, 'num_stages': 2}
+  [cfgs] resadd                0.0637 ms  (17 cfgs tried)  {'BLOCK_M': 16, 'BLOCK_N': 256, 'num_warps': 8, 'num_stages': 1}
+  [cfgs] router prenorm     tile sweep    0.0528 ms (46 cfgs, 0 fail)
+  [cfgs] router prenorm        0.0317 ms  (37 cfgs tried)  {'BLOCK_M': 64, 'BLOCK_N': 32, 'BLOCK_K': 128, 'GROUP_M': 16, 'num_warps': 8, 'num_stages': 4}
+  [cfgs] w13 prenorm        tile sweep    0.6760 ms (47 cfgs, 0 fail)
+  [cfgs] w13 prenorm           0.6765 ms  (19 cfgs tried)  {'BLOCK_M': 64, 'BLOCK_N': 256, 'BLOCK_K': 128, 'GROUP_M': 8, 'num_warps': 8, 'num_stages': 3}
+  [shared] tuning w13 (48), act (18), w2 (48)
+  [shared] w13 0.0544 {'BLOCK_M': 16, 'BLOCK_N': 64, 'BLOCK_K': 64, 'GROUP_M': 8, 'num_warps': 4, 'num_stages': 3} | act 0.0055 | w2 0.0238 {'BLOCK_M': 16, 'BLOCK_N': 64, 'BLOCK_K': 64, 'GROUP_M': 8, 'num_warps': 8, 'num_stages': 3}
+  A_all_unfused      ok  (14 kernels)  relerr 7.09e-03
+  B_f3               ok  (13 kernels)  relerr 7.09e-03
+  C_f1               ok  (13 kernels)  relerr 7.09e-03
+  D_f6               ok  (13 kernels)  relerr 7.09e-03
+  E_f10              ok  (13 kernels)  relerr 7.09e-03
+  F_f8               ok  (14 kernels)  relerr 7.09e-03
+  G_f9               ok  (13 kernels)  relerr 1.06e-02
+  H_f3_f10           ok  (12 kernels)  relerr 7.09e-03
+  I_f3_f9            ok  (12 kernels)  relerr 1.06e-02
+  J_greedy_all       ok  (11 kernels)  relerr 7.09e-03
+  K_f3_f8            ok  (13 kernels)  relerr 1.06e-02
+  L_f5               ok  (13 kernels)  relerr 7.09e-03
+  M_f4               ok  (12 kernels)  relerr 7.09e-03
+  N_f11b             ok  (14 kernels)  relerr 7.09e-03
+  O_f11ab            !! FAILS CORRECTNESS relerr=1.853e-01 -- excluded
+  P_f10_f11ab        !! FAILS CORRECTNESS relerr=1.729e-01 -- excluded
+  Q_f8_f11ab         !! FAILS CORRECTNESS relerr=1.707e-01 -- excluded
+  R_f1_f10_f11ab     !! FAILS CORRECTNESS relerr=1.828e-01 -- excluded
+    pass1 round 0: A_all_unfused=1.3252  B_f3=1.2172  C_f1=1.2093  D_f6=1.2229  E_f10=1.2247  F_f8=1.2232  G_f9=1.2217  H_f3_f10=1.2163  I_f3_f9=1.2096  J_greedy_all=1.1966  K_f3_f8=1.2120  L_f5=1.2297  M_f4=1.2220  N_f11b=1.2395
+    pass1 round 1: A_all_unfused=1.2293  B_f3=1.2176  C_f1=1.2093  D_f6=1.2248  E_f10=1.2265  F_f8=1.2239  G_f9=1.2217  H_f3_f10=1.2166  I_f3_f9=1.2103  J_greedy_all=1.1960  K_f3_f8=1.2129  L_f5=1.2301  M_f4=1.2214  N_f11b=1.2387
+    pass1 round 2: A_all_unfused=1.2292  B_f3=1.2183  C_f1=1.2098  D_f6=1.2257  E_f10=1.2245  F_f8=1.2227  G_f9=1.2221  H_f3_f10=1.2153  I_f3_f9=1.2106  J_greedy_all=1.1980  K_f3_f8=1.2141  L_f5=1.2316  M_f4=1.2229  N_f11b=1.2398
+    pass1 round 3: A_all_unfused=1.2288  B_f3=1.2181  C_f1=1.2087  D_f6=1.2246  E_f10=1.2256  F_f8=1.2235  G_f9=1.2227  H_f3_f10=1.2167  I_f3_f9=1.2100  J_greedy_all=1.1974  K_f3_f8=1.2132  L_f5=1.2306  M_f4=1.2232  N_f11b=1.2403
+    pass1 round 4: A_all_unfused=1.2298  B_f3=1.2192  C_f1=1.2100  D_f6=1.2252  E_f10=1.2254  F_f8=1.2224  G_f9=1.2216  H_f3_f10=1.2171  I_f3_f9=1.2107  J_greedy_all=1.1964  K_f3_f8=1.2140  L_f5=1.2314  M_f4=1.2228  N_f11b=1.2406
+    pass1 round 5: A_all_unfused=1.2288  B_f3=1.2183  C_f1=1.2094  D_f6=1.2247  E_f10=1.2259  F_f8=1.2236  G_f9=1.2232  H_f3_f10=1.2163  I_f3_f9=1.2108  J_greedy_all=1.1968  K_f3_f8=1.2133  L_f5=1.2303  M_f4=1.2230  N_f11b=1.2396
+    pass1 round 6: A_all_unfused=1.2292  B_f3=1.2185  C_f1=1.2093  D_f6=1.2250  E_f10=1.2250  F_f8=1.2225  G_f9=1.2211  H_f3_f10=1.2155  I_f3_f9=1.2100  J_greedy_all=1.1971  K_f3_f8=1.2138  L_f5=1.2314  M_f4=1.2230  N_f11b=1.2401
+    pass1 round 7: A_all_unfused=1.2292  B_f3=1.2187  C_f1=1.2098  D_f6=1.2242  E_f10=1.2259  F_f8=1.2240  G_f9=1.2218  H_f3_f10=1.2159  I_f3_f9=1.2095  J_greedy_all=1.1974  K_f3_f8=1.2131  L_f5=1.2310  M_f4=1.2227  N_f11b=1.2404
+    pass2 round 0: A_all_unfused=1.2283  B_f3=1.2183  C_f1=1.2105  D_f6=1.2250  E_f10=1.2246  F_f8=1.2236  G_f9=1.2215  H_f3_f10=1.2157  I_f3_f9=1.2097  J_greedy_all=1.1965  K_f3_f8=1.2131  L_f5=1.2317  M_f4=1.2229  N_f11b=1.2391
+    pass2 round 1: A_all_unfused=1.2292  B_f3=1.2192  C_f1=1.2108  D_f6=1.2252  E_f10=1.2252  F_f8=1.2248  G_f9=1.2222  H_f3_f10=1.2156  I_f3_f9=1.2102  J_greedy_all=1.1969  K_f3_f8=1.2132  L_f5=1.2310  M_f4=1.2222  N_f11b=1.2401
+    pass2 round 2: A_all_unfused=1.2298  B_f3=1.2189  C_f1=1.2088  D_f6=1.2248  E_f10=1.2256  F_f8=1.2228  G_f9=1.2207  H_f3_f10=1.2168  I_f3_f9=1.2094  J_greedy_all=1.1982  K_f3_f8=1.2136  L_f5=1.2312  M_f4=1.2229  N_f11b=1.2407
+    pass2 round 3: A_all_unfused=1.2298  B_f3=1.2186  C_f1=1.2088  D_f6=1.2243  E_f10=1.2252  F_f8=1.2229  G_f9=1.2224  H_f3_f10=1.2170  I_f3_f9=1.2101  J_greedy_all=1.1968  K_f3_f8=1.2137  L_f5=1.2308  M_f4=1.2233  N_f11b=1.2394
+    pass2 round 4: A_all_unfused=1.2292  B_f3=1.2180  C_f1=1.2095  D_f6=1.2247  E_f10=1.2262  F_f8=1.2233  G_f9=1.2217  H_f3_f10=1.2162  I_f3_f9=1.2099  J_greedy_all=1.1975  K_f3_f8=1.2125  L_f5=1.2319  M_f4=1.2225  N_f11b=1.2398
+    pass2 round 5: A_all_unfused=1.2285  B_f3=1.2175  C_f1=1.2100  D_f6=1.2247  E_f10=1.2257  F_f8=1.2243  G_f9=1.2215  H_f3_f10=1.2166  I_f3_f9=1.2092  J_greedy_all=1.1967  K_f3_f8=1.2130  L_f5=1.2313  M_f4=1.2230  N_f11b=1.2397
+    pass2 round 6: A_all_unfused=1.2293  B_f3=1.2189  C_f1=1.2097  D_f6=1.2247  E_f10=1.2254  F_f8=1.2233  G_f9=1.2226  H_f3_f10=1.2155  I_f3_f9=1.2111  J_greedy_all=1.1969  K_f3_f8=1.2133  L_f5=1.2309  M_f4=1.2225  N_f11b=1.2390
+    pass2 round 7: A_all_unfused=1.2292  B_f3=1.2192  C_f1=1.2101  D_f6=1.2259  E_f10=1.2251  F_f8=1.2240  G_f9=1.2220  H_f3_f10=1.2159  I_f3_f9=1.2098  J_greedy_all=1.1970  K_f3_f8=1.2132  L_f5=1.2312  M_f4=1.2222  N_f11b=1.2404
+  --> SEPARATED: J_greedy_all
+      pass1: best J_greedy_all gap 0.01243 ms vs round noise 0.00202 ms -> SEPARATED
+      pass2: best J_greedy_all gap 0.01294 ms vs round noise 0.00192 ms -> SEPARATED
+      best/all-unfused = 1.0270x
+      paired head-vs-baseline: 1.0269x
+
+===== decode_bs16 =====
+  [cfgs] oproj gemm         tile sweep    0.1567 ms (46 cfgs, 0 fail)
+  [cfgs] oproj gemm            0.1167 ms  (38 cfgs tried)  {'BLOCK_M': 16, 'BLOCK_N': 64, 'BLOCK_K': 128, 'GROUP_M': 8, 'num_warps': 2, 'num_stages': 4}
+  [cfgs] oproj gemm+res     tile sweep    0.1564 ms (46 cfgs, 0 fail)
+  [cfgs] oproj gemm+res        0.1197 ms  (37 cfgs tried)  {'BLOCK_M': 16, 'BLOCK_N': 64, 'BLOCK_K': 128, 'GROUP_M': 16, 'num_warps': 4, 'num_stages': 4}
+  [cfgs] oproj epi             0.0446 ms  (12 cfgs tried)  {'BLOCK': 512, 'num_warps': 32, 'num_stages': 3}
+  [cfgs] add                   0.0259 ms  (16 cfgs tried)  {'ROWS': 8, 'BLOCK_N': 128, 'num_warps': 16, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}
+  [cfgs] rmsnorm               0.0087 ms  (15 cfgs tried)  {'ROWS': 2, 'BLOCK_N': 2048, 'num_warps': 16, 'num_stages': 1, 'grid_cap': None, 'eps': 1e-05}
+  [cfgs] add+rmsnorm           0.0278 ms  (16 cfgs tried)  {'ROWS': 4, 'BLOCK_N': 256, 'num_warps': 4, 'num_stages': 2, 'grid_cap': None, 'eps': 1e-05}
+  [cfgs] router gemm           0.0245 ms  (30 cfgs tried)  {'BLOCK_M': 16, 'BLOCK_K': 128, 'BLOCK_E': 64, 'num_warps': 8, 'num_stages': 4}
+  [cfgs] topk                  0.0128 ms  (17 cfgs tried)  {'BLOCK_M': 16, 'BLOCK_K': 32, 'BLOCK_E': 128, 'num_warps': 32, 'num_stages': 3}
+  [cfgs] f5 norm+router        0.0525 ms  (30 cfgs tried)  {'BLOCK_M': 16, 'BLOCK_K': 128, 'BLOCK_E': 64, 'num_warps': 8, 'num_stages': 4}
+  [cfgs] f4 add+norm+rt        0.0569 ms  (30 cfgs tried)  {'BLOCK_M': 16, 'BLOCK_K': 128, 'BLOCK_E': 64, 'num_warps': 8, 'num_stages': 4}
+  [cfgs] w13 gemm           tile sweep    1.1553 ms (46 cfgs, 0 fail)
+  [cfgs] w13 gemm              1.1533 ms  (39 cfgs tried)  {'BLOCK_M': 16, 'BLOCK_N': 128, 'BLOCK_K': 128, 'GROUP_M': 1, 'num_warps': 4, 'num_stages': 4}
+  [cfgs] w13+swiglu         tile sweep    1.1545 ms (41 cfgs, 0 fail)
+  [cfgs] w13+swiglu            1.1518 ms  (35 cfgs tried)  {'BLOCK_M': 16, 'BLOCK_N': 64, 'BLOCK_K': 128, 'GROUP_M': 1, 'num_warps': 4, 'num_stages': 4}
+  [cfgs] silu_and_mul          0.0063 ms  (17 cfgs tried)  {'BLOCK_M': 64, 'BLOCK_N': 32, 'num_warps': 8, 'num_stages': 2}
+  [cfgs] w2 gemm            tile sweep    0.5907 ms (46 cfgs, 0 fail)
+  [cfgs] w2 gemm               0.5878 ms  (39 cfgs tried)  {'BLOCK_M': 16, 'BLOCK_N': 128, 'BLOCK_K': 128, 'GROUP_M': 1, 'num_warps': 8, 'num_stages': 3}
+  [cfgs] w2+merge(atomic)   tile sweep    0.5937 ms (46 cfgs, 0 fail)
+  [cfgs] w2+merge(atomic)      0.5899 ms  (37 cfgs tried)  {'BLOCK_M': 16, 'BLOCK_N': 128, 'BLOCK_K': 128, 'GROUP_M': 16, 'num_warps': 16, 'num_stages': 4}
+  [cfgs] moe_sum               0.0279 ms  (15 cfgs tried)  {'BLOCK_M': 4, 'BLOCK_DIM': 256, 'num_warps': 4, 'num_stages': 4}
+  [cfgs] resadd                0.0208 ms  (17 cfgs tried)  {'BLOCK_M': 32, 'BLOCK_N': 1024, 'num_warps': 8, 'num_stages': 2}
+  [cfgs] router prenorm     tile sweep    0.0338 ms (46 cfgs, 0 fail)
+  [cfgs] router prenorm        0.0323 ms  (37 cfgs tried)  {'BLOCK_M': 64, 'BLOCK_N': 32, 'BLOCK_K': 128, 'GROUP_M': 8, 'num_warps': 4, 'num_stages': 3}
+  [cfgs] w13 prenorm        tile sweep    1.1694 ms (47 cfgs, 0 fail)
+  [cfgs] w13 prenorm           1.1703 ms  (19 cfgs tried)  {'BLOCK_M': 64, 'BLOCK_N': 256, 'BLOCK_K': 128, 'GROUP_M': 8, 'num_warps': 8, 'num_stages': 3}
+  [shared] tuning w13 (48), act (18), w2 (48)
+  [shared] w13 0.0538 {'BLOCK_M': 16, 'BLOCK_N': 64, 'BLOCK_K': 64, 'GROUP_M': 8, 'num_warps': 4, 'num_stages': 3} | act 0.0057 | w2 0.0243 {'BLOCK_M': 16, 'BLOCK_N': 64, 'BLOCK_K': 64, 'GROUP_M': 8, 'num_warps': 4, 'num_stages': 3}
+  A_all_unfused      ok  (14 kernels)  relerr 6.80e-03
+  B_f3               ok  (13 kernels)  relerr 6.80e-03
+  C_f1               ok  (13 kernels)  relerr 6.80e-03
+  D_f6               ok  (13 kernels)  relerr 6.80e-03
+  E_f10              ok  (13 kernels)  relerr 6.80e-03
+  F_f8               ok  (14 kernels)  relerr 6.80e-03
+  G_f9               ok  (13 kernels)  relerr 1.02e-02
+  H_f3_f10           ok  (12 kernels)  relerr 6.80e-03
+  I_f3_f9            ok  (12 kernels)  relerr 1.02e-02
+  J_greedy_all       ok  (11 kernels)  relerr 6.80e-03
+  K_f3_f8            ok  (13 kernels)  relerr 6.80e-03
+  L_f5               ok  (13 kernels)  relerr 6.80e-03
+  M_f4               ok  (12 kernels)  relerr 6.80e-03
+  N_f11b             ok  (14 kernels)  relerr 6.80e-03
+  O_f11ab            !! FAILS CORRECTNESS relerr=1.837e-01 -- excluded
+  P_f10_f11ab        !! FAILS CORRECTNESS relerr=1.667e-01 -- excluded
+  Q_f8_f11ab         !! FAILS CORRECTNESS relerr=1.777e-01 -- excluded
+  R_f1_f10_f11ab     !! FAILS CORRECTNESS relerr=1.752e-01 -- excluded
+    pass1 round 0: A_all_unfused=1.9894  B_f3=1.9864  C_f1=1.9705  D_f6=1.9821  E_f10=1.9798  F_f8=1.9874  G_f9=1.9798  H_f3_f10=1.9788  I_f3_f9=1.9779  J_greedy_all=1.9527  K_f3_f8=1.9866  L_f5=2.0010  M_f4=1.9961  N_f11b=1.9987
+    pass1 round 1: A_all_unfused=1.9900  B_f3=1.9862  C_f1=1.9708  D_f6=1.9819  E_f10=1.9788  F_f8=1.9880  G_f9=1.9792  H_f3_f10=1.9783  I_f3_f9=1.9753  J_greedy_all=1.9535  K_f3_f8=1.9861  L_f5=2.0012  M_f4=1.9939  N_f11b=1.9990
+    pass1 round 2: A_all_unfused=1.9890  B_f3=1.9863  C_f1=1.9715  D_f6=1.9829  E_f10=1.9804  F_f8=1.9877  G_f9=1.9784  H_f3_f10=1.9795  I_f3_f9=1.9753  J_greedy_all=1.9546  K_f3_f8=1.9859  L_f5=2.0028  M_f4=1.9955  N_f11b=1.9998
+    pass1 round 3: A_all_unfused=1.9901  B_f3=1.9868  C_f1=1.9705  D_f6=1.9823  E_f10=1.9790  F_f8=1.9885  G_f9=1.9783  H_f3_f10=1.9785  I_f3_f9=1.9753  J_greedy_all=1.9549  K_f3_f8=1.9857  L_f5=2.0023  M_f4=1.9935  N_f11b=1.9974
+    pass1 round 4: A_all_unfused=1.9900  B_f3=1.9874  C_f1=1.9699  D_f6=1.9817  E_f10=1.9803  F_f8=1.9886  G_f9=1.9788  H_f3_f10=1.9797  I_f3_f9=1.9754  J_greedy_all=1.9532  K_f3_f8=1.9864  L_f5=2.0012  M_f4=1.9951  N_f11b=1.9980
+    pass1 round 5: A_all_unfused=1.9897  B_f3=1.9872  C_f1=1.9705  D_f6=1.9822  E_f10=1.9802  F_f8=1.9891  G_f9=1.9792  H_f3_f10=1.9790  I_f3_f9=1.9756  J_greedy_all=1.9538  K_f3_f8=1.9871  L_f5=2.0016  M_f4=1.9935  N_f11b=1.9991
+    pass1 round 6: A_all_unfused=1.9892  B_f3=1.9874  C_f1=1.9707  D_f6=1.9826  E_f10=1.9799  F_f8=1.9882  G_f9=1.9786  H_f3_f10=1.9783  I_f3_f9=1.9753  J_greedy_all=1.9540  K_f3_f8=1.9868  L_f5=2.0020  M_f4=1.9945  N_f11b=1.9975
+    pass1 round 7: A_all_unfused=1.9904  B_f3=1.9874  C_f1=1.9691  D_f6=1.9831  E_f10=1.9802  F_f8=1.9901  G_f9=1.9787  H_f3_f10=1.9802  I_f3_f9=1.9749  J_greedy_all=1.9546  K_f3_f8=1.9867  L_f5=2.0024  M_f4=1.9944  N_f11b=1.9995
+    pass2 round 0: A_all_unfused=1.9891  B_f3=1.9888  C_f1=1.9699  D_f6=1.9832  E_f10=1.9792  F_f8=1.9880  G_f9=1.9788  H_f3_f10=1.9795  I_f3_f9=1.9747  J_greedy_all=1.9530  K_f3_f8=1.9863  L_f5=2.0012  M_f4=1.9936  N_f11b=1.9982
+    pass2 round 1: A_all_unfused=1.9895  B_f3=1.9860  C_f1=1.9696  D_f6=1.9829  E_f10=1.9803  F_f8=1.9878  G_f9=1.9805  H_f3_f10=1.9788  I_f3_f9=1.9748  J_greedy_all=1.9543  K_f3_f8=1.9862  L_f5=2.0028  M_f4=1.9943  N_f11b=1.9990
+    pass2 round 2: A_all_unfused=1.9889  B_f3=1.9862  C_f1=1.9719  D_f6=1.9825  E_f10=1.9796  F_f8=1.9885  G_f9=1.9794  H_f3_f10=1.9795  I_f3_f9=1.9757  J_greedy_all=1.9529  K_f3_f8=1.9868  L_f5=2.0021  M_f4=1.9940  N_f11b=1.9988
+    pass2 round 3: A_all_unfused=1.9900  B_f3=1.9875  C_f1=1.9705  D_f6=1.9825  E_f10=1.9800  F_f8=1.9878  G_f9=1.9793  H_f3_f10=1.9783  I_f3_f9=1.9767  J_greedy_all=1.9548  K_f3_f8=1.9877  L_f5=2.0020  M_f4=1.9928  N_f11b=1.9993
+    pass2 round 4: A_all_unfused=1.9900  B_f3=1.9874  C_f1=1.9709  D_f6=1.9819  E_f10=1.9793  F_f8=1.9880  G_f9=1.9802  H_f3_f10=1.9787  I_f3_f9=1.9766  J_greedy_all=1.9545  K_f3_f8=1.9856  L_f5=2.0025  M_f4=1.9932  N_f11b=1.9979
+    pass2 round 5: A_all_unfused=1.9892  B_f3=1.9874  C_f1=1.9693  D_f6=1.9813  E_f10=1.9784  F_f8=1.9880  G_f9=1.9780  H_f3_f10=1.9787  I_f3_f9=1.9751  J_greedy_all=1.9531  K_f3_f8=1.9866  L_f5=2.0001  M_f4=1.9931  N_f11b=1.9988
+    pass2 round 6: A_all_unfused=1.9895  B_f3=1.9868  C_f1=1.9701  D_f6=1.9820  E_f10=1.9790  F_f8=1.9884  G_f9=1.9791  H_f3_f10=1.9787  I_f3_f9=1.9752  J_greedy_all=1.9534  K_f3_f8=1.9864  L_f5=2.0010  M_f4=1.9940  N_f11b=1.9972
+    pass2 round 7: A_all_unfused=1.9891  B_f3=1.9862  C_f1=1.9699  D_f6=1.9827  E_f10=1.9794  F_f8=1.9877  G_f9=1.9786  H_f3_f10=1.9788  I_f3_f9=1.9743  J_greedy_all=1.9531  K_f3_f8=1.9855  L_f5=2.0011  M_f4=1.9937  N_f11b=1.9970
+  --> SEPARATED: J_greedy_all
+      pass1: best J_greedy_all gap 0.01661 ms vs round noise 0.00243 ms -> SEPARATED
+      pass2: best J_greedy_all gap 0.01677 ms vs round noise 0.00259 ms -> SEPARATED
+      best/all-unfused = 1.0184x
+      paired head-vs-baseline: 1.0181x
+
+wrote layer_configurations.json
+regime          status     winner / tied set                            vs unfused
+decode_bs2      TIED       B_f3, H_f3_f10, I_f3_f9                         1.0401x
+decode_bs4      TIED       H_f3_f10, I_f3_f9                               1.0501x
+decode_bs8      SEPARATED  J_greedy_all                                    1.0270x
+decode_bs16     SEPARATED  J_greedy_all                                    1.0184x
