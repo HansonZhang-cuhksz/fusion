@@ -307,3 +307,145 @@
 11:26:23   layer staging    /home/shuhan/fusion/results/h200/_bs_extra_layer_rerun
 11:26:23   merge target     /home/shuhan/fusion/results/h200/*.json
 11:26:23   logs             /home/shuhan/fusion/log/run_bs_extra_h200
+11:33:18 ============================================================================================
+11:33:18 GPU SELECTION -- 8 card(s) on this host
+11:33:18 ============================================================================================
+11:33:18   rank idx   util   used GB   free GB proc  temp  state
+11:33:18   -----------------------------------------------------
+11:33:18      0   0     0%       0.0     139.8    0    29  idle
+11:33:18      1   1     0%       0.0     139.8    0    34  idle
+11:33:18      2   2     0%       0.0     139.8    0    33  idle
+11:33:18      3   3     0%       0.0     139.8    0    30  idle
+11:33:18      4   4     0%       0.0     139.8    0    32  idle
+11:33:18      5   5     0%       0.0     139.8    0    33  idle
+11:33:18      6   6     0%       0.0     139.8    0    34  idle
+11:33:18      7   7     0%       0.0     139.8    0    30  idle
+11:33:18        gpu 0  NVIDIA H200  uuid GPU-b2318e71-edbf-aa1b-dcf3-3cc3e6ea7db0
+11:33:18        gpu 1  NVIDIA H200  uuid GPU-59aa5198-70aa-0e6f-16b9-a6d483af9c4e
+11:33:18        gpu 2  NVIDIA H200  uuid GPU-3eb2bc50-6290-2508-4dc5-e01f05c85e5f
+11:33:18        gpu 3  NVIDIA H200  uuid GPU-6c4cc3d3-e0bc-949d-16be-822af843e49f
+11:33:18        gpu 4  NVIDIA H200  uuid GPU-c20464a7-77aa-f6f2-9a70-207c42f6b4a1
+11:33:18        gpu 5  NVIDIA H200  uuid GPU-2c1d24fb-c9a6-9d6c-fa91-28ea2b50e17f
+11:33:18        gpu 6  NVIDIA H200  uuid GPU-338e7fe0-5ca6-f37f-b9b6-ea4ea6c5358b
+11:33:18        gpu 7  NVIDIA H200  uuid GPU-3aa19cef-f7a3-bd28-1b5e-2e6d8b8ca670
+11:33:18 
+11:33:18   [gpu] pinning GPU 7 (NVIDIA H200) uuid GPU-3aa19cef-f7a3-bd28-1b5e-2e6d8b8ca670
+11:33:18   [gpu] --gpu 7 as requested
+11:33:18   [gpu] every child gets CUDA_VISIBLE_DEVICES=7 and CUDA_DEVICE_ORDER=PCI_BUS_ID, so each one sees exactly this card as cuda:0 -- which is why no bench needed changing.
+11:33:18 !! cached preflight does not describe the pinned GPU: same model but a different card (probe b2318e71-edbf-aa1b-dcf3-3cc3e6ea7db0, pinned 3aa19cef-f7a3-bd28-1b5e-2e6d8b8ca670) -- re-probing.
+11:33:18     running preflight: /usr/bin/python /home/guancheng/zsh/fusion/glm52_h200/preflight.py --gpu 7
+11:33:26     preflight exit=0, log -> /home/guancheng/zsh/fusion/log/run_bs_extra_h200/preflight.log
+11:33:26 ============================================================================================
+11:33:26 GLM-5.2 MoE fusion study -- H200 campaign
+11:33:26 ============================================================================================
+11:33:26   repo            /home/guancheng/zsh/fusion
+11:33:26   results dir     /home/guancheng/zsh/fusion/results/h200
+11:33:26   driver started  2026-08-10 11:33:26
+11:33:26   gpu             7  uuid GPU-3aa19cef-f7a3-bd28-1b5e-2e6d8b8ca670  (--gpu 7 as requested)
+11:33:26 
+11:33:26   [device] NVIDIA H200  sm_90 | 132 SM | warp 32 | smem/block 232448 B | regs/SM 65536 | L2 60 MB | VRAM 139.8 GB
+11:33:26   [stack]  torch 2.11.0+cu130 (cuda 13.0) | triton 3.6.0
+11:33:26   [triton features, compiled AND launched] +baseline_elementwise +tl_dot_bf16 +warp_specialize_tl_range -warp_specialize_num_consumer_groups +tma_host_descriptor +tma_device_descriptor +thread_block_cluster_num_ctas
+11:33:26   [calib]  copy_1024MB_GBs=4244  rmw_1024MB_GBs=4240  read_1024MB_GBs=4603  copy_2048MB_GBs=4249  rmw_2048MB_GBs=4253  read_2048MB_GBs=4652   cublas_4096x16384x6144_TFs=823.0  triton_4096x16384x6144_TFs=771.3  cublas_8192x16384x6144_TFs=719.2  triton_8192x16384x6144_TFs=692.5
+11:33:26   [calib]  launch 10.46 us | timer tick 0.032 us (measured by preflight)
+11:33:26   [capacity] expert weights 18.0 GB | fit=True | whole layer feasible=True
+11:33:26 
+11:33:26   [hwinfo@start] GPU0 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 29 C | 76.53/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+11:33:26   [hwinfo@start] GPU1 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 34 C | 78.78/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+11:33:26   [hwinfo@start] GPU2 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 33 C | 76.24/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+11:33:26   [hwinfo@start] GPU3 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 30 C | 77.3/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+11:33:26   [hwinfo@start] GPU4 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 32 C | 77.7/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+11:33:26   [hwinfo@start] GPU5 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 33 C | 75.37/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+11:33:26   [hwinfo@start] GPU6 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 34 C | 77.35/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+11:33:26   [hwinfo@start] GPU7 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 30 C | 77.85/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+11:33:26 
+11:33:26   [gate] sm_90 confirmed (NVIDIA H200). Hopper paths (TMA, clusters, warp specialisation) are eligible; each is still chosen at RUNTIME from the probe.
+11:33:27 ============================================================================================
+11:33:27 STAGE f03 -- measuring new regimes into the staging tree
+11:33:27 ============================================================================================
+11:33:27 ============================================================================================
+11:33:27 f03 -- #3  ResAdd+RMSNorm over 4 regime(s)
+11:33:27 ============================================================================================
+11:33:27   all 4 regime(s) in scope have rows; f03 is done.
+11:33:28   [merge] backup -> f03_resadd_rmsnorm.pre_bs_extra_20260810_113328.json
+11:33:28   [merge] appended 4 row(s) to f03_resadd_rmsnorm.json.
+11:33:28 ============================================================================================
+11:33:28 STAGE f10 -- measuring new regimes into the staging tree
+11:33:28 ============================================================================================
+11:33:28 ============================================================================================
+11:33:28 f10 -- #10 ExpertMerge+ResAdd over 4 regime(s)
+11:33:28 ============================================================================================
+11:33:28   all 4 regime(s) in scope have rows; f10 is done.
+11:33:28   [merge] backup -> f10_merge_resadd.pre_bs_extra_20260810_113328.json
+11:33:29   [merge] appended 4 row(s) to f10_merge_resadd.json.
+11:33:29 ============================================================================================
+11:33:29 STAGE f01 -- measuring new regimes into the staging tree
+11:33:29 ============================================================================================
+11:33:29 ============================================================================================
+11:33:29 f01 -- #1  o_proj+ResAdd over 4 regime(s)
+11:33:29 ============================================================================================
+11:33:29   all 4 regime(s) in scope have rows; f01 is done.
+11:33:29   [merge] backup -> f01_oproj_resadd.pre_bs_extra_20260810_113329.json
+11:33:30   [merge] appended 4 row(s) to f01_oproj_resadd.json.
+11:33:30 ============================================================================================
+11:33:30 STAGE f04f05 -- measuring new regimes into the staging tree
+11:33:30 ============================================================================================
+11:33:30 ============================================================================================
+11:33:30 f04f05 -- #4  ResAdd+RMSNorm+Router / #5 RMSNorm+Router over 4 regime(s)
+11:33:30 ============================================================================================
+11:33:30   all 4 regime(s) in scope have rows; f04f05 is done.
+11:33:31   [merge] backup -> f04f05_norm_router.pre_bs_extra_20260810_113331.json
+11:33:31   [merge] appended 16 row(s) to f04f05_norm_router.json.
+11:33:31 ============================================================================================
+11:33:31 STAGE f11 -- measuring new regimes into the staging tree
+11:33:31 ============================================================================================
+11:33:31 ============================================================================================
+11:33:31 f11 -- #11a LazyPreNorm->w13 / #11b LazyPreNorm->router over 4 regime(s)
+11:33:31 ============================================================================================
+11:33:31   all 4 regime(s) in scope have rows; f11 is done.
+11:33:32   [merge] backup -> f11_lazy_prenorm.pre_bs_extra_20260810_113332.json
+11:33:32   [merge] appended 4 row(s) to f11_lazy_prenorm.json.
+11:33:32 ============================================================================================
+11:33:32 STAGE f06 -- measuring new regimes into the staging tree
+11:33:32 ============================================================================================
+11:33:32 ============================================================================================
+11:33:32 f06 -- #6  UpGate+SwiGLU over 4 regime(s)
+11:33:32 ============================================================================================
+11:33:32   all 4 regime(s) in scope have rows; f06 is done.
+11:33:33   [merge] backup -> f06_upgate_swiglu.pre_bs_extra_20260810_113333.json
+11:33:33   [merge] appended 4 row(s) to f06_upgate_swiglu.json.
+11:33:33 ============================================================================================
+11:33:33 STAGE f08f09 -- measuring new regimes into the staging tree
+11:33:33 ============================================================================================
+11:33:33 ============================================================================================
+11:33:33 f08f09 -- #8  Down+ExpertMerge / #9 Down+Merge+ResAdd2 over 4 regime(s)
+11:33:33 ============================================================================================
+11:33:33   all 4 regime(s) in scope have rows; f08f09 is done.
+11:33:34   [merge] backup -> f08f09_down_merge_resadd.pre_bs_extra_20260810_113334.json
+11:33:34   [merge] appended 16 row(s) to f08f09_down_merge_resadd.json.
+11:33:34 !! RUN ABORTED: TypeError: run_layer_stage() missing 1 required positional argument: 'warnings'
+11:33:34 Traceback (most recent call last):
+  File "/home/guancheng/zsh/fusion/run_bs_extra_h200.py", line 915, in main
+    layer_stage = run_layer_stage(log, args, layer_script, layer_staging,
+TypeError: run_layer_stage() missing 1 required positional argument: 'warnings'
+
+11:33:35 ============================================================================================
+11:33:35 STATUS -- family x regime
+11:33:35 ============================================================================================
+11:33:35   family          d2      d4      d8     d16
+11:33:35   ----------------------------------------------------------------------------------------------------
+11:33:35   f03         merged  merged  merged  merged
+11:33:35   f10         merged  merged  merged  merged
+11:33:35   f01         merged  merged  merged  merged
+11:33:35   f04f05      merged  merged  merged  merged
+11:33:35   f11         merged  merged  merged  merged
+11:33:35   f06         merged  merged  merged  merged
+11:33:35   f08f09      merged  merged  merged  merged
+11:33:35 
+11:33:35   merged = rows appended into the campaign file; MISS = no row produced; quart = quarantined
+11:33:35 
+11:33:35 ============================================================================================
+11:33:35 SEND BACK
+11:33:35 ============================================================================================
+11:33:35   1. the whole results dir (or at least the merged *.json + the two staging trees)
+11:33:35   2. this log dir
