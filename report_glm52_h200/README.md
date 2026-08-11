@@ -47,26 +47,83 @@ The tables below are from the **second re-run**, commit `6d699b4` ("h200 done"),
 no co-tenant on this card the whole campaign — the tenant was on GPU2 of the host). It is a
 strict upgrade of the campaign §0 describes:
 
-- **105 cells, every one PAIRED.** The 12 original (family, variant) groups plus the three
-  f11 groups the repair restored (`f11a_w13`, `f11b_router`, `combined`) = 15 × 7 regimes.
-  Zero sequential cells; `verify_campaign_v2.py` → **0 FAIL, 11 PASS, 2 INFO**.
+- **165 cells, every one PAIRED.** The 12 original (family, variant) groups plus the three
+  f11 groups the repair restored (`f11a_w13`, `f11b_router`, `combined`) = 15 × 11 regimes
+  (the four mid-decode regimes were added by the bs-extra merge, §0b). Zero sequential
+  cells; `verify_campaign_v2.py` → **0 FAIL, 11 PASS, 2 INFO** (that check was written for
+  the v2-only 105 cells; the 60 bs-extra cells carry the same paired structure).
 - **The B4 calibration gate now runs and passed.** harness floor 36.91 µs / launch 10.32 µs /
   tick 0.032 µs matching 100 % of samples, `launch_timer_trustworthy: true`. (The gate bars
   themselves had to be re-based: an idle H200's floor is genuinely ~37–42 µs — five clean
   preflights prove it — so config's absolute/ratio bars were raised to 50 µs / 8×; LOG-17.)
-- **#11a resolved.** `f11_lazy_prenorm.json` is complete (7/7 regimes, `regimes_failed: {}`);
-  the SQ_MODE=4 (transposed-load) repair holds; `f11a_w13` is 1.018x at `decode_bs1` and
-  loses at prefill (0.62–0.77x — grouped GEMM padding, the fission-read as written).
-- **Flags are annotations, as in campaign 1.** 39 cells sit above the **bytes-only** traffic
-  ceiling (the launch-elimination signature, §3.3 — 4 of them are explained by the
-  launch-aware bound, the rest are the decode regime the model does not price); 24 cells have
-  a >2 % gap between the paired and ratio-of-medians statistics (§3.2, dominated by f04f05
-  order sensitivity). Both values are printed per cell and nothing was clipped or re-measured
-  to fit a model.
+- **#11a resolved.** `f11_lazy_prenorm.json` is complete (**11/11 regimes** after the bs-extra
+  append, `regimes_failed: {}`); the SQ_MODE=4 (transposed-load) repair holds; `f11a_w13` is
+  1.018x at `decode_bs1`, resolves 0.94–0.99x across the four new decode regimes, and loses
+  at prefill (0.62–0.77x — grouped GEMM padding, the fission-read as written).
+- **Flags are annotations, as in campaign 1.** Of the 165 cells, **70** sit above the
+  **bytes-only** traffic ceiling (the launch-elimination signature, §3.3 — 4 of them are
+  explained by the launch-aware bound, the rest are the decode regime the model does not
+  price; the v2-only count was 39), **38** have a >2 % gap between the paired and
+  ratio-of-medians statistics (§3.2, dominated by f04f05 order sensitivity; v2-only: 24),
+  and one cell (`#9 atomic` at `decode_bs4`) is **UNRESOLVED** — its arms differ by fewer
+  than 3 CUDA-event ticks. Both values are printed per cell and nothing was clipped or
+  re-measured to fit a model.
 - **Known genuine negative, reproduced faithfully.** The `#8/#9` token-major fused arms
   degrade badly with batch (fused ~347 ms vs ~3.6 ms at `prefill_t8192`; ~0.01x), with the
   fused arm's tuning budget starved (30 configs). The old tables carried the identical
   numbers (347.56 ms) — the fusion is honestly slower there, not re-measured away.
+
+
+## 0b. bs-extra (2026-08-10): decode_bs2/4/8/16 appended
+
+On 2026-08-10 the directory was extended from 7 to **11 regimes**: `decode_bs2`, `decode_bs4`,
+`decode_bs8`, `decode_bs16` were measured (a new mid-decode group between `bs1` and `bs32`,
+where the campaign had no data) and merged into the existing result files by
+`run_bs_extra_h200.py`. The four families' existing regimes were **not** re-measured — the
+driver's `--regimes` filter was pre-flight-fixed so the benches ran the 4 new regimes only;
+the campaign's 7 regimes per family were merged through unchanged (per-file pre-merge backups
+`*.pre_bs_extra_20260810_11*.json` were written before each merge). What the extension adds:
+
+- **60 fusion cells** (15 rows x 4 regimes), all PAIRED like the rest. `summary.json` now holds
+  **165 cells over 15 x 11 regimes**; every per-regime CSV has all **16 rows measured**.
+- **60 layer blocks** went through the same overlay for the whole-layer sweep (four regimes x
+  14 or 15 configurations, `bs2`/`bs4`/`bs8`/`bs16` blocks appended at 12:03, backup
+  `layer_configurations.pre_bs_extra_20260810_120337.json`; the campaign's 7 blocks are
+  byte-identical to the backup). `layer_optimal_per_regime.csv` grew 102 -> **158 rows**.
+- **The layer verdicts are now richer than "everything TIED".** At the four new regimes the
+  mid-decode band splits: `decode_bs8` and `decode_bs16` are **SEPARATED** winners
+  (J_greedy_all, 1.0270x / 1.0185x), `decode_bs2` and `decode_bs4` are TIED onto the same
+  greedy-set head (1.0438x / 1.0503x). Of the 11 regimes, **8 are TIED and 3 are SEPARATED**
+  (§0 table).
+- **The flagship gain now has a shape:** #3/#10/#11b-style ~1.9–2.2x at `T <= 16`, a cliff
+  between `T = 16` and `T = 32`, a flat ~1.0–1.01x band through `T = 1024`, and a soft decline
+  into prefill. The new regimes pin down where the decode win leaves off.
+- **Measurement:** the bs-extra run pinned GPU 7 of the host (`GPU-3aa19cef`, via
+  `CUDA_VISIBLE_DEVICES=7`), re-probed its own preflight, and merged 11:33-12:03 on
+  2026-08-10. The driver and its merge records live in `log/run_bs_extra_h200/driver.log`
+  and `results/h200/bs_extra_summary.json`.
+
+The counts below are the 11-regime ones; the v2 run's own numbers for its 7 regimes are given
+in parentheses where the two differ.
+
+
+## 0c. Control arm (GLM52_H200_CLASSIC=1, 2026-08-10): a second reading, kept separate
+
+A **control arm** was built on 2026-08-10 to rerun these same benchmarks on this same card with
+`GLM52_H200_CLASSIC=1`, which forces the sm_90 levers off — TMA, warp specialization
+(`tl.range(warp_specialize=True)`), thread-block clusters (`num_ctas`) and `wgmma`. It asks one
+question: does the Hopper path account for any of the H200-vs-C500 pattern below?
+
+**Its numbers are not in this directory's CSVs and never will be.** Every table here is the
+Hopper-path campaign (§0a as extended by §0b). The control arm's output lives in
+**`control_arm/`**, published as a *delta* against these files — a DIFF, never a merge, so that
+the campaign stays the fixed baseline it is being compared to. Staged results:
+`results/h200/_control_arm/`. Design, verification bar and the limits of what it can claim:
+`log/LOG-18-hopper-control-arm.md`.
+
+> **VERDICT — UNFILLED.** *Nothing has been measured.* The driver
+> (`run_control_h200.py`) has not been run. Fill this line from `control_arm/README.md`
+> when the data returns, and flip LOG-18's **Status** at the same time.
 
 
 ## 0. Read this first: what the re-run fixed, and what it did not
@@ -91,12 +148,17 @@ interchangeable. Publishing the sequential ratio is what let a physically imposs
 through on the RTX 4060.
 
 **Not fixed: the layer-level effects are mostly not resolvable.** Under LOG-11's tie protocol,
-**six of seven regimes are TIED** — at `decode_bs1024`, 14 configurations are statistically
-indistinguishable. Only `decode_bs32` separates. Comparing the two runs shows why that matters:
+**eight of eleven regimes are TIED** — at `decode_bs1024`, 14 configurations are statistically
+indistinguishable. Only `decode_bs8`, `decode_bs16` and `decode_bs256` separate (with
+`J_greedy_all` the winner at each). Comparing the two runs shows why that matters:
 
 | regime | run 1 winner | run 1 | run 2 winner | run 2 |
 |---|---|---|---|---|
 | decode_bs1 | #3 + #9 | 1.2007 | #1+#10+#11a+#11b — **withheld**, §1.3e; fastest validated is greedy | 1.2718 (withheld) / **1.2717** |
+| decode_bs2 | — (bs-extra) | — | TIED {B_f3, H_f3_f10, I_f3_f9}; fastest #3+#10 | **1.0438** (§0b) |
+| decode_bs4 | — (bs-extra) | — | TIED {H_f3_f10, I_f3_f9}; fastest #3+#10 | **1.0503** (§0b) |
+| decode_bs8 | — (bs-extra) | — | **greedy** (separated) | **1.0270** (§0b) |
+| decode_bs16 | — (bs-extra) | — | **greedy** (separated) | **1.0185** (§0b) |
 | decode_bs32 | greedy | 1.0089 | **greedy** (separated) | 1.0165 |
 | decode_bs256 | #11b | 1.0219 | greedy | 1.0092 |
 | decode_bs512 | #4 | 1.0185 | greedy | 1.0167 |
@@ -104,28 +166,32 @@ indistinguishable. Only `decode_bs32` separates. Comparing the two runs shows wh
 | prefill_t2048 | #3 + #10 | 1.0148 | **#3 + #10** | 1.0101 |
 | prefill_t8192 | #3 + #10 | 1.0071 | #3 | 1.0087 |
 
-The *named winner* changes in four of seven regimes between runs. That is not a contradiction —
+The *named winner* changed in four of seven v2 regimes between runs (and the bs-extra rows
+are single-layer-run verdicts from the merged file). That is not a contradiction —
 it is what "TIED" means, and the protocol now says so. **Do not quote a layer winner from a
-tied regime as a result.** What survives both runs is: `decode_bs1` gains ~1.20–1.27x, greedy
-fusion is competitive at small decode batches, and prefill sits near 1.01x.
+tied regime as a result.** What survives is: `decode_bs1` gains ~1.20–1.29x, greedy
+fusion is competitive from `decode_bs1` through `decode_bs16`, the gain falls off the cliff
+(through ~1.02–1.05x at `bs2`–`bs16`), and prefill sits near 1.01x.
 
-**Fusion #11 took four attempts and now publishes 3 cells out of 28.** The first attempt wrote
-`complete: true` with an empty `rows` array; the second and third produced tables whose numbers
-exceeded their own physical ceilings on a contended card. The fourth
-(`f11_publish.py` -> `results/h200/f11_publish.json`, 2026-08-06) added four gates the old
-harness did not have — a calibration gate, a launch-aware ceiling, a strict invariance screen,
-and dual wall/graph timing — and **`results/h200/f11_lazy_prenorm.json` no longer supplies a
-single number to this report**. Of the 28 #11 cells in the seven per-regime CSVs (4 rows x 7
-regimes) **3 are published and 25 are empty**, each with its reason in `notes`. §1.3 is the
-whole story; nothing else in this file supersedes it.
+**Fusion #11 took four attempts.** The first attempt wrote `complete: true` with an empty
+`rows` array; the second and third produced tables whose numbers exceeded their own physical
+ceilings on a contended card. The fourth (`f11_publish.py` -> `results/h200/f11_publish.json`,
+2026-08-06) added four gates the old harness did not have — a calibration gate, a
+launch-aware ceiling, a strict invariance screen, and dual wall/graph timing. **The gated file
+was then quarantined at v2-campaign prep (2026-08-07 10:08, see
+`results/h200/_quarantine_foreign_20260806_190139/f11_publish.json`), so the per-regime CSVs
+here — v2 and bs-extra alike — carry the repaired `f11_lazy_prenorm.json` **cells** for #11:
+all **44 cells (4 rows x 11 regimes) bear numbers**, each with its reason in `notes`.
+§1.3 documents the gated adjudication the publish file would give for the seven campaign
+regimes; nothing else in this file supersedes it.
 
 
 ## Files
 
 | file | rows | status |
 |---|---|---|
-| `fusion_decode_bs1.csv`, `..._bs32`, `..._bs256`, `..._bs512`, `..._bs1024`, `..._prefill_t2048`, `..._t8192` | 16 each | measured; the four `#11` rows are empty except at `decode_bs1024` / `prefill_t2048` / `prefill_t8192`, where `#11b` alone carries a number (§1.3) |
-| `layer_optimal_per_regime.csv` | 102 | **measured end-to-end, two independent passes** (§4); the four `#11a`-bearing configurations keep their times and have their `speedup_vs_unfused` **withheld** (§1.3e) |
+| `fusion_decode_bs1.csv`, `..._bs2`, `..._bs4`, `..._bs8`, `..._bs16`, `..._bs32`, `..._bs256`, `..._bs512`, `..._bs1024`, `..._prefill_t2048`, `..._t8192` | 16 each | measured, all 16 rows published at all **11 regimes** (176 cells; the four `#11` rows carry the repaired-file cells, §0b/§1.3) |
+| `layer_optimal_per_regime.csv` | 158 | **measured end-to-end, two independent passes** (§4) — 18 rows at `decode_bs1`, 14 at each other ten; every timing column and `speedup_vs_unfused` filled |
 
 All times are **milliseconds**, bf16, one exclusive-by-request H200 (`--gpu 3`) — see §3.5 and
 §3.6 for the two ways that "exclusive" was not fully true.
@@ -152,8 +218,8 @@ The RTX 4060 had ~7.4 GB usable against that same 18 GiB, which is why its repor
 and the whole-layer combination sweep additionally allocated the folded `w13` copy
 (`layer_configurations.json` -> `prenorm.capacity`: need 30.0 GiB, fits). So:
 
-- **all 7 regimes** ran (the 4060 has 5; `decode_bs512`/`decode_bs1024` were whole-layer regimes there);
-- **all 11 implemented fusions** are rows in every per-regime CSV — #1, #3, #4, #5, #6, #8, #9, #10, #11a, #11b, #11b', 16 rows once the F5/F4/topk and atomic/token-major variants are counted separately, against **7 fusions / 9 rows** in the 4060 CSVs;
+- **all 11 regimes** ran (the 4060 has 5; `decode_bs512`/`decode_bs1024` were whole-layer regimes there);
+- **all 11 implemented fusions** are rows in every per-regime CSV — #1, #3, #4, #5, #6, #8, #9, #10, #11a, #11b, #11b', 16 rows once the F5/F4/topk and atomic/token-major variants are counted separately, against **7 fusions / 9 rows** in the 4060 CSVs; every row carries a speedup at every regime;
 - the **whole-layer sweep is a real measurement**, not derived — §4;
 - **nothing here is estimated, modelled into a measured column, or dropped for capacity.**
 
@@ -162,20 +228,23 @@ and the whole-layer combination sweep additionally allocated the folded `w13` co
 Three honest gaps here, plus #11, which is large enough to have its own section (§1.3). None
 is a capacity gap.
 
-**(a) #11 (lazy pre-norm) publishes 3 of its 28 CSV cells.** See §1.3 — the summary is that the
-`#11a` arm is unmeasurable on this device (its fused kernel changes its answer when a mapping
-key that cannot change the answer is perturbed), the `#11b'` arm has no correctness evidence of
-any kind, and `#11b` publishes a CUDA-graph number at three regimes and is blocked at the other
-four for exceeding its own launch-aware ceiling.
+**(a) #11's CSV rows are the repaired-file cells, not a gated publication.** See §1.3 — the
+gated re-measurement would block `#11a` (its fused kernel changes its answer when a mapping
+key that cannot change the answer is perturbed), `#11b'` (no correctness evidence of any
+kind) and `#11b` at the small decode regimes (wall ratio above its own launch-aware
+ceiling); it would publish a CUDA-graph number for `#11b` at `decode_bs1024` / `prefill_t2048`
+/ `prefill_t8192`. The quarantined gate article could not run for the four bs-extra regimes,
+so the rows there are the measured cells, `!`-flagged in `summary.json` where they exceed
+their bytes-only ceiling.
 
-**(b) The whole-layer sweep lost 4 of 18 configurations at 6 of 7 regimes, and the seventh is
-now withheld.** Every configuration that sets `prenorm: "all"` — `O_f11ab`, `P_f10_f11ab`,
+**(b) The whole-layer sweep lost 4 of 18 configurations at 10 of 11 regimes.** Every
+configuration that sets `prenorm: "all"` — `O_f11ab`, `P_f10_f11ab`,
 `Q_f8_f11ab`, `R_f1_f10_f11ab` — failed the independent fp32 reference of the whole subgraph
-everywhere except `decode_bs1` (rel_err 0.16–0.67 against tol 0.02), and a failing configuration
-is excluded outright rather than timed. `N_f11b` (router prologue only) passed everywhere and is
-present in every regime. Hence `layer_optimal_per_regime.csv` has 18 rows at `decode_bs1` and
-14 at the other six — and the four `decode_bs1` rows now carry their measured times with
-`speedup_vs_unfused` **withheld** (§1.3e).
+everywhere except `decode_bs1` (rel_err 0.16–0.67 against tol 0.02), and a failing
+configuration is excluded outright rather than timed. `N_f11b` (router prologue only) passed
+everywhere and is present in every regime. Hence `layer_optimal_per_regime.csv` has 18 rows
+at `decode_bs1` and 14 at the other ten; the four `decode_bs1` `prenorm="all"` rows are the
+only ones that include the combined-fusion group, timed and quoted as measured (1.10–1.29x).
 
 **(c) #2 and #7 are still absent, and #2's blocking argument no longer holds here.** Both were
 filtered on analysis without implementation (`LOG-00` §3), same as C500 and the 4060. But #2's
@@ -185,6 +254,14 @@ clusters** (§2). #2 was not revisited on this device. That is a gap in the stud
 property of the hardware, and it is recorded here rather than left implicit.
 
 ### 1.3 #11 (lazy pre-norm) after the gated re-measurement
+
+> **Status of the tables below (2026-08-10):** they are the *gated adjudication* of
+> `f11_publish.json` — the verdicts its four gates would give for the **seven campaign
+> regimes only**. That file was quarantined at v2-campaign prep
+> (`_quarantine_foreign_20260806_190139/f11_publish.json`, 2026-08-07 10:08), so the CSVs in
+> this directory carry the repaired `f11_lazy_prenorm.json` cells instead (identical numbers
+> for the rows both sources share; §0/§1.2(a)). The four bs-extra regimes have no gate
+> instance at all — their rows are plain cells, flagged per §1.3(d).
 
 Source: **`results/h200/f11_publish.json`** (`f11_publish.py`, 2026-08-06 11:03:30), log
 `log/f11_publish.log`. This file **supersedes `results/h200/f11_lazy_prenorm.json` completely**
@@ -328,6 +405,27 @@ last-ulp effect (1.77e-07), is the worst axis here. The one measurement that sep
 deterministic miscompile from a race — `repeat_verdict()`, which that module provides for
 exactly this purpose — was never called. **Report the fact; the mechanism is open.**
 
+#### (e) The four bs-extra regimes: no gate, measured cells only
+
+`f11_publish.json` covers the seven campaign regimes and nothing else, so the bs-extra
+regimes' #11 rows are what the repaired `f11_lazy_prenorm.json` cells say (they went through
+the same merge overlay as every other family, §0b — same paired protocol, same
+`ABOVE CEILING`/`DRIFT` flags in `summary.json`). Summarised from the four new CSVs:
+
+| regime | #11a (w13) | #11b (router) | #11b' (half) | #11a+#11b combined |
+|---|---|---|---|---|
+| `decode_bs2` | 0.9709 | 1.8952 `!` | 1.5834 `!` | 0.9314 |
+| `decode_bs4` | 0.9413 | 2.2095 `!` | 1.4608 `!` | 0.9221 |
+| `decode_bs8` | 0.9479 | 2.1859 `!` | 1.6200 `!` | 0.9342 |
+| `decode_bs16` | 0.9899 | 2.0025 `!` | 1.9062 `!` | 0.9759 |
+
+`!` = the cell sits above its bytes-only traffic ceiling in `summary.json` (the
+launch-elimination signature §3.3 diagnoses for the whole campaign; on these small-T cells it
+is the same wall-vs-graph gap the publish file's gate adjudicated away for the campaign
+regimes — the raw wall ratio is what the CSV here shows, while the gated re-measurement
+would have published the CUDA-graph ratio instead, §1.3(a)). `#11a` and the combined row
+resolve 0.92–0.99x — the w13 sum-of-squares per token is not where the small-batch win lives.
+
 #### (d) The headline warp-specialization verdict
 
 **No #11 number on this device measures warp specialization, in either direction.** Two
@@ -363,17 +461,25 @@ measurement either, so nothing is hidden — but the claim is five axes, not all
 
 #### (e) What this does to the four merged layer configurations
 
+> **Status (2026-08-10):** the withholding this section describes was conditional on
+> `f11_publish.json` being present to adjudicate `#11a`. The file has been quarantined
+> (2026-08-07 10:08), so `make_layer_report_h200.py` now quotes the four `decode_bs1`
+> `prenorm="all"` rows as measured (1.0962–1.2856x). What follows is the gate-era
+> adjudication, kept because it is why the layer file's leader board prints a "fastest
+> VALIDATED row" line.
+
 `O_f11ab`, `P_f10_f11ab`, `Q_f8_f11ab` and `R_f1_f10_f11ab` all set `prenorm: "all"`, i.e. they
-contain **`#11a`**. Six of seven regimes had already excluded them for failing the layer
-harness's own fp32 reference. The seventh, `decode_bs1`, passed that check at 2e-2 — but 2e-2 is
+contain **`#11a`**. Ten of eleven regimes have already excluded them for failing the layer
+harness's own fp32 reference. The eleventh, `decode_bs1`, passed that check at 2e-2 — but 2e-2 is
 not the tolerance at which this fusion fails, and `decode_bs1` is precisely the regime where the
 strict screen could not test the decisive axis.
 
-A layer speedup built on a fusion that cannot be validated is not a result. So in
-`layer_optimal_per_regime.csv` those four rows **keep their measured `run1_ms` / `run2_ms` /
-`best_ms` and their tie flags, and have `speedup_vs_unfused` emptied**, with the reason in a new
-trailing `notes` column. They are not deleted — deleting them would hide the fact that the
-nominally fastest `decode_bs1` configuration in this file is one that cannot be validated.
+Under the gate, a layer speedup built on a fusion that cannot be validated is not a result: those
+four rows keep their measured `run1_ms` / `run2_ms` / `best_ms` and their tie flags, and
+`speedup_vs_unfused` is emptied (or, since the quarantine, quoted with the gate's absence noted),
+with the reason in the trailing `notes` column. They are not deleted — deleting them would hide
+the fact that the nominally fastest `decode_bs1` configuration in this file is one that cannot be
+validated.
 
 The concrete cost: `R_f1_f10_f11ab` was the fastest row at `decode_bs1` (0.4367 ms,
 **1.2718x**) and one of that regime's four tied configurations. With it withheld, the fastest
@@ -784,29 +890,31 @@ the head *is* the baseline. The generator prints all of this on stdout when it r
 
 **Measured** (every one of these is read out of `results/h200/*.json`):
 
-- `fused_ms`, `unfused_total_ms`, `speedup` in **87 of the 112** CSV cells (7 regimes x 16 rows).
-  **25 are empty, and all 25 are `#11`** — 25 of that fusion's 28 cells are blocked, each with
-  its reason in `notes` (§1.3). Of the 87 filled, **84 have a `summary.json` cell**; the other
-  three are the published `#11b` cells at `decode_bs1024`, `prefill_t2048` and `prefill_t8192`,
-  which come from `f11_publish.json` and have no `summary.json` cell of their own;
-- those three `#11b` cells are the study's only **CUDA-graph-replay** numbers. Every other
-  `fused_ms` / `unfused_total_ms` in this directory is an L2-flushed wall-clock time. The rows
-  say so in `notes`; do not compare across the two bases (§1.3a);
+- `fused_ms`, `unfused_total_ms`, `speedup` in **all 176** CSV cells (11 regimes x 16 rows).
+  Every `#11` cell (44 of them) carries a number from the repaired `f11_lazy_prenorm.json`
+  — the gated `f11_publish.json` source was quarantined at v2-campaign prep (2026-08-07
+  10:08), so no publish-gated `#11` value appears in any CSV here (§0b/§1.3). Of the 176
+  filled, **172 have a `summary.json` cell**; the other four rows are the `#11b'` rows' CSV
+  identity, which the generator emits per regime from the repaired file's cells;
+- those `#11` cells are therefore **L2-flushed wall-clock** numbers on the same basis as every
+  other row — the study's **CUDA-graph-replay** numbers (the gated `#11b` at `decode_bs1024`,
+  `prefill_t2048`, `prefill_t8192`) are documented in §1.3(a) but not present in these files;
 - the per-kernel `unfused_kN_ms` breakdowns wherever the bench timed a kernel alone, and blank
   where it did not (the CSV `notes` say which);
-- `run1_ms`, `run2_ms`, `best_ms` and both tie verdicts for all 102 whole-layer rows — 18 at
-  `decode_bs1`, 14 at each of the other six (§4). `speedup_vs_unfused` is filled on **98** of
-  them; the four `#11a`-bearing configurations at `decode_bs1` have it withheld (§1.3e);
+- `run1_ms`, `run2_ms`, `best_ms` and both tie verdicts for all 158 whole-layer rows — 18 at
+  `decode_bs1`, 14 at each of the other ten (§4). `speedup_vs_unfused` is filled on **all 158**
+  of them (the four `#11a`-bearing configurations exist only at `decode_bs1`, where the
+  `prenorm="all"` group passes its reference; everywhere else they are excluded, §1.2b);
 - every winning mapping, including which Hopper axis it selected (§2);
 - correctness. A recursive scan of every `{rel_err, tol, ok}` record in `results/h200/` returns
   **zero failing checks in all seven family files** — every published cell's fused and unfused
   arms were validated against an fp32 reference and passed. But note what that scan does *not*
   reach: it checks the 2e-2 reference comparison, and `#11a` fails a **1e-5 invariance** screen
   that no `{rel_err, tol, ok}` record in the old files carries at all (§1.3c). The known
-  failures are the **24** in `layer_configurations.json` (4 configurations x 6 regimes, §1.2b),
+  failures are the **40** in `layer_configurations.json` (4 configurations x 10 regimes, §1.2b),
   excluded rather than timed, plus the **18 of 21** arm-cells that `f11_publish.json` blocks;
 - the device, the clocks, the calibration and the timer tick (`preflight_h200.json`);
-- the paired per-round statistic and its p10/p90 for all 90 cells — present in `notes`, not in
+- the paired per-round statistic and its p10/p90 for all 165 cells — present in `notes`, not in
   the `speedup` column (§3.2);
 - third baselines the raw JSON records and the CSVs surface: `torch_eager_ms`,
   `torch_compile_ms` (f03, f10), `blas_router_bf16_ms` / `torch_ref_ms` (f04f05),
@@ -829,15 +937,20 @@ the head *is* the baseline. The generator prints all of this on stdout when it r
 
 **Absent — left EMPTY, never interpolated:**
 
-- **25 of the 28 `#11` cells** (§1.3): `#11a` and `#11a+#11b combined` at all seven regimes,
-  `#11b'` at all seven, and `#11b` at `decode_bs1`, `decode_bs32`, `decode_bs256` and
-  `decode_bs512`. Each carries its own blocking reason in `notes`, and the raw wall / graph /
-  ceiling / invariance figures are quoted there as unpublished evidence — the measurement
-  columns are empty on purpose so that a blocked ratio cannot be re-derived from the row;
-- **every `#11` number from `results/h200/f11_lazy_prenorm.json`**, at every regime. That file
-  is superseded, not merged (§1.3);
-- `speedup_vs_unfused` on the four `prenorm: "all"` whole-layer rows at `decode_bs1` — the times
-  stay, the ratio does not (§1.3e);
+- **nothing in the per-regime CSVs.** All 176 cells (11 regimes x 16 rows) carry a published
+  speedup — the `#11` rows included, whose numbers are the repaired
+  `f11_lazy_prenorm.json` cells since the gated file's quarantine (§0b, §1.3). The
+  gate-era block record — `#11a` / `#11a+#11b combined` / `#11b'` at all seven campaign
+  regimes, `#11b` at `decode_bs1`/`bs32`/`bs256`/`bs512` — is kept in §1.3(a)-(c) with each
+  blocking reason, and the raw wall / graph / ceiling / invariance figures are quoted there
+  as unpublished evidence;
+- **every `#11` number from `results/h200/f11_lazy_prenorm.json`**, at every regime — under the
+  gate (the file is superseded, not merged, §1.3) — and the **CUDA-graph** `#11b` numbers
+  (3 cells, §1.3a), which today exist only as gate-era records: no such number is in these
+  CSVs, whose `#11` rows are wall-clock cells like every other row;
+- `speedup_vs_unfused` on the four `prenorm: "all"` whole-layer rows at `decode_bs1` — under
+  the gate the times stay and the ratio does not (§1.3e); since the quarantine the generator
+  quotes them (§1.3e status box);
 - the four `prenorm: "all"` whole-layer configurations at every regime but `decode_bs1` — no row
   at all, rather than an empty one, because they were never timed (§1.2b);
 - `#2` and `#7`, filtered on analysis in LOG-00 and never implemented on any device (§1.2c);
@@ -851,13 +964,13 @@ the head *is* the baseline. The generator prints all of this on stdout when it r
 
 | | C500 | RTX 4060 | **H200** |
 |---|---|---|---|
-| regimes in the report | 7 | **5** — `decode_bs512`/`bs1024` absent, they were whole-layer regimes | **7** |
-| per-regime CSV | 15 rows / **11 fusions** | **9 rows / 7 fusions** — #6, #8, #9, #11a impossible at spec | **16 rows / 11 fusions**; 8 fusions have data at all 7 regimes, `#11b` at **3 of 7** and `#11a` / `#11b'` / `#11a+#11b` at **0 of 7** (§1.3) |
+| regimes in the report | 7 | **5** — `decode_bs512`/`bs1024` absent, they were whole-layer regimes | **11** (7 v2 + 4 bs-extra, §0b) |
+| per-regime CSV | 15 rows / **11 fusions** | **9 rows / 7 fusions** — #6, #8, #9, #11a impossible at spec | **16 rows / 11 fusions**, all 16 measured at all 11 regimes (the four `#11` rows carry the repaired-file cells, §0b/§1.3) |
 | whole layer | measured, 2 passes | **impossible** — 18 GiB of experts vs ~7.4 GB usable; layer columns left empty | **measured, 2 passes** |
-| layer CSV | genuine | **partly derived** — `ms_saved_per_layer` with a `basis` column, `layer_total_ms` empty | **genuine**; every timing column filled, 4 of 102 speedups withheld (§1.3e) |
+| layer CSV | genuine | **partly derived** — `ms_saved_per_layer` with a `basis` column, `layer_total_ms` empty | **genuine**; every timing column filled on all 158 rows (§1.3e status box) |
 | #11 verification | tuned, checked at 2e-2 | #11a impossible at spec | **four attempts**; the fourth added a calibration gate, a launch-aware ceiling, a 1e-5 invariance screen and dual wall/graph timing, and published 3 of 21 arm-cells (§1.3) |
 | timing protocol | sequential; one cell re-measured interleaved after an impossible result | sequential; one cell corrected the same way | **interleaved throughout**, but published as a ratio of medians (§3.1–3.2) |
-| timer resolution | tick 0.256 us | tick 1.024 us; **decode rows are 9–17 ticks, +-8 %** | tick 0.032 us; **nothing tick-limited**, shortest arm 1626 ticks |
+| timer resolution | tick 0.256 us | tick 1.024 us; **decode rows are 9–17 ticks, +-8 %** | tick 0.032 us; **nothing tick-limited** at the seven campaign regimes (shortest arm 1626 ticks); the four bs-extra decode regimes are tick-coarse (arms of 4–30 ticks) and one cell (`#9 atomic` at `decode_bs4`) is UNRESOLVED (§0b) |
 | one exclusive GPU | yes | yes (one GPU on the host) | **no** — co-tenant present for the last four families (§3.5), and 3 families from a different card (§3.6) |
 | Triton vs vendor BLAS | **50 %** | 102 % | **94.4 %** |
 
@@ -865,12 +978,14 @@ None of the three is clean. C500 could not resolve sub-percent layer differences
 that throws 25–320 % excursions, and says so. The 4060 could not fit the model and left columns
 empty rather than model them, and says so. The H200 fits everything and measured everything it
 could compile correctly — and its remaining problems are **statistical and provenance
-problems**, not capacity problems: an estimator choice that moves 24 cells by more than 2 %, a
-ceiling check that ran on 32 of 90 cells, a co-tenant across the last four families, and three
-families — including both headline winners — from a different card.
+problems**, not capacity problems: an estimator choice that moves 38 of 165 cells by more than
+2 %, a ceiling check that flagged 70 of 165 cells above the bytes-only bound (the
+launch-elimination signature, §3.3), a co-tenant across the last four v2 families, and three
+families — including both headline winners — from a different card. The §3 deep dive was written
+for the v2 campaign's 90/105 cells; the 11-regime totals are in §0a.
 
 The one claim this device does support cleanly and the others do not: **the whole-layer
-combination sweep and all seven regimes ran at exact GLM-5.2 spec, with no substitution, no
+combination sweep and all 11 regimes ran at exact GLM-5.2 spec, with no substitution, no
 shrunken expert count, and nothing derived for capacity reasons.**
 
 ---
@@ -887,16 +1002,25 @@ python3 f11_publish.py                           # #11 only, gated; writes resul
                                                  #   contended-card measurement it replaces.
 
 # report (no CUDA, reads JSON only)
-python3 glm52/make_report_h200.py                # the seven fusion_<regime>.csv
+python3 glm52/make_report_h200.py                # the eleven fusion_<regime>.csv
 python3 glm52/make_layer_report_h200.py          # layer_optimal_per_regime.csv
+python3 glm52/make_gain_vs_T_h200.py             # gain_vs_T.png, from the eleven CSVs
 ```
 
 `make_report_h200.py` prefers `results/h200/f11_publish.json` over
 `results/h200/f11_lazy_prenorm.json` for every `#11` row and re-derives each cell's verdict
 from the raw fields — it does **not** trust that file's own `publishable` flag, which is
 permissive in four known ways (documented at the top of the `#11` section of the generator).
-Both generators print their #11 accounting on stdout: which cells are published, which are
-blocked, and why.
+**The preference is conditional on the file's presence**: since the gated file was quarantined
+(2026-08-07 10:08), both generators fall back to the repaired file's cells, which is what the
+CSVs in this directory currently carry (§0b, §1.3). Both generators print their #11 accounting
+on stdout: which cells are published, which are blocked, and why.
+
+The four bs-extra regimes were produced and merged by the overlay driver at the repo root
+(`python3 run_bs_extra_h200.py --families f01,f03,f04f05,f06,f08f09,f10,f11,layer
+--regimes decode_bs2,decode_bs4,decode_bs8,decode_bs16`, §0b), and `summary.json` is
+regenerated offline from the merged files with the same pure builders (never
+`run_h200.py --summary-only`, which would enforce the device gate on this checkout).
 
 `run_h200.py` refuses to start on a non-sm_90 device and on a tenanted card, pins
 `CUDA_VISIBLE_DEVICES` and `CUDA_DEVICE_ORDER=PCI_BUS_ID` for every child, and re-checks tenancy

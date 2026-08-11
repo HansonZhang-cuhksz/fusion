@@ -1,0 +1,35 @@
+# Child bench logs from run_control_h200.py. Same hazard as log/run_h200/, multiplied by the
+# number of arms: one log per family PER ARM, and the driver supports five arms.
+#
+# Sizes from the campaign (log/run_h200/): f01 2.5 MB, f06 6.3 MB, f08f09 6.3 MB, f11 6.1 MB --
+# and f04f05.log hit 107.7 MB, over GitHub's 100 MiB hard limit, so it stays out of git.
+#
+# Oversize logs are NOT deleted. `tools/split_h200_log.py` reproduces the whole content as
+# committed files that concatenate back to the same information:
+#
+#   f04.log                  readable log, fusion #4 view
+#   f05.log                  readable log, fusion #5 view
+#   f04f05_compiler.log.gz   every Triton assertion, MLIR reproducer and IR dump
+#
+# The 1000:1 split is not an accident of formatting: in the campaign's file only 189 of
+# 1,240,800 lines were log. The rest is Triton's warp-specialization pass failing to compile
+# these kernels on sm_90 (`WSLowerToken.cpp:73 ... Assertion 'false' failed`, once per attempted
+# config). That spam is itself a RESULT -- it is what the control arm's engagement is measured
+# against -- which is why it is split and archived rather than discarded. See LOG-15, LOG-18 §7.
+#
+# This file also exists so the directory survives a fresh clone: run_control_h200.py's
+# DEFAULT_LOGDIR is log/run_control_h200/, and the operator should find it already there.
+
+# The compiler-spam producer, under any arm suffix (f04f05.log, f04f05.classic.a1.log, ...).
+f04f05*.log
+
+# Any raw transcript set aside by split_h200_log.py.
+*.log.raw
+
+# Always keep the driver's own record and the preflight transcript -- these are small and
+# they are the run's provenance. Committed driver.log must be the OPERATOR's H200 run: a
+# local `--dry-run` / `--list` on a dev box writes the same filename here, banners the same
+# title, and reads at a glance like a failed control-arm run on the confidential machine.
+# Delete a local one before committing; only the returned tarball's driver.log belongs in git.
+!driver.log
+!preflight.log

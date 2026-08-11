@@ -1217,10 +1217,21 @@ def h200_cfg_overlays(kernel_mod=None) -> list[dict]:
         ws_ovl = {ws_key: True}
         out.append(ws_ovl)
     elif ("num_consumer_groups" in keys
+          and axis_available("warp_specialize")[0]
           and feature("warp_specialize_num_consumer_groups")):
         # The forked-Triton spelling. The measured H200 stack REJECTS it outright
         # ("Keyword argument num_consumer_groups was specified but unrecognised"), so this
         # branch exists only for a stack that has it and lacks tl.range(warp_specialize=).
+        #
+        # `axis_available("warp_specialize")` is checked HERE TOO, not only in the `if`
+        # above. `feature()` reads the PREFLIGHT JSON, which describes the device and stays
+        # true under `GLM52_H200_CLASSIC=1`; only `axis_available()` consults
+        # `hopper.caps()`, which is what the env override reaches. Without this the branch
+        # was blind to the override *precisely because* the override is what sent control
+        # here -- the `if` above is false under the control arm, so the classic arm would
+        # have emitted a warp-specialization overlay under a second spelling on any stack
+        # that advertises this key. Both spellings are the same capability; the override is
+        # a statement about the capability, not about how it is spelled.
         ws_ovl = {"num_consumer_groups": 1, "num_buffers_warp_spec": 2}
         out.append(ws_ovl)
     if tma_key and axis_available("tma")[0]:
