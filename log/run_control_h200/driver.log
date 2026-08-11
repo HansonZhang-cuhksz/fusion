@@ -1,0 +1,228 @@
+10:57:21 ============================================================================================
+10:57:21 GLM-5.2 fusion study -- H200 HOPPER CONTROL ARM
+10:57:21 ============================================================================================
+10:57:21   repo             /home/guancheng/zsh/fusion
+10:57:21   campaign (READ)  /home/guancheng/zsh/fusion/results/h200
+10:57:21   staging (WRITE)  /home/guancheng/zsh/fusion/results/h200/_control_arm
+10:57:21   logs             /home/guancheng/zsh/fusion/log/run_control_h200
+10:57:21   started          2026-08-11 10:57:21
+10:57:21 
+10:57:21   NOTHING under the staging root is ever merged into the campaign files. The
+10:57:21   control arm is a DIFF, not an append: results/h200/*.json is its BASELINE, and
+10:57:21   a write into them would destroy the comparison rather than extend it. There is
+10:57:21   no merge function in this file and no script in this repo may add one.
+10:57:21 ============================================================================================
+10:57:21 PLAN
+10:57:21 ============================================================================================
+10:57:21   arms             classic
+10:57:21     classic      --disable-features 'all,tma,ws,warp_specialize,clusters,wgmma'
+10:57:21                  the control arm: GLM52_H200_CLASSIC=1, all four capabilities off
+10:57:21                  staging /home/guancheng/zsh/fusion/results/h200/_control_arm/classic
+10:57:21                  log keys f03.classic.a<n>.log, f10.classic.a<n>.log, f01.classic.a<n>.log, ...
+10:57:21   families         f03, f10, f01, f04f05, f11, f06, f08f09   (excluded by design: layer)
+10:57:21   regimes          11: decode_bs1, decode_bs2, decode_bs4, decode_bs8, decode_bs16, decode_bs32, decode_bs256, decode_bs512, decode_bs1024, prefill_t2048, prefill_t8192
+10:57:21 
+10:57:21   per-family cost   campaign wall time (MEASURED) vs timeout ceiling (a kill switch, not an estimate)
+10:57:21     f03             1 min measured   ceiling 3.0 h
+10:57:21     f10             2 min measured   ceiling 4.0 h
+10:57:21     f01             4 min measured   ceiling 8.0 h
+10:57:21     f04f05         21 min measured   ceiling 8.0 h
+10:57:21     f11            19 min measured   ceiling 10.0 h
+10:57:21     f06            15 min measured   ceiling 10.0 h
+10:57:21     f08f09         19 min measured   ceiling 14.0 h
+10:57:21     TOTAL           1.3 h measured over 7/7 famil(ies)   ceiling 57.0 h
+10:57:21   expected          about 1.3 h per arm, 1.3 h for 1 arm(s), if this arm behaves like the campaign.
+10:57:21                     The classic arm's tuner grid COLLAPSES (h200_cfg_overlays() returns [] once
+10:57:21                     every axis is unavailable), so it should be no slower. Source: the campaign's
+10:57:21                     own results/h200/summary.json families[*].wall_s, recorded 2026-08-07 13:33:16.
+10:57:21   timeout budget    57.0 h per arm, 57.0 h for 1 arm(s) -- the CEILING, i.e. when a child is killed.
+10:57:21 
+10:57:21   f03 runs first and is the earliest engagement check. The campaign measured it in 1 min, so a non-engaging arm is caught
+10:57:21   within minutes rather than at the end of the run; its 3 h budget is a timeout ceiling,
+10:57:21   not an estimate. f10 follows (2 min in the campaign).
+10:57:21   Those two families advertise no Hopper cfg key, so their classic-vs-campaign
+10:57:21   delta IS the cross-session noise floor every other family's delta is judged against.
+10:57:21 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+10:57:21 !! --gpu 7 was given, but the campaign's card b2318e71 is nvidia-smi index 0 on this host.
+10:57:21 !! An explicit --gpu that contradicts the campaign card is operator error, and silently
+10:57:21 !! doing something else is how the wrong card gets used. Drop --gpu (the campaign card is
+10:57:21 !! pinned automatically), or pass --gpu 0, or accept the weaker claim with --any-gpu.
+10:57:21 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+10:57:29 ============================================================================================
+10:57:29 GLM-5.2 fusion study -- H200 HOPPER CONTROL ARM
+10:57:29 ============================================================================================
+10:57:29   repo             /home/guancheng/zsh/fusion
+10:57:29   campaign (READ)  /home/guancheng/zsh/fusion/results/h200
+10:57:29   staging (WRITE)  /home/guancheng/zsh/fusion/results/h200/_control_arm
+10:57:29   logs             /home/guancheng/zsh/fusion/log/run_control_h200
+10:57:29   started          2026-08-11 10:57:29
+10:57:29 
+10:57:29   NOTHING under the staging root is ever merged into the campaign files. The
+10:57:29   control arm is a DIFF, not an append: results/h200/*.json is its BASELINE, and
+10:57:29   a write into them would destroy the comparison rather than extend it. There is
+10:57:29   no merge function in this file and no script in this repo may add one.
+10:57:29 ============================================================================================
+10:57:29 PLAN
+10:57:29 ============================================================================================
+10:57:29   arms             classic
+10:57:29     classic      --disable-features 'all,tma,ws,warp_specialize,clusters,wgmma'
+10:57:29                  the control arm: GLM52_H200_CLASSIC=1, all four capabilities off
+10:57:29                  staging /home/guancheng/zsh/fusion/results/h200/_control_arm/classic
+10:57:29                  log keys f03.classic.a<n>.log, f10.classic.a<n>.log, f01.classic.a<n>.log, ...
+10:57:29   families         f03, f10, f01, f04f05, f11, f06, f08f09   (excluded by design: layer)
+10:57:29   regimes          11: decode_bs1, decode_bs2, decode_bs4, decode_bs8, decode_bs16, decode_bs32, decode_bs256, decode_bs512, decode_bs1024, prefill_t2048, prefill_t8192
+10:57:29 
+10:57:29   per-family cost   campaign wall time (MEASURED) vs timeout ceiling (a kill switch, not an estimate)
+10:57:29     f03             1 min measured   ceiling 3.0 h
+10:57:29     f10             2 min measured   ceiling 4.0 h
+10:57:29     f01             4 min measured   ceiling 8.0 h
+10:57:29     f04f05         21 min measured   ceiling 8.0 h
+10:57:29     f11            19 min measured   ceiling 10.0 h
+10:57:29     f06            15 min measured   ceiling 10.0 h
+10:57:29     f08f09         19 min measured   ceiling 14.0 h
+10:57:29     TOTAL           1.3 h measured over 7/7 famil(ies)   ceiling 57.0 h
+10:57:29   expected          about 1.3 h per arm, 1.3 h for 1 arm(s), if this arm behaves like the campaign.
+10:57:29                     The classic arm's tuner grid COLLAPSES (h200_cfg_overlays() returns [] once
+10:57:29                     every axis is unavailable), so it should be no slower. Source: the campaign's
+10:57:29                     own results/h200/summary.json families[*].wall_s, recorded 2026-08-07 13:33:16.
+10:57:29   timeout budget    57.0 h per arm, 57.0 h for 1 arm(s) -- the CEILING, i.e. when a child is killed.
+10:57:29 
+10:57:29   f03 runs first and is the earliest engagement check. The campaign measured it in 1 min, so a non-engaging arm is caught
+10:57:29   within minutes rather than at the end of the run; its 3 h budget is a timeout ceiling,
+10:57:29   not an estimate. f10 follows (2 min in the campaign).
+10:57:29   Those two families advertise no Hopper cfg key, so their classic-vs-campaign
+10:57:29   delta IS the cross-session noise floor every other family's delta is judged against.
+10:57:29 [gpu] pinning the campaign's own card b2318e71 at nvidia-smi index 0 (from summary.json _meta.gpu_uuid)
+10:57:29 ============================================================================================
+10:57:29 GPU SELECTION -- 8 card(s) on this host
+10:57:29 ============================================================================================
+10:57:29   rank idx   util   used GB   free GB proc  temp  state
+10:57:29   -----------------------------------------------------
+10:57:29      0   0     0%       0.0     139.8    0    30  idle
+10:57:29      1   1     0%       0.0     139.8    0    35  idle
+10:57:29      2   2     0%       0.0     139.8    0    33  idle
+10:57:29      3   3     0%       0.0     139.8    0    30  idle
+10:57:29      4   4     0%       0.0     139.8    0    32  idle
+10:57:29      5   5     0%       0.0     139.8    0    34  idle
+10:57:29      6   6     0%       0.0     139.8    0    34  idle
+10:57:29      7   7     0%       0.0     139.8    0    30  idle
+10:57:29        gpu 0  NVIDIA H200  uuid GPU-b2318e71-edbf-aa1b-dcf3-3cc3e6ea7db0
+10:57:29        gpu 1  NVIDIA H200  uuid GPU-59aa5198-70aa-0e6f-16b9-a6d483af9c4e
+10:57:29        gpu 2  NVIDIA H200  uuid GPU-3eb2bc50-6290-2508-4dc5-e01f05c85e5f
+10:57:29        gpu 3  NVIDIA H200  uuid GPU-6c4cc3d3-e0bc-949d-16be-822af843e49f
+10:57:29        gpu 4  NVIDIA H200  uuid GPU-c20464a7-77aa-f6f2-9a70-207c42f6b4a1
+10:57:29        gpu 5  NVIDIA H200  uuid GPU-2c1d24fb-c9a6-9d6c-fa91-28ea2b50e17f
+10:57:29        gpu 6  NVIDIA H200  uuid GPU-338e7fe0-5ca6-f37f-b9b6-ea4ea6c5358b
+10:57:29        gpu 7  NVIDIA H200  uuid GPU-3aa19cef-f7a3-bd28-1b5e-2e6d8b8ca670
+10:57:29 
+10:57:29   [gpu] pinning GPU 0 (NVIDIA H200) uuid GPU-b2318e71-edbf-aa1b-dcf3-3cc3e6ea7db0
+10:57:29   [gpu] --gpu 0 as requested
+10:57:29   [gpu] every child gets CUDA_VISIBLE_DEVICES=0 and CUDA_DEVICE_ORDER=PCI_BUS_ID, so each one sees exactly this card as cuda:0 -- which is why no bench needed changing.
+10:57:29 !! cached preflight does not describe the pinned GPU: same model but a different card (probe 3aa19cef-f7a3-bd28-1b5e-2e6d8b8ca670, pinned b2318e71-edbf-aa1b-dcf3-3cc3e6ea7db0) -- re-probing.
+10:57:29   !! the cached preflight did not describe the pinned card, so it is being re-probed and /home/guancheng/zsh/fusion/glm52_h200/preflight_h200.json will be REPLACED in place. The campaign's copy was preserved at /home/guancheng/zsh/fusion/log/run_control_h200/preflight_h200.campaign.json before the probe ran. Pass --skip-preflight to reuse the campaign's probe instead.
+10:57:29     running preflight: /usr/bin/python /home/guancheng/zsh/fusion/glm52_h200/preflight.py --gpu 0
+10:57:37     preflight exit=0, log -> /home/guancheng/zsh/fusion/log/run_control_h200/preflight.log
+10:57:37 ============================================================================================
+10:57:37 GLM-5.2 MoE fusion study -- H200 campaign
+10:57:37 ============================================================================================
+10:57:37   repo            /home/guancheng/zsh/fusion
+10:57:37   results dir     /home/guancheng/zsh/fusion/results/h200
+10:57:37   driver started  2026-08-11 10:57:37
+10:57:37   gpu             0  uuid GPU-b2318e71-edbf-aa1b-dcf3-3cc3e6ea7db0  (--gpu 0 as requested)
+10:57:37 
+10:57:37   [device] NVIDIA H200  sm_90 | 132 SM | warp 32 | smem/block 232448 B | regs/SM 65536 | L2 60 MB | VRAM 139.8 GB
+10:57:37   [stack]  torch 2.11.0+cu130 (cuda 13.0) | triton 3.6.0
+10:57:37   [triton features, compiled AND launched] +baseline_elementwise +tl_dot_bf16 +warp_specialize_tl_range -warp_specialize_num_consumer_groups +tma_host_descriptor +tma_device_descriptor +thread_block_cluster_num_ctas
+10:57:37   [calib]  copy_1024MB_GBs=4242  rmw_1024MB_GBs=4244  read_1024MB_GBs=4598  copy_2048MB_GBs=4247  rmw_2048MB_GBs=4262  read_2048MB_GBs=4649   cublas_4096x16384x6144_TFs=821.6  triton_4096x16384x6144_TFs=775.3  cublas_8192x16384x6144_TFs=744.8  triton_8192x16384x6144_TFs=665.0
+10:57:37   [calib]  launch 10.27 us | timer tick 0.032 us (measured by preflight)
+10:57:37   [capacity] expert weights 18.0 GB | fit=True | whole layer feasible=True
+10:57:37 
+10:57:37   [hwinfo@start] GPU0 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 30 C | 76.76/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+10:57:37   [hwinfo@start] GPU1 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 35 C | 78.77/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+10:57:37   [hwinfo@start] GPU2 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 33 C | 75.86/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+10:57:37   [hwinfo@start] GPU3 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 30 C | 77.42/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+10:57:37   [hwinfo@start] GPU4 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 32 C | 77.96/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+10:57:37   [hwinfo@start] GPU5 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 34 C | 75.32/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+10:57:37   [hwinfo@start] GPU6 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 34 C | 77.27/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+10:57:37   [hwinfo@start] GPU7 NVIDIA H200 | sm 345/1980 MHz | mem 3201/3201 MHz | 30 C | 78.01/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000001
+10:57:37 
+10:57:37   [gate] sm_90 confirmed (NVIDIA H200). Hopper paths (TMA, clusters, warp specialisation) are eligible; each is still chosen at RUNTIME from the probe.
+10:57:38 
+10:57:38   campaign canary: fingerprinted 28 file(s) under /home/guancheng/zsh/fusion/results/h200; re-checked after every family.
+10:57:38 ============================================================================================
+10:57:38 ARM classic -- the control arm: GLM52_H200_CLASSIC=1, all four capabilities off
+10:57:38 ============================================================================================
+10:57:38   --disable-features 'all,tma,ws,warp_specialize,clusters,wgmma'
+10:57:38   expected child env  {'GLM52_H200_DISABLE_FEATURES': 'all,tma,ws,warp_specialize,clusters,wgmma', 'GLM52_H200_CLASSIC': '1', 'GLM52_H200_TMA': '0', 'GLM52_H200_WS': '0', 'GLM52_H200_CLUSTERS': '0', 'GLM52_H200_WGMMA': '0'}
+10:57:38   staging             /home/guancheng/zsh/fusion/results/h200/_control_arm/classic
+10:57:38 ============================================================================================
+10:57:38 classic/f03 -- #3  ResAdd+RMSNorm over 11 regime(s)
+10:57:38 ============================================================================================
+10:57:38 
+10:57:38   attempt 1/13: 11 regime(s) to measure (decode_bs1, decode_bs2, decode_bs4, decode_bs8, decode_bs16, decode_bs32, decode_bs256, decode_bs512, decode_bs1024, prefill_t2048, prefill_t8192)
+10:57:38   cmd     /usr/bin/python /home/guancheng/zsh/fusion/glm52_h200/bench/bench_f03_resadd_rmsnorm.py --regimes decode_bs1,decode_bs2,decode_bs4,decode_bs8,decode_bs16,decode_bs32,decode_bs256,decode_bs512,decode_bs1024,prefill_t2048,prefill_t8192
+10:57:38   log     /home/guancheng/zsh/fusion/log/run_control_h200/f03.classic.a1.log
+10:57:38   timeout 3.0 h
+10:57:38   !! bench_f03_resadd_rmsnorm.py advertises no --regimes flag; the request was passed only via GLM52_REGIMES and may be ignored by this bench.
+10:57:38   [hw before] GPU0 NVIDIA H200 | sm 1980/1980 MHz | mem 3201/3201 MHz | 32 C | 122.58/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000000
+10:58:38     [f03.classic.a1]    1.0 min | prefill_t8192       0.1772    0.2327    1.335    0.7252    0.1061     no
+10:58:40   [hw after ] GPU0 NVIDIA H200 | sm 1980/1980 MHz | mem 3201/3201 MHz | 37 C | 122.78/700 W | used 0/143771 MiB | util 0% | pstate P0 | throttle 0x0000000000000000
+10:58:40   exit=0 status=ok wall=1.0 min
+10:58:40     | decode_bs512        0.0871    0.1741    1.963    0.1182    0.0686    yes
+10:58:40     | decode_bs1024       0.0916    0.1860    1.971    0.1991    0.1101    yes
+10:58:40     | prefill_t2048       0.1076    0.2068    1.933    0.2155    0.1248    yes
+10:58:40     | prefill_t8192       0.1772    0.2327    1.335    0.7252    0.1061     no
+10:58:40   [redirect] confirmed (exact path match): the bench recorded _meta.results_dir = /home/guancheng/zsh/fusion/results/h200/_control_arm/classic
+10:58:40     +11 regime(s): decode_bs1, decode_bs2, decode_bs4, decode_bs8, decode_bs16, decode_bs32, decode_bs256, decode_bs512, decode_bs1024, prefill_t2048, prefill_t8192
+10:58:40   all 11 regime(s) in scope have rows; f03 is done.
+10:58:41 
+10:58:41   [verify] f03/classic FAILED with 1 fatal check(s)
+10:58:41     axis surface for f03: nothing (source: campaign fairness.h200_axes.per_family)
+10:58:41     vacuity guard: clusters, tma, warp_specialize were never offered to f03 by the campaign, so a clean scan for them is not evidence (source: campaign fairness.h200_axes.per_family).
+10:58:41 
+10:58:41 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+10:58:41 !! ENGAGEMENT VERIFICATION FAILED for classic/f03.
+10:58:41 !! A control arm that did not engage is worse than no control arm: it is
+10:58:41 !! indistinguishable from a positive result -- which is this study's hypothesis.
+10:58:41 !!   V9   $.fairness.grids.*.*.*.n_tried
+10:58:41 !!        want identical to the campaign
+10:58:41 !!        got  19 of 49 stage(s) differ
+10:58:41 !! sentinel written: /home/guancheng/zsh/fusion/results/h200/_control_arm/classic/ARM_NOT_VERIFIED
+10:58:41 !! engagement record: /home/guancheng/zsh/fusion/results/h200/_control_arm/_engagement/classic/f03.verify.json
+10:58:41 !! The staged JSON has NOT been moved, renamed or deleted. A control arm that did
+10:58:41 !! not engage is evidence; the sentinel is the fence that replaces quarantining.
+10:58:41 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+10:58:41 !! aborting the whole run (remaining families and remaining arms). --continue-on-verify-fail
+10:58:41 !! keeps going if the remaining families' evidence is worth the GPU time.
+10:58:42 ============================================================================================
+10:58:42 STATUS
+10:58:42 ============================================================================================
+10:58:42 
+10:58:42   arm: classic   [ARM_NOT_VERIFIED -- not publishable]
+10:58:42   family           d1       d2       d4       d8      d16      d32     d256     d512    d1024    p2048    p8192
+10:58:42   -------------------------------------------------------------------------------------------------------------
+10:58:42   f03           UNVER    UNVER    UNVER    UNVER    UNVER    UNVER    UNVER    UNVER    UNVER    UNVER    UNVER
+10:58:42   f10          NOTRUN   NOTRUN   NOTRUN   NOTRUN   NOTRUN   NOTRUN   NOTRUN   NOTRUN   NOTRUN   NOTRUN   NOTRUN
+10:58:42   f01          NOTRUN   NOTRUN   NOTRUN   NOTRUN   NOTRUN   NOTRUN   NOTRUN   NOTRUN   NOTRUN   NOTRUN   NOTRUN
+10:58:42   f04f05       NOTRUN   NOTRUN   NOTRUN   NOTRUN   NOTRUN   NOTRUN   NOTRUN   NOTRUN   NOTRUN   NOTRUN   NOTRUN
+10:58:42   f11          NOTRUN   NOTRUN   NOTRUN   NOTRUN   NOTRUN   NOTRUN   NOTRUN   NOTRUN   NOTRUN   NOTRUN   NOTRUN
+10:58:42   f06          NOTRUN   NOTRUN   NOTRUN   NOTRUN   NOTRUN   NOTRUN   NOTRUN   NOTRUN   NOTRUN   NOTRUN   NOTRUN
+10:58:42   f08f09       NOTRUN   NOTRUN   NOTRUN   NOTRUN   NOTRUN   NOTRUN   NOTRUN   NOTRUN   NOTRUN   NOTRUN   NOTRUN
+10:58:42 
+10:58:42   NOTRUN = the family was not launched in this arm
+10:58:42   UNVER  = engagement verification FAILED; these numbers must not be published
+10:58:42 
+10:58:42 ============================================================================================
+10:58:42 SEND BACK
+10:58:42 ============================================================================================
+10:58:42   1. /home/guancheng/zsh/fusion/results/h200/_control_arm/           (the WHOLE tree, including _engagement/ and any ARM_NOT_VERIFIED sentinel --
+10:58:42      ESPECIALLY if the run failed)
+10:58:42   2. /home/guancheng/zsh/fusion/results/h200/_control_arm/control_arm_summary.json
+10:58:42   3. /home/guancheng/zsh/fusion/log/run_control_h200/           (driver.log, preflight.log, one log per family per arm)
+10:58:42   4. /home/guancheng/zsh/fusion/glm52_h200/preflight_h200.json
+10:58:42 
+10:58:42   send the logs even when -- especially when -- the run was incomplete.
+10:58:42 
+10:58:42   then, locally:  python3 glm52/make_control_report_h200.py
+10:58:42 
+10:58:42   exit code 5

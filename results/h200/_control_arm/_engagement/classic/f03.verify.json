@@ -1,0 +1,221 @@
+{
+  "_meta": {
+    "device": "NVIDIA H200",
+    "recorded_at": "2026-08-11 10:58:41",
+    "writer": "run_control_h200.py",
+    "why_device": "run_h200.quarantine_foreign_results reads _meta.device and MOVES any file under the results tree that lacks it"
+  },
+  "family": "f03",
+  "arm": "classic",
+  "verdict": "FAILED",
+  "checks": [
+    {
+      "id": "V0b",
+      "axis": null,
+      "path": "$._meta.results_dir",
+      "want": "/home/guancheng/zsh/fusion/results/h200/_control_arm/classic",
+      "got": "/home/guancheng/zsh/fusion/results/h200/_control_arm/classic",
+      "status": "PASS",
+      "detail": "the bench must have written into the staging tree, not into the campaign directory its own default points at; common.py:1342 records where record() actually wrote. exact path match"
+    },
+    {
+      "id": "V1",
+      "axis": "clusters",
+      "path": "$.fairness.h200_axes.per_family.f03_resadd_rmsnorm.axes.clusters.available + .evidence",
+      "want": "available=False and evidence containing '(source env)'",
+      "got": "available=False, evidence='hopper.caps().clusters=False (source env); preflight probe thread_block_cluster_num_ctas=True'",
+      "status": "PASS",
+      "detail": "the ONLY per-family text proving the env override reached hopper.caps(); the campaign reads available=true with '(source preflight)'. Producer: glm52_h200/bench/__init__.py:1173"
+    },
+    {
+      "id": "V2",
+      "axis": "clusters",
+      "path": "$.fairness.h200_axes.per_family.f03_resadd_rmsnorm.axes.clusters.offered + .not_offered_because",
+      "want": "offered=False and not_offered_because == 'the live capability probe says it is unavailable'",
+      "got": "offered=False, not_offered_because='the live capability probe says it is unavailable'",
+      "status": "PASS",
+      "detail": "non-vacuous for f03/f10 too: their campaign string is 'this kernel module advertises no cfg key for it' and it MUST change. Producer: glm52_h200/bench/__init__.py:1271-1274"
+    },
+    {
+      "id": "V1",
+      "axis": "tma",
+      "path": "$.fairness.h200_axes.per_family.f03_resadd_rmsnorm.axes.tma.available + .evidence",
+      "want": "available=False and evidence containing '(source env)'",
+      "got": "available=False, evidence='hopper.caps().tma=False (source env); preflight probe tma_tensor_descriptor=False'",
+      "status": "PASS",
+      "detail": "the ONLY per-family text proving the env override reached hopper.caps(); the campaign reads available=true with '(source preflight)'. Producer: glm52_h200/bench/__init__.py:1173"
+    },
+    {
+      "id": "V2",
+      "axis": "tma",
+      "path": "$.fairness.h200_axes.per_family.f03_resadd_rmsnorm.axes.tma.offered + .not_offered_because",
+      "want": "offered=False and not_offered_because == 'the live capability probe says it is unavailable'",
+      "got": "offered=False, not_offered_because='the live capability probe says it is unavailable'",
+      "status": "PASS",
+      "detail": "non-vacuous for f03/f10 too: their campaign string is 'this kernel module advertises no cfg key for it' and it MUST change. Producer: glm52_h200/bench/__init__.py:1271-1274"
+    },
+    {
+      "id": "V1",
+      "axis": "warp_specialize",
+      "path": "$.fairness.h200_axes.per_family.f03_resadd_rmsnorm.axes.warp_specialize.available + .evidence",
+      "want": "available=False and evidence containing '(source env)'",
+      "got": "available=False, evidence='hopper.caps().warp_specialize=False (source env); preflight probe warp_specialize_tl_range=True'",
+      "status": "PASS",
+      "detail": "the ONLY per-family text proving the env override reached hopper.caps(); the campaign reads available=true with '(source preflight)'. Producer: glm52_h200/bench/__init__.py:1173"
+    },
+    {
+      "id": "V2",
+      "axis": "warp_specialize",
+      "path": "$.fairness.h200_axes.per_family.f03_resadd_rmsnorm.axes.warp_specialize.offered + .not_offered_because",
+      "want": "offered=False and not_offered_because == 'the live capability probe says it is unavailable'",
+      "got": "offered=False, not_offered_because='the live capability probe says it is unavailable'",
+      "status": "PASS",
+      "detail": "non-vacuous for f03/f10 too: their campaign string is 'this kernel module advertises no cfg key for it' and it MUST change. Producer: glm52_h200/bench/__init__.py:1271-1274"
+    },
+    {
+      "id": "V4",
+      "axis": "tma",
+      "path": "$.fairness.h200_axes.per_family.f03_resadd_rmsnorm.tma_form",
+      "want": "none",
+      "got": "none",
+      "status": "PASS",
+      "detail": "scalar mirror of the capability; the campaign records 'device' in all seven files. hopper.py:377 tma_form()"
+    },
+    {
+      "id": "V4",
+      "axis": "warp_specialize",
+      "path": "$.fairness.h200_axes.per_family.f03_resadd_rmsnorm.ws_mode",
+      "want": "none",
+      "got": "none",
+      "status": "PASS",
+      "detail": "scalar mirror; the campaign records 'range'. hopper.py:937 sets ws_mode = 'range' if warp_specialize else 'none'"
+    },
+    {
+      "id": "V4",
+      "axis": "clusters",
+      "path": "$.fairness.h200_axes.per_family.f03_resadd_rmsnorm",
+      "want": "n/a",
+      "got": "no scalar mirror exists",
+      "status": "INFO",
+      "detail": "clusters has no tma_form/ws_mode equivalent; recorded so the check list is complete rather than silently short"
+    },
+    {
+      "id": "V3",
+      "axis": null,
+      "path": "$.fairness.h200_axes.per_family.f03_resadd_rmsnorm.overlays_offered",
+      "want": "[] (already empty)",
+      "got": "[]",
+      "status": "VACUOUS",
+      "detail": "the campaign already offered no overlay for this kernel; an empty list here shows nothing"
+    },
+    {
+      "id": "V5",
+      "axis": null,
+      "path": "$.fairness.h200_axes.per_family.f03_resadd_rmsnorm.kernel_cfg_keys",
+      "want": "module advertises none",
+      "got": "module advertises none",
+      "status": "PASS",
+      "detail": "a STATIC module attribute (H200_CFG_KEYS). If it changed, somebody edited the kernel modules between the two sessions and the arm comparison is not a comparison"
+    },
+    {
+      "id": "V6",
+      "axis": null,
+      "path": "$._meta.device",
+      "want": "NVIDIA H200",
+      "got": "NVIDIA H200",
+      "status": "PASS",
+      "detail": "note _meta.device is a string; indexing it as a dict throws TypeError"
+    },
+    {
+      "id": "V6",
+      "axis": null,
+      "path": "$.env.uuid",
+      "want": "b2318e71-edbf-aa1b-dcf3-3cc3e6ea7db0",
+      "got": "b2318e71-edbf-aa1b-dcf3-3cc3e6ea7db0",
+      "status": "PASS",
+      "detail": "the staged file must name the card this driver pinned"
+    },
+    {
+      "id": "V7",
+      "axis": "clusters",
+      "path": "$ (recursive cfg scan)",
+      "want": "0 winner and 0 table hits",
+      "got": "0 winner, 0 table",
+      "status": "VACUOUS",
+      "detail": "the campaign never offered this axis to this family; a clean scan shows nothing"
+    },
+    {
+      "id": "V7",
+      "axis": "tma",
+      "path": "$ (recursive cfg scan)",
+      "want": "0 winner and 0 table hits",
+      "got": "0 winner, 0 table",
+      "status": "VACUOUS",
+      "detail": "the campaign never offered this axis to this family; a clean scan shows nothing"
+    },
+    {
+      "id": "V7",
+      "axis": "warp_specialize",
+      "path": "$ (recursive cfg scan)",
+      "want": "0 winner and 0 table hits",
+      "got": "0 winner, 0 table",
+      "status": "VACUOUS",
+      "detail": "the campaign never offered this axis to this family; a clean scan shows nothing"
+    },
+    {
+      "id": "V8",
+      "axis": "clusters",
+      "path": "$.fairness.grids.*.*.*.axis_counts",
+      "want": "no key for this axis",
+      "got": "0 offending stage(s) of 66",
+      "status": "VACUOUS",
+      "detail": "the campaign never offered this axis to this family; an absent count shows nothing"
+    },
+    {
+      "id": "V8",
+      "axis": "tma",
+      "path": "$.fairness.grids.*.*.*.axis_counts",
+      "want": "no key for this axis",
+      "got": "0 offending stage(s) of 66",
+      "status": "VACUOUS",
+      "detail": "the campaign never offered this axis to this family; an absent count shows nothing"
+    },
+    {
+      "id": "V8",
+      "axis": "warp_specialize",
+      "path": "$.fairness.grids.*.*.*.axis_counts",
+      "want": "no key for this axis",
+      "got": "0 offending stage(s) of 66",
+      "status": "VACUOUS",
+      "detail": "the campaign never offered this axis to this family; an absent count shows nothing"
+    },
+    {
+      "id": "V9",
+      "axis": null,
+      "path": "$.fairness.grids.*.*.*.n_tried",
+      "want": "identical to the campaign",
+      "got": "19 of 49 stage(s) differ",
+      "status": "FAIL",
+      "detail": "f03/f10 grids are uncapped and carry no Hopper overlay, so a size change means the harness itself changed: decode_bs1/add/refine 88->50; decode_bs1/fused/refine 56->44; decode_bs1/norm/refine 50->38; decode_bs1024/fused/refine 62->54"
+    },
+    {
+      "id": "LOG",
+      "axis": null,
+      "path": "f03.classic.a1.log",
+      "want": "hopper feats [...] without ['clusters', 'tma', 'warp_specialize']",
+      "got": "f03.classic.a1.log: [none]",
+      "status": "INFO",
+      "detail": "every one of 1 banner(s) reports the axes this arm disables as off; the campaign's own transcript reads [tma,clusters,warp_specialize]"
+    }
+  ],
+  "n_fail": 1,
+  "surface": [],
+  "surface_source": "campaign fairness.h200_axes.per_family",
+  "vacuous_axes": [
+    "clusters",
+    "tma",
+    "warp_specialize"
+  ],
+  "target_axes": [],
+  "engaged_axes": []
+}

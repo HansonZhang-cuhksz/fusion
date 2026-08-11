@@ -1,0 +1,369 @@
+/home/guancheng/.local/lib/python3.10/site-packages/torch/_subclasses/functional_tensor.py:307: UserWarning: Failed to initialize NumPy: No module named 'numpy' (Triggered internally at /pytorch/torch/csrc/utils/tensor_numpy.cpp:84.)
+  cpu = _conversion_method_template(device=torch.device("cpu"))
+GLM-5.2 fusion study -- H200 preflight probe
+writing: /home/guancheng/zsh/fusion/glm52_h200/preflight_h200.json
+This script only reads; it installs nothing and changes no device state.
+
+==============================================================================
+0. GPU SELECTION (8-card node; the wrong card is how the last probe was ruined)
+==============================================================================
+  8 GPU(s) on this host:
+  rank idx   util   used GB   free GB proc   temp  state
+  ------------------------------------------------------
+     0   0     0%       0.0     139.8    0     30  idle
+     1   1     0%       0.0     139.8    0     35  idle
+     2   2     0%       0.0     139.8    0     33  idle
+     3   3     0%       0.0     139.8    0     30  idle
+     4   4     0%       0.0     139.8    0     32  idle
+     5   5     0%       0.0     139.8    0     34  idle
+     6   6     0%       0.0     139.8    0     34  idle
+     7   7     0%       0.0     139.8    0     30  idle
+       gpu 0  NVIDIA H200  uuid GPU-b2318e71-edbf-aa1b-dcf3-3cc3e6ea7db0
+       gpu 1  NVIDIA H200  uuid GPU-59aa5198-70aa-0e6f-16b9-a6d483af9c4e
+       gpu 2  NVIDIA H200  uuid GPU-3eb2bc50-6290-2508-4dc5-e01f05c85e5f
+       gpu 3  NVIDIA H200  uuid GPU-6c4cc3d3-e0bc-949d-16be-822af843e49f
+       gpu 4  NVIDIA H200  uuid GPU-c20464a7-77aa-f6f2-9a70-207c42f6b4a1
+       gpu 5  NVIDIA H200  uuid GPU-2c1d24fb-c9a6-9d6c-fa91-28ea2b50e17f
+       gpu 6  NVIDIA H200  uuid GPU-338e7fe0-5ca6-f37f-b9b6-ea4ea6c5358b
+       gpu 7  NVIDIA H200  uuid GPU-3aa19cef-f7a3-bd28-1b5e-2e6d8b8ca670
+
+  -> GPU 0 (NVIDIA H200) uuid GPU-b2318e71-edbf-aa1b-dcf3-3cc3e6ea7db0
+     --gpu 0 as requested
+     CUDA_VISIBLE_DEVICES=0  CUDA_DEVICE_ORDER=PCI_BUS_ID  (this process now sees exactly one device as cuda:0)
+
+==============================================================================
+1. STACK
+==============================================================================
+  python               3.10.12
+  platform             Linux-5.15.0-186-generic-x86_64-with-glibc2.35
+  torch                2.11.0+cu130
+  torch_cuda           13.0
+  torch_hip            None
+  cudnn                91900
+  cuda_available       True
+  device_count         1
+  triton               3.6.0
+  triton_file          /home/guancheng/.local/lib/python3.10/site-packages/triton/__init__.py
+
+==============================================================================
+2. DEVICE (torch properties)
+==============================================================================
+  name                                 NVIDIA H200
+  major                                9
+  minor                                0
+  multi_processor_count                132
+  warp_size                            32
+  shared_memory_per_block              49152
+  shared_memory_per_block_optin        232448
+  shared_memory_per_multiprocessor     233472
+  regs_per_multiprocessor              65536
+  max_threads_per_multi_processor      2048
+  L2_cache_size                        62914560
+  total_memory                         150109880320
+  is_multi_gpu_board                   0
+  gcnArchName                          NVIDIA H200
+  uuid                                 b2318e71-edbf-aa1b-dcf3-3cc3e6ea7db0
+  mem_free_bytes                       149557411840
+  mem_total_bytes                      150109880320
+  compute_capability                   9.0
+  nvidia_smi_index                     0
+  cuda_visible_devices                 0
+  cuda_device_order                    PCI_BUS_ID
+
+==============================================================================
+3. nvidia-smi (clocks / power / ECC / MIG)
+==============================================================================
+  --- GPU 0 ---  <== THIS RUN
+    index                              0
+    uuid                               GPU-b2318e71-edbf-aa1b-dcf3-3cc3e6ea7db0
+    name                               NVIDIA H200
+    driver_version                     580.173.02
+    vbios_version                      96.00.A5.00.03
+    pstate                             P0
+    clocks.sm                          1980 MHz
+    clocks.mem                         3201 MHz
+    clocks.gr                          1980 MHz
+    clocks.max.sm                      1980 MHz
+    clocks.max.mem                     3201 MHz
+    clocks_throttle_reasons.active     0x0000000000000000
+    power.draw                         92.78 W
+    power.limit                        700.00 W
+    enforced.power.limit               700.00 W
+    power.max_limit                    700.00 W
+    temperature.gpu                    30
+    memory.total                       143771 MiB
+    memory.used                        527 MiB
+    memory.free                        142630 MiB
+    ecc.mode.current                   Enabled
+    mig.mode.current                   Disabled
+    persistence_mode                   Enabled
+    compute_mode                       Default
+    utilization.gpu                    0 %
+    pcie.link.gen.current              5
+    pcie.link.width.current            16
+  --- GPU 1 ---
+    index                              1
+    uuid                               GPU-59aa5198-70aa-0e6f-16b9-a6d483af9c4e
+    name                               NVIDIA H200
+    driver_version                     580.173.02
+    vbios_version                      96.00.A5.00.03
+    pstate                             P0
+    clocks.sm                          345 MHz
+    clocks.mem                         3201 MHz
+    clocks.gr                          345 MHz
+    clocks.max.sm                      1980 MHz
+    clocks.max.mem                     3201 MHz
+    clocks_throttle_reasons.active     0x0000000000000001
+    power.draw                         78.78 W
+    power.limit                        700.00 W
+    enforced.power.limit               700.00 W
+    power.max_limit                    700.00 W
+    temperature.gpu                    35
+    memory.total                       143771 MiB
+    memory.used                        0 MiB
+    memory.free                        143156 MiB
+    ecc.mode.current                   Enabled
+    mig.mode.current                   Disabled
+    persistence_mode                   Enabled
+    compute_mode                       Default
+    utilization.gpu                    0 %
+    pcie.link.gen.current              5
+    pcie.link.width.current            16
+  --- GPU 2 ---
+    index                              2
+    uuid                               GPU-3eb2bc50-6290-2508-4dc5-e01f05c85e5f
+    name                               NVIDIA H200
+    driver_version                     580.173.02
+    vbios_version                      96.00.A5.00.03
+    pstate                             P0
+    clocks.sm                          345 MHz
+    clocks.mem                         3201 MHz
+    clocks.gr                          345 MHz
+    clocks.max.sm                      1980 MHz
+    clocks.max.mem                     3201 MHz
+    clocks_throttle_reasons.active     0x0000000000000001
+    power.draw                         75.74 W
+    power.limit                        700.00 W
+    enforced.power.limit               700.00 W
+    power.max_limit                    700.00 W
+    temperature.gpu                    33
+    memory.total                       143771 MiB
+    memory.used                        0 MiB
+    memory.free                        143156 MiB
+    ecc.mode.current                   Enabled
+    mig.mode.current                   Disabled
+    persistence_mode                   Enabled
+    compute_mode                       Default
+    utilization.gpu                    0 %
+    pcie.link.gen.current              5
+    pcie.link.width.current            16
+  --- GPU 3 ---
+    index                              3
+    uuid                               GPU-6c4cc3d3-e0bc-949d-16be-822af843e49f
+    name                               NVIDIA H200
+    driver_version                     580.173.02
+    vbios_version                      96.00.A5.00.03
+    pstate                             P0
+    clocks.sm                          345 MHz
+    clocks.mem                         3201 MHz
+    clocks.gr                          345 MHz
+    clocks.max.sm                      1980 MHz
+    clocks.max.mem                     3201 MHz
+    clocks_throttle_reasons.active     0x0000000000000001
+    power.draw                         77.44 W
+    power.limit                        700.00 W
+    enforced.power.limit               700.00 W
+    power.max_limit                    700.00 W
+    temperature.gpu                    30
+    memory.total                       143771 MiB
+    memory.used                        0 MiB
+    memory.free                        143156 MiB
+    ecc.mode.current                   Enabled
+    mig.mode.current                   Disabled
+    persistence_mode                   Enabled
+    compute_mode                       Default
+    utilization.gpu                    0 %
+    pcie.link.gen.current              5
+    pcie.link.width.current            16
+  --- GPU 4 ---
+    index                              4
+    uuid                               GPU-c20464a7-77aa-f6f2-9a70-207c42f6b4a1
+    name                               NVIDIA H200
+    driver_version                     580.173.02
+    vbios_version                      96.00.A5.00.03
+    pstate                             P0
+    clocks.sm                          345 MHz
+    clocks.mem                         3201 MHz
+    clocks.gr                          345 MHz
+    clocks.max.sm                      1980 MHz
+    clocks.max.mem                     3201 MHz
+    clocks_throttle_reasons.active     0x0000000000000001
+    power.draw                         77.94 W
+    power.limit                        700.00 W
+    enforced.power.limit               700.00 W
+    power.max_limit                    700.00 W
+    temperature.gpu                    32
+    memory.total                       143771 MiB
+    memory.used                        0 MiB
+    memory.free                        143156 MiB
+    ecc.mode.current                   Enabled
+    mig.mode.current                   Disabled
+    persistence_mode                   Enabled
+    compute_mode                       Default
+    utilization.gpu                    0 %
+    pcie.link.gen.current              5
+    pcie.link.width.current            16
+  --- GPU 5 ---
+    index                              5
+    uuid                               GPU-2c1d24fb-c9a6-9d6c-fa91-28ea2b50e17f
+    name                               NVIDIA H200
+    driver_version                     580.173.02
+    vbios_version                      96.00.A5.00.03
+    pstate                             P0
+    clocks.sm                          345 MHz
+    clocks.mem                         3201 MHz
+    clocks.gr                          345 MHz
+    clocks.max.sm                      1980 MHz
+    clocks.max.mem                     3201 MHz
+    clocks_throttle_reasons.active     0x0000000000000001
+    power.draw                         75.28 W
+    power.limit                        700.00 W
+    enforced.power.limit               700.00 W
+    power.max_limit                    700.00 W
+    temperature.gpu                    34
+    memory.total                       143771 MiB
+    memory.used                        0 MiB
+    memory.free                        143156 MiB
+    ecc.mode.current                   Enabled
+    mig.mode.current                   Disabled
+    persistence_mode                   Enabled
+    compute_mode                       Default
+    utilization.gpu                    0 %
+    pcie.link.gen.current              5
+    pcie.link.width.current            16
+  --- GPU 6 ---
+    index                              6
+    uuid                               GPU-338e7fe0-5ca6-f37f-b9b6-ea4ea6c5358b
+    name                               NVIDIA H200
+    driver_version                     580.173.02
+    vbios_version                      96.00.A5.00.03
+    pstate                             P0
+    clocks.sm                          345 MHz
+    clocks.mem                         3201 MHz
+    clocks.gr                          345 MHz
+    clocks.max.sm                      1980 MHz
+    clocks.max.mem                     3201 MHz
+    clocks_throttle_reasons.active     0x0000000000000001
+    power.draw                         77.18 W
+    power.limit                        700.00 W
+    enforced.power.limit               700.00 W
+    power.max_limit                    700.00 W
+    temperature.gpu                    34
+    memory.total                       143771 MiB
+    memory.used                        0 MiB
+    memory.free                        143156 MiB
+    ecc.mode.current                   Enabled
+    mig.mode.current                   Disabled
+    persistence_mode                   Enabled
+    compute_mode                       Default
+    utilization.gpu                    0 %
+    pcie.link.gen.current              5
+    pcie.link.width.current            16
+  --- GPU 7 ---
+    index                              7
+    uuid                               GPU-3aa19cef-f7a3-bd28-1b5e-2e6d8b8ca670
+    name                               NVIDIA H200
+    driver_version                     580.173.02
+    vbios_version                      96.00.A5.00.03
+    pstate                             P0
+    clocks.sm                          345 MHz
+    clocks.mem                         3201 MHz
+    clocks.gr                          345 MHz
+    clocks.max.sm                      1980 MHz
+    clocks.max.mem                     3201 MHz
+    clocks_throttle_reasons.active     0x0000000000000001
+    power.draw                         78.04 W
+    power.limit                        700.00 W
+    enforced.power.limit               700.00 W
+    power.max_limit                    700.00 W
+    temperature.gpu                    30
+    memory.total                       143771 MiB
+    memory.used                        0 MiB
+    memory.free                        143156 MiB
+    ecc.mode.current                   Enabled
+    mig.mode.current                   Disabled
+    persistence_mode                   Enabled
+    compute_mode                       Default
+    utilization.gpu                    0 %
+    pcie.link.gen.current              5
+    pcie.link.width.current            16
+
+==============================================================================
+4. TRITON FEATURE PROBES (compile + launch, not attribute sniffing)
+==============================================================================
+  -- attribute inventory (existence only) --
+    yes  triton.language.make_tensor_descriptor
+     no  triton.language._experimental_make_tensor_descriptor
+     no  triton.language._experimental_descriptor_load
+     no  triton.language._experimental_descriptor_store
+    yes  triton.tools.tensor_descriptor.TensorDescriptor
+     no  triton.tools.experimental_descriptor.create_2d_tma_descriptor
+     no  triton.language.async_task
+    yes  triton.set_allocator
+    yes  triton.language.range
+    tl.range(arg1, arg2=None, step=None, num_stages=None, loop_unroll_factor=None, disallow_acc_multi_buffer=False, flatten=False, warp_specialize=False, disable_licm=False)
+  -- compile + launch --
+    OK    baseline_elementwise
+    OK    tl_dot_bf16
+    OK    warp_specialize_tl_range
+    FAIL  warp_specialize_num_consumer_groups: KeyError: 'Keyword argument num_consumer_groups was specified but unrecognised'
+    OK    tma_host_descriptor  {'values_correct': True}
+    OK    tma_device_descriptor  {'values_correct': True}
+    OK    thread_block_cluster_num_ctas
+  tma usable: True  {'host_descriptor': True, 'device_descriptor': True}
+  triton target: {'backend': 'cuda', 'arch': 90, 'warp_size': 32}
+  triton device properties: {'max_shared_mem': 232448, 'max_num_regs': 65536, 'multiprocessor_count': 132, 'warpSize': 32, 'sm_clock_rate': 1980000, 'mem_clock_rate': 3201000, 'mem_bus_width': 6016}
+
+==============================================================================
+5. CALIBRATION (measured on this machine)
+==============================================================================
+  -- bandwidth (buffers >> L2) --
+    copy_1024MB_GBs            4241.8 GB/s
+    rmw_1024MB_GBs             4244.1 GB/s
+    read_1024MB_GBs            4598.1 GB/s
+    copy_2048MB_GBs            4247.3 GB/s
+    rmw_2048MB_GBs             4262.0 GB/s
+    read_2048MB_GBs            4649.5 GB/s
+  -- bf16 GEMM --
+    4096x16384x6144: cuBLAS  821.58 TF/s | Triton  775.26 TF/s (94% of vendor)
+    8192x16384x6144: cuBLAS  744.85 TF/s | Triton  665.04 TF/s (89% of vendor)
+  -- reachable shared-memory ceiling --
+    OK    BM128 BN128 BK64 s3 -> shared=98304
+    OK    BM128 BN256 BK64 s3 -> shared=147456
+    OK    BM128 BN256 BK64 s4 -> shared=196608
+    OK    BM256 BN256 BK64 s3 -> shared=196608
+    FAIL  BM128 BN256 BK128 s3: out of resource: shared memory, Required: 294912, Hardware limit: 232448. Reducing block sizes or `num_stages`
+  -- launch cost and timer granularity --
+    launch cost        10.27 us
+    harness floor      39.46 us
+    timer tick       0.032 us  (200/200 exact multiples)
+    launch/tick calibration taken on a GPU with no other compute processes.
+
+==============================================================================
+6. GLM-5.2 CAPACITY CHECK
+==============================================================================
+  w13 (256 experts)         12.00 GB
+  w2  (256 experts)          6.00 GB
+  expert weights total      18.00 GB
+  free / total VRAM        139.10 / 139.80 GB
+  expert weights fit     True
+  whole-layer feasible   True
+
+==============================================================================
+DONE
+==============================================================================
+  probed nvidia-smi GPU 0 (NVIDIA H200) uuid GPU-b2318e71-edbf-aa1b-dcf3-3cc3e6ea7db0
+    selection: --gpu 0 as requested
+  all probes completed without error
+
+  -> send back: /home/guancheng/zsh/fusion/glm52_h200/preflight_h200.json
