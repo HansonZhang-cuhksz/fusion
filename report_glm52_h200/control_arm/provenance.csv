@@ -1,0 +1,57 @@
+item,campaign,control,match,severity
+gpu_uuid,b2318e71-edbf-aa1b-dcf3-3cc3e6ea7db0,b2318e71-edbf-aa1b-dcf3-3cc3e6ea7db0,yes,info
+device_name,NVIDIA H200,NVIDIA H200,yes,info
+harness_floor_us_f03,36.914,39.456,yes,info
+harness_floor_us_f10,36.914,39.456,yes,info
+harness_floor_us_f01,36.914,39.456,yes,info
+harness_floor_us_f04f05,36.914,39.456,yes,info
+harness_floor_us_f11,36.914,39.456,yes,info
+harness_floor_us_f06,36.914,39.456,yes,info
+harness_floor_us_f08f09,36.914,39.456,yes,info
+timer_tick_us,0.032,0.032,yes,info
+timer_match_frac,1.000 (timer.match_frac),1.000 (timer.match_frac),yes,info
+unresolved_ticks,3,3,yes,info
+preflight_recorded_at,2026-08-07 10:30:37,2026-08-11 10:57:30,no,info
+torch_version,2.11.0+cu130,2.11.0+cu130,yes,info
+triton_version,3.6.0,3.6.0,yes,info
+driver_version,580.173.02,580.173.02,yes,info
+sm_clock_start,345.0,345.0,n/a,info
+sm_clock_end,375.0,390.0,n/a,info
+sm_clock_drift_pct,8.7,13.0,n/a,info
+tenant_events (as recorded in each summary),0,0 -- NOT evidence of an idle card: the control driver rewrites this file on every invocation and the last one only re-verified the already-staged families. See the driver-log rows below.,n/a,info
+session_recorded_at,2026-08-07 13:33:16,2026-08-11 20:46:20,no,info
+wall_s,6421,4455,no,info
+env_uuid_f03,b2318e71,b2318e71,yes,info
+env_uuid_f10,b2318e71,b2318e71,yes,info
+env_uuid_f01,b2318e71,b2318e71,yes,info
+env_uuid_f04f05,b2318e71,b2318e71,yes,info
+env_uuid_f11,b2318e71,b2318e71,yes,info
+env_uuid_f06,b2318e71,b2318e71,yes,info
+env_uuid_f08f09,b2318e71,b2318e71,yes,info
+co-tenancy source,summary: gpu.tenant_events,/home/shuhan/fusion/log/run_control_h200/driver.log (the summary's tenant_events was overwritten by a later invocation of the driver and is empty),n/a,info
+"card_mib_f01 (driver, before -> after)",0 -> 0 MiB (idle card; results/h200/summary.json _meta.gpu_was_idle),"0 -> 124498 MiB over 2026-08-11 14:39:58 - 2026-08-11 14:47:29, wall 7.5 min [3 attempt(s) in the log; this is the one whose window contains the staged file's recorded_at]",no,EXCLUDES-CELLS
+card_mib_f01 (child's own snapshot at record),,"used 126989 MiB / free 16168 MiB, util 4 %, throttle 0x0000000000000004",n/a,info
+tenant_evidence_f01,,"the card held 124498/143771 MiB at [hw after ] 2026-08-11 14:47:29 against 0 MiB at [hw before] -- a neighbour arrived at an unrecorded point inside the measuring window, so no cell of this family can be exonerated",no,EXCLUDES-CELLS
+tenant_evidence_f01,,the driver named this family: at 2026-08-11 14:47:30 it reported pid 2916934 VLLM::Worker_TP0_EP0 (121.6 GB) on GPU 0,no,EXCLUDES-CELLS
+other_attempt_f01,,"2026-08-11 13:39:14 (run 2, no exit line: a new driver invocation started before this stage reported an exit, card 0 -> ? MiB) -- produced no published payload",n/a,info
+other_attempt_f01,,"2026-08-11 14:39:44 (run 3, no exit line: a new driver invocation started before this stage reported an exit, card ? -> ? MiB) -- produced no published payload",n/a,info
+"card_mib_f03 (driver, before -> after)",0 -> 0 MiB (idle card; results/h200/summary.json _meta.gpu_was_idle),"0 -> 0 MiB over 2026-08-11 10:57:38 - 2026-08-11 10:58:40, wall 1.0 min",yes,info
+card_mib_f03 (child's own snapshot at record),,"used 1269 MiB / free 141888 MiB, util 0 %, throttle 0x0000000000000000",n/a,info
+"card_mib_f04f05 (driver, before -> after)",0 -> 0 MiB (idle card; results/h200/summary.json _meta.gpu_was_idle),"0 -> 63259 MiB over 2026-08-11 15:43:34 - 2026-08-11 15:51:16, wall 7.7 min [2 attempt(s) in the log; this is the one whose window contains the staged file's recorded_at]",no,EXCLUDES-CELLS
+card_mib_f04f05 (child's own snapshot at record),,"used 66288 MiB / free 76869 MiB, util 0 %, throttle 0x0000000000000000",n/a,info
+tenant_evidence_f04f05,,"the card held 63259/143771 MiB at [hw after ] 2026-08-11 15:51:16 against 0 MiB at [hw before] -- a neighbour arrived at an unrecorded point inside the measuring window, so no cell of this family can be exonerated",no,EXCLUDES-CELLS
+tenant_evidence_f04f05,,the driver named this family: at 2026-08-11 15:51:18 it reported pid 3254840 /usr/bin/python (61.8 GB) on GPU 0,no,EXCLUDES-CELLS
+other_attempt_f04f05,,"2026-08-11 14:47:30 (run 4, no exit line: a new driver invocation started before this stage reported an exit, card 124498 -> ? MiB, ON AN OCCUPIED CARD) -- produced no published payload",n/a,info
+"card_mib_f06 (driver, before -> after)",0 -> 0 MiB (idle card; results/h200/summary.json _meta.gpu_was_idle),"0 -> 0 MiB over 2026-08-11 19:58:26 - 2026-08-11 20:22:24, wall 23.9 min",yes,info
+card_mib_f06 (child's own snapshot at record),,"used 13425 MiB / free 129732 MiB, util 76 %, throttle 0x0000000000000000",n/a,info
+"card_mib_f08f09 (driver, before -> after)",0 -> 0 MiB (idle card; results/h200/summary.json _meta.gpu_was_idle),"0 -> 0 MiB over 2026-08-11 20:22:25 - 2026-08-11 20:46:18, wall 23.9 min",yes,info
+card_mib_f08f09 (child's own snapshot at record),,"used 9993 MiB / free 133164 MiB, util 0 %, throttle 0x0000000000000000",n/a,info
+"card_mib_f10 (driver, before -> after)",0 -> 0 MiB (idle card; results/h200/summary.json _meta.gpu_was_idle),"0 -> 0 MiB over 2026-08-11 13:37:10 - 2026-08-11 13:39:13, wall 2.0 min",yes,info
+card_mib_f10 (child's own snapshot at record),,"used 983 MiB / free 142174 MiB, util 0 %, throttle 0x0000000000000000",n/a,info
+"card_mib_f11 (driver, before -> after)",0 -> 0 MiB (idle card; results/h200/summary.json _meta.gpu_was_idle),"4 -> 0 MiB over 2026-08-11 19:32:13 - 2026-08-11 19:58:24, wall 26.2 min [2 attempt(s) in the log; this is the one whose window contains the staged file's recorded_at]",yes,info
+card_mib_f11 (child's own snapshot at record),,"used 25761 MiB / free 117395 MiB, util 0 %, throttle 0x0000000000000000",n/a,info
+other_attempt_f11,,"2026-08-11 15:51:18 (run 5, no exit line: a new driver invocation started before this stage reported an exit, card 63259 -> ? MiB, ON AN OCCUPIED CARD) -- produced no published payload",n/a,info
+tenant_event_1,none recorded,2026-08-11 14:47:30 GPU 0: pid 2916934 VLLM::Worker_TP0_EP0 (121.6 GB),no,TENANT
+tenant_event_2,none recorded,2026-08-11 15:51:18 GPU 0: pid 3254840 /usr/bin/python (61.8 GB),no,TENANT
+tenant_event_3,none recorded,"2026-08-11 15:51:59 GPU 0: pid 3254840 /usr/bin/python (68.5 GB), pid 3264022 sglang::scheduler_DP0_TP0_EP0 (32.1 GB)",no,TENANT
+tenant_mib_bar,,a driver snapshot above 1024 MiB is read as somebody else's allocation (--tenant-mib),n/a,info

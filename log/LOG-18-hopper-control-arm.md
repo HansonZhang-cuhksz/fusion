@@ -1,14 +1,20 @@
 # LOG-18 — the Hopper control arm: does turning the sm_90 levers off change anything?
 
-**Date** 2026-08-10, first operator run 2026-08-11 · **Status** IN PROGRESS — **1 of 7 families
-measured.** `f03` ran clean (11/11 regimes, exit=0, ~1 min) and the run then aborted on a
-**defective verifier check (V9)** before `f10`/`f01`/`f04f05`/`f11`/`f06`/`f08f09` launched.
-V9 is repaired; the returned `f03` data is sound and does **not** need re-measuring. Six
-families remain unmeasured, so **no verdict on the study question is possible** — see the
-2026-08-11 Work log entry
+**Date** 2026-08-10, arm completed 2026-08-11 · **Status** ARM COMPLETE, COMPARISON WITHHELD —
+**all 7 families are measured, staged and engagement-verified** (`f03`/`f10`
+`NOTHING-TO-DISABLE`, the other five `ENGAGED`, `n_fail 0` everywhere, sentinel removed
+2026-08-11 20:46:19). But **`f01` and `f04f05` are EXCLUDED as tenant-contaminated** — a
+neighbour took 121.6 GB and 61.8 GB of the 143.8 GB card inside their measurement windows —
+and the single cell `f10/decode_bs16` is excluded as a harness artefact. The two excluded
+families are **exactly the two whose offered tuner grid actually collapsed under the switch**,
+so the intended classic-vs-campaign comparison is **not published** — see the 2026-08-12 Work
+log entry
 · **Trigger** the H200-vs-C500 comparison found that the three TMA-offered families
 (`f01`, `f06`, `f08f09`; six variants) improved LEAST — medians 0.98–1.06x — while `f03` and
-`f10`, which are offered no Hopper axis at all, improved 1.86x and 1.48x · **Verdict** *(unfilled — nothing has been measured)*
+`f10`, which are offered no Hopper axis at all, improved 1.86x and 1.48x · **Verdict**
+*(withheld — drift band −6.07 %/+4.70 % over 21 cells; five clean families, of which only
+`f11` had its offered grid change at all, and no exceedance that can be separated from
+cross-session tuner variance. `f01` and `f04f05` must be re-measured on a clear card.)*
 
 ---
 
@@ -985,11 +991,498 @@ redirected with `--log-dir`. `log/run_control_h200/.gitignore` already warns abo
 before committing"); the warning was right and I still walked into it. Everything under
 `results/h200/_control_arm/` is byte-identical to what the operator sent.
 
-### *(appended when the remaining six families return)* — results
+### 2026-08-11 (evening) — the arm ran three families, then the process was killed and a neighbour took the card
 
-To carry: the delta table in LOG-16 §8.4's form — regime rows, one column per family, values
-bolded where they fall outside the band, with the `f03`/`f10` columns visually separated as the
-band itself — then a one-paragraph prose reading with the verdict in bold. Then the engagement
-table (which axes were offered, which collapsed, which were vacuous). Then, explicitly and by
-name, the negative results: every family whose delta landed inside the band, each with the
-sentence *"inside the drift band; nothing is shown"*.
+**What the operator got.** The V9 repair worked: `f03` re-verified in place without
+re-measuring, `f10` and `f01` measured, and the per-family resume did exactly what it was
+rewritten to do. Then the driver died 10 minutes into `f04f05` having written **nothing** — no
+traceback, no exit line, no summary update. The last line of `driver.log` is a routine
+heartbeat at 14:57:30. `f04f05` left no result and no checkpoints.
+
+**Three separate faults, only one of which is the crash.**
+
+**1. A co-tenant took the card mid-arm, and the driver kept going.** At 14:47:30, between
+`f01` and `f04f05`:
+
+```
+!! a co-tenant appeared on GPU 0 after classic/f01: new compute process(es):
+!!   pid 2916934 VLLM::Worker_TP0_EP0 (121.6 GB); memory in use grew +121.6 GB
+!! Nothing is stopped -- an aborted campaign loses more than a flagged one
+```
+
+That policy is inherited from `run_h200.py` and it is **right for a campaign and wrong here**.
+The campaign *is* the baseline; this arm is a **diff against a baseline measured on an idle
+card**, so a neighbour does not add noise, it removes the comparison. The hw snapshots bracket
+it precisely — `used=0 MiB` at every boundary through 14:39:59, `used=124498 MiB` at 14:47:29
+— so the tenant arrived **during `f01`**, and `f01` took **450 s against the campaign's 233 s,
+1.93×**, which the driver itself flagged as a signal that something was wrong. `f01` is
+therefore contaminated and is not publishable. `f03` (10:58, idle) and `f10` (13:37–13:39,
+idle) are clean.
+
+Fixed: co-tenancy is now **fatal by default** in this driver (`--on-tenant stop`, new exit
+code **7**), the contaminated family is marked in its stage record and the summary, and
+`make_control_report_h200.py` drops any family flagged `TENANT-CONTAMINATED` from the
+comparison rather than averaging it into a drift band. `--on-tenant flag` restores the old
+campaign behaviour.
+
+**2. The killed run recorded itself as verified.** `control_arm_summary.json` came back with
+`verified: true, sentinel: null` on an arm with **3 of 7** families measured, because the arm
+record was initialised optimistically (`"verified": True`) and only flipped to False on
+failure — so any path that never reaches the end of the arm leaves the optimistic value in the
+last incremental save. The only thing standing between that and a 3-of-7 arm reading as
+publishable was the `ARM_NOT_VERIFIED` file left over from the *earlier* V9 abort, which is
+luck, not a safety net.
+
+Fixed: `verified` now defaults to **False** with a `verified_reason`, and is set True only on a
+**complete** arm (every family adjudicated, none failed, no tenant). Verified against the real
+returned tree: `verified: false`, reason *"at least one family failed engagement
+verification"*. Also fixed: `build_summary(live)` took a `live` parameter and never emitted it
+— which is why the returned summary read `live: null` instead of telling us it had never
+closed.
+
+**3. The termination left no diagnosis.** We still cannot say *which* signal it was, and that
+is the part worth fixing rather than guessing. SIGTERM/SIGHUP/SIGINT are catchable, so they are
+now trapped, named in `driver.log` and recorded as `terminated_by` in the summary; SIGKILL and
+the host OOM killer cannot be trapped by anyone, which is what the incremental save and the
+pessimistic `verified` default are for. Reproduced end to end by SIGTERMing the driver: it now
+exits recording `live=false, terminated_by=SIGTERM, verified=false`. A first attempt still lost
+the record when the signal landed in the **closing sequence**, which sat outside every handler
+— that path is now interrupt-safe too.
+
+The module docstring now leads with `setsid nohup python3 run_control_h200.py &`. A dropped SSH
+session (SIGHUP) is the cheapest explanation for a silent death and the only one the operator
+can eliminate for free.
+
+**An anomaly in the noise floor that is NOT explained by any of the above, and must not be
+waved through.** `f10` at `decode_bs16` moved **2.1607 → 3.7394, +73.1 %**, while its ten
+sibling regimes sit within ±6 %:
+
+| regime | campaign | control | delta |
+|---|---|---|---|
+| decode_bs8 | 2.1650 | 2.1286 | −1.7 % |
+| **decode_bs16** | **2.1607** | **3.7394** | **+73.1 %** |
+| decode_bs32 | 2.1338 | 2.1701 | +1.7 % |
+
+`f10` is offered no Hopper axis, so the switch cannot have done this, and `f10` was measured on
+an idle card, so co-tenancy cannot either. It matters because `f03`+`f10` **are** the drift
+band: taken at face value this single cell widens the band to ±73 %, which is larger than any
+effect the study is looking for and would make every other family unresolvable. It needs a
+cause before the band is computed. Untouched pending that — recording it, not fixing it.
+
+**Status.** `f03` and `f10` clean and verified (`NOTHING-TO-DISABLE`). `f01` measured but
+contaminated. `f04f05`, `f11`, `f06`, `f08f09` never ran. No verdict on the study's question is
+possible, and none is implied by anything above.
+
+### 2026-08-12 — the arm completed, and the comparison it was built to publish is withheld
+
+All seven families came back (`8cdef5d` "h200 control done"). **The arm engaged, and the
+measurement of five of the seven families is sound.** The two families whose tuner grid the
+switch actually changed — `f01` and `f04f05` — were each measured while a neighbour was taking
+the card, were never re-measured, and are **excluded by name**. What remains cannot carry the
+study's question. That is the entry.
+
+Everything below is read out of `results/h200/_control_arm/`, `log/run_control_h200/driver.log`
+and the committed campaign. Nothing under either was written, moved or edited
+(`git status --porcelain results/h200/ log/run_control_h200/` is empty); all fixtures were built
+under a scratchpad.
+
+#### 1. What came back, and how many runs it took
+
+`driver.log` carries **seven appended banners**, not the five that produced data:
+
+| # | started | what it did |
+|---|---|---|
+| 1 | `10:57:21` | **aborted** on the `--gpu 7` / campaign-card contradiction; no work |
+| 2 | `10:57:29` | measured `f03`; V9 failed (the defect repaired in the earlier entry); sentinel written; exit 5 |
+| 3 | `13:37:09` | measured `f10`, launched `f01`, killed mid-`f01` ~13:41, no footer |
+| 4 | `14:39:42` | **interrupted 1 s after launching `f01`** (`14:39:45 !! interrupted`); no `[hw before]` taken |
+| 5 | `14:39:56` | measured `f01`, launched `f04f05`, killed mid-`f04f05` ~14:57, no footer |
+| 6 | `15:43:32` | measured `f04f05`, launched `f11`, interrupted 15:51:52; exit 1 |
+| 7 | `19:32:10` | measured `f11`, `f06`, `f08f09`; sentinel removed; exit 0 |
+
+Engagement passed everywhere, `n_fail 0`:
+
+| family | axes the campaign offered | verdict | V9 offered grid | V9d winner-derived | Hopper-ON winner cfgs, campaign → control |
+|---|---|---|---|---|---|
+| `f03` | **none** | `NOTHING-TO-DISABLE` | 0 of 21 differ | 19 of 28 | 0 / 7601 → 0 / 7397 |
+| `f10` | **none** | `NOTHING-TO-DISABLE` | 0 of 21 | 19 of 28 | 0 / 8659 → 0 / 8667 |
+| `f01` | tma, ws, clusters | `ENGAGED` | 14 of 14 | 10 of 35 | **4267** / 7022 → **0** / 4794 |
+| `f04f05` | ws, clusters | `ENGAGED` | 35 of 56 | 0 of 28 | **14839** / 25742 → **0** / 18845 |
+| `f11` | ws | `ENGAGED` | 2 of 35 | 14 of 42 | **4835** / 12945 → **0** / 12256 |
+| `f06` | tma, ws, clusters | `ENGAGED` | 0 of 21 | 12 of 21 | **3989** / 8198 → **0** / 8224 |
+| `f08f09` | tma, ws, clusters | `ENGAGED` | 0 of 63 | 12 of 58 | **4541** / 11894 → **0** / 11887 |
+
+(Winner-config counts are an independent recount over every dict in each file carrying a
+`BLOCK_*` or `num_warps` key, scoring a config hot on `USE_TMA`/`TMA_A`/`TMA_B`/`warp_specialize`
+being `True`, `num_ctas > 1`, or a non-`none` `TMA_MODE` — exact keys, never substrings, because
+`"ROWS"` contains `WS` and occurs 7395 times in `f03`'s control file alone. All seven control
+files also record `_meta.harness_info.features.disabled ==
+["tma","ws","warp_specialize","clusters"]` against `[]` in all seven campaign files, and every
+returned child log opens `tma=False ws=False clusters=False wgmma=False | src env` against the
+campaign's `src preflight`. `src env` vs `src preflight` is the discriminator, and it is the
+only engagement evidence that reaches `f03` and `f10` at all.)
+
+**`verified: true` in the summary certifies engagement, not provenance.** It says the switch
+reached every child. It says nothing about who else was on the card, and §3 is why that
+distinction is now load-bearing.
+
+#### 2. Provenance, family by family
+
+Every family ran on the campaign's own card (`GPU-b2318e71-…-3cc3e6ea7db0`, re-asserted in each
+staged `_meta` and in check V6), all `exit=0 status=ok`, all 11 regimes, all on 2026-08-11:
+
+| family | measuring run | window | wall | card used, before → after | staged `recorded_at` | child's own `nvidia-smi` at record | state |
+|---|---|---|---|---|---|---|---|
+| `f03` | `10:57:29` | 10:57:38–10:58:40 | 62 s | 0 → 0 MiB | 10:58:38 | 1269 MiB, util 0 % | **CLEAN** |
+| `f10` | `13:37:09` | 13:37:10–13:39:13 | 123 s | 0 → 0 MiB | 13:39:10 | 983 MiB, util 0 % | **CLEAN** |
+| `f01` | `14:39:56` | 14:39:58–14:47:29 | 450 s | **0 → 124498 MiB** | 14:47:27 | **126989 MiB used / 16168 free, util 4 %, throttle 0x4** | **CONTAMINATED** |
+| `f04f05` | `15:43:32` | 15:43:34–15:51:16 | 462 s | **0 → 63259 MiB** | 15:51:14 | **66288 MiB used / 76869 free** | **CONTAMINATED** |
+| `f11` | `19:32:10` | 19:32:13–19:58:24 | 1570 s | 4 → 0 MiB | 19:58:21 | 25761 MiB, util 0 % | **CLEAN** |
+| `f06` | `19:32:10` | 19:58:26–20:22:24 | 1436 s | 0 → 0 MiB | 20:22:22 | 13425 MiB, util 76 % (its own work) | **CLEAN** |
+| `f08f09` | `19:32:10` | 20:22:25–20:46:18 | 1432 s | 0 → 0 MiB | 20:46:16 | 9993 MiB, util 0 % | **CLEAN** |
+
+File-vs-log agreement is exact: every `_meta.recorded_at` falls inside its family's driver
+window, every `_meta.results_dir` is the staging path, every `_meta.hwinfo.gpu.uuid` is the
+campaign card. **The children's own end-of-run snapshots corroborate the memory story without
+using `driver.log` at all** — the two contaminated families record a card two-thirds and
+half full; the five clean ones record only their own footprint.
+
+One provenance defect inside a family that is excluded anyway, recorded so nobody resurrects
+the cell: **`f01`'s published row set is a two-session splice.** Its `decode_bs1` checkpoint is
+`saved_at 2026-08-11 13:40:31` — from the *abandoned* 13:37 run — and was reused rather than
+re-measured; the other ten span 14:40:26–14:47:27. It is visible only in
+`_ckpt/f01_oproj_resadd/*/saved_at`, in nothing else.
+
+**The wall times the driver alarmed on were measured against the wrong denominator.**
+`results/h200/summary.json families[*].wall_s` was frozen on 2026-08-07 13:33 and covers
+**seven** regimes; `decode_bs2/4/8/16` were appended later by the bs-extra run, whose per-family
+benches each measured all **eleven** on the same idle card. Comparing an 11-regime control
+against a 7-regime campaign manufactures a slowdown:
+
+| family | campaign, 7 reg | bs-extra, 11 reg | campaign true 11-reg cost | control, 11 reg | vs 7-reg (what the driver did) | vs true 11-reg |
+|---|---|---|---|---|---|---|
+| `f03` | 57 s | 84 s | 141 s | 62 s | 1.09x "slower" | **0.44x** |
+| `f10` | 108 s | 162 s | 270 s | 123 s | 1.14x "slower" | **0.46x** |
+| `f01` | 233 s | 516 s | 749 s | 450 s | 1.93x "slower" (**warned**) | **0.60x** |
+| `f04f05` | 1230 s | 1680 s | 2910 s | 462 s | 0.38x | **0.16x** |
+| `f11` | 1169 s | 1362 s | 2531 s | 1570 s | 1.34x "slower" (unwarned) | **0.62x** |
+| `f06` | 891 s | 1068 s | 1959 s | 1436 s | 1.61x "slower" (**warned**) | **0.73x** |
+| `f08f09` | 1121 s | 1302 s | 2423 s | 1432 s | 1.28x "slower" (unwarned) | **0.59x** |
+
+On a like-for-like basis **every family in the control arm was faster than the campaign's true
+cost for the same eleven cells**, and both of the driver's wall-time alarms are artefacts of
+the comparator. `f01`'s 1.93x is therefore *not* corroborating evidence of its contamination and
+must not be quoted as such — the contamination evidence is the memory, not the clock.
+
+#### 3. The contamination, and why it disqualifies rather than degrades
+
+Two co-tenants arrived inside measurement windows, named in `driver.log` and nowhere else:
+
+```
+14:47:30 !! a co-tenant appeared on GPU 0 after classic/f01: new compute process(es):
+14:47:30 !!   pid 2916934 VLLM::Worker_TP0_EP0 (121.6 GB); memory in use grew +121.6 GB
+15:51:18 !! a co-tenant appeared on GPU 0 after classic/f04f05: new compute process(es):
+15:51:18 !!   pid 3254840 /usr/bin/python (61.8 GB); memory in use grew +61.8 GB
+```
+
+A third event at `15:51:59` names `pid 3254840` grown to 68.5 GB plus
+`pid 3264022 sglang::scheduler_DP0_TP0_EP0` (32.1 GB), +87.1 GB. It lands **after** `f04f05` was
+written (15:51:14) and during the 34-second `f11` attempt that was killed and left no payload,
+so it contaminates nothing that survives — the next run still printed `[classic/f11] staged
+payload does NOT cover the 11-regime scope -> MEASURE`. The abandoned `f04f05` attempt of the
+14:39:56 run likewise started at 14:47:30 on an already-124498 MiB card and left no payload.
+
+**Neither contaminated family was ever re-measured.** Every later run found their staged payload
+already covering the 11-regime scope and took the re-verify-only path: `f01` decided MEASURE at
+13:39:14, 14:39:44 and 14:39:58 (the completing one), then "covers → re-verify only" at 15:43:33
+and 19:32:12; `f04f05` MEASURE at 14:47:30 and 15:43:34, then "covers → re-verify only" at
+19:32:12. That path is correct behaviour — it is what stops a resumed run re-burning good data —
+but it means a family measured under a neighbour is carried forward untouched and unflagged.
+
+**Why this is exclusion and not a caveat.** The baseline these two are diffed against was
+measured on an idle card (`summary.json` `_meta.gpu_was_idle: true`, `tenant_events: []`,
+`hwinfo_drift` memory start 0.0 / end 0.0, and the campaign `driver.log` shows `used 0/143771
+MiB` at every family boundary). A neighbour holding 122 GB or 62 GB of a 143.8 GB card does not
+add noise to a memory-bound ratio — **it removes the comparison**. And the artefacts cannot say
+*when* in a 7.5-minute window the neighbour arrived, so no individual cell can be exonerated
+either. `f01` and `f04f05` are named as excluded, flagged for re-measurement, and kept out of
+every aggregate. They are not quietly averaged in and they are not silently dropped.
+
+Three things about this that are our fault, not the operator's, and all three are worth naming:
+
+1. **The driver of the day only warned.** `!! Nothing is stopped -- an aborted campaign loses
+   more than a flagged one` is inherited from `run_h200.py` and is right for a campaign and
+   wrong for a diff. It has since been changed: `--on-tenant` now defaults to **`stop`**
+   (`run_control_h200.py:2066`, exit code 7), with `--on-tenant flag` restoring the old
+   behaviour. **The operator ran the committed version, so the fix did not apply to this run.**
+   The fix protects the *next* run and nothing about this one.
+2. **The co-tenant record was LOST from the summary.** The warnings were written into the
+   summary of the run that saw them, and each later run overwrote
+   `control_arm_summary.json`. The final summary carries `gpu.tenant_events: []` and exactly two
+   warnings — the `f06` wall time and the sentinel removal — with **no co-tenant string
+   anywhere**. It also records `fam_stages[f03|f10|f01|f04f05].wall_s == 0.0` with
+   `attempts == []`, i.e. the two contaminated families read as though they were never launched.
+   **The entire evidence for the central exclusion in this study survives in one unstructured
+   text file.** That is a real provenance weakness, it is being recorded as one, and the summary
+   is not being edited to paper over it. The report generator must derive contamination by
+   parsing `driver.log`'s `!! a co-tenant appeared` lines together with the `[hw before]` /
+   `[hw after ]` used-MiB pair bracketing each family, and must read the per-family
+   `_ckpt/*/saved_at` fields, which are the only place `f01`'s splice is visible.
+3. **`f04f05`'s child transcript never came back.** `log/run_control_h200/.gitignore:24`
+   excludes `f04f05*.log` on size grounds and `tools/split_h200_log.py` was not run, so the one
+   family with the arm's worst cells has no transcript, no `src env` banner and no way for
+   anyone to diagnose it. The campaign directory has `f04.log`, `f05.log` and
+   `f04f05_compiler.log.gz`; the control directory has none of the three.
+
+#### 4. Anomaly A — `f10` at `decode_bs16`, +73.1 % — RESOLVED as a harness artefact, cell excluded
+
+The cell moved 2.1607 → 3.7394 while its ten siblings sit inside ±6 %. It is resolved, and the
+answer is that **nothing got faster**: both sides of the ratio collapsed, the fused side further.
+
+| | campaign | control |
+|---|---|---|
+| `fused_ms` | 0.06323 | **0.01642** (−74 %) |
+| `unfused_ms` | 0.13690 | **0.06109** (−55 %) |
+| `speedup` | 2.1607 | **3.7394** |
+| `fused_cfg` | `ROWS 4, BLOCK_N 256, nw 2, KVEC 0` | `ROWS 1, BLOCK_N 256, nw 2, KVEC 1` |
+| `bitwise_identical` | true (`rel_err` 0.0) | false (`rel_err` 2.77e-04) |
+| `order_gap_frac` | 0.00248 | 0.05449 (22x) |
+| `ratio_halves` | [2.006, 2.310] | [3.705, 3.777] |
+
+The workload is provably identical — `T=16`, `bytes_fused` 1966592 in both, `torch_eager` 0.1433
+vs 0.1479 ms and `torch_compile` 0.0685 vs 0.0670 ms unchanged — so this is not a shape change.
+Neither the switch nor the neighbours can reach it: `f10` is offered no Hopper cfg key, and the
+card read `0/143771 MiB` at both ends of the family window.
+
+**The decisive diagnostic is the flush tail, and it is mechanical.** `common.py:498` zeroes a
+256 MB buffer on-stream immediately before each timed region, and the dirty-L2 writeback drains
+into the measurement. Writing `C_f = final_fused − tuned_fused_best` from the child logs, every
+comparable cell in both arms pays it and this one does not:
+
+| cell | `C_f` | `C_u` |
+|---|---|---|
+| 20 of 22 decode / `prefill_t2048` cells, both arms | 0.047–0.079 ms | 0.071–0.147 ms |
+| `prefill_t8192`, both arms | 0.0004 ms | 0.0001 ms |
+| control `decode_bs8` (the neighbour cell) | 0.0558 ms | 0.0822 ms |
+| **control `decode_bs16`** | **0.0074 ms** | **0.0056 ms** |
+
+Re-derived here from `log/run_control_h200/f10.classic.a1.log`: tuned fused best 0.0090 ms →
+final 0.0164 ms; chain joint 0.0555 ms → final 0.0611 ms. Its tuning phase was entirely normal
+(siblings tune to 0.0057–0.0106 ms fused, 0.0522–0.0572 ms chain), so no kernel or tile effect
+is involved — only the final paired window. It is also **the only cell in either arm whose fused
+time falls below its own session's measured harness floor**: 16.42 µs against 39.46 µs (0 of 165
+campaign cells, 1 of 165 control cells), and it sits at 1.90x its own `ceiling_with_launch` where
+no other cell in either arm exceeds 1.38x.
+
+**The cell is excluded on a stated, uniform, pre-registerable criterion** — *a cell is invalid
+if its measured additive constant `C_f` falls below 15 % of the family's cohort floor for that
+arm* — which is computable per cell without reference to its speedup and which removes this cell
+and no other across all seven families. It is excluded loudly, with its numbers above, so a
+reader can overrule the exclusion and see exactly what that costs (§6). It goes on the
+re-measurement list, from a **different cause** than `f01`/`f04f05`: harness artefact, not
+co-tenancy.
+
+One standing caveat this surfaced, which is a property of the **committed campaign** and not of
+the control arm: at small `T` the flush tail *is* the measurement, so `f10`'s 2.0–2.2x figures
+are ratios of flush tails rather than of DRAM traffic — every such cell exceeds its own modelled
+ceiling on both arms. The one cell where the tail is negligible, `prefill_t8192`, lands at
+1.196x against a modelled ceiling of 1.20x. That should be disclosed wherever those numbers are
+published.
+
+#### 5. Anomaly B — `f06` at 24 min vs 15 min — the alarm dissolves; a 1.34x residual is UNDETERMINED
+
+The driver's warning was: *"The classic arm's widened grid collapses (`h200_cfg_overlays()`
+returns `[]`), so it should be FASTER to tune; a slower classic arm is a signal something is
+wrong."* Three independent things are wrong with it and one thing survives.
+
+1. **Wrong denominator** (§2): 1436 s over 11 regimes against 891 s over 7. Against the
+   campaign's true 11-regime cost of 1959 s the control ran at **0.73x**.
+2. **Wrong reference point.** 14.9 min is the *fastest* of three successful same-scope `f06`
+   attempts in the campaign (`log/run_h200/driver.log`: 28.1 min, 17.3 min, 14.9 min). 23.9 min
+   is inside the campaign's own spread.
+3. **The premise is false for this family.** The *legal* grid did collapse exactly 5.0x — the
+   control log reads `289 / 396 / 508 / 566 legal` where the campaign reads
+   `1445 / 1980 / 2540 / 2830`, base plus four overlays — but **both arms then sample to
+   `budget 200`**, so the *offered* grid is unchanged and the tuner does the same work. The
+   driver's own V9 check already said so (`0 of 21 offered-grid stage(s) differ`, `n_tried` 16070
+   control vs 16036 bs-extra vs 16018 campaign, ratio 1.00) and nobody wired it into the
+   heuristic. The same holds for `f08f09` (`0 of 63`, 22408 vs 22426). The grid measurably shrank
+   only for `f01` (0.59x), `f04f05` (0.72x) and marginally `f11` (0.94x).
+
+**What survives.** Against the closest like-for-like comparator — the 2026-08-07 bs-extra run,
+same card, idle, Hopper ON, all 11 regimes, 1068 s — the control took 1436 s, **1.34x on
+identical tuner work**. `f11` (1.15x) and `f08f09` (1.10x) show the same direction. A candidate
+mechanism exists and is not confirmed: compile failures stopped being free (`f06`'s `n_failed`
+collapses 573 → 38 over the shared regimes at flat `n_tried`, so ~12 % more configs per regime
+survive to a full L2-flushed timing run). **The residual is recorded as UNDETERMINED.** It
+carries no contamination marker — the card was 0 → 0 MiB, the child's own footprint was
+13425 MiB — and it cannot reach the published ratios in any case: the A/B measurement is 7.5 s
+of a 1436 s wall (0.5 %), row health matches the campaign (`paired: true` on all 11,
+`n_pairs` identical per regime, `ratio_halves` tight, no retries or OOM). The extra time is
+tuning, and tuning is not what is published.
+
+#### 6. The result, and what an unpaired design cannot say
+
+The band is the `f03` + `f10` relative delta of paired speedups, `d = classic / campaign − 1`,
+computed cell-for-cell over the 165-cell join of the two summaries (163 pairs resolve on both
+sides; the two `f03`/`f10` families contribute 22 of them):
+
+| band | n | min | median | max |
+|---|---|---|---|---|
+| `f03` + `f10`, **as measured** | 22 | −6.07 % | +0.61 % | **+73.06 %** |
+| `f03` + `f10`, **less `f10/decode_bs16`** | 21 | **−6.07 %** | +0.48 % | **+4.70 %** |
+
+**Both are stated, and the difference is fully consequential.** Against the 73.1 % band *zero*
+cells in *any* family fall outside and the study resolves nothing whatsoever. Against the
+6.07 %/4.70 % band it resolves exceedances in three of the five publishable families (and in
+both of the excluded ones). The defensible band is the second
+one, on the §4 criterion, and the first is printed beside it so the choice is visible rather
+than buried.
+
+**And then the exceedances have to be priced against the band's own false-positive rate, which
+is the step that decides this run.** A min/max band over *n* reference cells is exceeded by a
+fresh exchangeable draw exactly when that draw is the new minimum or the new maximum, i.e. with
+probability `2/(n+1)`. At n = 21 that is **9.1 % per cell, by construction and before any
+effect exists.** Over the 86 judged cells it predicts **7.8** exceedances; the report observes
+**12**. One-sided binomial `P(X ≥ 12 | n = 86, p = 2/22) = 0.089` — not significant at any
+conventional threshold. Per group of eleven cells the chance of at least one exceedance is
+`1 − (1 − 0.0909)¹¹ = 65 %`, which is precisely why seven of the eight judged groups have one:
+the group-level count is an artefact of the band's construction, not a result.
+
+Two further tests, both computable from what is already published, point the same way:
+
+* **Leave-one-family-out.** Rebuilding the band from the other families in turn — over the four
+  whose offered grid provably did not change (V9 0-of-21, 0-of-21, 0-of-21, 0-of-63) — gives
+  **6 exceedances over 107 cells against 2.9 expected**. The signal does not survive being
+  asked to hold under a band it did not help construct.
+* **Within-cell dispersion.** Comparing each cell's own `speedup_p10_p90` between the two arms,
+  **8 of the 12 exceedances overlap** — the two arms' spreads are not separated. Of the four
+  that do not, all four are `prefill` cells, and prefill is exactly where §2 says the band is
+  weakest: it has 4 samples and falls back to a global band dominated by decode's
+  launch-latency variance.
+
+**So the honest headline for this run is that the design could not answer the question.** Not
+"the levers did nothing" — that is a claim this design cannot make in either direction — and
+not "seven of eight groups show an effect", which is what the raw exceedance count looks like
+until it is priced. The published README now states the null expectation in its Verdict field
+rather than in a footnote.
+
+**The bitterest part is structural, and it is worth stating plainly for whoever runs this
+next.** The two families excluded for co-tenancy, `f01` and `f04f05`, are **exactly the two
+whose offered tuner grid demonstrably collapsed under the switch** — the two where the control
+arm provably changed what the tuner was allowed to try, and therefore the two most likely to
+carry a real effect. The run lost its best evidence to a neighbour and kept its weakest. That
+is not a reason to read anything into what remains; it is the reason a re-measurement is worth
+the GPU time.
+
+Per family, against **[−6.07 %, +4.70 %]**:
+
+| family | n | min | median | max | outside the band | reading |
+|---|---|---|---|---|---|---|
+| `f03` | 11 | −5.06 % | +0.04 % | +4.41 % | 0 of 11 | **band constituent** — no verdict |
+| `f10` | 10 (+1 excl.) | −6.07 % | +1.07 % | +4.70 % | 0 of 10 | **band constituent** — no verdict; `decode_bs16` excluded (§4) |
+| `f06` | 11 | −12.33 % | +0.09 % | +9.64 % | **2** (`prefill_t8192` −12.33 %, `prefill_t2048` +9.64 %) | 2 cells exceed the band; 9 inside, so nothing is shown for those |
+| `f08f09` | 42 | −16.69 % | −0.30 % | +11.64 % | **4** (`f9_token_major/decode_bs1` −16.69 %, `f8_token_major/decode_bs1` −12.46 %, `f9_atomic/decode_bs1` +11.64 %, `f8_token_major/prefill_t8192` +4.96 %) | 4 cells exceed the band; 38 inside, so nothing is shown for those |
+| `f11` | 33 | −28.17 % | −0.25 % | +15.82 % | **6** (`combined/decode_bs1` −28.17 %†, `f11b_router/decode_bs1` +15.82 %, `f11b_router/decode_bs2` +14.71 %, `combined/prefill_t2048` +8.99 %, `f11a_w13/prefill_t2048` +8.60 %, `f11b_router/prefill_t8192` +6.91 %) | 6 cells exceed the band; 27 inside, so nothing is shown for those |
+| ~~`f01`~~ | 11 | −6.20 % | +0.24 % | +1.56 % | 1 | **EXCLUDED — tenant-contaminated** |
+| ~~`f04f05`~~ | 44 | −64.60 % | −0.33 % | +10.62 % | 15 | **EXCLUDED — tenant-contaminated** |
+
+† `f11 combined/decode_bs1` is a coverage artefact, not drift: the campaign's `moe` sub-arm there
+records `unmeasurable: "RuntimeError: PassManager::run failed"`. Annotate or drop it; do not read
+it as a delta. (Two `f08f09` cells are unresolved on one side — `f9_atomic/decode_bs4` in the
+campaign, `f9_atomic/decode_bs8` in the control — hence n=42 not 44. Counting exceedances with a
+symmetric `|d| > 6.07 %` rule instead of the asymmetric band gives 14 for `f04f05` and 3 for
+`f08f09`; the band is asymmetric because the data are, and the rule is stated before the counts.)
+
+**Now the honest part, and it is most of the result.**
+
+- **Every verdict above is "the delta exceeds the drift band" or "the delta is inside the drift
+  band, so nothing is shown".** Neither sentence attributes anything to TMA, warp specialization,
+  clusters or wgmma, in either direction. `GLM52_H200_CLASSIC=1` also forces `wgmma` off (§3),
+  so even an exceedance would not be attributable to the three levers the question names.
+- **The band is not sound as a bound, and saying so is not modesty.** V9d reports that for `f03`
+  and `f10` — the two families where the two arms are *identical by construction* — the
+  autotuner picked a **different winner in 19 of 28 stages**. A 68 % cross-session winner-change
+  rate in the families that are supposed to define the noise floor is the same mechanism, at
+  smaller amplitude, that produces `f04f05/F5_topk/decode_bs8` at −64.6 %, `f11/combined/
+  decode_bs1` at −28.2 % and `f08f09/f9_token_major/decode_bs1` at −16.7 % — in every case
+  driven by the **unfused baseline** being re-tuned to a different winner (its own cross-session
+  change reaches −71.9 %, −33.0 % and −29.9 % respectively). Two short elementwise families
+  cannot bound the session-to-session tuner variance of the GEMM-heavy families. The exceedances
+  in `f06`, `f08f09` and `f11` are therefore reported as exceedances of *this* band and not as
+  evidence of anything.
+- **The design is unpaired and that is not repairable after the fact.** Control 2026-08-11
+  against a campaign of 2026-08-07 (itself a two-session composite: `decode_bs2/4/8/16` come
+  byte-identically from the 2026-08-07 16:22–18:05 bs-extra run, so four of eleven regimes carry
+  a *different* cross-session gap than the other seven — and `f10`'s outlier sits in that half).
+  A real, measured session offset exists and applies to every family: the harness floor is
+  **36.914 µs** in the campaign and **39.456 µs** in the control, **+6.9 %**, recorded identically
+  in all seven staged files. The timer tick is identical (0.032 µs, `match_frac` 1.0, trusted in
+  both). `f03`/`f10` absorb the floor difference into the band, which is exactly what they are
+  for, but it is also why a sub-40 µs control measurement deserved the scrutiny §4 gave it.
+- **What is left cannot carry the question.** Of the five publishable families, `f03`, `f10`,
+  `f06` and `f08f09` had their offered grid *unchanged* by the switch (V9 `0 of 21`, `0 of 21`,
+  `0 of 21`, `0 of 63` stages differing; total `n_tried` ratios 0.97 / 1.00 / 1.00 / 1.00), so
+  their deltas are further **drift
+  measurements**, not treatment contrasts. `f11` is the only clean family whose offered grid
+  moved at all, and it moved marginally (`2 of 35`, `n_tried` 0.94x). The two families with a
+  real grid collapse — `f01` (0.59x) and `f04f05` (0.72x) — are exactly the two that are
+  contaminated. **A one-family contrast against a band built from feature-blind families does
+  not answer "do the sm_90 levers explain anything".** Re-measuring `f01` and `f04f05` is not
+  cleanup; it is the experiment.
+
+#### 7. What remains
+
+1. **Re-measure `f01` and `f04f05` on a clear card** — the one blocking item. On the H200 box,
+   preserving the contaminated payload first, because it is the only record of what a
+   contaminated cell looks like and it must not be overwritten:
+
+   ```
+   # 0. preserve the returned tree OUTSIDE results/ before touching anything
+   tar czf ~/control_arm_20260811_contaminated.tgz results/h200/_control_arm log/run_control_h200
+
+   # 1. move ONLY the two contaminated families out of the staging path, so the driver
+   #    decides MEASURE instead of "covers -> re-verify only". Do NOT pass --force-rerun:
+   #    it sets GLM52_H200_FORCE=1 and restarts the whole arm from zero, discarding the
+   #    five clean families as well.
+   mkdir -p ~/control_arm_20260811_contaminated/staged
+   mv results/h200/_control_arm/classic/f01_oproj_resadd.json \
+      results/h200/_control_arm/classic/f04f05_norm_router.json \
+      ~/control_arm_20260811_contaminated/staged/
+   mv results/h200/_control_arm/classic/_ckpt/f01_oproj_resadd \
+      results/h200/_control_arm/classic/_ckpt/f04f05_norm_router \
+      ~/control_arm_20260811_contaminated/staged/
+
+   # 2. re-measure. --on-tenant stop is now the DEFAULT and is named here on purpose:
+   #    a neighbour must end the arm, not annotate it. Omit --gpu; the campaign card is
+   #    pinned by UUID. setsid nohup so a dropped SSH session cannot SIGHUP it.
+   setsid nohup python3 run_control_h200.py --families f01,f04f05 --on-tenant stop &
+
+   # 3. split f04f05's transcript so it survives .gitignore, then send back
+   #    results/h200/_control_arm/, log/run_control_h200/ and glm52_h200/preflight_h200.json
+   python3 tools/split_h200_log.py log/run_control_h200/f04f05.classic.a1.log
+   ```
+
+   Expected cost is under 20 min for the pair (control walls were 450 s and 462 s). **Measure
+   one clean family in the same session as an in-session anchor** if the card is free — the
+   design is unpaired, and a fresh session otherwise adds a third unquantified gap.
+2. **Re-measure `f10/decode_bs16`**, from the separate cause in §4. Three items are pending from
+   two distinct causes; do not collapse them into one "excluded" bucket.
+3. **Fix the report generator** (owned by another agent, not touched here): derive contamination
+   from `driver.log` rather than the summary; read `_ckpt/*/saved_at`; never diff a control wall
+   against `summary.json families[*].wall_s`; read `f11`'s speedups from
+   `rows[i].{f11a_w13,f11b_router,combined}.speedup`, and build no check on `hopper_caps` for
+   `f11` — the control file has no caps report at all and the driver's own V10 says so.
+4. **Do not use `f03` + `f10` alone as the band on the re-run.** Add `f06` and `f08f09` as band
+   constituents — their offered grids and `n_tried` are unchanged by the switch — and take
+   replicate runs of all four in a single session, so the band measures within-design variance
+   rather than one draw of cross-session tuner variance.
+5. **Publish the session's own `harness_floor_us` next to the campaign's** (39.456 vs
+   36.914 µs, +6.9 %) on the face of the report, not buried in `fairness.timing`.
+
+§1's **Status** and **Verdict** lines are updated to read *withheld* rather than *unfilled* —
+a different and stronger statement: the arm ran, it engaged, and what it returned does not
+answer the question it was built to answer. The `## 0c.` preamble in
+`report_glm52_h200/README.md` still carries the unfilled verdict line and needs the same
+wording; that file and `glm52/make_control_report_h200.py` are owned by the concurrent report
+pass and were deliberately not touched from here.

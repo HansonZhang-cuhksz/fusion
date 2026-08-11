@@ -1,7 +1,19 @@
 #!/usr/bin/env python3
 """The Hopper CONTROL ARM: re-measure the H200 suite with every sm_90 lever forced off.
 
-    python3 run_control_h200.py
+    setsid nohup python3 run_control_h200.py > control.out 2>&1 &
+
+RUN IT DETACHED. The command above is the recommended form, not decoration: the 2026-08-11
+run died 10 minutes into `f04f05` having written no traceback, no exit line and no summary
+update -- the last line in driver.log is a routine heartbeat. That is the signature of a
+signal, and a dropped SSH session (SIGHUP) is the cheapest explanation and the only one the
+operator can eliminate for free. `setsid` detaches from the terminal so a lost connection
+cannot reach the process; `nohup` is belt and braces. SIGTERM/SIGHUP/SIGINT are now trapped
+and recorded (see `_install_signal_handlers`), so a kill leaves a diagnosis instead of a
+silence -- but SIGKILL and the host OOM killer cannot be trapped by anyone, which is why the
+summary is saved after every family and why `verified` defaults to False.
+
+    python3 run_control_h200.py           # equivalent, attached; fine for --list/--dry-run
 
 WHY THIS FILE EXISTS SEPARATELY FROM `run_h200.py`.
 
@@ -120,6 +132,7 @@ import hashlib
 import json
 import os
 import re
+import signal
 import sys
 import time
 from dataclasses import asdict, dataclass
@@ -302,6 +315,9 @@ def digest(obj) -> str:
 #: Computed exactly once in main() as `(args.results_dir / STAGING_ROOT).resolve()`. Every
 #: write this driver performs goes through `guard_write`. Left None until then so that an
 #: unguarded write attempted during import or argument parsing is a crash, not a silent one.
+#: Set by the signal handler so the summary can say HOW the run ended.
+TERMINATED_BY_SIGNAL: str | None = None
+
 WRITE_ROOT: Path | None = None
 
 
@@ -2047,6 +2063,13 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
                     help="do not require the campaign's physical card. Adds a first-class "
                          "DEVICE ANCHOR LOST warning to the summary, which the report "
                          "generator turns into a refusal.")
+    ap.add_argument("--on-tenant", choices=("stop", "flag"), default="stop",
+                    help="what to do when a neighbour appears on the measurement card "
+                         "mid-run. 'stop' (default) ends the arm: this is a DIFF against an "
+                         "idle-card baseline, so a co-tenant removes the comparison rather "
+                         "than adding noise, and continuing spends GPU hours on numbers that "
+                         "must be discarded. 'flag' keeps run_h200.py's campaign policy and "
+                         "continues, marking every later family contaminated.")
     ap.add_argument("--allow-busy", action="store_true",
                     help="measure on a card that already has another tenant (this is what "
                          "produced the impossible 40.55 us harness floor; short-kernel "
@@ -2176,6 +2199,11 @@ class _RedirectIgnored(Exception):
     """A bench wrote outside the staging tree it was pointed at -- exit 6, immediately."""
 
 
+class _TenantAppeared(Exception):
+    """A neighbour moved onto the measurement card mid-arm. Fatal for a DIFF (see the
+    check_tenants call site); recoverable by waiting and re-running."""
+
+
 class _VerifyFailed(Exception):
     """Engagement verification failed and --continue-on-verify-fail was not given."""
 
@@ -2218,6 +2246,7 @@ def main(argv: list[str] | None = None) -> int:
 
     log = R.Log(logdir / "driver.log")
     warnings: list[str] = []
+    tenant_contaminated: list[str] = []
     t_start = time.time()
     exit_code = 0
 
@@ -2547,6 +2576,12 @@ def main(argv: list[str] | None = None) -> int:
             "cells": all_cells,
             "hwinfo_start": hw_start, "hwinfo_end": [], "hwinfo_drift": [],
             "warnings": warnings,
+            # "live" is rewritten False by the final save; a summary still saying True is a
+            # run that never reached its own end -- killed, crashed or still going. Read it
+            # with `terminated_by` and each arm's `verified_reason`.
+            "live": live,
+            "terminated_by": TERMINATED_BY_SIGNAL,
+            "tenant_contaminated": list(tenant_contaminated),
             "what_is_measured": WHAT_IS_MEASURED.format(
                 arms=", ".join(a.name for a in arms),
                 hopper=("the hopper arm WAS re-measured in this session"
@@ -2579,7 +2614,17 @@ def main(argv: list[str] | None = None) -> int:
             rec = arm_recs.setdefault(arm.name, {
                 "arm": arm.name, "disable_features": arm.disable_features,
                 "expected_env": arm_expected_env(arm),
-                "staging": str(staging), "verified": True, "sentinel": None,
+                # PESSIMISTIC BY DEFAULT. `verified` used to start True and be flipped to
+                # False on failure, so a run KILLED mid-arm left the last incremental save
+                # claiming a verified arm: the 2026-08-11 run died during f04f05 with 3 of 7
+                # families measured and recorded `verified: true, sentinel: null`. Only the
+                # ARM_NOT_VERIFIED file left over from an EARLIER abort kept that from
+                # reading as publishable, which is luck, not a safety net. An arm is verified
+                # only where something has affirmatively verified it, at the end of a
+                # COMPLETE arm; every other state -- killed, crashed, partial -- must inherit
+                # the unverified default.
+                "staging": str(staging), "verified": False,
+                "sentinel": SENTINEL_NAME, "verified_reason": "arm has not completed",
                 "wall_s": 0.0, "fam_stages": {}, "engagement_summary": {},
                 "cells": [], "table": [], "note": arm.note,
             })
@@ -2677,7 +2722,38 @@ def main(argv: list[str] | None = None) -> int:
                     # resumed run marks the redirect PRE-COMMITMENT check as already spent
                     # and never performs it on the first family that really does launch.
                     launched_any = launched_any or bool(stage.get("attempts"))
+                    # CO-TENANCY IS FATAL HERE, unlike in run_h200.py. That driver's policy
+                    # is "flag and keep going -- an aborted campaign loses more than a
+                    # flagged one", which is right for a campaign that IS the baseline. This
+                    # arm is a DIFF against a baseline measured on an idle card, so a
+                    # neighbour does not add noise, it removes the comparison: on
+                    # 2026-08-11 a VLLM worker took 121.6 GB of the 143.8 GB card during
+                    # f01, f01 came out at 1.93x the campaign's tune time, and every family
+                    # after it would have been diffed against an idle-card baseline while
+                    # sharing the card. Continuing spends GPU hours producing numbers that
+                    # must then be thrown away.
+                    n_warn = len(warnings)
                     R.check_tenants(log, gpu, f"after {arm.name}/{key}", warnings)
+                    if any("co-tenant" in w for w in warnings[n_warn:]):
+                        stage["tenant_contaminated"] = True
+                        tenant_contaminated.append(f"{arm.name}/{key}")
+                        log("!" * 92)
+                        log(f"!! CO-TENANT on the measurement card during {arm.name}/{key}.")
+                        log(f"!! {key} was measured while sharing the card and is NOT "
+                            f"comparable with the campaign baseline, which was measured on "
+                            f"an idle card. Its staged JSON is kept -- it is evidence -- but "
+                            f"it is marked contaminated and must not be published.")
+                        if args.on_tenant == "stop":
+                            log("!! STOPPING before the remaining families: continuing would "
+                                "spend GPU hours on numbers that must then be discarded.")
+                            log("!! Wait for the card to clear, then re-run; --force-rerun "
+                                f"re-measures {key}. --on-tenant flag continues anyway.")
+                            log("!" * 92)
+                            rec["fam_stages"][key] = stage
+                            arm_failed = True
+                            raise _TenantAppeared(f"co-tenant during {arm.name}/{key}")
+                        log("!! --on-tenant flag: continuing, every later family is tainted.")
+                        log("!" * 92)
 
                 rec["fam_stages"][key] = stage
                 rec["wall_s"] = time.time() - t_arm
@@ -2904,8 +2980,27 @@ def main(argv: list[str] | None = None) -> int:
                 log(f"  {arm.name}: {SENTINEL_NAME} KEPT -- this run covered "
                     f"{len(full_scope) - len(partial)} of {len(full_scope)} families; "
                     f"{', '.join(partial)} were never adjudicated in this arm.")
-            if (not arm_failed and not partial and not args.quick and not args.dry_run
-                    and sentinel.exists()):
+            # The arm is verified iff it COMPLETED: every family in the full scope was
+            # adjudicated and none failed. Decided here, not inside the sentinel branch
+            # below -- a clean first run has no sentinel to remove and must still be able to
+            # come out verified, and a killed run must never reach this line at all.
+            arm_complete = (not arm_failed and not partial and not args.quick
+                            and not args.dry_run)
+            if arm_complete and not tenant_contaminated:
+                rec["verified"] = True
+                rec["verified_reason"] = (
+                    f"all {len(full_scope)} families adjudicated, none failed")
+            elif tenant_contaminated:
+                rec["verified_reason"] = (
+                    "a co-tenant appeared on the measurement card during this arm; "
+                    f"contaminated families: {', '.join(tenant_contaminated)}")
+            elif partial:
+                rec["verified_reason"] = (
+                    f"incomplete arm: {', '.join(partial)} never adjudicated")
+            elif arm_failed:
+                rec["verified_reason"] = "at least one family failed engagement verification"
+
+            if arm_complete and not tenant_contaminated and sentinel.exists():
                 try:
                     # Through the gate, like every other filesystem mutation in this file.
                     # The path is safe today because it is built from staging_for(), but the
@@ -2918,7 +3013,6 @@ def main(argv: list[str] | None = None) -> int:
                     log(f"  {msg}")
                     warnings.append(msg)
                     rec["sentinel"] = None
-                    rec["verified"] = True
                     rec["sentinel_removed_at"] = time.strftime("%Y-%m-%d %H:%M:%S")
                 except OSError as exc:
                     log(f"  !! could not remove {sentinel}: {exc}")
@@ -2946,9 +3040,23 @@ def main(argv: list[str] | None = None) -> int:
         save()
     except _VerifyFailed:
         exit_code = 5
+    except _TenantAppeared as exc:
+        # Exit 7: distinct from 5 (a family failed engagement) and 6 (a write escaped),
+        # because the remedy is different and the data is not suspect -- everything measured
+        # BEFORE the tenant is still good. The operator waits for the card and re-runs.
+        exit_code = 7
+        warnings.append(f"run stopped: {exc}")
+        for r in arm_recs.values():
+            r["tenant_contaminated"] = list(tenant_contaminated)
+        save()
     except KeyboardInterrupt:
-        warnings.append("run interrupted by the operator")
-        log("!! interrupted -- writing what exists and stopping.")
+        how = TERMINATED_BY_SIGNAL or "KeyboardInterrupt"
+        warnings.append(f"run terminated early: {how}")
+        log(f"!! TERMINATED ({how}) -- writing what exists and stopping.")
+        log("!! Everything measured before this point is intact and staged; re-running "
+            "resumes from it. If this was SIGHUP, run detached next time (see --help).")
+        for r in arm_recs.values():
+            r["terminated_by"] = how
         exit_code = max(exit_code, 1)
     except Exception as exc:  # noqa: BLE001 -- a driver must not die silently mid-run
         warnings.append(f"run aborted: {type(exc).__name__}: {exc}")
@@ -2958,10 +3066,26 @@ def main(argv: list[str] | None = None) -> int:
         exit_code = max(exit_code, 1)
 
     # --- closing sequence -----------------------------------------------------------
-    hw_end = R.hwinfo() if not args.list else []
-    drift = R.hw_drift(hw_start, hw_end) if hw_end else []
-    if not args.verify_only and not args.dry_run:
-        R.check_tenants(log, gpu, "at the end of the run", warnings)
+    # Interrupt-safe. The closing sequence used to sit OUTSIDE every handler, so a signal
+    # arriving here -- during hwinfo, the end-of-run tenant check or the campaign canary,
+    # all of which shell out to nvidia-smi and to sha256 over 28 files -- escaped straight
+    # past main() and left the summary saying `live: true, terminated_by: null`, i.e. it
+    # looked like a run still in progress rather than one that was killed. Reproduced by
+    # SIGTERMing this driver mid-close. Everything below is best-effort: a second signal
+    # must not stop the record from being written.
+    hw_end, drift = [], []
+    try:
+        hw_end = R.hwinfo() if not args.list else []
+        drift = R.hw_drift(hw_start, hw_end) if hw_end else []
+        if not args.verify_only and not args.dry_run:
+            R.check_tenants(log, gpu, "at the end of the run", warnings)
+    except KeyboardInterrupt:
+        how = TERMINATED_BY_SIGNAL or "KeyboardInterrupt"
+        warnings.append(f"terminated during the closing sequence: {how}")
+        log(f"!! TERMINATED ({how}) during the closing sequence -- recording it anyway.")
+        for r in arm_recs.values():
+            r["terminated_by"] = how
+        exit_code = max(exit_code, 1)
     diffs = check_campaign(fp, args.results_dir, warnings)
     if diffs and not canary_tripped:
         canary_tripped = True
@@ -3018,9 +3142,40 @@ def main(argv: list[str] | None = None) -> int:
     return exit_code
 
 
+def _install_signal_handlers() -> None:
+    """Turn a kill into a RECORD instead of a silence.
+
+    The 2026-08-11 run died 10 minutes into f04f05 and wrote nothing at all: no traceback,
+    no exit line, no summary update -- the last line in driver.log is a routine heartbeat.
+    That is the signature of an uncatchable-by-default termination (SIGTERM from an operator
+    or a scheduler, SIGHUP from a dropped SSH session, or the host OOM killer), and it left
+    the incident undiagnosable from the artefacts: we cannot tell which of those it was.
+
+    SIGTERM and SIGHUP are catchable, so catch them, raise KeyboardInterrupt to unwind
+    through main's existing handler (which saves the summary and writes the closing status),
+    and record which signal it was. SIGKILL cannot be caught by anyone; the defence against
+    that one is the incremental `save()` after every family plus the pessimistic `verified`
+    default, so a killed arm reads as unverified rather than as finished.
+    """
+    def _bail(signum, _frame):
+        name = signal.Signals(signum).name
+        print(f"\n!! {name} received -- writing what exists and stopping.", flush=True)
+        globals()["TERMINATED_BY_SIGNAL"] = name
+        raise KeyboardInterrupt(name)
+
+    for _sig in ("SIGTERM", "SIGHUP", "SIGINT"):
+        h = getattr(signal, _sig, None)
+        if h is not None:
+            try:
+                signal.signal(h, _bail)
+            except (OSError, ValueError):
+                pass          # not the main thread, or the platform disallows it
+
+
 if __name__ == "__main__":
+    _install_signal_handlers()
     try:
         raise SystemExit(main())
     except KeyboardInterrupt:
-        print("\n interrupted", flush=True)
+        print(f"\n interrupted ({TERMINATED_BY_SIGNAL or 'KeyboardInterrupt'})", flush=True)
         raise SystemExit(130)
