@@ -1,13 +1,13 @@
 {
   "_meta": {
     "device": "NVIDIA H200",
-    "recorded_at": "2026-08-11 14:39:58",
+    "recorded_at": "2026-08-11 10:58:41",
     "writer": "run_control_h200.py",
     "why_device": "run_h200.quarantine_foreign_results reads _meta.device and MOVES any file under the results tree that lacks it"
   },
   "family": "f03",
   "arm": "classic",
-  "verdict": "NOTHING-TO-DISABLE",
+  "verdict": "FAILED",
   "checks": [
     {
       "id": "V0b",
@@ -192,29 +192,11 @@
     {
       "id": "V9",
       "axis": null,
-      "path": "$.fairness.grids.*.*.<coarse|tune>.n_tried",
+      "path": "$.fairness.grids.*.*.*.n_tried",
       "want": "identical to the campaign",
-      "got": "0 of 21 offered-grid stage(s) differ",
-      "status": "PASS",
-      "detail": "the offered grid is byte-identical to the campaign's; a capped coarse grid cannot shrink, so this is corroboration, not proof"
-    },
-    {
-      "id": "V9b",
-      "axis": null,
-      "path": "$.fairness.grids.<arm-only regime>.*.<coarse|tune>.n_tried",
-      "want": "equal to the campaign's family-constant offered size",
-      "got": "0 of 12 arm-only offered stage(s) differ",
-      "status": "PASS",
-      "detail": "closes the hole the V9 intersection leaves: these stages have no per-regime campaign counterpart, but their size is a code property the campaign pins on its own regimes, and the arm reproduces it"
-    },
-    {
-      "id": "V9d",
-      "axis": null,
-      "path": "$.fairness.grids.*.*.<refine|joint|extra>.n_tried",
-      "want": "(not comparable -- winner-derived)",
-      "got": "19 of 28 stage(s) differ",
-      "status": "INFO",
-      "detail": "refine is neighbours(<the coarse stage's timing winner>) (common.py:1069), joint is a deduplicated top_cfgs() product over measured stages, extra is refine_grid() over a measured top-k -- so these sizes move run-to-run on IDENTICAL code and hardware (Hopper-vs-Hopper: f03 16 of 28, f10 18 of 28, in both directions). Recorded so the drift stays visible, never asserted on. decode_bs1/add/refine 88->50; decode_bs1/fused/refine 56->44; decode_bs1/norm/refine 50->38; decode_bs1024/fused/refine 62->54"
+      "got": "19 of 49 stage(s) differ",
+      "status": "FAIL",
+      "detail": "f03/f10 grids are uncapped and carry no Hopper overlay, so a size change means the harness itself changed: decode_bs1/add/refine 88->50; decode_bs1/fused/refine 56->44; decode_bs1/norm/refine 50->38; decode_bs1024/fused/refine 62->54"
     },
     {
       "id": "LOG",
@@ -226,7 +208,7 @@
       "detail": "every one of 1 banner(s) reports the axes this arm disables as off; the campaign's own transcript reads [tma,clusters,warp_specialize]"
     }
   ],
-  "n_fail": 0,
+  "n_fail": 1,
   "surface": [],
   "surface_source": "campaign fairness.h200_axes.per_family",
   "vacuous_axes": [

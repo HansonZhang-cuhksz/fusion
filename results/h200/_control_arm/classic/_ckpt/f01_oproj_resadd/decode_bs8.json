@@ -1,0 +1,5467 @@
+{
+  "row": {
+    "regime": "decode_bs8",
+    "fused_ms": 0.13167999684810638,
+    "unfused_ms": 0.1313599944114685,
+    "speedup": 0.999111367666197,
+    "fused_p10_p90": [
+      0.10777600109577179,
+      0.19203199446201324
+    ],
+    "unfused_p10_p90": [
+      0.10803200304508209,
+      0.18880000710487366
+    ],
+    "paired": true,
+    "speedup_sequential": 0.997569847780244,
+    "speedup_p10_p90": [
+      0.9574549190770867,
+      1.0371718635754035
+    ],
+    "speedup_trimmed": 0.9977781292576344,
+    "speedup_of_medians": 0.997569847780244,
+    "n_pairs": 300,
+    "frac_fused_faster": 0.47,
+    "order_gap_frac": 0.011336163320864229,
+    "drift_frac": [
+      -0.3773932328749673,
+      -0.3688181154860806
+    ],
+    "ratio_halves": [
+      0.9930880705155519,
+      1.0023460589964193
+    ],
+    "tick": {
+      "timer_tick_us": 0.032,
+      "timer_tick_match_frac": 1.0,
+      "calibration_trusted": true,
+      "fused_ticks": 4114.9999015033245,
+      "unfused_ticks": 4104.999825358391,
+      "gap_ticks": 10.0000761449337,
+      "tick_limited": false,
+      "quantisation_pct": 0.02436053696817622
+    },
+    "machine_suspect": false,
+    "machine": {
+      "compare": {
+        "elapsed_s": 0.412398099899292,
+        "d_sm_mhz": 0.0,
+        "sm_rel": 0.0,
+        "d_mem_mhz": 0.0,
+        "d_temp_c": -1.0,
+        "d_power_w": -18.310000000000002,
+        "new_throttle": [],
+        "suspect": false,
+        "reasons": []
+      }
+    },
+    "M": 8,
+    "K": 32768,
+    "N": 6144,
+    "variant": "triton",
+    "fused_cfg": {
+      "BLOCK_M": 16,
+      "BLOCK_N": 64,
+      "BLOCK_K": 64,
+      "GROUP_M": 8,
+      "SPLIT_K": 8,
+      "num_warps": 4,
+      "num_stages": 3,
+      "EPI": null
+    },
+    "unfused_cfg": {
+      "BLOCK_M": 16,
+      "BLOCK_N": 64,
+      "BLOCK_K": 64,
+      "GROUP_M": 8,
+      "SPLIT_K": 8,
+      "num_warps": 4,
+      "num_stages": 3,
+      "EPI": null
+    },
+    "paired_speedup": 0.999111367666197,
+    "paired_speedup_trimmed": 0.9977781292576344,
+    "pair_meta": {
+      "drift_frac_fused": -0.3773932328749673,
+      "drift_frac_unfused": -0.3688181154860806,
+      "frac_fused_faster": 0.47,
+      "machine": {
+        "compare": {
+          "elapsed_s": 0.412398099899292,
+          "d_sm_mhz": 0.0,
+          "sm_rel": 0.0,
+          "d_mem_mhz": 0.0,
+          "d_temp_c": -1.0,
+          "d_power_w": -18.310000000000002,
+          "new_throttle": [],
+          "suspect": false,
+          "reasons": []
+        }
+      },
+      "n": 300,
+      "n_discarded": 0,
+      "noflush_ratio_p50": NaN,
+      "order_gap_frac": 0.011336163320864229,
+      "ratio_of_medians": 0.997569847780244,
+      "ratio_p10": 0.9574549190770867,
+      "ratio_p50": 0.999111367666197,
+      "ratio_p50_first_half": 0.9930880705155519,
+      "ratio_p50_fused_first": 0.9923452535225101,
+      "ratio_p50_second_half": 1.0023460589964193,
+      "ratio_p50_unfused_first": 1.0036587673071233,
+      "ratio_p90": 1.0371718635754035,
+      "ratio_trimmed": 0.9977781292576344,
+      "tick": {
+        "tick_ms": 3.2e-05,
+        "fused_ticks": 4114.9999015033245,
+        "unfused_ticks": 4104.999825358391,
+        "gap_ticks": 10.0000761449337,
+        "ratio_quantisation_frac": 0.0004866187412336478,
+        "flagged": false,
+        "note": "well above timer granularity"
+      },
+      "impl": "common.bench_pair",
+      "interleaved": true,
+      "paired_speedup_p50": 0.999111367666197,
+      "paired_speedup_trimmed_mean": 0.9977781292576344,
+      "paired_speedup_p10": 0.9574549190770867,
+      "paired_speedup_p90": 1.0371718635754035
+    },
+    "rel_err": 0.002891888841986656,
+    "rel_err_unfused": 0.002891888841986656,
+    "fused_vs_unfused_maxrel": 0.0007530120201408863,
+    "ok": true,
+    "vendor_fused_ms": 0.10870400071144104,
+    "vendor_unfused_ms": 0.10847999900579453,
+    "vendor_speedup": 0.9982332021021398,
+    "vendor_rel_err": 0.002891888841986656,
+    "vendor_fused_p10_p90": [
+      0.10812799632549286,
+      0.10943999886512756
+    ],
+    "vendor_unfused_p10_p90": [
+      0.1080000028014183,
+      0.10915199667215347
+    ],
+    "fused_tflops": 24.462526952485437,
+    "unfused_tflops": 24.522119435464653,
+    "vendor_fused_tflops": 29.632998334172328,
+    "triton_vs_vendor": 0.825516428564558,
+    "resid_bytes_saved": 98304,
+    "gemm_min_bytes": 403177472,
+    "ceiling": 1.0004874086108855,
+    "ceiling_with_launch": 1.0983462230793448,
+    "traffic_ratio_model": 1.0004874086108855
+  },
+  "tuning": {
+    "regime": "decode_bs8",
+    "coarse_grid_size": 120,
+    "refine_grid_size_fused": 13,
+    "refine_grid_size_unfused": 13,
+    "joint_grid_size_fused": 15,
+    "joint_grid_size_unfused": 15,
+    "extra_grid_size_fused": 0,
+    "tune_fused_coarse": {
+      "best_cfg": {
+        "BLOCK_M": 16,
+        "BLOCK_N": 64,
+        "BLOCK_K": 64,
+        "GROUP_M": 8,
+        "SPLIT_K": 8,
+        "num_warps": 4,
+        "num_stages": 3
+      },
+      "best_ms": 0.10777600109577179,
+      "n_tried": 120,
+      "n_failed": 0,
+      "n_offered": 120,
+      "n_guard_rejected": 0,
+      "n_coarse": 120,
+      "n_refine": 0,
+      "best_stage": "coarse",
+      "failure_summary": {},
+      "table": [
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 32,
+            "GROUP_M": 8,
+            "SPLIT_K": 1,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.7149119973182678,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 32,
+            "GROUP_M": 8,
+            "SPLIT_K": 1,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.7534080147743225,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 32,
+            "GROUP_M": 8,
+            "SPLIT_K": 2,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.38124799728393555,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 32,
+            "GROUP_M": 8,
+            "SPLIT_K": 2,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.38998401165008545,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 32,
+            "GROUP_M": 8,
+            "SPLIT_K": 4,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.21318399906158447,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 32,
+            "GROUP_M": 8,
+            "SPLIT_K": 4,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.21743999421596527,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 32,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.14009599387645721,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 32,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.13651199638843536,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.11075200140476227,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 1,
+            "num_warps": 2,
+            "num_stages": 3
+          },
+          0.14688000082969666,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 2,
+            "num_warps": 2,
+            "num_stages": 2
+          },
+          0.23951999843120575,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 4,
+            "num_warps": 4,
+            "num_stages": 2
+          },
+          0.12089599668979645,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 1,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.21379199624061584,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 1,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.45398399233818054,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 4,
+            "num_warps": 2,
+            "num_stages": 2
+          },
+          0.19020800292491913,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 4,
+            "num_warps": 8,
+            "num_stages": 3
+          },
+          0.11414399743080139,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 2,
+            "num_stages": 2
+          },
+          0.10998400300741196,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 16,
+            "num_warps": 4,
+            "num_stages": 2
+          },
+          0.10812799632549286,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 8,
+            "num_stages": 3
+          },
+          0.10972800105810165,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 1,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.2295680046081543,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.11475200206041336,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 1,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.255264014005661,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 4,
+            "num_warps": 2,
+            "num_stages": 3
+          },
+          0.11072000116109848,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 16,
+            "num_warps": 8,
+            "num_stages": 3
+          },
+          0.12668800354003906,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.15427200496196747,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 4,
+            "num_stages": 2
+          },
+          0.10940799862146378,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 4,
+            "num_stages": 2
+          },
+          0.10796800255775452,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 4,
+            "num_warps": 2,
+            "num_stages": 2
+          },
+          0.11865600198507309,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 4,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.11062400043010712,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 1,
+            "num_warps": 2,
+            "num_stages": 2
+          },
+          0.6585279703140259,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 2,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.14691199362277985,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 2,
+            "num_warps": 2,
+            "num_stages": 3
+          },
+          0.11135999858379364,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 1,
+            "num_warps": 2,
+            "num_stages": 2
+          },
+          0.5229759812355042,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 16,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.12223999947309494,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.13308799266815186,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 1,
+            "num_warps": 2,
+            "num_stages": 2
+          },
+          0.4952639937400818,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 16,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.11327999830245972,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 1,
+            "num_warps": 2,
+            "num_stages": 3
+          },
+          0.48233601450920105,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 16,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.11529599875211716,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 16,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.1117440015077591,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 1,
+            "num_warps": 4,
+            "num_stages": 2
+          },
+          0.2902719974517822,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 16,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.1194240003824234,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 1,
+            "num_warps": 4,
+            "num_stages": 2
+          },
+          0.5740479826927185,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.10835199803113937,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 2,
+            "num_warps": 2,
+            "num_stages": 3
+          },
+          0.14841599762439728,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 16,
+            "num_warps": 8,
+            "num_stages": 3
+          },
+          0.11132799834012985,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 2,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.2502720057964325,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 4,
+            "num_warps": 4,
+            "num_stages": 2
+          },
+          0.17440000176429749,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 16,
+            "num_warps": 2,
+            "num_stages": 2
+          },
+          0.10831999778747559,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 1,
+            "num_warps": 2,
+            "num_stages": 2
+          },
+          0.2943359911441803,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 4,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.14614400267601013,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 2,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.22697600722312927,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 2,
+            "num_warps": 4,
+            "num_stages": 2
+          },
+          0.1634880006313324,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 4,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.11427199840545654,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 16,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.1199679970741272,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 4,
+            "num_warps": 2,
+            "num_stages": 3
+          },
+          0.13622400164604187,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 1,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.15996800363063812,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 4,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.17926399409770966,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 16,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.10860799998044968,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 2,
+            "num_warps": 4,
+            "num_stages": 2
+          },
+          0.24899199604988098,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 16,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.11900799721479416,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 16,
+            "num_warps": 4,
+            "num_stages": 2
+          },
+          0.11641599982976913,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 16,
+            "num_warps": 4,
+            "num_stages": 2
+          },
+          0.12147200107574463,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 16,
+            "num_warps": 8,
+            "num_stages": 3
+          },
+          0.11033599823713303,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 4,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.11049599945545197,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 16,
+            "num_warps": 2,
+            "num_stages": 2
+          },
+          0.1149120032787323,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 4,
+            "num_warps": 2,
+            "num_stages": 3
+          },
+          0.11670400202274323,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.10940799862146378,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 2,
+            "num_stages": 3
+          },
+          0.15164799988269806,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 2,
+            "num_warps": 8,
+            "num_stages": 3
+          },
+          0.12828800082206726,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 8,
+            "num_stages": 3
+          },
+          0.10902400314807892,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 16,
+            "num_warps": 2,
+            "num_stages": 2
+          },
+          0.10896000266075134,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 8,
+            "num_stages": 3
+          },
+          0.10825599730014801,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 1,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.2754240036010742,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 2,
+            "num_warps": 4,
+            "num_stages": 2
+          },
+          0.22444799542427063,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 4,
+            "num_stages": 2
+          },
+          0.11020799726247787,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 4,
+            "num_warps": 2,
+            "num_stages": 3
+          },
+          0.1088000014424324,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 4,
+            "num_warps": 8,
+            "num_stages": 3
+          },
+          0.10931199789047241,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 16,
+            "num_warps": 4,
+            "num_stages": 2
+          },
+          0.1098560020327568,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 2,
+            "num_warps": 2,
+            "num_stages": 2
+          },
+          0.3302080035209656,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 4,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.1424960047006607,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 1,
+            "num_warps": 8,
+            "num_stages": 3
+          },
+          0.15718400478363037,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 16,
+            "num_warps": 2,
+            "num_stages": 2
+          },
+          0.11184000223875046,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.12303999811410904,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 1,
+            "num_warps": 8,
+            "num_stages": 3
+          },
+          0.2841919958591461,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 8,
+            "num_stages": 3
+          },
+          0.10972800105810165,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 1,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.27481600642204285,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 1,
+            "num_warps": 2,
+            "num_stages": 3
+          },
+          0.17263999581336975,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 2,
+            "num_stages": 2
+          },
+          0.12723200023174286,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 4,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.1225920021533966,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 2,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.11231999844312668,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 16,
+            "num_warps": 2,
+            "num_stages": 3
+          },
+          0.11228799819946289,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 16,
+            "num_warps": 8,
+            "num_stages": 3
+          },
+          0.10998400300741196,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 1,
+            "num_warps": 2,
+            "num_stages": 3
+          },
+          0.2333119958639145,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 2,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.3007360100746155,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 4,
+            "num_warps": 2,
+            "num_stages": 2
+          },
+          0.12643200159072876,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 4,
+            "num_warps": 8,
+            "num_stages": 3
+          },
+          0.11059200018644333,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 4,
+            "num_warps": 8,
+            "num_stages": 3
+          },
+          0.10918399691581726,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 2,
+            "num_warps": 8,
+            "num_stages": 3
+          },
+          0.1499519944190979,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 4,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.10825599730014801,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 4,
+            "num_stages": 2
+          },
+          0.11823999881744385,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 2,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.125791996717453,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 4,
+            "num_warps": 2,
+            "num_stages": 2
+          },
+          0.19484800100326538,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 1,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.43408000469207764,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.10777600109577179,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 4,
+            "num_warps": 4,
+            "num_stages": 2
+          },
+          0.15110400319099426,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 2,
+            "num_warps": 2,
+            "num_stages": 2
+          },
+          0.26342400908470154,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 2,
+            "num_warps": 4,
+            "num_stages": 2
+          },
+          0.29017600417137146,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 4,
+            "num_warps": 2,
+            "num_stages": 2
+          },
+          0.15836800634860992,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 2,
+            "num_warps": 4,
+            "num_stages": 2
+          },
+          0.18400000035762787,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.11948800086975098,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 1,
+            "num_warps": 2,
+            "num_stages": 2
+          },
+          0.32688000798225403,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 16,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.10924799740314484,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 1,
+            "num_warps": 4,
+            "num_stages": 2
+          },
+          0.4119679927825928,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 1,
+            "num_warps": 2,
+            "num_stages": 3
+          },
+          0.2941119968891144,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 1,
+            "num_warps": 2,
+            "num_stages": 3
+          },
+          0.24425600469112396,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 16,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.1308480054140091,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 1,
+            "num_warps": 8,
+            "num_stages": 3
+          },
+          0.24665600061416626,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 2,
+            "num_warps": 2,
+            "num_stages": 3
+          },
+          0.2518399953842163,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 8,
+            "num_stages": 3
+          },
+          0.13504000008106232,
+          null
+        ]
+      ]
+    },
+    "tune_unfused_coarse": {
+      "best_cfg": {
+        "BLOCK_M": 16,
+        "BLOCK_N": 64,
+        "BLOCK_K": 64,
+        "GROUP_M": 8,
+        "SPLIT_K": 8,
+        "num_warps": 4,
+        "num_stages": 3
+      },
+      "best_ms": 0.10806400328874588,
+      "n_tried": 120,
+      "n_failed": 0,
+      "n_offered": 120,
+      "n_guard_rejected": 0,
+      "n_coarse": 120,
+      "n_refine": 0,
+      "best_stage": "coarse",
+      "failure_summary": {},
+      "table": [
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 32,
+            "GROUP_M": 8,
+            "SPLIT_K": 1,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.716159999370575,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 32,
+            "GROUP_M": 8,
+            "SPLIT_K": 1,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.7459520101547241,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 32,
+            "GROUP_M": 8,
+            "SPLIT_K": 2,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.3829120099544525,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 32,
+            "GROUP_M": 8,
+            "SPLIT_K": 2,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.3911359906196594,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 32,
+            "GROUP_M": 8,
+            "SPLIT_K": 4,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.2147199958562851,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 32,
+            "GROUP_M": 8,
+            "SPLIT_K": 4,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.21801599860191345,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 32,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.14070400595664978,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 32,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.13705599308013916,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.11151999980211258,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 1,
+            "num_warps": 2,
+            "num_stages": 3
+          },
+          0.1491519957780838,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 2,
+            "num_warps": 2,
+            "num_stages": 2
+          },
+          0.2380480021238327,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 4,
+            "num_warps": 4,
+            "num_stages": 2
+          },
+          0.12169600278139114,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 1,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.21583999693393707,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 1,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.45603200793266296,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 4,
+            "num_warps": 2,
+            "num_stages": 2
+          },
+          0.19417600333690643,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 4,
+            "num_warps": 8,
+            "num_stages": 3
+          },
+          0.11683200299739838,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 2,
+            "num_stages": 2
+          },
+          0.11196800321340561,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 16,
+            "num_warps": 4,
+            "num_stages": 2
+          },
+          0.11036799848079681,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 8,
+            "num_stages": 3
+          },
+          0.11203200370073318,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 1,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.22627200186252594,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.11446399986743927,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 1,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.24489599466323853,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 4,
+            "num_warps": 2,
+            "num_stages": 3
+          },
+          0.11203200370073318,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 16,
+            "num_warps": 8,
+            "num_stages": 3
+          },
+          0.12511999905109406,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.15615999698638916,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 4,
+            "num_stages": 2
+          },
+          0.11164800077676773,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 4,
+            "num_stages": 2
+          },
+          0.11020799726247787,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 4,
+            "num_warps": 2,
+            "num_stages": 2
+          },
+          0.11894399672746658,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 4,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.11177600175142288,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 1,
+            "num_warps": 2,
+            "num_stages": 2
+          },
+          0.6754559874534607,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 2,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.15167999267578125,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 2,
+            "num_warps": 2,
+            "num_stages": 3
+          },
+          0.11427199840545654,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 1,
+            "num_warps": 2,
+            "num_stages": 2
+          },
+          0.5225920081138611,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 16,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.13017599284648895,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.13523200154304504,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 1,
+            "num_warps": 2,
+            "num_stages": 2
+          },
+          0.49212801456451416,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 16,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.11542399972677231,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 1,
+            "num_warps": 2,
+            "num_stages": 3
+          },
+          0.49113601446151733,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 16,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.11734399944543839,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 16,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.11414399743080139,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 1,
+            "num_warps": 4,
+            "num_stages": 2
+          },
+          0.29049599170684814,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 16,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.12060800194740295,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 1,
+            "num_warps": 4,
+            "num_stages": 2
+          },
+          0.566431999206543,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.11088000237941742,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 2,
+            "num_warps": 2,
+            "num_stages": 3
+          },
+          0.15059199929237366,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 16,
+            "num_warps": 8,
+            "num_stages": 3
+          },
+          0.11372800171375275,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 2,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.25222399830818176,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 4,
+            "num_warps": 4,
+            "num_stages": 2
+          },
+          0.18227200210094452,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 16,
+            "num_warps": 2,
+            "num_stages": 2
+          },
+          0.11091200262308121,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 1,
+            "num_warps": 2,
+            "num_stages": 2
+          },
+          0.2967360019683838,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 4,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.1462080031633377,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 2,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.2260800004005432,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 2,
+            "num_warps": 4,
+            "num_stages": 2
+          },
+          0.16047999262809753,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 4,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.11324799805879593,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 16,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.12035199999809265,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 4,
+            "num_warps": 2,
+            "num_stages": 3
+          },
+          0.1350719928741455,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 1,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.16147199273109436,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 4,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.1777919977903366,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 16,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.11123199760913849,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 2,
+            "num_warps": 4,
+            "num_stages": 2
+          },
+          0.2518720030784607,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 16,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.12166400253772736,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 16,
+            "num_warps": 4,
+            "num_stages": 2
+          },
+          0.11984000355005264,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 16,
+            "num_warps": 4,
+            "num_stages": 2
+          },
+          0.12441600114107132,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 16,
+            "num_warps": 8,
+            "num_stages": 3
+          },
+          0.12649600207805634,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 4,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.11324799805879593,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 16,
+            "num_warps": 2,
+            "num_stages": 2
+          },
+          0.12172800302505493,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 4,
+            "num_warps": 2,
+            "num_stages": 3
+          },
+          0.11807999759912491,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.11289600282907486,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 2,
+            "num_stages": 3
+          },
+          0.15263999998569489,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 2,
+            "num_warps": 8,
+            "num_stages": 3
+          },
+          0.1276479959487915,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 8,
+            "num_stages": 3
+          },
+          0.11148799955844879,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 16,
+            "num_warps": 2,
+            "num_stages": 2
+          },
+          0.11151999980211258,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 8,
+            "num_stages": 3
+          },
+          0.1106560006737709,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 1,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.2800320088863373,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 2,
+            "num_warps": 4,
+            "num_stages": 2
+          },
+          0.2258560061454773,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 4,
+            "num_stages": 2
+          },
+          0.11078400164842606,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 4,
+            "num_warps": 2,
+            "num_stages": 3
+          },
+          0.10915199667215347,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 4,
+            "num_warps": 8,
+            "num_stages": 3
+          },
+          0.10966400057077408,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 16,
+            "num_warps": 4,
+            "num_stages": 2
+          },
+          0.11036799848079681,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 2,
+            "num_warps": 2,
+            "num_stages": 2
+          },
+          0.32764801383018494,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 4,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.14236800372600555,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 1,
+            "num_warps": 8,
+            "num_stages": 3
+          },
+          0.1592320054769516,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 16,
+            "num_warps": 2,
+            "num_stages": 2
+          },
+          0.11430399864912033,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.12563200294971466,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 1,
+            "num_warps": 8,
+            "num_stages": 3
+          },
+          0.2863680124282837,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 8,
+            "num_stages": 3
+          },
+          0.15174399316310883,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 1,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.2720319926738739,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 1,
+            "num_warps": 2,
+            "num_stages": 3
+          },
+          0.2348800003528595,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 2,
+            "num_stages": 2
+          },
+          0.12700800597667694,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 4,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.12163200229406357,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 2,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.11244799941778183,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 16,
+            "num_warps": 2,
+            "num_stages": 3
+          },
+          0.11292800307273865,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 16,
+            "num_warps": 8,
+            "num_stages": 3
+          },
+          0.11043199896812439,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 1,
+            "num_warps": 2,
+            "num_stages": 3
+          },
+          0.23561599850654602,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 2,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.29580798745155334,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 4,
+            "num_warps": 2,
+            "num_stages": 2
+          },
+          0.1279360055923462,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 4,
+            "num_warps": 8,
+            "num_stages": 3
+          },
+          0.11283200234174728,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 4,
+            "num_warps": 8,
+            "num_stages": 3
+          },
+          0.11155200004577637,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 2,
+            "num_warps": 8,
+            "num_stages": 3
+          },
+          0.14828799664974213,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 4,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.1106560006737709,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 4,
+            "num_stages": 2
+          },
+          0.12172800302505493,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 2,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.12838399410247803,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 4,
+            "num_warps": 2,
+            "num_stages": 2
+          },
+          0.1958719938993454,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 1,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.43647998571395874,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.10806400328874588,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 4,
+            "num_warps": 4,
+            "num_stages": 2
+          },
+          0.15145599842071533,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 2,
+            "num_warps": 2,
+            "num_stages": 2
+          },
+          0.2577280104160309,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 2,
+            "num_warps": 4,
+            "num_stages": 2
+          },
+          0.3016960024833679,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 4,
+            "num_warps": 2,
+            "num_stages": 2
+          },
+          0.15593600273132324,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 2,
+            "num_warps": 4,
+            "num_stages": 2
+          },
+          0.17955200374126434,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.11791999638080597,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 1,
+            "num_warps": 2,
+            "num_stages": 2
+          },
+          0.33190399408340454,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 16,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.11164800077676773,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 1,
+            "num_warps": 4,
+            "num_stages": 2
+          },
+          0.4095360040664673,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 1,
+            "num_warps": 2,
+            "num_stages": 3
+          },
+          0.29712000489234924,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 1,
+            "num_warps": 2,
+            "num_stages": 3
+          },
+          0.2532159984111786,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 16,
+            "num_warps": 8,
+            "num_stages": 2
+          },
+          0.13120000064373016,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 128,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 1,
+            "num_warps": 8,
+            "num_stages": 3
+          },
+          0.24905599653720856,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 2,
+            "num_warps": 2,
+            "num_stages": 3
+          },
+          0.2504960000514984,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 128,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 8,
+            "num_stages": 3
+          },
+          0.13792000710964203,
+          null
+        ]
+      ]
+    },
+    "tune_fused_refine": {
+      "best_cfg": {
+        "BLOCK_M": 16,
+        "BLOCK_N": 64,
+        "BLOCK_K": 64,
+        "GROUP_M": 8,
+        "SPLIT_K": 6,
+        "num_warps": 4,
+        "num_stages": 3
+      },
+      "best_ms": 0.10976000130176544,
+      "n_tried": 13,
+      "n_failed": 0,
+      "n_offered": 13,
+      "n_guard_rejected": 0,
+      "n_coarse": 13,
+      "n_refine": 0,
+      "best_stage": "coarse",
+      "failure_summary": {},
+      "table": [
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 16,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.2300799936056137,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 32,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.18822400271892548,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.15059199929237366,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 16,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.1326719969511032,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 32,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.11721599847078323,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 256,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.11264000087976456,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 4,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.11110399663448334,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 6,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.10976000130176544,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 12,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.11203200370073318,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 2,
+            "num_stages": 3
+          },
+          0.11004800349473953,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 4,
+            "num_stages": 4
+          },
+          0.11088000237941742,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 64,
+            "GROUP_M": 4,
+            "SPLIT_K": 8,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.10982400178909302,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 64,
+            "GROUP_M": 16,
+            "SPLIT_K": 8,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.10979200154542923,
+          null
+        ]
+      ]
+    },
+    "tune_unfused_refine": {
+      "best_cfg": {
+        "BLOCK_M": 16,
+        "BLOCK_N": 64,
+        "BLOCK_K": 64,
+        "GROUP_M": 16,
+        "SPLIT_K": 8,
+        "num_warps": 4,
+        "num_stages": 3
+      },
+      "best_ms": 0.10992000252008438,
+      "n_tried": 13,
+      "n_failed": 0,
+      "n_offered": 13,
+      "n_guard_rejected": 0,
+      "n_coarse": 13,
+      "n_refine": 0,
+      "best_stage": "coarse",
+      "failure_summary": {},
+      "table": [
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 16,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.16118399798870087,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 32,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.143327996134758,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 256,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.11264000087976456,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 16,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.132192000746727,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 32,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.11151999980211258,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 256,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.11308799684047699,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 4,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.111455999314785,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 6,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.11020799726247787,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 12,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.11209599673748016,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 2,
+            "num_stages": 3
+          },
+          0.1101439967751503,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 64,
+            "GROUP_M": 8,
+            "SPLIT_K": 8,
+            "num_warps": 4,
+            "num_stages": 4
+          },
+          0.11161600053310394,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 64,
+            "GROUP_M": 4,
+            "SPLIT_K": 8,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.10995200276374817,
+          null
+        ],
+        [
+          {
+            "BLOCK_M": 16,
+            "BLOCK_N": 64,
+            "BLOCK_K": 64,
+            "GROUP_M": 16,
+            "SPLIT_K": 8,
+            "num_warps": 4,
+            "num_stages": 3
+          },
+          0.10992000252008438,
+          null
+        ]
+      ]
+    },
+    "tune_fused_joint": {
+      "best_cfg": [
+        {
+          "BLOCK_M": 16,
+          "BLOCK_N": 64,
+          "BLOCK_K": 64,
+          "GROUP_M": 8,
+          "SPLIT_K": 8,
+          "num_warps": 4,
+          "num_stages": 3
+        },
+        {
+          "BLOCK": 256,
+          "num_warps": 8,
+          "num_stages": 1
+        }
+      ],
+      "best_ms": 0.10963200032711029,
+      "n_tried": 15,
+      "n_failed": 0,
+      "n_offered": 15,
+      "n_guard_rejected": 0,
+      "n_coarse": 15,
+      "n_refine": 0,
+      "best_stage": "coarse",
+      "failure_summary": {},
+      "table": [
+        [
+          [
+            {
+              "BLOCK_M": 16,
+              "BLOCK_N": 64,
+              "BLOCK_K": 64,
+              "GROUP_M": 8,
+              "SPLIT_K": 8,
+              "num_warps": 4,
+              "num_stages": 3
+            },
+            {
+              "BLOCK": 512,
+              "num_warps": 16,
+              "num_stages": 1
+            }
+          ],
+          0.1098880022764206,
+          null
+        ],
+        [
+          [
+            {
+              "BLOCK_M": 16,
+              "BLOCK_N": 64,
+              "BLOCK_K": 64,
+              "GROUP_M": 8,
+              "SPLIT_K": 8,
+              "num_warps": 4,
+              "num_stages": 3
+            },
+            {
+              "BLOCK": 1024,
+              "num_warps": 4,
+              "num_stages": 1
+            }
+          ],
+          0.10976000130176544,
+          null
+        ],
+        [
+          [
+            {
+              "BLOCK_M": 16,
+              "BLOCK_N": 64,
+              "BLOCK_K": 64,
+              "GROUP_M": 8,
+              "SPLIT_K": 8,
+              "num_warps": 4,
+              "num_stages": 3
+            },
+            {
+              "BLOCK": 4096,
+              "num_warps": 8,
+              "num_stages": 1
+            }
+          ],
+          0.1098880022764206,
+          null
+        ],
+        [
+          [
+            {
+              "BLOCK_M": 16,
+              "BLOCK_N": 64,
+              "BLOCK_K": 64,
+              "GROUP_M": 8,
+              "SPLIT_K": 8,
+              "num_warps": 4,
+              "num_stages": 3
+            },
+            {
+              "BLOCK": 256,
+              "num_warps": 1,
+              "num_stages": 1
+            }
+          ],
+          0.11001600325107574,
+          null
+        ],
+        [
+          [
+            {
+              "BLOCK_M": 16,
+              "BLOCK_N": 64,
+              "BLOCK_K": 64,
+              "GROUP_M": 8,
+              "SPLIT_K": 8,
+              "num_warps": 4,
+              "num_stages": 3
+            },
+            {
+              "BLOCK": 256,
+              "num_warps": 8,
+              "num_stages": 1
+            }
+          ],
+          0.10963200032711029,
+          null
+        ],
+        [
+          [
+            {
+              "BLOCK_M": 16,
+              "BLOCK_N": 64,
+              "BLOCK_K": 128,
+              "GROUP_M": 8,
+              "SPLIT_K": 8,
+              "num_warps": 4,
+              "num_stages": 2
+            },
+            {
+              "BLOCK": 512,
+              "num_warps": 16,
+              "num_stages": 1
+            }
+          ],
+          0.11004800349473953,
+          null
+        ],
+        [
+          [
+            {
+              "BLOCK_M": 16,
+              "BLOCK_N": 64,
+              "BLOCK_K": 128,
+              "GROUP_M": 8,
+              "SPLIT_K": 8,
+              "num_warps": 4,
+              "num_stages": 2
+            },
+            {
+              "BLOCK": 1024,
+              "num_warps": 4,
+              "num_stages": 1
+            }
+          ],
+          0.11001600325107574,
+          null
+        ],
+        [
+          [
+            {
+              "BLOCK_M": 16,
+              "BLOCK_N": 64,
+              "BLOCK_K": 128,
+              "GROUP_M": 8,
+              "SPLIT_K": 8,
+              "num_warps": 4,
+              "num_stages": 2
+            },
+            {
+              "BLOCK": 4096,
+              "num_warps": 8,
+              "num_stages": 1
+            }
+          ],
+          0.11004800349473953,
+          null
+        ],
+        [
+          [
+            {
+              "BLOCK_M": 16,
+              "BLOCK_N": 64,
+              "BLOCK_K": 128,
+              "GROUP_M": 8,
+              "SPLIT_K": 8,
+              "num_warps": 4,
+              "num_stages": 2
+            },
+            {
+              "BLOCK": 256,
+              "num_warps": 1,
+              "num_stages": 1
+            }
+          ],
+          0.11001600325107574,
+          null
+        ],
+        [
+          [
+            {
+              "BLOCK_M": 16,
+              "BLOCK_N": 64,
+              "BLOCK_K": 128,
+              "GROUP_M": 8,
+              "SPLIT_K": 8,
+              "num_warps": 4,
+              "num_stages": 2
+            },
+            {
+              "BLOCK": 256,
+              "num_warps": 8,
+              "num_stages": 1
+            }
+          ],
+          0.10992000252008438,
+          null
+        ],
+        [
+          [
+            {
+              "BLOCK_M": 16,
+              "BLOCK_N": 128,
+              "BLOCK_K": 64,
+              "GROUP_M": 8,
+              "SPLIT_K": 16,
+              "num_warps": 4,
+              "num_stages": 2
+            },
+            {
+              "BLOCK": 512,
+              "num_warps": 16,
+              "num_stages": 1
+            }
+          ],
+          0.10995200276374817,
+          null
+        ],
+        [
+          [
+            {
+              "BLOCK_M": 16,
+              "BLOCK_N": 128,
+              "BLOCK_K": 64,
+              "GROUP_M": 8,
+              "SPLIT_K": 16,
+              "num_warps": 4,
+              "num_stages": 2
+            },
+            {
+              "BLOCK": 1024,
+              "num_warps": 4,
+              "num_stages": 1
+            }
+          ],
+          0.10998400300741196,
+          null
+        ],
+        [
+          [
+            {
+              "BLOCK_M": 16,
+              "BLOCK_N": 128,
+              "BLOCK_K": 64,
+              "GROUP_M": 8,
+              "SPLIT_K": 16,
+              "num_warps": 4,
+              "num_stages": 2
+            },
+            {
+              "BLOCK": 4096,
+              "num_warps": 8,
+              "num_stages": 1
+            }
+          ],
+          0.11033599823713303,
+          null
+        ],
+        [
+          [
+            {
+              "BLOCK_M": 16,
+              "BLOCK_N": 128,
+              "BLOCK_K": 64,
+              "GROUP_M": 8,
+              "SPLIT_K": 16,
+              "num_warps": 4,
+              "num_stages": 2
+            },
+            {
+              "BLOCK": 256,
+              "num_warps": 1,
+              "num_stages": 1
+            }
+          ],
+          0.10998400300741196,
+          null
+        ],
+        [
+          [
+            {
+              "BLOCK_M": 16,
+              "BLOCK_N": 128,
+              "BLOCK_K": 64,
+              "GROUP_M": 8,
+              "SPLIT_K": 16,
+              "num_warps": 4,
+              "num_stages": 2
+            },
+            {
+              "BLOCK": 256,
+              "num_warps": 8,
+              "num_stages": 1
+            }
+          ],
+          0.11011199653148651,
+          null
+        ]
+      ]
+    },
+    "tune_unfused_joint": {
+      "best_cfg": [
+        {
+          "BLOCK_M": 16,
+          "BLOCK_N": 64,
+          "BLOCK_K": 64,
+          "GROUP_M": 8,
+          "SPLIT_K": 8,
+          "num_warps": 4,
+          "num_stages": 3
+        },
+        {
+          "BLOCK": 256,
+          "num_warps": 1,
+          "num_stages": 1
+        }
+      ],
+      "best_ms": 0.1098560020327568,
+      "n_tried": 15,
+      "n_failed": 0,
+      "n_offered": 15,
+      "n_guard_rejected": 0,
+      "n_coarse": 15,
+      "n_refine": 0,
+      "best_stage": "coarse",
+      "failure_summary": {},
+      "table": [
+        [
+          [
+            {
+              "BLOCK_M": 16,
+              "BLOCK_N": 64,
+              "BLOCK_K": 64,
+              "GROUP_M": 8,
+              "SPLIT_K": 8,
+              "num_warps": 4,
+              "num_stages": 3
+            },
+            {
+              "BLOCK": 2048,
+              "num_warps": 8,
+              "num_stages": 1
+            }
+          ],
+          0.11007999628782272,
+          null
+        ],
+        [
+          [
+            {
+              "BLOCK_M": 16,
+              "BLOCK_N": 64,
+              "BLOCK_K": 64,
+              "GROUP_M": 8,
+              "SPLIT_K": 8,
+              "num_warps": 4,
+              "num_stages": 3
+            },
+            {
+              "BLOCK": 256,
+              "num_warps": 1,
+              "num_stages": 1
+            }
+          ],
+          0.1098560020327568,
+          null
+        ],
+        [
+          [
+            {
+              "BLOCK_M": 16,
+              "BLOCK_N": 64,
+              "BLOCK_K": 64,
+              "GROUP_M": 8,
+              "SPLIT_K": 8,
+              "num_warps": 4,
+              "num_stages": 3
+            },
+            {
+              "BLOCK": 256,
+              "num_warps": 2,
+              "num_stages": 1
+            }
+          ],
+          0.11023999750614166,
+          null
+        ],
+        [
+          [
+            {
+              "BLOCK_M": 16,
+              "BLOCK_N": 64,
+              "BLOCK_K": 64,
+              "GROUP_M": 8,
+              "SPLIT_K": 8,
+              "num_warps": 4,
+              "num_stages": 3
+            },
+            {
+              "BLOCK": 256,
+              "num_warps": 8,
+              "num_stages": 1
+            }
+          ],
+          0.11001600325107574,
+          null
+        ],
+        [
+          [
+            {
+              "BLOCK_M": 16,
+              "BLOCK_N": 64,
+              "BLOCK_K": 64,
+              "GROUP_M": 8,
+              "SPLIT_K": 8,
+              "num_warps": 4,
+              "num_stages": 3
+            },
+            {
+              "BLOCK": 512,
+              "num_warps": 1,
+              "num_stages": 1
+            }
+          ],
+          0.11004800349473953,
+          null
+        ],
+        [
+          [
+            {
+              "BLOCK_M": 16,
+              "BLOCK_N": 64,
+              "BLOCK_K": 128,
+              "GROUP_M": 8,
+              "SPLIT_K": 4,
+              "num_warps": 2,
+              "num_stages": 3
+            },
+            {
+              "BLOCK": 2048,
+              "num_warps": 8,
+              "num_stages": 1
+            }
+          ],
+          0.11139199882745743,
+          null
+        ],
+        [
+          [
+            {
+              "BLOCK_M": 16,
+              "BLOCK_N": 64,
+              "BLOCK_K": 128,
+              "GROUP_M": 8,
+              "SPLIT_K": 4,
+              "num_warps": 2,
+              "num_stages": 3
+            },
+            {
+              "BLOCK": 256,
+              "num_warps": 1,
+              "num_stages": 1
+            }
+          ],
+          0.11113599687814713,
+          null
+        ],
+        [
+          [
+            {
+              "BLOCK_M": 16,
+              "BLOCK_N": 64,
+              "BLOCK_K": 128,
+              "GROUP_M": 8,
+              "SPLIT_K": 4,
+              "num_warps": 2,
+              "num_stages": 3
+            },
+            {
+              "BLOCK": 256,
+              "num_warps": 2,
+              "num_stages": 1
+            }
+          ],
+          0.11110399663448334,
+          null
+        ],
+        [
+          [
+            {
+              "BLOCK_M": 16,
+              "BLOCK_N": 64,
+              "BLOCK_K": 128,
+              "GROUP_M": 8,
+              "SPLIT_K": 4,
+              "num_warps": 2,
+              "num_stages": 3
+            },
+            {
+              "BLOCK": 256,
+              "num_warps": 8,
+              "num_stages": 1
+            }
+          ],
+          0.11104000359773636,
+          null
+        ],
+        [
+          [
+            {
+              "BLOCK_M": 16,
+              "BLOCK_N": 64,
+              "BLOCK_K": 128,
+              "GROUP_M": 8,
+              "SPLIT_K": 4,
+              "num_warps": 2,
+              "num_stages": 3
+            },
+            {
+              "BLOCK": 512,
+              "num_warps": 1,
+              "num_stages": 1
+            }
+          ],
+          0.1111999973654747,
+          null
+        ],
+        [
+          [
+            {
+              "BLOCK_M": 16,
+              "BLOCK_N": 256,
+              "BLOCK_K": 128,
+              "GROUP_M": 8,
+              "SPLIT_K": 4,
+              "num_warps": 8,
+              "num_stages": 3
+            },
+            {
+              "BLOCK": 2048,
+              "num_warps": 8,
+              "num_stages": 1
+            }
+          ],
+          0.11084800213575363,
+          null
+        ],
+        [
+          [
+            {
+              "BLOCK_M": 16,
+              "BLOCK_N": 256,
+              "BLOCK_K": 128,
+              "GROUP_M": 8,
+              "SPLIT_K": 4,
+              "num_warps": 8,
+              "num_stages": 3
+            },
+            {
+              "BLOCK": 256,
+              "num_warps": 1,
+              "num_stages": 1
+            }
+          ],
+          0.11081600189208984,
+          null
+        ],
+        [
+          [
+            {
+              "BLOCK_M": 16,
+              "BLOCK_N": 256,
+              "BLOCK_K": 128,
+              "GROUP_M": 8,
+              "SPLIT_K": 4,
+              "num_warps": 8,
+              "num_stages": 3
+            },
+            {
+              "BLOCK": 256,
+              "num_warps": 2,
+              "num_stages": 1
+            }
+          ],
+          0.110944002866745,
+          null
+        ],
+        [
+          [
+            {
+              "BLOCK_M": 16,
+              "BLOCK_N": 256,
+              "BLOCK_K": 128,
+              "GROUP_M": 8,
+              "SPLIT_K": 4,
+              "num_warps": 8,
+              "num_stages": 3
+            },
+            {
+              "BLOCK": 256,
+              "num_warps": 8,
+              "num_stages": 1
+            }
+          ],
+          0.11110399663448334,
+          null
+        ],
+        [
+          [
+            {
+              "BLOCK_M": 16,
+              "BLOCK_N": 256,
+              "BLOCK_K": 128,
+              "GROUP_M": 8,
+              "SPLIT_K": 4,
+              "num_warps": 8,
+              "num_stages": 3
+            },
+            {
+              "BLOCK": 512,
+              "num_warps": 1,
+              "num_stages": 1
+            }
+          ],
+          0.110944002866745,
+          null
+        ]
+      ]
+    },
+    "tune_fused_extra": null,
+    "tune_epi_add_bf16": {
+      "best_cfg": {
+        "BLOCK": 2048,
+        "num_warps": 4,
+        "num_stages": 1
+      },
+      "best_ms": 0.005247999913990498,
+      "n_tried": 33,
+      "n_failed": 0,
+      "n_offered": 41,
+      "n_guard_rejected": 0,
+      "n_coarse": 33,
+      "n_refine": 0,
+      "best_stage": "coarse",
+      "failure_summary": {},
+      "table": [
+        [
+          {
+            "BLOCK": 256,
+            "num_warps": 1,
+            "num_stages": 1
+          },
+          0.04095999896526337,
+          null
+        ],
+        [
+          {
+            "BLOCK": 256,
+            "num_warps": 2,
+            "num_stages": 1
+          },
+          0.03376000002026558,
+          null
+        ],
+        [
+          {
+            "BLOCK": 256,
+            "num_warps": 4,
+            "num_stages": 1
+          },
+          0.031231999397277832,
+          null
+        ],
+        [
+          {
+            "BLOCK": 256,
+            "num_warps": 8,
+            "num_stages": 1
+          },
+          0.02412799932062626,
+          null
+        ],
+        [
+          {
+            "BLOCK": 512,
+            "num_warps": 1,
+            "num_stages": 1
+          },
+          0.023072000592947006,
+          null
+        ],
+        [
+          {
+            "BLOCK": 512,
+            "num_warps": 2,
+            "num_stages": 1
+          },
+          0.016704000532627106,
+          null
+        ],
+        [
+          {
+            "BLOCK": 512,
+            "num_warps": 4,
+            "num_stages": 1
+          },
+          0.016736000776290894,
+          null
+        ],
+        [
+          {
+            "BLOCK": 512,
+            "num_warps": 8,
+            "num_stages": 1
+          },
+          0.016543999314308167,
+          null
+        ],
+        [
+          {
+            "BLOCK": 512,
+            "num_warps": 16,
+            "num_stages": 1
+          },
+          0.010048000141978264,
+          null
+        ],
+        [
+          {
+            "BLOCK": 1024,
+            "num_warps": 1,
+            "num_stages": 1
+          },
+          0.009855999611318111,
+          null
+        ],
+        [
+          {
+            "BLOCK": 1024,
+            "num_warps": 2,
+            "num_stages": 1
+          },
+          0.005727999843657017,
+          null
+        ],
+        [
+          {
+            "BLOCK": 1024,
+            "num_warps": 4,
+            "num_stages": 1
+          },
+          0.005535999778658152,
+          null
+        ],
+        [
+          {
+            "BLOCK": 1024,
+            "num_warps": 8,
+            "num_stages": 1
+          },
+          0.0055680000223219395,
+          null
+        ],
+        [
+          {
+            "BLOCK": 1024,
+            "num_warps": 16,
+            "num_stages": 1
+          },
+          0.005504000000655651,
+          null
+        ],
+        [
+          {
+            "BLOCK": 1024,
+            "num_warps": 32,
+            "num_stages": 1
+          },
+          0.005535999778658152,
+          null
+        ],
+        [
+          {
+            "BLOCK": 2048,
+            "num_warps": 1,
+            "num_stages": 1
+          },
+          0.0058559998869895935,
+          null
+        ],
+        [
+          {
+            "BLOCK": 2048,
+            "num_warps": 2,
+            "num_stages": 1
+          },
+          0.005760000087320805,
+          null
+        ],
+        [
+          {
+            "BLOCK": 2048,
+            "num_warps": 4,
+            "num_stages": 1
+          },
+          0.005247999913990498,
+          null
+        ],
+        [
+          {
+            "BLOCK": 2048,
+            "num_warps": 8,
+            "num_stages": 1
+          },
+          0.005375999957323074,
+          null
+        ],
+        [
+          {
+            "BLOCK": 2048,
+            "num_warps": 16,
+            "num_stages": 1
+          },
+          0.005344000179320574,
+          null
+        ],
+        [
+          {
+            "BLOCK": 2048,
+            "num_warps": 32,
+            "num_stages": 1
+          },
+          0.005375999957323074,
+          null
+        ],
+        [
+          {
+            "BLOCK": 4096,
+            "num_warps": 2,
+            "num_stages": 1
+          },
+          0.0058559998869895935,
+          null
+        ],
+        [
+          {
+            "BLOCK": 4096,
+            "num_warps": 4,
+            "num_stages": 1
+          },
+          0.005696000065654516,
+          null
+        ],
+        [
+          {
+            "BLOCK": 4096,
+            "num_warps": 8,
+            "num_stages": 1
+          },
+          0.005375999957323074,
+          null
+        ],
+        [
+          {
+            "BLOCK": 4096,
+            "num_warps": 16,
+            "num_stages": 1
+          },
+          0.005344000179320574,
+          null
+        ],
+        [
+          {
+            "BLOCK": 4096,
+            "num_warps": 32,
+            "num_stages": 1
+          },
+          0.005344000179320574,
+          null
+        ],
+        [
+          {
+            "BLOCK": 8192,
+            "num_warps": 4,
+            "num_stages": 1
+          },
+          0.006207999773323536,
+          null
+        ],
+        [
+          {
+            "BLOCK": 8192,
+            "num_warps": 8,
+            "num_stages": 1
+          },
+          0.005760000087320805,
+          null
+        ],
+        [
+          {
+            "BLOCK": 8192,
+            "num_warps": 16,
+            "num_stages": 1
+          },
+          0.005375999957323074,
+          null
+        ],
+        [
+          {
+            "BLOCK": 8192,
+            "num_warps": 32,
+            "num_stages": 1
+          },
+          0.005439999978989363,
+          null
+        ],
+        [
+          {
+            "BLOCK": 16384,
+            "num_warps": 8,
+            "num_stages": 1
+          },
+          0.0063680000603199005,
+          null
+        ],
+        [
+          {
+            "BLOCK": 16384,
+            "num_warps": 16,
+            "num_stages": 1
+          },
+          0.006016000173985958,
+          null
+        ],
+        [
+          {
+            "BLOCK": 16384,
+            "num_warps": 32,
+            "num_stages": 1
+          },
+          0.005727999843657017,
+          null
+        ]
+      ]
+    },
+    "tune_epi_add_f32": {
+      "best_cfg": {
+        "BLOCK": 2048,
+        "num_warps": 8,
+        "num_stages": 1
+      },
+      "best_ms": 0.005311999935656786,
+      "n_tried": 33,
+      "n_failed": 0,
+      "n_offered": 41,
+      "n_guard_rejected": 0,
+      "n_coarse": 33,
+      "n_refine": 0,
+      "best_stage": "coarse",
+      "failure_summary": {},
+      "table": [
+        [
+          {
+            "BLOCK": 256,
+            "num_warps": 1,
+            "num_stages": 1
+          },
+          0.005344000179320574,
+          null
+        ],
+        [
+          {
+            "BLOCK": 256,
+            "num_warps": 2,
+            "num_stages": 1
+          },
+          0.005344000179320574,
+          null
+        ],
+        [
+          {
+            "BLOCK": 256,
+            "num_warps": 4,
+            "num_stages": 1
+          },
+          0.005408000200986862,
+          null
+        ],
+        [
+          {
+            "BLOCK": 256,
+            "num_warps": 8,
+            "num_stages": 1
+          },
+          0.005344000179320574,
+          null
+        ],
+        [
+          {
+            "BLOCK": 512,
+            "num_warps": 1,
+            "num_stages": 1
+          },
+          0.005344000179320574,
+          null
+        ],
+        [
+          {
+            "BLOCK": 512,
+            "num_warps": 2,
+            "num_stages": 1
+          },
+          0.005344000179320574,
+          null
+        ],
+        [
+          {
+            "BLOCK": 512,
+            "num_warps": 4,
+            "num_stages": 1
+          },
+          0.005344000179320574,
+          null
+        ],
+        [
+          {
+            "BLOCK": 512,
+            "num_warps": 8,
+            "num_stages": 1
+          },
+          0.005344000179320574,
+          null
+        ],
+        [
+          {
+            "BLOCK": 512,
+            "num_warps": 16,
+            "num_stages": 1
+          },
+          0.005375999957323074,
+          null
+        ],
+        [
+          {
+            "BLOCK": 1024,
+            "num_warps": 1,
+            "num_stages": 1
+          },
+          0.005408000200986862,
+          null
+        ],
+        [
+          {
+            "BLOCK": 1024,
+            "num_warps": 2,
+            "num_stages": 1
+          },
+          0.005408000200986862,
+          null
+        ],
+        [
+          {
+            "BLOCK": 1024,
+            "num_warps": 4,
+            "num_stages": 1
+          },
+          0.005375999957323074,
+          null
+        ],
+        [
+          {
+            "BLOCK": 1024,
+            "num_warps": 8,
+            "num_stages": 1
+          },
+          0.005344000179320574,
+          null
+        ],
+        [
+          {
+            "BLOCK": 1024,
+            "num_warps": 16,
+            "num_stages": 1
+          },
+          0.005375999957323074,
+          null
+        ],
+        [
+          {
+            "BLOCK": 1024,
+            "num_warps": 32,
+            "num_stages": 1
+          },
+          0.005344000179320574,
+          null
+        ],
+        [
+          {
+            "BLOCK": 2048,
+            "num_warps": 1,
+            "num_stages": 1
+          },
+          0.007360000163316727,
+          null
+        ],
+        [
+          {
+            "BLOCK": 2048,
+            "num_warps": 2,
+            "num_stages": 1
+          },
+          0.006432000081986189,
+          null
+        ],
+        [
+          {
+            "BLOCK": 2048,
+            "num_warps": 4,
+            "num_stages": 1
+          },
+          0.005344000179320574,
+          null
+        ],
+        [
+          {
+            "BLOCK": 2048,
+            "num_warps": 8,
+            "num_stages": 1
+          },
+          0.005311999935656786,
+          null
+        ],
+        [
+          {
+            "BLOCK": 2048,
+            "num_warps": 16,
+            "num_stages": 1
+          },
+          0.0054720002226531506,
+          null
+        ],
+        [
+          {
+            "BLOCK": 2048,
+            "num_warps": 32,
+            "num_stages": 1
+          },
+          0.005344000179320574,
+          null
+        ],
+        [
+          {
+            "BLOCK": 4096,
+            "num_warps": 2,
+            "num_stages": 1
+          },
+          0.007935999892652035,
+          null
+        ],
+        [
+          {
+            "BLOCK": 4096,
+            "num_warps": 4,
+            "num_stages": 1
+          },
+          0.006432000081986189,
+          null
+        ],
+        [
+          {
+            "BLOCK": 4096,
+            "num_warps": 8,
+            "num_stages": 1
+          },
+          0.005375999957323074,
+          null
+        ],
+        [
+          {
+            "BLOCK": 4096,
+            "num_warps": 16,
+            "num_stages": 1
+          },
+          0.005408000200986862,
+          null
+        ],
+        [
+          {
+            "BLOCK": 4096,
+            "num_warps": 32,
+            "num_stages": 1
+          },
+          0.005439999978989363,
+          null
+        ],
+        [
+          {
+            "BLOCK": 8192,
+            "num_warps": 4,
+            "num_stages": 1
+          },
+          0.008031999692320824,
+          null
+        ],
+        [
+          {
+            "BLOCK": 8192,
+            "num_warps": 8,
+            "num_stages": 1
+          },
+          0.006912000011652708,
+          null
+        ],
+        [
+          {
+            "BLOCK": 8192,
+            "num_warps": 16,
+            "num_stages": 1
+          },
+          0.0055680000223219395,
+          null
+        ],
+        [
+          {
+            "BLOCK": 8192,
+            "num_warps": 32,
+            "num_stages": 1
+          },
+          0.005632000043988228,
+          null
+        ],
+        [
+          {
+            "BLOCK": 16384,
+            "num_warps": 8,
+            "num_stages": 1
+          },
+          0.0080960001796484,
+          null
+        ],
+        [
+          {
+            "BLOCK": 16384,
+            "num_warps": 16,
+            "num_stages": 1
+          },
+          0.007040000054985285,
+          null
+        ],
+        [
+          {
+            "BLOCK": 16384,
+            "num_warps": 32,
+            "num_stages": 1
+          },
+          0.006016000173985958,
+          null
+        ]
+      ]
+    },
+    "tune_epi_cast_f32": {
+      "best_cfg": {
+        "BLOCK": 512,
+        "num_warps": 16,
+        "num_stages": 1
+      },
+      "best_ms": 0.005183999892324209,
+      "n_tried": 36,
+      "n_failed": 0,
+      "n_offered": 41,
+      "n_guard_rejected": 0,
+      "n_coarse": 33,
+      "n_refine": 3,
+      "best_stage": "coarse",
+      "failure_summary": {},
+      "table": [
+        [
+          {
+            "BLOCK": 256,
+            "num_warps": 1,
+            "num_stages": 1
+          },
+          0.005216000135987997,
+          null
+        ],
+        [
+          {
+            "BLOCK": 256,
+            "num_warps": 2,
+            "num_stages": 1
+          },
+          0.005344000179320574,
+          null
+        ],
+        [
+          {
+            "BLOCK": 256,
+            "num_warps": 4,
+            "num_stages": 1
+          },
+          0.005311999935656786,
+          null
+        ],
+        [
+          {
+            "BLOCK": 256,
+            "num_warps": 8,
+            "num_stages": 1
+          },
+          0.005216000135987997,
+          null
+        ],
+        [
+          {
+            "BLOCK": 512,
+            "num_warps": 1,
+            "num_stages": 1
+          },
+          0.005247999913990498,
+          null
+        ],
+        [
+          {
+            "BLOCK": 512,
+            "num_warps": 2,
+            "num_stages": 1
+          },
+          0.005216000135987997,
+          null
+        ],
+        [
+          {
+            "BLOCK": 512,
+            "num_warps": 4,
+            "num_stages": 1
+          },
+          0.005216000135987997,
+          null
+        ],
+        [
+          {
+            "BLOCK": 512,
+            "num_warps": 8,
+            "num_stages": 1
+          },
+          0.005247999913990498,
+          null
+        ],
+        [
+          {
+            "BLOCK": 512,
+            "num_warps": 16,
+            "num_stages": 1
+          },
+          0.005183999892324209,
+          null
+        ],
+        [
+          {
+            "BLOCK": 1024,
+            "num_warps": 1,
+            "num_stages": 1
+          },
+          0.005311999935656786,
+          null
+        ],
+        [
+          {
+            "BLOCK": 1024,
+            "num_warps": 2,
+            "num_stages": 1
+          },
+          0.005216000135987997,
+          null
+        ],
+        [
+          {
+            "BLOCK": 1024,
+            "num_warps": 4,
+            "num_stages": 1
+          },
+          0.005183999892324209,
+          null
+        ],
+        [
+          {
+            "BLOCK": 1024,
+            "num_warps": 8,
+            "num_stages": 1
+          },
+          0.005247999913990498,
+          null
+        ],
+        [
+          {
+            "BLOCK": 1024,
+            "num_warps": 16,
+            "num_stages": 1
+          },
+          0.005247999913990498,
+          null
+        ],
+        [
+          {
+            "BLOCK": 1024,
+            "num_warps": 32,
+            "num_stages": 1
+          },
+          0.005247999913990498,
+          null
+        ],
+        [
+          {
+            "BLOCK": 2048,
+            "num_warps": 1,
+            "num_stages": 1
+          },
+          0.005344000179320574,
+          null
+        ],
+        [
+          {
+            "BLOCK": 2048,
+            "num_warps": 2,
+            "num_stages": 1
+          },
+          0.005311999935656786,
+          null
+        ],
+        [
+          {
+            "BLOCK": 2048,
+            "num_warps": 4,
+            "num_stages": 1
+          },
+          0.005311999935656786,
+          null
+        ],
+        [
+          {
+            "BLOCK": 2048,
+            "num_warps": 8,
+            "num_stages": 1
+          },
+          0.005311999935656786,
+          null
+        ],
+        [
+          {
+            "BLOCK": 2048,
+            "num_warps": 16,
+            "num_stages": 1
+          },
+          0.005311999935656786,
+          null
+        ],
+        [
+          {
+            "BLOCK": 2048,
+            "num_warps": 32,
+            "num_stages": 1
+          },
+          0.005280000157654285,
+          null
+        ],
+        [
+          {
+            "BLOCK": 4096,
+            "num_warps": 2,
+            "num_stages": 1
+          },
+          0.0058559998869895935,
+          null
+        ],
+        [
+          {
+            "BLOCK": 4096,
+            "num_warps": 4,
+            "num_stages": 1
+          },
+          0.005344000179320574,
+          null
+        ],
+        [
+          {
+            "BLOCK": 4096,
+            "num_warps": 8,
+            "num_stages": 1
+          },
+          0.005183999892324209,
+          null
+        ],
+        [
+          {
+            "BLOCK": 4096,
+            "num_warps": 16,
+            "num_stages": 1
+          },
+          0.005344000179320574,
+          null
+        ],
+        [
+          {
+            "BLOCK": 4096,
+            "num_warps": 32,
+            "num_stages": 1
+          },
+          0.005311999935656786,
+          null
+        ],
+        [
+          {
+            "BLOCK": 8192,
+            "num_warps": 4,
+            "num_stages": 1
+          },
+          0.005919999908655882,
+          null
+        ],
+        [
+          {
+            "BLOCK": 8192,
+            "num_warps": 8,
+            "num_stages": 1
+          },
+          0.0058559998869895935,
+          null
+        ],
+        [
+          {
+            "BLOCK": 8192,
+            "num_warps": 16,
+            "num_stages": 1
+          },
+          0.005439999978989363,
+          null
+        ],
+        [
+          {
+            "BLOCK": 8192,
+            "num_warps": 32,
+            "num_stages": 1
+          },
+          0.005439999978989363,
+          null
+        ],
+        [
+          {
+            "BLOCK": 16384,
+            "num_warps": 8,
+            "num_stages": 1
+          },
+          0.006047999951988459,
+          null
+        ],
+        [
+          {
+            "BLOCK": 16384,
+            "num_warps": 16,
+            "num_stages": 1
+          },
+          0.006016000173985958,
+          null
+        ],
+        [
+          {
+            "BLOCK": 16384,
+            "num_warps": 32,
+            "num_stages": 1
+          },
+          0.005919999908655882,
+          null
+        ],
+        [
+          {
+            "BLOCK": 256,
+            "num_warps": 16,
+            "num_stages": 1
+          },
+          0.005280000157654285,
+          null
+        ],
+        [
+          {
+            "BLOCK": 512,
+            "num_warps": 32,
+            "num_stages": 1
+          },
+          0.005311999935656786,
+          null
+        ],
+        [
+          {
+            "BLOCK": 256,
+            "num_warps": 32,
+            "num_stages": 1
+          },
+          0.005311999935656786,
+          null
+        ]
+      ]
+    },
+    "timing_fused": {
+      "p50_ms": 0.13167999684810638,
+      "p10_ms": 0.10777600109577179,
+      "p90_ms": 0.19203199446201324,
+      "mean_ms": 0.1422704001267751,
+      "n": 300,
+      "noflush_p50_ms": NaN,
+      "min_ms": 0.10665600001811981,
+      "drift_frac": -0.3773932328749673
+    },
+    "timing_unfused": {
+      "p50_ms": 0.1313599944114685,
+      "p10_ms": 0.10803200304508209,
+      "p90_ms": 0.18880000710487366,
+      "mean_ms": 0.14030282658835252,
+      "n": 300,
+      "noflush_p50_ms": NaN,
+      "min_ms": 0.10700800269842148,
+      "drift_frac": -0.3688181154860806
+    },
+    "timing_vendor_fused": {
+      "p50_ms": 0.10870400071144104,
+      "p10_ms": 0.10812799632549286,
+      "p90_ms": 0.10943999886512756,
+      "mean_ms": 0.10896565325558186,
+      "n": 300,
+      "noflush_p50_ms": NaN,
+      "min_ms": 0.10691200196743011,
+      "drift_frac": 0.0007361657907750662
+    },
+    "timing_vendor_unfused": {
+      "p50_ms": 0.10847999900579453,
+      "p10_ms": 0.1080000028014183,
+      "p90_ms": 0.10915199667215347,
+      "mean_ms": 0.10852213310698668,
+      "n": 300,
+      "noflush_p50_ms": NaN,
+      "min_ms": 0.10611200332641602,
+      "drift_frac": -0.0005898010152816825
+    },
+    "checks": [
+      {
+        "label": "decode_bs8/triton-fused",
+        "rel_err": 0.002891888841986656,
+        "tol": 0.02,
+        "ok": true
+      },
+      {
+        "label": "decode_bs8/triton-unfused",
+        "rel_err": 0.002891888841986656,
+        "tol": 0.02,
+        "ok": true
+      },
+      {
+        "label": "decode_bs8/vendor-addmm",
+        "rel_err": 0.002891888841986656,
+        "tol": 0.02,
+        "ok": true
+      },
+      {
+        "label": "decode_bs8/fused-vs-unfused",
+        "rel_err": 0.0007530120201408863,
+        "tol": 0.02,
+        "ok": true
+      }
+    ]
+  },
+  "fairness_grids": {
+    "decode_bs8": {
+      "fused": {
+        "coarse": {
+          "n_tried": 120,
+          "n_failed": 0,
+          "best_ms": 0.10777600109577179,
+          "axis_counts": {
+            "_total_cfgs": 120
+          }
+        },
+        "refine": {
+          "n_tried": 13,
+          "n_failed": 0,
+          "best_ms": 0.10976000130176544,
+          "axis_counts": {
+            "_total_cfgs": 13
+          }
+        },
+        "joint": {
+          "n_tried": 15,
+          "n_failed": 0,
+          "best_ms": 0.10963200032711029
+        },
+        "extra": {
+          "n_tried": 0
+        }
+      },
+      "unfused": {
+        "coarse": {
+          "n_tried": 120,
+          "n_failed": 0,
+          "best_ms": 0.10806400328874588,
+          "axis_counts": {
+            "_total_cfgs": 120
+          }
+        },
+        "refine": {
+          "n_tried": 13,
+          "n_failed": 0,
+          "best_ms": 0.10992000252008438,
+          "axis_counts": {
+            "_total_cfgs": 13
+          }
+        },
+        "joint": {
+          "n_tried": 15,
+          "n_failed": 0,
+          "best_ms": 0.1098560020327568
+        }
+      }
+    }
+  },
+  "device": "NVIDIA H200",
+  "device_uuid": "b2318e71-edbf-aa1b-dcf3-3cc3e6ea7db0",
+  "torch": "2.11.0+cu130",
+  "triton": "3.6.0",
+  "saved_at": "2026-08-11 14:40:44",
+  "_ckpt_schema": 1
+}

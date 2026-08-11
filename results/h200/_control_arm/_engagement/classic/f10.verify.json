@@ -5,7 +5,7 @@
     "writer": "run_control_h200.py",
     "why_device": "run_h200.quarantine_foreign_results reads _meta.device and MOVES any file under the results tree that lacks it"
   },
-  "family": "f03",
+  "family": "f10",
   "arm": "classic",
   "verdict": "NOTHING-TO-DISABLE",
   "checks": [
@@ -21,7 +21,7 @@
     {
       "id": "V1",
       "axis": "clusters",
-      "path": "$.fairness.h200_axes.per_family.f03_resadd_rmsnorm.axes.clusters.available + .evidence",
+      "path": "$.fairness.h200_axes.per_family.f10_merge_resadd.axes.clusters.available + .evidence",
       "want": "available=False and evidence containing '(source env)'",
       "got": "available=False, evidence='hopper.caps().clusters=False (source env); preflight probe thread_block_cluster_num_ctas=True'",
       "status": "PASS",
@@ -30,7 +30,7 @@
     {
       "id": "V2",
       "axis": "clusters",
-      "path": "$.fairness.h200_axes.per_family.f03_resadd_rmsnorm.axes.clusters.offered + .not_offered_because",
+      "path": "$.fairness.h200_axes.per_family.f10_merge_resadd.axes.clusters.offered + .not_offered_because",
       "want": "offered=False and not_offered_because == 'the live capability probe says it is unavailable'",
       "got": "offered=False, not_offered_because='the live capability probe says it is unavailable'",
       "status": "PASS",
@@ -39,7 +39,7 @@
     {
       "id": "V1",
       "axis": "tma",
-      "path": "$.fairness.h200_axes.per_family.f03_resadd_rmsnorm.axes.tma.available + .evidence",
+      "path": "$.fairness.h200_axes.per_family.f10_merge_resadd.axes.tma.available + .evidence",
       "want": "available=False and evidence containing '(source env)'",
       "got": "available=False, evidence='hopper.caps().tma=False (source env); preflight probe tma_tensor_descriptor=False'",
       "status": "PASS",
@@ -48,7 +48,7 @@
     {
       "id": "V2",
       "axis": "tma",
-      "path": "$.fairness.h200_axes.per_family.f03_resadd_rmsnorm.axes.tma.offered + .not_offered_because",
+      "path": "$.fairness.h200_axes.per_family.f10_merge_resadd.axes.tma.offered + .not_offered_because",
       "want": "offered=False and not_offered_because == 'the live capability probe says it is unavailable'",
       "got": "offered=False, not_offered_because='the live capability probe says it is unavailable'",
       "status": "PASS",
@@ -57,7 +57,7 @@
     {
       "id": "V1",
       "axis": "warp_specialize",
-      "path": "$.fairness.h200_axes.per_family.f03_resadd_rmsnorm.axes.warp_specialize.available + .evidence",
+      "path": "$.fairness.h200_axes.per_family.f10_merge_resadd.axes.warp_specialize.available + .evidence",
       "want": "available=False and evidence containing '(source env)'",
       "got": "available=False, evidence='hopper.caps().warp_specialize=False (source env); preflight probe warp_specialize_tl_range=True'",
       "status": "PASS",
@@ -66,7 +66,7 @@
     {
       "id": "V2",
       "axis": "warp_specialize",
-      "path": "$.fairness.h200_axes.per_family.f03_resadd_rmsnorm.axes.warp_specialize.offered + .not_offered_because",
+      "path": "$.fairness.h200_axes.per_family.f10_merge_resadd.axes.warp_specialize.offered + .not_offered_because",
       "want": "offered=False and not_offered_because == 'the live capability probe says it is unavailable'",
       "got": "offered=False, not_offered_because='the live capability probe says it is unavailable'",
       "status": "PASS",
@@ -75,7 +75,7 @@
     {
       "id": "V4",
       "axis": "tma",
-      "path": "$.fairness.h200_axes.per_family.f03_resadd_rmsnorm.tma_form",
+      "path": "$.fairness.h200_axes.per_family.f10_merge_resadd.tma_form",
       "want": "none",
       "got": "none",
       "status": "PASS",
@@ -84,7 +84,7 @@
     {
       "id": "V4",
       "axis": "warp_specialize",
-      "path": "$.fairness.h200_axes.per_family.f03_resadd_rmsnorm.ws_mode",
+      "path": "$.fairness.h200_axes.per_family.f10_merge_resadd.ws_mode",
       "want": "none",
       "got": "none",
       "status": "PASS",
@@ -93,7 +93,7 @@
     {
       "id": "V4",
       "axis": "clusters",
-      "path": "$.fairness.h200_axes.per_family.f03_resadd_rmsnorm",
+      "path": "$.fairness.h200_axes.per_family.f10_merge_resadd",
       "want": "n/a",
       "got": "no scalar mirror exists",
       "status": "INFO",
@@ -102,7 +102,7 @@
     {
       "id": "V3",
       "axis": null,
-      "path": "$.fairness.h200_axes.per_family.f03_resadd_rmsnorm.overlays_offered",
+      "path": "$.fairness.h200_axes.per_family.f10_merge_resadd.overlays_offered",
       "want": "[] (already empty)",
       "got": "[]",
       "status": "VACUOUS",
@@ -111,7 +111,7 @@
     {
       "id": "V5",
       "axis": null,
-      "path": "$.fairness.h200_axes.per_family.f03_resadd_rmsnorm.kernel_cfg_keys",
+      "path": "$.fairness.h200_axes.per_family.f10_merge_resadd.kernel_cfg_keys",
       "want": "module advertises none",
       "got": "module advertises none",
       "status": "PASS",
@@ -214,14 +214,14 @@
       "want": "(not comparable -- winner-derived)",
       "got": "19 of 28 stage(s) differ",
       "status": "INFO",
-      "detail": "refine is neighbours(<the coarse stage's timing winner>) (common.py:1069), joint is a deduplicated top_cfgs() product over measured stages, extra is refine_grid() over a measured top-k -- so these sizes move run-to-run on IDENTICAL code and hardware (Hopper-vs-Hopper: f03 16 of 28, f10 18 of 28, in both directions). Recorded so the drift stays visible, never asserted on. decode_bs1/add/refine 88->50; decode_bs1/fused/refine 56->44; decode_bs1/norm/refine 50->38; decode_bs1024/fused/refine 62->54"
+      "detail": "refine is neighbours(<the coarse stage's timing winner>) (common.py:1069), joint is a deduplicated top_cfgs() product over measured stages, extra is refine_grid() over a measured top-k -- so these sizes move run-to-run on IDENTICAL code and hardware (Hopper-vs-Hopper: f03 16 of 28, f10 18 of 28, in both directions). Recorded so the drift stays visible, never asserted on. decode_bs1/fused/refine 68->60; decode_bs1/merge/refine 60->52; decode_bs1/resadd/refine 62->52; decode_bs1024/fused/refine 66->50"
     },
     {
       "id": "LOG",
       "axis": null,
-      "path": "f03.classic.a1.log",
+      "path": "f10.classic.a1.log",
       "want": "hopper feats [...] without ['clusters', 'tma', 'warp_specialize']",
-      "got": "f03.classic.a1.log: [none]",
+      "got": "f10.classic.a1.log: [none]",
       "status": "INFO",
       "detail": "every one of 1 banner(s) reports the axes this arm disables as off; the campaign's own transcript reads [tma,clusters,warp_specialize]"
     }
