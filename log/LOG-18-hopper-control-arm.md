@@ -1,6 +1,11 @@
 # LOG-18 — the Hopper control arm: does turning the sm_90 levers off change anything?
 
-**Date** 2026-08-10 · **Status** IN PROGRESS (scripts written; awaiting the operator's run)
+**Date** 2026-08-10, first operator run 2026-08-11 · **Status** IN PROGRESS — **1 of 7 families
+measured.** `f03` ran clean (11/11 regimes, exit=0, ~1 min) and the run then aborted on a
+**defective verifier check (V9)** before `f10`/`f01`/`f04f05`/`f11`/`f06`/`f08f09` launched.
+V9 is repaired; the returned `f03` data is sound and does **not** need re-measuring. Six
+families remain unmeasured, so **no verdict on the study question is possible** — see the
+2026-08-11 Work log entry
 · **Trigger** the H200-vs-C500 comparison found that the three TMA-offered families
 (`f01`, `f06`, `f08f09`; six variants) improved LEAST — medians 0.98–1.06x — while `f03` and
 `f10`, which are offered no Hopper axis at all, improved 1.86x and 1.48x · **Verdict** *(unfilled — nothing has been measured)*
@@ -514,7 +519,473 @@ purpose.
    fill the `## 0c.` preamble in `report_glm52_h200/README.md`, and flip **Status** from
    IN PROGRESS to the finding.
 
-### *(appended when the data returns)* — results
+### 2026-08-11 — the arm ran, `f03` measured clean, and my own verifier threw the run away
+
+The operator ran `python3 run_control_h200.py` on the H200 and committed the tree back as
+`d63a3de` ("error control"). **The measurement worked. The verification did not.** `f03`
+completed all 11 regimes in one minute and the driver then aborted the whole arm on a single
+fatal check — `V9` — that asserts something that is not true of the quantity it reads.
+
+#### What came back
+
+From `log/run_control_h200/driver.log`, in order:
+
+- `10:57:29` the driver **refused** the operator's first invocation (`--gpu 7`) because index 7
+  is not the campaign card; they re-ran without it and it pinned `GPU-b2318e71-…` at index 0
+  itself. `control_arm_summary.json` `device_anchor` reads `matched: true`, want == got.
+- `10:57:37` preflight `exit=0`. `[calib] copy_2048MB_GBs=4247 rmw_2048MB_GBs=4262
+  read_2048MB_GBs=4649 cublas_4096…_TFs=821.6`, `launch 10.27 us | timer tick 0.032 us`.
+  Against the campaign's own preflight (`results/h200/summary.json`, 2026-08-07): copy_2048MB
+  4246.84 → 4247.27 GB/s (+0.01 %), read 4647.74 → 4649 (+0.03 %), cublas 822.90 → 821.58 TF
+  (−0.16 %), launch 10.3177 → 10.2720 µs. **The machine did not move between the two
+  sessions**, measured by probes that touch none of the benches.
+- `10:57:38` `f03` launched. `[hw before] GPU0 NVIDIA H200 | sm 1980/1980 MHz | mem 3201/3201
+  MHz | 32 C | used 0/143771 MiB | util 0% | throttle 0x0000000000000000` — idle card, clocks
+  pinned, no co-tenant.
+- `10:58:40` `exit=0 status=ok wall=1.0 min`; `[redirect] confirmed (exact path match)`;
+  `all 11 regime(s) in scope have rows; f03 is done.`
+- `10:58:41` `[verify] f03/classic FAILED with 1 fatal check(s)` — and then, verbatim:
+
+```
+10:58:41 !! ENGAGEMENT VERIFICATION FAILED for classic/f03.
+10:58:41 !! A control arm that did not engage is worse than no control arm: it is
+10:58:41 !! indistinguishable from a positive result -- which is this study's hypothesis.
+10:58:41 !!   V9   $.fairness.grids.*.*.*.n_tried
+10:58:41 !!        want identical to the campaign
+10:58:41 !!        got  19 of 49 stage(s) differ
+10:58:41 !! sentinel written: .../results/h200/_control_arm/classic/ARM_NOT_VERIFIED
+10:58:41 !! engagement record: .../_control_arm/_engagement/classic/f03.verify.json
+10:58:42 !! aborting the whole run (remaining families and remaining arms).
+```
+
+and the `detail` string recorded in `f03.verify.json`, which is the sentence that made the
+abort look authoritative:
+
+> `f03/f10 grids are uncapped and carry no Hopper overlay, so a size change means the harness
+> itself changed: decode_bs1/add/refine 88->50; decode_bs1/fused/refine 56->44;
+> decode_bs1/norm/refine 50->38; decode_bs1024/fused/refine 62->54`
+
+`V9` was the **only** failure: `verdict: FAILED, n_fail: 1`. Every other check passed or was
+correctly recorded vacuous.
+
+#### The early-abort design worked, and it should be kept
+
+Say this plainly, because the temptation after a false positive is to loosen the gate itself
+rather than the one wrong check inside it. `f03` runs **first** precisely so that a problem
+surfaces in a minute instead of at the end of a 1.3 h arm, and that is exactly what happened.
+The cost of this false positive was **~1 minute of GPU time plus one round trip** — not 1.3 h,
+not seven families of unusable data. Had `V9` been non-fatal and the arm run to completion,
+the same defect would have surfaced on `f10` too (§ below) and the operator would have found
+out after the whole arm instead of after one family. The ordering rule in §7 is load-bearing
+and stays. What changes is the content of one check, not the abort policy.
+
+#### Diagnosis: V9 read a measured quantity and demanded bit-equality of it
+
+Three independent diagnosis passes over the returned tree agree, and the finding is
+demonstrated rather than argued.
+
+**1. The offered grid did not change at all.** Split the 49 compared stages by stage name
+(`results/h200/_control_arm/classic/f03_resadd_rmsnorm.json` vs
+`results/h200/f03_resadd_rmsnorm.json`, through the driver's own `_grid_stages`):
+
+| stage | compared | differ |
+|---|---|---|
+| `coarse` | 21 | **0** — every one at `n_tried` 164 on both sides |
+| `refine` | 21 | 14 |
+| `unfused_chain/joint` | 7 | 5 |
+
+21 + 14 + 5 gives V9's 19 of 49 exactly. **Zero coarse differences.** The grid the bench
+*offers* is byte-identical between the arms, which is the only part of the block a Hopper
+overlay could ever have touched.
+
+**2. The differences move in BOTH directions.** Systematic removal of Hopper configs shrinks
+monotonically. These do not: `decode_bs1/add/refine 88→50`, `decode_bs32/add/refine 82→46`,
+`decode_bs512/fused/refine 66→28`, `prefill_t8192/add/refine 66→28` — but also
+`decode_bs512/norm/refine 28→46`, `decode_bs256/add/refine 54→66`,
+`prefill_t2048/norm/refine 46→62`, `decode_bs32/norm/refine 50→56`,
+`decode_bs256/unfused_chain/joint 12→16`. Range −38 to +18.
+
+**3. The mechanism: `refine` is built from the coarse stage's TIMING WINNER.** The
+preliminary diagnosis named `common.py:893 neighbours(best, grid, max_out=96)` and the
+property is real there — `i = s.index(best[k]); moves[k] = [s[j] for j in (i-1, i+1) …]` — but
+`f03` does not use it. `common.py:1069` reads `rg = refine(best_cfg) if callable(refine) else
+neighbours(best_cfg, coarse, max_out=refine_max)`, and `f03` passes its **own** generator:
+`bench_f03_resadd_rmsnorm.py:98-109` `refine_grid(best)` indexes `BLOCKS`/`ROWSET`/`WARPS` at
+the winner and takes `(i-1, i, i+1)` clipped to the array. **A winner on an edge of the ladder
+yields a strictly smaller neighbourhood than an interior one**, and `_stage()` additionally
+skips configs already timed (`common.py:1017-1021`), so overlap with the coarse set moves the
+count again. Worked example, from the `tune_tables` block of the two files:
+`decode_bs1/add`, campaign winner `BLOCK_N=2048` (interior of
+`BLOCKS=[512,1024,2048,4096,8192]`, three neighbours) → refine 88; classic winner
+`BLOCK_N=8192` (boundary, two neighbours) → refine 50. The coarse `best_ms` that chose between
+them: **0.006816 ms vs 0.006272 ms.** A half-microsecond picks a different lattice corner and
+moves the stage size by 38 configs. A diagnosis pass re-implemented `refine_grid` offline from
+the probed H200 constants and it reproduces the coarse size (164) and then **predicts all 42
+observed refine sizes exactly, in both arms, from the winner alone — zero residual.** The
+generator provably did not change; only the winner did.
+
+The `joint` stage is worse: `bench_f03_resadd_rmsnorm.py:214-223` builds it as the deduplicated
+Cartesian product of `B.top_cfgs(a_c, k=2) + B.top_cfgs(a_r, k=2)` against the `norm`
+equivalent — i.e. of the **measured ranking** — so overlap between the coarse and refine top-2
+collapses the product by a data-dependent amount.
+
+**4. The campaign has no `fairness.grids` record for `decode_bs2/4/8/16`.** Confirmed: the
+campaign block covers only the 7 original regimes (the bs-extra merge carried rows but no
+grids block), the arm carries all 11 — 77 arm stages against 49 campaign stages. **But this
+contributed nothing to the abort**, and the preliminary diagnosis had the mechanism backwards:
+V9 compared `set(grid_now) & set(grid_was)`, so those 28 stages were **silently dropped**, not
+counted as differences. The denominator 49 *is* the intersection. It is nonetheless a real hole
+pointing the other way — 28 stages including **12 coarse** stages were checked by nothing, so a
+classic arm whose bs-extra coarse grid had been halved would have passed V9. Recorded here
+because a narrowing patch that did not also address it would have left the check net weaker.
+
+#### Why the check was wrong in principle
+
+`V9` asserted **bit-determinism of a quantity selected by p50 timings that differ run-to-run by
+~1e-3 ms**. That is not a property the harness has or should have, so the check would fail a
+Hopper-vs-Hopper rerun of identical code on identical hardware. This is not an inference — the
+repo already contains the counterfactual.
+
+`results/h200/_bs_extra_rerun/` is a full independent rerun of all seven families on the same
+card **with the Hopper levers ON** (`log/run_bs_extra_h200/f03.a1.log`: `hopper feats
+[tma,clusters,warp_specialize]`; `_bs_extra_rerun`'s f03 axes read `available=true` for all
+three, against the classic arm's `false`). It is the campaign's own arm, run twice. Replaying
+**V9's exact comparator** on it:
+
+| pair | stages differing | of which coarse |
+|---|---|---|
+| `f03` classic arm vs campaign (the abort) | 19 of 49 | **0** |
+| `f03` **Hopper rerun** vs campaign | 16 of 49 | **0** |
+| `f10` **Hopper rerun** vs campaign | 18 of 49 | **0** |
+
+**The old V9 would have failed the campaign against itself**, and — since `strict` was set for
+exactly `f03` and `f10`, the two families the driver runs *first* — this abort was structurally
+guaranteed on every invocation, not bad luck. Fixing it for `f03` alone would have bought the
+operator exactly one more family before the next false abort.
+
+Two corrections to the brief, so nobody re-derives them wrongly:
+
+- The demonstration comes from `_bs_extra_rerun/`, **not** from the `pre_bs_extra_*` snapshots.
+  Those are not independent runs: `f03_resadd_rmsnorm.pre_bs_extra_20260810_113328.json`
+  replays V9 at **0 of 49** against the campaign and carries identical timings. It is a
+  snapshot, not a second measurement.
+- Widened to all seven families, campaign vs `_bs_extra_rerun` (both Hopper-ON) gives
+  **231 offered-grid stages** (`coarse` 126 + `tune` 105; 238 counting the 7 `extra`) with
+  **0 differing**, against **233 winner-derived stages** with **46 differing** (`refine` 42 of
+  121, `joint` 4 of 112, `extra` 0 of 7). The split is total and it is not close.
+
+And `GLM52_H200_CLASSIC=1` could not have caused it even in principle: `f03` is offered no
+Hopper axis on **either** arm (`kernel_cfg_keys: "module advertises none"`, all three axes
+`offered: false`, `overlays_offered: []`), `B.widen()` returns the grid untouched when the
+overlay list is empty (`bench/__init__.py:1296-1312`), the child log records
+`[h200 axes] none offered for glm52_h200.kernels.add_rmsnorm: grids are the classic ones`, and
+`wgmma` has no consumer in the grid path at all — `add_rmsnorm.py:43` states the kernel has no
+`tl.dot`. A three-way comparison closes the last door: over the 49 stages present in campaign,
+Hopper-rerun and classic arm, the classic arm sides with the rerun against the campaign on 4
+stages and with the campaign against the rerun on 3. **There is no arm-specific structure.**
+
+#### The fix
+
+Landed in `run_control_h200.py` by the concurrent repair pass (I did not edit that file; this
+entry records the decision, the code is the authority).
+
+1. **New module constant `OFFERED_GRID_STAGES = frozenset({"coarse", "tune"})`**
+   (`run_control_h200.py:245`), written as an **allow-list, not a deny-list**, so a stage name
+   a bench grows later defaults to "not comparable" rather than silently becoming a fatal
+   equality assertion. This polarity is deliberate and must not be reverted: a deny-list of
+   `{refine, joint}` would still have asserted on `f01`'s `extra` stage, which is
+   `refine_grid(cfg)` over the fused side's own top configs
+   (`bench_f01_oproj_resadd.py:400-406`) and therefore winner-derived too. The docstring names
+   the producer line for every excluded stage.
+2. **V9 now compares `n_tried` only over `coarse`/`tune`, and only where both sides recorded a
+   value.** Still **fatal** for `f03`/`f10`. The assertion it now makes — *the OFFERED grid
+   changed, which no arm switch can do* — is the one its own docstring always claimed to make.
+3. **An empty comparison set is `INFO`, not `PASS`.** The old code computed `changed = []` and
+   reported `PASS` against `want: "identical to the campaign"` — a silent vacuous pass on the
+   only grid check that is fatal for the two noise-floor families. It now reads
+   `NO COMPARISON AVAILABLE … absence is not agreement and is not disagreement`.
+4. **New `V9d`, INFO only**: the refine/joint drift is still counted and printed, so the signal
+   is not discarded, only demoted. On the returned `f03` it reads `19 of 28 stage(s) differ`.
+5. The detail prose was rewritten. `"so a size change means the harness itself changed"` is
+   gone; the premise (uncapped, no overlay) is true and is exactly why the **coarse** size is
+   assertable, but the conclusion was being drawn over stages that are not offered grids.
+
+**The general rule adopted, and it governs every future check in this verifier:**
+
+> A fatal comparison may only read a quantity that is a **pure function of the code and the
+> probed device** — capability flags, static module attributes, offered grid sizes, live
+> `axis_counts`. Anything downstream of a *timing* is recorded as INFO and never asserted on.
+> A record the campaign does not carry is **VACUOUS / NO-COMPARISON**, never FAIL — and never
+> a silent PASS either.
+
+**Discriminating power was not lost, tested both directions.** On a deepcopy fixture of the
+staged file (built under the scratchpad; nothing under `_control_arm/` was written),
+perturbing `fairness.grids.decode_bs1.add.coarse.n_tried` 164→100 still gives
+`V9 FAIL "1 of 21 offered-grid stage(s) differ"`, and 164→820 (simulating overlays still being
+applied) likewise. Judged as a classic arm, Hopper data still produces 8 fatal failures each
+for `f03` and `f10` from `V1`/`V2`/`V4` alone — the capability-level checks, which are what
+actually proves engagement for these two families and which now carry the whole burden. V9 was
+never load-bearing for `f03`; it was surplus risk.
+
+**The rest of the verifier was audited and is clear.** All 16 checks were run over all 7
+families against two Hopper-vs-Hopper pairs and a bs-extra-only fixture; post-fix, **zero
+arm-independent checks fire**. `V5` (static `H200_CFG_KEYS`), `V8` (live `axis_counts`), `V11`
+(differential presence), `V6` (device/uuid), `V1`/`V2`/`V4` (capability-level), `V3`
+(overlays), `V10` (`f11`'s caps dump) each read a capability-, config- or static-module-derived
+quantity and each already treats campaign-side absence as INFO. `V9` was the only check in
+`verify_family` asserting equality of a data-dependent quantity. One item flagged and
+deliberately **left alone**: `V7` ("at least one offered axis appears as a winner") is
+timing-downstream by construction, but it fires only on the `hopper` arm, which is not in
+`DEFAULT_ARMS`, its margins are wide (winner counts 12–244 per family), and it produced no
+false positive in the counterfactual. Weakening a check with no observed failure would be the
+wrong trade; it is recorded so it is a known quantity if `--arms hopper` is ever run.
+
+#### Re-verification of the returned data — no GPU needed
+
+`verify_family` is a pure function of committed JSON. Re-run against the staged file with the
+fixed code:
+
+```
+VERDICT NOTHING-TO-DISABLE   n_fail 0
+V9  PASS  0 of 21 offered-grid stage(s) differ
+V9d INFO  19 of 28 stage(s) differ
+```
+
+with `V0b` PASS (exact redirect path match), `V1`/`V2` PASS on all three axes, `V4` PASS
+(`tma_form=none`, `ws_mode=none`), `V5` PASS, `V6` PASS (device + uuid), `V3`/`V7`/`V8`
+VACUOUS as before. **`NOTHING-TO-DISABLE`, not `ENGAGED`** — the §6 vacuity guard is doing its
+job: the arm is *proven* to have reached `hopper.caps()`, but for this family there was never
+anything at config level to turn off.
+
+That proof is independent of V9 and rests on four surfaces:
+
+- `axes.*.evidence` reads `hopper.caps().tma=False (source env); preflight probe
+  tma_tensor_descriptor=False` against the campaign's `…=True (source preflight)`. The
+  **env-vs-probe disagreement** recorded in the `ws`/`clusters` strings — env says `False`,
+  the live probe says `True` — is producible only by an override.
+- `not_offered_because` flipped from `"this kernel module advertises no cfg key for it"` to
+  `"the live capability probe says it is unavailable"`, exactly as §5 check 2 required.
+- `tma_form` `"device"`→`"none"`, `ws_mode` `"range"`→`"none"`.
+- `f03.classic.a1.log:5` `… | hopper feats [none] | preflight ok | results ->
+  …/_control_arm/classic` and `:18` `tma=False ws=False clusters=False wgmma=False | src env |
+  probe skipped`, against the campaign's `hopper feats [tma,clusters,warp_specialize]` and
+  `src preflight`. **`src env` vs `src preflight` is the discriminator.**
+
+`kernel_cfg_keys` stayed `"module advertises none"` on both sides, so nobody edited the kernels
+between sessions, and `_meta.harness_info.features.disabled` went `[]` →
+`["tma","ws","warp_specialize","clusters"]`.
+
+#### What the operator does next — and `f03` is NOT re-measured
+
+**The returned `f03` data does not need re-measuring.** It is 11/11 regimes, `complete: true`,
+paired, on the campaign's own card, and the only thing wrong with it was the adjudication.
+
+On the H200 box, after pulling the V9 fix:
+
+    python3 run_control_h200.py --verify-only --families f03
+
+No GPU work beyond one `nvidia-smi` snapshot, no child launched (`run_control_h200.py:2202`,
+`:2471`). Expect `NOTHING-TO-DISABLE`, `n_fail 0`. The driver removes
+`results/h200/_control_arm/classic/ARM_NOT_VERIFIED` itself when every family *in scope*
+re-verifies (`:2687-2703`) — so scope it to `f03`, since the six unmeasured families would
+otherwise fail `V0` "missing or unreadable" and keep the sentinel. Then:
+
+    python3 run_control_h200.py
+
+and **note the three traps**:
+
+- **Drop `--gpu 7`.** The driver refused it on 2026-08-11 because it contradicts the campaign
+  card at index 0, which it pins automatically.
+- **Do not pass `--force-rerun`.** `f03`'s staged file already has all 11 regimes at mult 1, so
+  `run_family_stage` reports "f03 is done" and skips it at zero cost. `--force-rerun` would
+  discard the very data this entry validates and re-measure from zero.
+- **Do not delete the sentinel by hand while it is still present** and then relaunch expecting
+  a measurement — with the sentinel in place the driver takes the `resume_verify_only` path
+  (`:2436`) and launches **nothing**, so a plain relaunch would re-verify `f03`, hit `f10` with
+  no staged JSON, fail `V0`, and measure nothing at all. Order matters: verify, then let the
+  sentinel be removed, then relaunch.
+
+Expected cost for the six remaining families: **~1.3 h** (campaign wall times `f10` 108 s,
+`f01` 4 min, `f06` 15 min, `f08f09` 19 min, `f11` 19 min, `f04f05` 21 min). Then, locally,
+`python3 glm52/make_control_report_h200.py`.
+
+The §7 prohibition still stands: **do not run `run_h200.py` on that box while `_control_arm/`
+is staged** — its `quarantine_foreign_results` sweep will move the staged `_ckpt/` files.
+
+#### Status of the measurement itself
+
+`f03`, 11 of 11 regimes, and it is **the noise floor** the whole design rests on. Paired
+speedup, campaign → classic arm (`rows[*].speedup`, both files):
+
+| regime | campaign | classic | d |
+|---|---|---|---|
+| `decode_bs1` | 2.1644 | 2.2407 | **+3.52 %** |
+| `decode_bs2` | 2.1522 | 2.0434 | **−5.06 %** |
+| `decode_bs4` | 2.1727 | 2.1736 | +0.04 % |
+| `decode_bs8` | 2.1543 | 2.1943 | +1.86 % |
+| `decode_bs16` | 2.0986 | 2.1911 | **+4.41 %** |
+| `decode_bs32` | 2.2024 | 2.1020 | **−4.56 %** |
+| `decode_bs256` | 2.0325 | 1.9676 | −3.19 % |
+| `decode_bs512` | 2.0513 | 1.9628 | **−4.31 %** |
+| `decode_bs1024` | 1.9486 | 1.9706 | +1.13 % |
+| `prefill_t2048` | 1.9597 | 1.9327 | −1.38 % |
+| `prefill_t8192` | 1.3287 | 1.3351 | +0.48 % |
+
+mean **−0.64 %**, median **+0.04 %**, sample stdev **3.31 %**, max |d| **5.06 %**, **no sign
+flip anywhere**. On the 7 regimes that have a same-session campaign baseline the classic arm's
+spread (max |d| 4.56 %, stdev 3.04 %) is **smaller** than the Hopper-vs-Hopper repeat's
+(max |d| 5.83 %, stdev 3.39 %) — the arm deviates from the campaign by *less* than identical
+code does. This is half of the §4 band (`f10` supplies the other 11 samples), so the band is
+not yet computed and §4's `median(d)` drift-bias figure stays unfilled.
+
+**Publish the ratio, not the milliseconds.** Raw times moved much further — `fused_ms` −15.1 %
+to +29.6 %, `unfused_ms` −11.6 % to +22.2 % — but they move the *same sign on both sides of
+every pair* (`decode_bs256` fused +29.62 % / unfused +21.56 %), which is correlated session
+drift, not an arm effect; the Hopper-vs-Hopper repeat shows the same behaviour. For scale, the
+p10–p90 spread *inside* a single cell is ~3× (`decode_bs1` classic fused p10 0.0364 / p90
+0.1077 ms) and `ratio_halves` drift within a single run is 4–22 % in both arms.
+
+Numerics and session health are clean: all 11 regimes `complete: true`, `paired: true`,
+`n_discarded: 0`, `machine_suspect: false`, `tick_limited: false`, `timer_tick_match_frac: 1.0`,
+`frac_fused_faster` ≥ 0.9833, `rel_err` 0.0 on every decode regime and bit-identical to the
+campaign at the large ones (`bs1024` 5.03e-03, `t2048` 2.59e-03, `t8192` 2.38e-03, tol 0.02);
+preflight harness floor **39.46 µs** (bar `FLOOR_US_MAX=50.0`, `glm52_h200/config.py:272`),
+floor/launch 3.84× (bar 8.0), tick 0.032 µs on 200/200 exact multiples. The campaign tree was
+untouched: canary `fingerprint_ok: true` over 28 files, and every `results/h200/*.json` predates
+the run.
+
+**Six families remain unmeasured (`f10`, `f01`, `f04f05`, `f11`, `f06`, `f08f09`) and no
+verdict on the study question is possible.** §1's **Verdict** line stays empty. Nothing here
+says anything about whether the Hopper levers matter; it says the harness and the control arm
+work, and it fixes the reason we could not find out.
+
+#### Three smaller findings from the run record, none of them verifier defects
+
+1. **A false `--regimes` warning.** `driver.log 10:57:38` prints
+   `!! bench_f03_resadd_rmsnorm.py advertises no --regimes flag; the request was passed only
+   via GLM52_REGIMES and may be ignored by this bench`, and `control_arm_summary.json` records
+   `unhonoured_flags: ["--regimes"]`. **This is false**: the bench does accept `--regimes`
+   (registered by `B.add_std_args`, consumed at `bench_f03_resadd_rmsnorm.py:393`
+   `B.resolve_regimes(C, args.regimes)`), the driver passed it on the command line, and all 11
+   regimes ran. The static flag scan simply cannot see a flag added by a helper. Cosmetic — but
+   it plants a false doubt about regime coverage in the exact artefact an auditor reads, and it
+   will reappear for the other six families. The message should say *not detectable by static
+   flag scan*.
+2. **`log/run_control_h200/preflight_h200.campaign.json` is misnamed.** The driver re-probed
+   and replaced `glm52_h200/preflight_h200.json` in place (`10:57:29`) because the cached probe
+   described GPU 7. The copy it preserved is **that stale GPU-7 probe** (uuid `3aa19cef`,
+   `argv --gpu 7`, ts 2026-08-10 11:33:19), **not** the campaign f03's own 2026-08-07 10:30:37
+   probe. Nothing is lost — the campaign's probe survives in substance in
+   `results/h200/summary.json.preflight` — but anyone reading that filename for the campaign's
+   card gets the wrong UUID.
+3. **A doc-count error inside the landed V9 comment.** It reads "identical in 126 of 126 stages
+   across all seven families". 126 is the `coarse`-only count; adding `tune` (105) gives
+   **231 of 231**, and 238 of 238 including `extra`. The true claim is *stronger* than the one
+   written. The `(see OFFERED_GRID_STAGES)` reference at ~`:1420` also reads backwards after
+   the rename, since it sits in a sentence describing which stages are winner-*derived*.
+   Both are for the owner of `run_control_h200.py`, not for this log.
+
+#### Two things worth building before the next round trip
+
+- **A regression fixture, so V9 cannot re-acquire this defect.** The adversarial input already
+  exists in the repo: `results/h200/f03_resadd_rmsnorm.json` vs
+  `results/h200/_bs_extra_rerun/f03_resadd_rmsnorm.json` (and the `f10` pair). A test asserting
+  *V9 PASSES on a Hopper-vs-Hopper pair, and FAILS when a coarse `n_tried` is perturbed* pins
+  both halves. Read the result files; never write to them.
+- **Close the 28-stage coverage hole.** The campaign carries no grids block for
+  `decode_bs2/4/8/16`, so 28 arm stages — 12 of them `coarse` — are compared against nothing.
+  Since the campaign's `f03` coarse values are a single distinct value (164), the arm-side
+  coarse stages in those regimes can be asserted against it directly; where a family's campaign
+  coarse values are not unique, fall back to INFO rather than guessing. And a **collapse
+  guard** is the assertion `refine`/`joint` should carry instead of equality: FAIL only when a
+  stage that was non-zero in the campaign is 0 or missing in the arm. `common.py:1072` swallows
+  a raising refine generator and continues with `rg = []`, which is a genuine engagement
+  failure the old V9 could not distinguish from noise. On the returned data there is no
+  collapse: min refine 28, max 82, min joint 6, and all 33 arm-side coarse stages equal 164.
+
+#### Caveats that survive and belong in the eventual writeup
+
+1. `f03`'s correct verdict is **`NOTHING-TO-DISABLE`, not `ENGAGED`** — it constrains the
+   harness, not the hypothesis.
+2. The comparison is **cross-session by design** (§4): control 2026-08-11 against a campaign of
+   2026-08-07. Mitigated — same card by UUID, DRAM bandwidth reproducing to 0.03 % — never
+   eliminated.
+3. `GLM52_H200_CLASSIC=1` forces `wgmma` off too (§3), one lever beyond the three the study
+   names.
+4. `f03` sits **above** its modelled 1.25× DRAM ceiling in every regime in **both** arms. That
+   is launch-overhead dominance (`ceiling_with_launch` is 1.999 at `decode_bs1`) and a
+   pre-existing campaign property, not a control-arm artefact — but it must not be quietly
+   carried into a bandwidth-framed claim.
+
+### 2026-08-11 (later) — four more defects found by re-verifying the repair, three of them in the recovery path itself
+
+Repairing V9 was not the end of it. Verifying the repair surfaced a **critical** defect in the
+path the operator would take next, plus three majors. All are fixed; each is recorded because
+each would have cost another round trip or produced a false record.
+
+**1. (critical) A plain relaunch would have measured NOTHING and aborted at `f10`.**
+`resume_verify_only = sentinel.exists() and not args.force_rerun` was **arm-wide**, and it
+gated the launch decision for *every* family. With `ARM_NOT_VERIFIED` on disk from the V9
+abort, all seven families would have taken the "not launching" branch — including the six that
+have no staged JSON at all. Those six would then fail V0 *"missing or unreadable"*, the arm
+would fail, and the run would exit having burned a round trip to measure nothing. The recovery
+path was a trap. It is now **per family**: a family is re-verified instead of re-measured only
+when its own staged payload already covers the whole regime scope. Demonstrated against a
+mirror of the returned tree:
+
+```
+  [classic/f03]    staged payload covers the 11-regime scope     -> re-verify only
+  [classic/f10]    staged payload does NOT cover the 11-regime scope -> MEASURE
+  [classic/f01]    ... -> MEASURE      [classic/f04f05] ... -> MEASURE
+  [classic/f11]    ... -> MEASURE      [classic/f06]    ... -> MEASURE
+  [classic/f08f09] ... -> MEASURE
+```
+
+**2. (major) A 1-of-7 arm could clear the arm-wide "unverified" record.** The sentinel removal
+was gated on `not arm_failed`, which means "nothing *in scope* failed" — not "the arm is
+verified". Under `--families f03` the other six never enter the loop, so `arm_failed` stays
+False and the run would unlink the sentinel, set `verified: True` and `sentinel: None`. That is
+one of only four independent records saying an arm is unpublishable, and the only one the
+report generator can still see if a tarball loses the rest. Removal now additionally requires a
+**complete** family scope; a partial run logs `ARM_NOT_VERIFIED KEPT` and records
+`partial_scope`. Confirmed: `--verify-only` against the returned tree re-verifies `f03` to
+`NOTHING-TO-DISABLE, n_fail=0` and **keeps** the sentinel, correctly, because six of seven
+families are unmeasured.
+
+**3. (major) `launched_any` was set even when a stage launched no child**, which silently
+retired the staging-redirect pre-commitment check for the whole resumed run — the check that
+fires after the first attempt of the first family and stops the run before the campaign's
+`_ckpt` cache can be read. Now `launched_any = launched_any or bool(stage.get("attempts"))`.
+
+**4. (major) V9's own prose repeated the mistake that caused this incident.** It printed *"the
+OFFERED grid changed, which no arm switch can do"* for **any** family. That is true only of
+`f03`/`f10`, which are offered no axis and whose `widen()` is a no-op. For the five overlay
+families a disabling arm is *supposed* to shrink the offered grid, so the sentence was
+authoritative and false in exactly the way the original V9 detail string was. The wording now
+branches three ways, verified by mutation against real files:
+
+| input | verdict | wording |
+|---|---|---|
+| `f03` strict, offered grid halved | **FAIL** | "…which no arm switch can do **for a family that is offered no Hopper axis**" |
+| `f01`, uniform shrink | INFO | "the offered grid **SHRANK, which is what this arm predicts**" |
+| `f01`, mixed shrink+grow | INFO | "changed, **not uniformly a shrink — inspect before trusting this arm**" |
+
+**The verifier is still a verifier.** After all of the above, the real campaign files (Hopper
+levers ON) judged as a `classic` arm are refused for every family — `f03`/`f10` `n_fail=8`
+(V1/V2/V4); `f01`/`f06`/`f08f09` `n_fail=18`; `f04f05` `n_fail=15`; `f11` `n_fail=31`
+(adding V10). The `f03`/`f10` vacuity guard still reports `NOTHING-TO-DISABLE` rather than
+`ENGAGED`, on forged de-Hopperised fixtures and on the real returned data alike.
+
+**One process note, and it is embarrassing enough to record.** Local `--list` / `--dry-run`
+runs during this repair appended 234 lines to the operator's returned
+`log/run_control_h200/driver.log` — the incident record itself — because they default to that
+log directory. It was restored from git (`git checkout --`) and subsequent local runs were
+redirected with `--log-dir`. `log/run_control_h200/.gitignore` already warns about exactly this
+("a local `--dry-run` / `--list` on a dev box writes the same filename here… Delete a local one
+before committing"); the warning was right and I still walked into it. Everything under
+`results/h200/_control_arm/` is byte-identical to what the operator sent.
+
+### *(appended when the remaining six families return)* — results
 
 To carry: the delta table in LOG-16 §8.4's form — regime rows, one column per family, values
 bolded where they fall outside the band, with the `f03`/`f10` columns visually separated as the

@@ -210,6 +210,55 @@ SCAN_EXCLUDED_KEYS: frozenset[str] = frozenset({
 #: verifier say "the tuner never picked it" separately from "the grid never contained it".
 SCAN_TABLE_KEYS: frozenset[str] = frozenset({"table", "tables"})
 
+#: `fairness.grids.<regime>.<arm>.<stage>` stage names whose grid is a PURE FUNCTION OF THE
+#: CODE -- the grid the bench OFFERS, built before anything is timed. Only these may have
+#: their `n_tried` asserted equal across two runs.
+#:
+#: Stated as an ALLOW-list, not a deny-list, so a stage name added to a bench later defaults
+#: to "not comparable" (INFO) instead of silently becoming a fatal equality assertion.
+#:
+#:   coarse -- the bench's own `coarse_grid()`; f03 164 configs, f10 188, both uncapped.
+#:             The capped families sit at their cap (f01 220, f06/f08f09 200, f11 180).
+#:   tune   -- a single-stage search over a grid the bench built, not over a winner's
+#:             neighbourhood. Observed sizes: f04f05 42/83/240/301/557 by sub-arm, f06 270,
+#:             f08f09 7/10/17/132/144, f11 164. One caveat, harmless and recorded rather
+#:             than left to be found: f08f09's `unfused_sum_res` / `fused_seed_res` tune
+#:             stages search `B.top_cfgs(ts0, k=10)`, whose CONTENT is winner-derived but
+#:             whose SIZE is pinned at k. f08f09 is not in the strict set below in any case,
+#:             so nothing fatal rests on it.
+#:
+#: EVERYTHING ELSE is downstream of a measurement and moves run-to-run:
+#:   refine -- `common.py:1069` builds it as `neighbours(best_cfg, coarse)` / the bench's own
+#:             `refine_grid(tc.best_cfg)`, where `best_cfg` is the COARSE STAGE'S TIMING
+#:             WINNER. A different winner is a different neighbourhood is a different size.
+#:             `_stage()` also skips any config already timed (common.py:1017-1021), so the
+#:             count depends on how far the refine set overlaps the coarse set.
+#:   joint  -- the unfused-chain re-tune, built from `top_cfgs(...)` over the two MEASURED
+#:             per-side searches and then DEDUPLICATED (bench_f03:216-231). Top-k by measured
+#:             ms; the dedup then collapses a data-dependent number of pairs.
+#:   extra  -- f01:400-406, `refine_grid(cfg)` over the fused side's own top configs.
+#:
+#: MEASURED, not asserted. `results/h200/_bs_extra_rerun/*.json` is an independent rerun of
+#: the same benches, same code, same card, with the Hopper levers ON -- i.e. the campaign's
+#: own arm, run twice. Against `results/h200/*.json` its `coarse`/`tune` sizes are identical
+#: in 231 of 231 shared stages across all seven families (126 coarse + 105 tune; per family
+#: f01 14, f03 21, f04f05 56, f06 21, f08f09 63, f10 21, f11 35), while `refine`/`joint`/
+#: `extra` differ in 46 of 240 and in BOTH DIRECTIONS: f03 16 of 28, f10 18 of 28, f01 4 of
+#: 35, f11 5 of 42, f06 2 of 21, f08f09 1 of 58. Two-directional movement is noise, not a
+#: shrinking grid. (`extra` happened to match 7 of 7 in that one pair. It stays OUT of the
+#: allow-list anyway: it is `refine_grid()` over a measured top-k by construction, and one
+#: clean pair is not a licence to assert bit-determinism of a winner-derived size.)
+#:
+#: SECOND PROPERTY, the one `V9b` rests on: within a family, an offered stage's size is also
+#: constant ACROSS REGIMES, because these grids are built from the module's advertised cfg
+#: keys and the probed device, not from the shape. Every (sub-arm, stage) pair above holds a
+#: single distinct value over the campaign's 7 regimes AND over the rerun's 11 -- with one
+#: real exception that proves the rule and that V9b must therefore detect rather than assume
+#: away: f08f09's `tokmaj8/coarse` takes 30 or 243 depending on the regime. So V9b may only
+#: extrapolate a value the campaign recorded IDENTICALLY on every regime it did record, and
+#: must fall back to INFO otherwise.
+OFFERED_GRID_STAGES: frozenset[str] = frozenset({"coarse", "tune"})
+
 #: There is deliberately NO floor bar constant here. `glm52_h200/config.py:272` defines
 #: `FLOOR_US_MAX = 50.0` and `glm52/make_control_report_h200.py:139` keeps its own copy in
 #: sync with it through `check_bar_sync()`. A third copy in this driver was defined and never
@@ -1374,27 +1423,160 @@ def verify_family(arm: Arm, fam_key: str, payload: dict | None, child_logs: list
                 "every dict should collapse to {_total_cfgs: N}"
                 if not bad else "; ".join(bad[:3]))
 
-    # ---- V9: grid-size corroboration, INFO only unless f03/f10 -------------------------
+    # ---- V9: OFFERED-grid corroboration, INFO only unless f03/f10 ----------------------
     # Coarse `_total_cfgs` is pinned at each bench's COARSE_CAP (f01 220, f06/f08f09 200,
     # f11 180, f04f05 router 240), so shrinkage is NOT predictable there. f03 (164) and f10
     # (188) are UNCAPPED base grids and must be identical across arms -- and that is the one
     # grid check that is meaningful for the two noise-floor families, so for them it FAILS.
-    grid_now = {f"{r}/{a}/{s}": sd.get("n_tried")
+    #
+    # WHAT THIS CHECK MAY AND MAY NOT READ, and why the distinction cost a round trip.
+    # Only the stages named in OFFERED_GRID_STAGES -- `coarse` and `tune`, the grid the bench
+    # OFFERS, a pure function of the code -- are compared. Everything else (`refine`, `joint`,
+    # `extra`) is built from the COARSE STAGE'S TIMING WINNER: `glm52_h200/common.py:1069`
+    # takes the winner of `_stage(coarse, "coarse")` and expands it through
+    # `neighbours(best_cfg, coarse)` -- or the bench's own `refine_grid(tc.best_cfg)` -- so an
+    # edge winner yields a strictly smaller neighbourhood than an interior one. Their size is
+    # downstream of a measurement and is NOT reproducible even Hopper-vs-Hopper.
+    #
+    # DO NOT "RESTORE" THE STRICT COMPARISON OVER ALL STAGES. The 2026-08-11 control arm
+    # was aborted by this check reporting "19 of 49 stage(s) differ" on f03 -- 14 refine and
+    # 5 joint, zero coarse, and moving in both directions (88->50 but also 28->46). The same
+    # comparison run between `results/h200/_bs_extra_rerun/f03_resadd_rmsnorm.json` and the
+    # campaign -- two Hopper arms, same code, same card -- reports 16 of 49, so the old check
+    # would have failed the campaign against itself. It asserted bit-determinism of a
+    # timing-derived quantity.
+    #
+    # The discriminating power is not weakened by the narrowing: the OFFERED grid is exactly
+    # what changes if the harness changed or if an overlay was applied, and the coarse/tune
+    # sizes were identical in 231 of 231 shared stages over that pair AND in 21 of 21 for the
+    # real classic arm. V5 covers the static module attribute; V8 covers the per-axis live
+    # counts inside the same stages; V9b below covers the offered stages the intersection
+    # drops, so the narrowing is not a net weakening.
+    grid_now = {f"{r}/{a}/{s}": (s, sd.get("n_tried"))
                 for r, a, s, sd in _grid_stages(payload)}
-    grid_was = {f"{r}/{a}/{s}": sd.get("n_tried")
+    grid_was = {f"{r}/{a}/{s}": (s, sd.get("n_tried"))
                 for r, a, s, sd in _grid_stages(campaign)}
-    changed = [k for k in sorted(set(grid_now) & set(grid_was))
-               if grid_now[k] != grid_was[k]]
+    both = sorted(set(grid_now) & set(grid_was))
+    # A stage present on only ONE side is NO COMPARISON, never a disagreement: the campaign
+    # `fairness.grids` block covers the 7 original regimes only -- decode_bs2/4/8/16 were
+    # merged in from `run_bs_extra_h200.py`, which carried rows but no grids block -- and
+    # every arm here measures 11. Same for an `n_tried` that was never recorded.
+    offered = [k for k in both
+               if grid_now[k][0] in OFFERED_GRID_STAGES
+               and grid_now[k][1] is not None and grid_was[k][1] is not None]
+    unrecorded = [k for k in both
+                  if grid_now[k][0] in OFFERED_GRID_STAGES
+                  and (grid_now[k][1] is None or grid_was[k][1] is None)]
+    derived = [k for k in both if grid_now[k][0] not in OFFERED_GRID_STAGES]
+    changed = [k for k in offered if grid_now[k][1] != grid_was[k][1]]
+    drifted = [k for k in derived if grid_now[k][1] != grid_was[k][1]]
     strict = fam_key in ("f03", "f10")
-    add("V9", None, "$.fairness.grids.*.*.*.n_tried",
-        "identical to the campaign" if strict else "(corroboration only)",
-        f"{len(changed)} of {len(set(grid_now) & set(grid_was))} stage(s) differ",
-        ("FAIL" if (strict and changed) else ("INFO" if not strict
-                                              else "PASS")),
-        ("f03/f10 grids are uncapped and carry no Hopper overlay, so a size change means "
-         "the harness itself changed: " + "; ".join(
-             f"{k} {grid_was[k]}->{grid_now[k]}" for k in changed[:4])) if changed
-        else "grid sizes are corroboration, not proof; a capped coarse grid cannot shrink")
+    if not offered:
+        add("V9", None, "$.fairness.grids.*.*.<coarse|tune>.n_tried",
+            "identical to the campaign", "no offered-grid stage on both sides", "INFO",
+            "NO COMPARISON AVAILABLE: this family records no coarse/tune stage that the "
+            "campaign baseline also records, so there is no reproducible grid size to "
+            "compare. Absence is not agreement and is not disagreement.")
+    else:
+        add("V9", None, "$.fairness.grids.*.*.<coarse|tune>.n_tried",
+            "identical to the campaign" if strict else "(corroboration only)",
+            f"{len(changed)} of {len(offered)} offered-grid stage(s) differ",
+            ("FAIL" if (strict and changed) else ("PASS" if strict else "INFO")),
+            # The wording MUST branch on `strict`. "no arm switch can do this" is true only
+            # for f03/f10, which are offered no axis and whose widen() is a no-op. For the
+            # five overlay families a disabling arm is SUPPOSED to shrink the offered grid
+            # -- bench/__init__.py widen() stops adding the Hopper overlays -- so printing
+            # "which no arm switch can do" there is exactly the authoritative-but-false
+            # phrasing that made the V9 false abort read as decisive (LOG-18, 2026-08-11).
+            (("the OFFERED grid changed, which no arm switch can do for a family that is "
+              "offered no Hopper axis -- " if strict else
+              ("the offered grid SHRANK, which is what this arm predicts (widen() stops "
+               "adding the Hopper overlays) -- " if all(
+                   grid_now[k][1] < grid_was[k][1] for k in changed) else
+               "the offered grid changed, not uniformly a shrink -- inspect before "
+               "trusting this arm -- "))
+             + "; ".join(f"{k} {grid_was[k][1]}->{grid_now[k][1]}" for k in changed[:4]))
+            if changed else
+            ("the offered grid is byte-identical to the campaign's; a capped coarse grid "
+             "cannot shrink, so this is corroboration, not proof"
+             + (f" ({len(unrecorded)} further offered stage(s) carry no n_tried on one "
+                f"side and were not compared)" if unrecorded else "")))
+
+    # ---- V9b: the offered stages the INTERSECTION DROPS ---------------------------------
+    # V9 above compares `set(now) & set(was)`, and the campaign's `fairness.grids` block
+    # covers only the 7 original regimes: decode_bs2/4/8/16 were merged in from
+    # `run_bs_extra_h200.py`, which carried rows but no grids block, while every arm here
+    # measures 11. For f03 that silently drops 28 staged stages, 12 of them COARSE -- the one
+    # genuinely deterministic quantity in the whole block. Narrowing V9 without closing this
+    # hole would leave an arm whose bs-extra coarse grid had been HALVED passing every grid
+    # check, i.e. the repair would be a net weakening.
+    #
+    # A per-regime value the campaign never recorded cannot be compared against a per-regime
+    # value; asserting on an absent record is precisely the failure mode this whole check is
+    # being repaired for. So V9b compares against something the campaign DID record: the
+    # family's (sub-arm, stage) CONSTANT. An offered grid is built from the module's
+    # advertised cfg keys and the probed device, not from the shape, so it does not vary by
+    # regime -- but that is asserted only where the campaign DEMONSTRATES it, by recording one
+    # single distinct value over at least two of its own regimes. Where it does not, the stage
+    # is reported as having no campaign record to compare against and is NOT judged. That
+    # escape hatch is load-bearing, not defensive boilerplate: f08f09's `tokmaj8/coarse` is
+    # genuinely 30 on some regimes and 243 on others.
+    #
+    # Validated on real data: run with the campaign as baseline and the 11-regime Hopper
+    # `_bs_extra_rerun` as the arm -- which is exactly this case, four regimes the campaign
+    # has no grids for -- V9b judges every extrapolable bs-extra stage CORRECT for all seven
+    # families and raises zero false positives.
+    camp_const: dict[tuple[str, str], set] = {}
+    camp_regimes: dict[tuple[str, str], set] = {}
+    for _r, _a, _s, _sd in _grid_stages(campaign):
+        if _s in OFFERED_GRID_STAGES and _sd.get("n_tried") is not None:
+            camp_const.setdefault((_a, _s), set()).add(_sd.get("n_tried"))
+            camp_regimes.setdefault((_a, _s), set()).add(_r)
+    v9b_ok: list[str] = []
+    v9b_bad: list[str] = []
+    v9b_none: list[str] = []
+    for _r, _a, _s, _sd in _grid_stages(payload):
+        if _s not in OFFERED_GRID_STAGES or f"{_r}/{_a}/{_s}" in grid_was:
+            continue                     # winner-derived, or V9 already compared it directly
+        got = _sd.get("n_tried")
+        if got is None:
+            continue
+        seen = camp_const.get((_a, _s)) or set()
+        if len(seen) == 1 and len(camp_regimes.get((_a, _s), ())) >= 2:
+            want = next(iter(seen))
+            (v9b_ok if got == want else v9b_bad).append(f"{_r}/{_a}/{_s} {want}->{got}")
+        else:
+            v9b_none.append(f"{_r}/{_a}/{_s}")
+    if v9b_ok or v9b_bad:
+        add("V9b", None, "$.fairness.grids.<arm-only regime>.*.<coarse|tune>.n_tried",
+            "equal to the campaign's family-constant offered size",
+            f"{len(v9b_bad)} of {len(v9b_ok) + len(v9b_bad)} arm-only offered stage(s) differ",
+            ("FAIL" if (strict and v9b_bad) else ("PASS" if not v9b_bad else "INFO")),
+            ("the offered grid changed on a regime the campaign has no grids block for -- "
+             + "; ".join(v9b_bad[:4])) if v9b_bad else
+            ("closes the hole the V9 intersection leaves: these stages have no per-regime "
+             "campaign counterpart, but their size is a code property the campaign pins on "
+             "its own regimes, and the arm reproduces it"
+             + (f"; {len(v9b_none)} further stage(s) had no campaign constant to extrapolate "
+                f"and were not judged" if v9b_none else "")))
+    else:
+        add("V9b", None, "$.fairness.grids.<arm-only regime>.*.<coarse|tune>.n_tried",
+            "equal to the campaign's family-constant offered size",
+            f"0 of 0 judged, {len(v9b_none)} not extrapolable", "INFO",
+            "NO CAMPAIGN RECORD TO COMPARE AGAINST: the arm records no offered stage outside "
+            "the campaign's own regimes whose size the campaign pins to a single value over "
+            "at least two regimes. Absence is not agreement and is not disagreement.")
+
+    if derived:
+        add("V9d", None, "$.fairness.grids.*.*.<refine|joint|extra>.n_tried",
+            "(not comparable -- winner-derived)",
+            f"{len(drifted)} of {len(derived)} stage(s) differ", "INFO",
+            "refine is neighbours(<the coarse stage's timing winner>) (common.py:1069), "
+            "joint is a deduplicated top_cfgs() product over measured stages, extra is "
+            "refine_grid() over a measured top-k -- so these sizes move run-to-run on "
+            "IDENTICAL code and hardware (Hopper-vs-Hopper: f03 16 of 28, f10 18 of 28, in "
+            "both directions). Recorded so the drift stays visible, never asserted on. "
+            + "; ".join(f"{k} {grid_was[k][1]}->{grid_now[k][1]}" for k in drifted[:4]))
 
     # ---- V10: f11's caps dump, the strongest smoking gun in the corpus ------------------
     if fam_key == "f11":
@@ -1419,8 +1601,19 @@ def verify_family(arm: Arm, fam_key: str, payload: dict | None, child_logs: list
         if seen == 0:
             add("V10", None, "$.rows[*]...kernel_caps_report.hopper_caps",
                 "sources[cap]=='env'", "no caps report present", "INFO",
-                "f11 records 11 router and 8 moe caps dumps in the campaign; none were "
-                "found here, which is INFO because the bench may have died before them")
+                # Do NOT read this as a crash. The dumps are attached by
+                # bench_f11_lazy_prenorm.py's _ws_isolation, and under a warp-spec-disabling
+                # arm that function returns at its `ws_offered()` guard BEFORE the
+                # kernel_caps_report block runs -- so a HEALTHY classic f11 has zero dumps
+                # by construction. Saying "the bench may have died" here would send the
+                # operator hunting a failure that did not happen, which is the same
+                # authoritative-but-false phrasing that made the V9 abort read as decisive.
+                "f11 records 11 router and 8 moe caps dumps in the campaign; none here. "
+                "Under an arm that disables warp specialization this is EXPECTED, not a "
+                "crash: bench_f11_lazy_prenorm.py's _ws_isolation returns at its "
+                "ws_offered() guard before the kernel_caps_report block, so the dumps are "
+                "never attached. V10 is therefore structurally vacuous on this arm and "
+                "engagement rests on V1/V2/V4/V7/V8/V11, which are not")
         else:
             add("V10", None, "$.rows[*]...kernel_caps_report.hopper_caps.sources",
                 "'env' for " + ", ".join(sorted(arm.caps_off)),
@@ -1579,7 +1772,30 @@ def launch(log: R.Log, args: argparse.Namespace, arm: Arm, key: str, title: str,
         # that silently measured all 11 regimes into the staging tree. The explicit flag is
         # the only thing that works.
         extra += ["--regimes", ",".join(regimes)]
-    return R.run_family(log, fam, script, sub, staging, logdir, extra, gpu)
+    rec = R.run_family(log, fam, script, sub, staging, logdir, extra, gpu)
+    # `run_h200.run_family` (run_h200.py:1141-1147, :1229-1235) decides a flag was UNHONOURED
+    # purely from `script_flags()`, which greps the bench's own source and so misses every
+    # flag registered in `bench/__init__.py:add_std_args()`. It therefore logs
+    # "<bench> advertises no --regimes flag; the request was passed only via GLM52_REGIMES
+    # and may be ignored by this bench" and stamps `unhonoured_flags: ["--regimes"]` into the
+    # summary -- for a bench that DOES accept --regimes, that we DID put on argv four lines
+    # up, and that ran every regime we asked for. On 2026-08-11 that false warning sat in
+    # `control_arm_summary.json` next to a real abort and made regime coverage look doubtful
+    # when all 11 regimes had rows. Correct the record from the argv the record itself
+    # carries -- never from our own bookkeeping, and never for any other flag.
+    if isinstance(rec, dict) and isinstance(rec.get("unhonoured_flags"), list):
+        argv = [str(x) for x in (rec.get("cmd") or [])]
+        if "--regimes" in rec["unhonoured_flags"] and "--regimes" in argv:
+            rest = [f for f in rec["unhonoured_flags"] if f != "--regimes"]
+            if rest:
+                rec["unhonoured_flags"] = rest
+            else:
+                rec.pop("unhonoured_flags", None)
+            rec["regimes_flag"] = ("passed explicitly on argv; add_std_args registers it, "
+                                   "so script_flags() cannot see it by static scan")
+            log("  (the --regimes warning above is a static-scan artefact: the flag IS on "
+                "this child's argv and IS accepted via add_std_args)")
+    return rec
 
 
 def run_family_stage(log: R.Log, args: argparse.Namespace, arm: Arm, fam: R.Family,
@@ -2201,11 +2417,28 @@ def main(argv: list[str] | None = None) -> int:
                     # docstring that it contains no shutil.copy and no shutil.move, and that
                     # promise is worth more than the two characters it saves.
                     keep.write_bytes(R.PREFLIGHT_JSON.read_bytes())
+                    # The preserved file is the DISPLACED CACHE, not necessarily the
+                    # campaign's own probe: we are here precisely because the cache did not
+                    # describe the pinned card, so it may describe some other GPU entirely.
+                    # On 2026-08-11 it described GPU 7 (uuid 3aa19cef) while the campaign ran
+                    # on b2318e71. The filename says "campaign" for backward compatibility
+                    # with the runs that already wrote it; say what it actually holds.
+                    kept_uuid = "unknown"
+                    try:
+                        _k = json.loads(keep.read_text())
+                        kept_uuid = str(_jget(_k, "gpu_selection", "uuid")
+                                        or _jget(_k, "gpu", "uuid") or "unknown")
+                    except (OSError, ValueError, TypeError):
+                        pass
                     msg = (f"the cached preflight did not describe the pinned card, so it is "
                            f"being re-probed and {R.PREFLIGHT_JSON} will be REPLACED "
-                           f"in place. The campaign's copy was preserved at {keep} before "
-                           f"the probe ran. Pass --skip-preflight to reuse the campaign's "
-                           f"probe instead.")
+                           f"in place. The DISPLACED CACHE was preserved at {keep} before "
+                           f"the probe ran -- it describes gpu uuid {kept_uuid}, which is "
+                           f"NOT necessarily the campaign's card, so do not read it as the "
+                           f"campaign's probe despite the filename; the campaign's own probe "
+                           f"survives in results/h200/summary.json.preflight and in each "
+                           f"family's fairness.preflight. Pass --skip-preflight to reuse the "
+                           f"cached probe instead.")
                 except OSError as exc:
                     msg = (f"the cached preflight is about to be REPLACED in place by the "
                            f"re-probe and it could NOT be preserved first "
@@ -2392,10 +2625,31 @@ def main(argv: list[str] | None = None) -> int:
                     log(f"!! no bench found for {key} -- skipped.")
                     continue
 
-                if args.verify_only or args.dry_run or resume_verify_only:
+                # The sentinel resume is PER FAMILY, not arm-wide. It used to be arm-wide,
+                # and that turned the recovery path into a trap: after the V9 false abort
+                # (LOG-18, 2026-08-11) f03 was staged and the other six had never launched,
+                # so a plain relaunch skipped ALL SEVEN, every unlaunched family failed V0
+                # "missing or unreadable", and the run aborted having measured nothing --
+                # costing a third round trip on a machine nobody can reach. A family is
+                # re-verified instead of re-measured only when its own staged payload
+                # already covers the whole scope.
+                staged_covers_scope = False
+                if resume_verify_only:
+                    _pay, _ = load_json(staged_family_path(fam, staging, args.results_dir))
+                    _rows = regime_rows(_pay)
+                    _mult = canonical_mult(fam, args.results_dir)
+                    staged_covers_scope = bool(_rows) and all(
+                        len(_rows.get(r, ())) >= _mult for r in scope)
+                    log(f"  [{arm.name}/{key}] staged payload "
+                        f"{'covers' if staged_covers_scope else 'does NOT cover'} the "
+                        f"{len(scope)}-regime scope -> "
+                        f"{'re-verify only' if staged_covers_scope else 'MEASURE'}")
+
+                if args.verify_only or args.dry_run or staged_covers_scope:
                     why = ("--verify-only" if args.verify_only else
                            "--dry-run" if args.dry_run else
-                           f"{SENTINEL_NAME} present; re-verifying only")
+                           f"{SENTINEL_NAME} present and this family is already staged; "
+                           f"re-verifying only")
                     log("")
                     log(f"  [{arm.name}/{key}] not launching ({why}).")
                     stage = {"family": key, "arm": arm.name,
@@ -2419,7 +2673,10 @@ def main(argv: list[str] | None = None) -> int:
                                              args.results_dir, staging, logdir, gpu,
                                              scope, [], warnings, fp=fp,
                                              first_stage=not launched_any)
-                    launched_any = True
+                    # Only a stage that actually launched a child counts: otherwise a
+                    # resumed run marks the redirect PRE-COMMITMENT check as already spent
+                    # and never performs it on the first family that really does launch.
+                    launched_any = launched_any or bool(stage.get("attempts"))
                     R.check_tenants(log, gpu, f"after {arm.name}/{key}", warnings)
 
                 rec["fam_stages"][key] = stage
@@ -2506,7 +2763,31 @@ def main(argv: list[str] | None = None) -> int:
                     # one to '' and MOVES the file. An unstamped .verify.json is the evidence
                     # for whether the arm engaged, so losing it to a later run_h200.py
                     # invocation is the worst possible thing to lose quietly.
-                    atomic_write_json(engdir / f"{key}.verify.json", {
+                    #
+                    # PRESERVE A DISSENTING PRIOR VERDICT BEFORE OVERWRITING IT. --verify-only
+                    # is the documented recovery path after a verifier bug: re-judge data
+                    # already on disk, no GPU. But it rewrites this very file, so the FAILED
+                    # record that motivated the repair is destroyed by the act of repairing
+                    # it -- and that record is evidence, the same argument the ARM_NOT_VERIFIED
+                    # sentinel is built on. On 2026-08-11 a V9 defect aborted the run and the
+                    # first --verify-only pass silently replaced the failing f03.verify.json
+                    # with a passing one. Only ever copies a record whose verdict DISAGREES
+                    # with the new one, so a re-run that changes nothing leaves no litter.
+                    engpath = engdir / f"{key}.verify.json"
+                    prior, _perr = load_json(engpath)
+                    if isinstance(prior, dict) and prior.get("verdict") != vrec["verdict"]:
+                        stamp = time.strftime("%Y%m%d_%H%M%S")
+                        kept = engdir / f"{key}.verify.superseded_{stamp}.json"
+                        try:
+                            atomic_write_json(kept, prior)
+                            log(f"    the previous verdict for {key} was "
+                                f"{prior.get('verdict')}, now {vrec['verdict']}; the "
+                                f"superseded record is preserved at {kept.name}")
+                        except OSError as exc:
+                            log(f"  !! could NOT preserve the superseded {key} verdict "
+                                f"({prior.get('verdict')}) before overwriting it: "
+                                f"{type(exc).__name__}: {exc}")
+                    atomic_write_json(engpath, {
                         "_meta": {
                             "device": device_name or "",
                             "recorded_at": time.strftime("%Y-%m-%d %H:%M:%S"),
@@ -2609,7 +2890,21 @@ def main(argv: list[str] | None = None) -> int:
                 save()
 
             # -- sentinel removal on a recovered arm ---------------------------------
-            if (not arm_failed and not args.quick and not args.dry_run
+            # ONLY on a COMPLETE arm. `arm_failed` says "nothing in scope failed", which is
+            # not the same as "the arm is verified": with `--families f03` the other six
+            # never enter the loop, so a 1-of-7 arm would clear the arm-wide sentinel, set
+            # verified=True and sentinel=None, and read as fully publishable. The sentinel
+            # is one of four independent "this arm is unverified" records and the only one
+            # the report generator can see when a tarball loses the rest.
+            full_scope = [f.key for f in R.FAMILIES if f.key not in EXCLUDED_FAMILIES]
+            partial = sorted(k for k in full_scope
+                             if k not in (rec.get("fam_stages") or {}))
+            rec["partial_scope"] = partial or None
+            if partial and sentinel.exists() and not args.dry_run:
+                log(f"  {arm.name}: {SENTINEL_NAME} KEPT -- this run covered "
+                    f"{len(full_scope) - len(partial)} of {len(full_scope)} families; "
+                    f"{', '.join(partial)} were never adjudicated in this arm.")
+            if (not arm_failed and not partial and not args.quick and not args.dry_run
                     and sentinel.exists()):
                 try:
                     # Through the gate, like every other filesystem mutation in this file.
