@@ -26,7 +26,8 @@ The vertical bar under each point is the spread of the tie set. Where it crosses
 y is broken between 1.07 and 1.26: decode_bs1 wins 1.289x and every other regime lands
 inside 1.000-1.051, so one linear axis would flatten ten of the eleven points into a line.
 
-Run:  python3 glm52/make_best_chain_vs_T_h200.py
+Run:  /home/zhangshuhan/my-envs/fusion/bin/python glm52/make_best_chain_vs_T_h200.py
+      (from the repo root; the default python3 on this box has no matplotlib)
 """
 from __future__ import annotations
 
