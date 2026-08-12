@@ -1,0 +1,274 @@
+{
+  "_meta": {
+    "device": "NVIDIA H200",
+    "recorded_at": "2026-08-11 20:46:19",
+    "writer": "run_control_h200.py",
+    "why_device": "run_h200.quarantine_foreign_results reads _meta.device and MOVES any file under the results tree that lacks it"
+  },
+  "family": "f08f09",
+  "arm": "classic",
+  "verdict": "ENGAGED",
+  "checks": [
+    {
+      "id": "V0b",
+      "axis": null,
+      "path": "$._meta.results_dir",
+      "want": "/home/guancheng/zsh/fusion/results/h200/_control_arm/classic",
+      "got": "/home/guancheng/zsh/fusion/results/h200/_control_arm/classic",
+      "status": "PASS",
+      "detail": "the bench must have written into the staging tree, not into the campaign directory its own default points at; common.py:1342 records where record() actually wrote. exact path match"
+    },
+    {
+      "id": "V1",
+      "axis": "clusters",
+      "path": "$.fairness.h200_axes.per_family.f08f09_down_merge.axes.clusters.available + .evidence",
+      "want": "available=False and evidence containing '(source env)'",
+      "got": "available=False, evidence='hopper.caps().clusters=False (source env); preflight probe thread_block_cluster_num_ctas=True'",
+      "status": "PASS",
+      "detail": "the ONLY per-family text proving the env override reached hopper.caps(); the campaign reads available=true with '(source preflight)'. Producer: glm52_h200/bench/__init__.py:1173"
+    },
+    {
+      "id": "V2",
+      "axis": "clusters",
+      "path": "$.fairness.h200_axes.per_family.f08f09_down_merge.axes.clusters.offered + .not_offered_because",
+      "want": "offered=False and not_offered_because == 'the live capability probe says it is unavailable'",
+      "got": "offered=False, not_offered_because='the live capability probe says it is unavailable'",
+      "status": "PASS",
+      "detail": "non-vacuous for f03/f10 too: their campaign string is 'this kernel module advertises no cfg key for it' and it MUST change. Producer: glm52_h200/bench/__init__.py:1271-1274"
+    },
+    {
+      "id": "V1",
+      "axis": "tma",
+      "path": "$.fairness.h200_axes.per_family.f08f09_down_merge.axes.tma.available + .evidence",
+      "want": "available=False and evidence containing '(source env)'",
+      "got": "available=False, evidence='hopper.caps().tma=False (source env); preflight probe tma_tensor_descriptor=False'",
+      "status": "PASS",
+      "detail": "the ONLY per-family text proving the env override reached hopper.caps(); the campaign reads available=true with '(source preflight)'. Producer: glm52_h200/bench/__init__.py:1173"
+    },
+    {
+      "id": "V2",
+      "axis": "tma",
+      "path": "$.fairness.h200_axes.per_family.f08f09_down_merge.axes.tma.offered + .not_offered_because",
+      "want": "offered=False and not_offered_because == 'the live capability probe says it is unavailable'",
+      "got": "offered=False, not_offered_because='the live capability probe says it is unavailable'",
+      "status": "PASS",
+      "detail": "non-vacuous for f03/f10 too: their campaign string is 'this kernel module advertises no cfg key for it' and it MUST change. Producer: glm52_h200/bench/__init__.py:1271-1274"
+    },
+    {
+      "id": "V1",
+      "axis": "warp_specialize",
+      "path": "$.fairness.h200_axes.per_family.f08f09_down_merge.axes.warp_specialize.available + .evidence",
+      "want": "available=False and evidence containing '(source env)'",
+      "got": "available=False, evidence='hopper.caps().warp_specialize=False (source env); preflight probe warp_specialize_tl_range=True'",
+      "status": "PASS",
+      "detail": "the ONLY per-family text proving the env override reached hopper.caps(); the campaign reads available=true with '(source preflight)'. Producer: glm52_h200/bench/__init__.py:1173"
+    },
+    {
+      "id": "V2",
+      "axis": "warp_specialize",
+      "path": "$.fairness.h200_axes.per_family.f08f09_down_merge.axes.warp_specialize.offered + .not_offered_because",
+      "want": "offered=False and not_offered_because == 'the live capability probe says it is unavailable'",
+      "got": "offered=False, not_offered_because='the live capability probe says it is unavailable'",
+      "status": "PASS",
+      "detail": "non-vacuous for f03/f10 too: their campaign string is 'this kernel module advertises no cfg key for it' and it MUST change. Producer: glm52_h200/bench/__init__.py:1271-1274"
+    },
+    {
+      "id": "V4",
+      "axis": "tma",
+      "path": "$.fairness.h200_axes.per_family.f08f09_down_merge.tma_form",
+      "want": "none",
+      "got": "none",
+      "status": "PASS",
+      "detail": "scalar mirror of the capability; the campaign records 'device' in all seven files. hopper.py:377 tma_form()"
+    },
+    {
+      "id": "V4",
+      "axis": "warp_specialize",
+      "path": "$.fairness.h200_axes.per_family.f08f09_down_merge.ws_mode",
+      "want": "none",
+      "got": "none",
+      "status": "PASS",
+      "detail": "scalar mirror; the campaign records 'range'. hopper.py:937 sets ws_mode = 'range' if warp_specialize else 'none'"
+    },
+    {
+      "id": "V4",
+      "axis": "clusters",
+      "path": "$.fairness.h200_axes.per_family.f08f09_down_merge",
+      "want": "n/a",
+      "got": "no scalar mirror exists",
+      "status": "INFO",
+      "detail": "clusters has no tma_form/ws_mode equivalent; recorded so the check list is complete rather than silently short"
+    },
+    {
+      "id": "V3",
+      "axis": null,
+      "path": "$.fairness.h200_axes.per_family.f08f09_down_merge.overlays_offered",
+      "want": "[]",
+      "got": "[]",
+      "status": "PASS",
+      "detail": "campaign had 4 overlay(s); h200_cfg_overlays() returns [] once every axis is unavailable"
+    },
+    {
+      "id": "V5",
+      "axis": null,
+      "path": "$.fairness.h200_axes.per_family.f08f09_down_merge.kernel_cfg_keys",
+      "want": "['USE_TMA', 'TMA_B', 'TMA_MODE', 'warp_specialize', 'num_consumer_groups', 'num_buffers_warp_spec', 'num_ctas']",
+      "got": "['USE_TMA', 'TMA_B', 'TMA_MODE', 'warp_specialize', 'num_consumer_groups', 'num_buffers_warp_spec', 'num_ctas']",
+      "status": "PASS",
+      "detail": "a STATIC module attribute (H200_CFG_KEYS). If it changed, somebody edited the kernel modules between the two sessions and the arm comparison is not a comparison"
+    },
+    {
+      "id": "V6",
+      "axis": null,
+      "path": "$._meta.device",
+      "want": "NVIDIA H200",
+      "got": "NVIDIA H200",
+      "status": "PASS",
+      "detail": "note _meta.device is a string; indexing it as a dict throws TypeError"
+    },
+    {
+      "id": "V6",
+      "axis": null,
+      "path": "$.env.uuid",
+      "want": "b2318e71-edbf-aa1b-dcf3-3cc3e6ea7db0",
+      "got": "b2318e71-edbf-aa1b-dcf3-3cc3e6ea7db0",
+      "status": "PASS",
+      "detail": "the staged file must name the card this driver pinned"
+    },
+    {
+      "id": "V7",
+      "axis": "clusters",
+      "path": "$ (recursive cfg scan)",
+      "want": "0 winner and 0 table hits",
+      "got": "0 winner, 0 table",
+      "status": "PASS",
+      "detail": "winners prove the tuner never selected it; table hits prove the grid never contained it. Under classic widen() returns [] so neither can appear"
+    },
+    {
+      "id": "V7",
+      "axis": "tma",
+      "path": "$ (recursive cfg scan)",
+      "want": "0 winner and 0 table hits",
+      "got": "0 winner, 0 table",
+      "status": "PASS",
+      "detail": "winners prove the tuner never selected it; table hits prove the grid never contained it. Under classic widen() returns [] so neither can appear"
+    },
+    {
+      "id": "V7",
+      "axis": "warp_specialize",
+      "path": "$ (recursive cfg scan)",
+      "want": "0 winner and 0 table hits",
+      "got": "0 winner, 0 table",
+      "status": "PASS",
+      "detail": "winners prove the tuner never selected it; table hits prove the grid never contained it. Under classic widen() returns [] so neither can appear"
+    },
+    {
+      "id": "V8",
+      "axis": "clusters",
+      "path": "$.fairness.grids.*.*.*.axis_counts",
+      "want": "no key for this axis",
+      "got": "0 offending stage(s) of 55",
+      "status": "PASS",
+      "detail": "every dict should collapse to {_total_cfgs: N}"
+    },
+    {
+      "id": "V8",
+      "axis": "tma",
+      "path": "$.fairness.grids.*.*.*.axis_counts",
+      "want": "no key for this axis",
+      "got": "0 offending stage(s) of 55",
+      "status": "PASS",
+      "detail": "every dict should collapse to {_total_cfgs: N}"
+    },
+    {
+      "id": "V8",
+      "axis": "warp_specialize",
+      "path": "$.fairness.grids.*.*.*.axis_counts",
+      "want": "no key for this axis",
+      "got": "0 offending stage(s) of 55",
+      "status": "PASS",
+      "detail": "every dict should collapse to {_total_cfgs: N}"
+    },
+    {
+      "id": "V9",
+      "axis": null,
+      "path": "$.fairness.grids.*.*.<coarse|tune>.n_tried",
+      "want": "(corroboration only)",
+      "got": "0 of 63 offered-grid stage(s) differ",
+      "status": "INFO",
+      "detail": "the offered grid is byte-identical to the campaign's; a capped coarse grid cannot shrink, so this is corroboration, not proof"
+    },
+    {
+      "id": "V9b",
+      "axis": null,
+      "path": "$.fairness.grids.<arm-only regime>.*.<coarse|tune>.n_tried",
+      "want": "equal to the campaign's family-constant offered size",
+      "got": "0 of 32 arm-only offered stage(s) differ",
+      "status": "PASS",
+      "detail": "closes the hole the V9 intersection leaves: these stages have no per-regime campaign counterpart, but their size is a code property the campaign pins on its own regimes, and the arm reproduces it; 4 further stage(s) had no campaign constant to extrapolate and were not judged"
+    },
+    {
+      "id": "V9d",
+      "axis": null,
+      "path": "$.fairness.grids.*.*.<refine|joint|extra>.n_tried",
+      "want": "(not comparable -- winner-derived)",
+      "got": "12 of 58 stage(s) differ",
+      "status": "INFO",
+      "detail": "refine is neighbours(<the coarse stage's timing winner>) (common.py:1069), joint is a deduplicated top_cfgs() product over measured stages, extra is refine_grid() over a measured top-k -- so these sizes move run-to-run on IDENTICAL code and hardware (Hopper-vs-Hopper: f03 16 of 28, f10 18 of 28, in both directions). Recorded so the drift stays visible, never asserted on. decode_bs1/atomic_gemm/refine 33->29; decode_bs1/unfused_gemm/refine 20->29; decode_bs1024/atomic_gemm/refine 40->37; decode_bs1024/unfused_gemm/refine 40->37"
+    },
+    {
+      "id": "V11",
+      "axis": "clusters",
+      "path": "campaign vs this arm",
+      "want": "campaign presence > 0 and arm == 0",
+      "got": "campaign 193, arm 0",
+      "status": "PASS",
+      "detail": "a genuine campaign->arm collapse: this is the positive proof of engagement"
+    },
+    {
+      "id": "V11",
+      "axis": "tma",
+      "path": "campaign vs this arm",
+      "want": "campaign presence > 0 and arm == 0",
+      "got": "campaign 262, arm 0",
+      "status": "PASS",
+      "detail": "a genuine campaign->arm collapse: this is the positive proof of engagement"
+    },
+    {
+      "id": "V11",
+      "axis": "warp_specialize",
+      "path": "campaign vs this arm",
+      "want": "campaign presence > 0 and arm == 0",
+      "got": "campaign 147, arm 0",
+      "status": "PASS",
+      "detail": "a genuine campaign->arm collapse: this is the positive proof of engagement"
+    },
+    {
+      "id": "LOG",
+      "axis": null,
+      "path": "f08f09.classic.a1.log",
+      "want": "hopper feats [...] without ['clusters', 'tma', 'warp_specialize']",
+      "got": "f08f09.classic.a1.log: [none]",
+      "status": "INFO",
+      "detail": "every one of 1 banner(s) reports the axes this arm disables as off; the campaign's own transcript reads [tma,clusters,warp_specialize]"
+    }
+  ],
+  "n_fail": 0,
+  "surface": [
+    "clusters",
+    "tma",
+    "warp_specialize"
+  ],
+  "surface_source": "campaign fairness.h200_axes.per_family",
+  "vacuous_axes": [],
+  "target_axes": [
+    "clusters",
+    "tma",
+    "warp_specialize"
+  ],
+  "engaged_axes": [
+    "clusters",
+    "tma",
+    "warp_specialize"
+  ]
+}
