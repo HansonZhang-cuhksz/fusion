@@ -63,6 +63,7 @@ from __future__ import annotations
 import argparse
 import atexit
 import json
+import os
 import random
 import statistics
 import subprocess
@@ -117,27 +118,62 @@ def smi(args: list[str], timeout: int = 30) -> tuple[int, str, str]:
         return -1, "", f"{type(exc).__name__}: {exc}"
 
 
-def tenant_check(uuid: str | None) -> dict:
-    """Refuse to measure a card another process is already using.
+def resolve_target(sel: dict) -> dict:
+    """Identify the ONE card this process is masked to, in both nvidia-smi's terms and ours.
 
-    The campaign's own preflight recorded a 36.9 us harness floor against a 10.3 us launch
-    on a card it did not request; that ratio is the signature of a contended device.  This
-    is the cheapest guard against repeating it.
+    Two identifiers, because they are not interchangeable.  nvidia-smi indexes the host's
+    cards (`--gpu 7` is card 7) while this process, once masked, sees a single device at
+    ordinal 0; and nvidia-smi spells a UUID `GPU-b2318e71-...` where torch spells it
+    `b2318e71-...`.  Comparing the two raw is how a filter silently matches nothing -- or,
+    worse, is skipped entirely.
     """
-    rc, out, err = smi(["--query-compute-apps=pid,used_memory,gpu_uuid",
-                        "--format=csv,noheader,nounits"])
-    if rc != 0:
-        return {"checked": False, "reason": err or "nvidia-smi unavailable"}
-    procs = []
-    for line in out.splitlines():
-        parts = [p.strip() for p in line.split(",")]
-        if len(parts) >= 3 and (not uuid or parts[2] == uuid):
-            procs.append({"pid": parts[0], "used_mib": parts[1], "uuid": parts[2]})
-    return {"checked": True, "procs": procs, "clean": not procs}
+    idx = sel.get("index")
+    uuid = sel.get("uuid")
+    if not uuid and idx is not None:
+        # Second source: ask nvidia-smi directly rather than initialising CUDA to find out,
+        # which would put THIS process on the card before the tenant check has run.
+        rc, out, _ = smi(["-i", str(idx), "--query-gpu=uuid", "--format=csv,noheader"])
+        if rc == 0 and out.strip():
+            uuid = out.strip().splitlines()[0].strip()
+    return {"uuid": uuid or None, "index": idx,
+            "smi_selector": (uuid or (str(idx) if idx is not None else None))}
 
 
-def supported_clocks(uuid: str) -> dict:
-    rc, out, _ = smi(["-i", uuid,
+def tenant_check(target: dict, my_pid: int) -> dict:
+    """Who else is on OUR card -- reported as evidence, and only gating when it is certain.
+
+    The campaign's preflight recorded a 36.9 us harness floor against a 10.3 us launch on a
+    card it did not request; that ratio is the signature of a contended device.  But
+    `--query-compute-apps` lists every GPU on the host, so this must filter to our card and
+    must FAIL OPEN when it cannot: a check that treats "I could not identify the card" as
+    "everything matches" turns other people's jobs on other cards into a refusal to run.
+    `select_gpu` has already screened this card at import time; this is the record of what
+    was on it, not a second opinion that can veto the first.
+    """
+    rows, err = hwinfo.compute_apps()
+    mine = hwinfo._norm_uuid(target.get("uuid"))
+    everyone = [{"pid": r["pid"], "name": r.get("name"),
+                 "used_mib": round(r.get("used_bytes", 0) / (1024 * 1024)),
+                 "uuid": r.get("gpu_uuid"),
+                 "on_our_card": bool(mine) and hwinfo._norm_uuid(r.get("gpu_uuid")) == mine}
+                for r in rows]
+    if err:
+        return {"checked": False, "reason": err, "gating": False,
+                "host_wide_procs": len(everyone)}
+    if not mine:
+        return {"checked": False, "gating": False, "host_wide_procs": len(everyone),
+                "reason": "could not resolve this card's UUID, so the host-wide process "
+                          "list cannot be filtered to it. NOT treating that as contention.",
+                "all_procs": everyone}
+    ours = [a for a in everyone if a["on_our_card"] and a["pid"] != my_pid]
+    return {"checked": True, "gating": True, "uuid": target.get("uuid"),
+            "foreign_procs": ours, "clean": not ours,
+            "host_wide_procs": len(everyone),
+            "self_pid_excluded": my_pid}
+
+
+def supported_clocks(selector: str) -> dict:
+    rc, out, _ = smi(["-i", selector,
                       "--query-gpu=clocks.max.sm,clocks.max.memory,clocks.sm,clocks.mem",
                       "--format=csv,noheader,nounits"])
     if rc != 0 or not out:
@@ -150,7 +186,7 @@ def supported_clocks(uuid: str) -> dict:
         return {}
 
 
-def lock_clocks(uuid: str, sm_mhz: int | None, mem_mhz: int | None,
+def lock_clocks(selector: str, sm_mhz: int | None, mem_mhz: int | None,
                 headroom: float) -> dict:
     """Pin SM and memory clocks, and register the restore.
 
@@ -160,20 +196,22 @@ def lock_clocks(uuid: str, sm_mhz: int | None, mem_mhz: int | None,
     invisible unless you read `clocks_throttle_reasons`.  A slightly lower pin is one the
     card can hold for the whole run, which is what reproducibility actually needs.
     """
-    caps = supported_clocks(uuid)
+    if not selector:
+        return {"locked": False, "reason": "no nvidia-smi selector for this card"}
+    caps = supported_clocks(selector)
     if not caps:
         return {"locked": False, "reason": "could not read supported clocks"}
     sm = sm_mhz or max(200, int(caps["max_sm"] * headroom))
     mem = mem_mhz or caps["max_mem"]
 
-    rc_sm, _, err_sm = smi(["-i", uuid, "-lgc", f"{sm},{sm}"])
-    rc_mem, _, err_mem = smi(["-i", uuid, "-lmc", f"{mem},{mem}"])
+    rc_sm, _, err_sm = smi(["-i", selector, "-lgc", f"{sm},{sm}"])
+    rc_mem, _, err_mem = smi(["-i", selector, "-lmc", f"{mem},{mem}"])
 
     if rc_sm == 0:
         def _restore() -> None:
-            smi(["-i", uuid, "-rgc"])
-            smi(["-i", uuid, "-rmc"])
-            print(f"[clocks] restored default clocks on {uuid}", flush=True)
+            smi(["-i", selector, "-rgc"])
+            smi(["-i", selector, "-rmc"])
+            print(f"[clocks] restored default clocks on {selector}", flush=True)
         atexit.register(_restore)
 
     return {
@@ -587,17 +625,32 @@ def main() -> None:
             "[gpu] --gpu is MANDATORY here. The card/session seam is the clearest defect in "
             "the existing data and it came from letting the process take whatever device it "
             "inherited. Pass --gpu <index>.")
-    uuid = sel.get("uuid") or hwinfo.current_gpu_uuid()
-    tenants = tenant_check(uuid)
-    print(f"[gpu] {uuid}  tenants={tenants.get('procs') if tenants.get('checked') else '?'}",
-          flush=True)
-    if tenants.get("checked") and not tenants.get("clean") and not args.allow_tenants:
-        raise SystemExit("[gpu] another process holds this card. Pick an idle one, or pass "
-                         "--allow-tenants and label the result contended.")
+    target = resolve_target(sel)
+    uuid = target["uuid"]
+    tenants = tenant_check(target, os.getpid())
+    print(f"[gpu] index={target['index']} uuid={uuid}", flush=True)
+    if tenants.get("checked"):
+        print(f"[gpu] {len(tenants['foreign_procs'])} foreign process(es) on this card "
+              f"({tenants['host_wide_procs']} elsewhere on the host, not counted)",
+              flush=True)
+        for a in tenants["foreign_procs"]:
+            print(f"[gpu]   pid {a['pid']} {a['name']} {a['used_mib']} MiB", flush=True)
+    else:
+        print(f"[gpu] tenant check did not run ({tenants.get('reason')}) -- continuing; "
+              f"`select_gpu` already screened this card at import", flush=True)
+
+    # `_bootstrap_gpu_selection` already refused a busy card at import time unless
+    # --allow-busy was given, so this gate fires only on a process it can POSITIVELY
+    # attribute to our UUID. It never fires on "could not tell".
+    if tenants.get("gating") and not tenants.get("clean") and not args.allow_tenants:
+        pids = [a["pid"] for a in tenants["foreign_procs"]]
+        raise SystemExit(
+            f"[gpu] {len(pids)} process(es) hold card {uuid}: {pids}. "
+            f"Pick an idle card, or pass --allow-tenants and label the result contended.")
 
     clocks = ({"locked": False, "reason": "--no-lock-clocks"} if args.no_lock_clocks
-              else lock_clocks(uuid, args.lock_sm_mhz or None, args.lock_mem_mhz or None,
-                               args.clock_headroom))
+              else lock_clocks(target["smi_selector"], args.lock_sm_mhz or None,
+                               args.lock_mem_mhz or None, args.clock_headroom))
     print(f"[clocks] locked={clocks.get('locked')} sm={clocks.get('sm_requested_mhz')} "
           f"mem={clocks.get('mem_requested_mhz')}", flush=True)
     if clocks.get("note"):
