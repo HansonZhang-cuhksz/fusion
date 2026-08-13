@@ -32,18 +32,54 @@ uncertainty survived it, and every open question in the study traces back to one
      kernel-level saving survives into the assembled layer -- the 33 % at T=2 against 52 %
      at T=4 that the old data could show but not explain.
 
-STATISTIC.  Blocks, not passes.  One block times every configuration once, in an order that
-reverses on odd blocks, with the all-unfused baseline run at BOTH ends.  A configuration's
-speedup for that block is the baseline sandwich mean divided by its own time, so linear
-drift inside a block divides out and every ratio is built from measurements milliseconds
-apart.  The headline is the median over blocks with a percentile-bootstrap 95 % CI, and
-blocks keep being added until the CI is tight enough (`--target-ci`) or `--max-blocks` is
-reached.  Two configurations are TIED when their CIs overlap; a configuration beats the
-unfused layer only when its CI excludes 1.0.  That is a stated confidence statement rather
-than the round-spread heuristic of LOG-11 §3.
+STATISTIC.  Blocks, not passes.  One block times every configuration once.  The running
+order is a ROTATION of the configuration list by the block index, so over any n consecutive
+blocks every configuration visits every slot exactly once -- INCLUDING the all-unfused
+baseline, which is not privileged in any way.  The slot-0 configuration is run a second time
+at the tail of the block; that repeat is the block's own drift probe.  A configuration's
+speedup for that block is the (drift-detrended) baseline time divided by its own
+(drift-detrended) time, so drift inside a block divides out and every ratio is built from
+measurements milliseconds apart.  The headline is the median over blocks with a
+percentile-bootstrap 95 % CI.  Two configurations are TIED when their CIs overlap; a
+configuration beats the unfused layer only when its CI excludes 1.0.  That is a stated
+confidence statement rather than the round-spread heuristic of LOG-11 §3.
 
-COST.  Frozen configs make measurement the entire cost.  One block over all 18
-configurations and all 11 regimes is ~0.9 s of GPU time, so even 200 blocks is minutes.
+WHAT THE 2026-08-13 RUN GOT WRONG, AND WHAT CHANGED HERE.  The first version of this file
+sandwiched the baseline at BOTH ends of every block and rotated nothing: the sequence was
+literally `[A_all_unfused, *others, A_all_unfused]`.  That pinned the baseline -- and only
+the baseline -- to slot 0 of every single block, and slot 0 is not like the other slots.
+`time_sequence` issues the whole block asynchronously and synchronises once at the end, so
+from slot 1 onward the host runs far ahead of the device and the event pair measures device
+time; at slot 0 the launch queue is EMPTY and the device is fed one kernel at a time at host
+launch speed.  The run also spent two `nvidia-smi` subprocesses per block bracketing the
+block, ~0.6-0.8 s of host dead time that left the launch path cold when slot 0 began.  The
+measured cost, isolated against `F_f8` and `N_f11b` (which have the SAME 14 kernels as the
+baseline and device work within 0.1 % of it), was a fixed 28-79 us charged to the baseline
+in every block -- 2.6-5.6 us of launch cost per kernel against 0.7-1.4 us for everyone else.
+Averaging the two sandwich readings halved it and did not remove it, so every
+speedup-vs-unfused number in `results/h200/layer_certain.json` is inflated: +8.5 % at
+`decode_bs4`, +3.6 % at `decode_bs8`, +0.9 % at `decode_bs256`.
+
+It is worth being precise about the mechanism, because the obvious story is wrong and the
+obvious story would have led to the wrong fix.  This is NOT a clock ramp after the idle gap.
+The card read 1980 MHz -- its own maximum -- with an empty throttle list after every regime
+up to `decode_bs256`, at 38-42 C and 137-353 W of a 700 W budget, and ZERO of 200 blocks were
+discarded for clock movement in seven regimes x two modes.  Where drift was logged at all
+(T >= 512) the clock FELL during the block rather than rising into it, and 100 % of those
+discards were `SwPowerCap` on an idle read, not clock movement.  The penalty is also four to
+five times larger in wall mode (14 exposed launches) than in graph mode (1 exposed launch),
+which a device-side clock ramp cannot distinguish.  Locking the clocks would not have fixed
+this.  What fixes it is: (1) a discarded warm-up run at the head of every block, issued
+WITHOUT a synchronise so the queue is already full when slot 0's first event is recorded;
+(2) rotating the whole running order so no configuration owns a slot; (3) getting
+`nvidia-smi` out of the per-block path.
+
+COST.  Frozen configs make measurement the entire cost.  The first run predicted 4-9 min and
+took 60, because the 5e-4 CI target was unreachable in 20 of 22 regime x mode cells and the
+run burned all 200 blocks in each of them anyway.  `estimate_seconds` now charges for the
+warm-up runs, the `nvidia-smi` reads and the CUPTI pass, and quotes the CEILING as the number
+to budget against; and `measure` stops when the CI is projected to be UNREACHABLE within
+`--max-blocks`, or when it has stopped improving, not only when it hits target.
 `--estimate` prints the plan and predicted wall time without touching the GPU.
 
 FIRST RUN ON A NEW HOST -- do this before spending the budget:
@@ -230,10 +266,48 @@ def lock_clocks(selector: str, sm_mhz: int | None, mem_mhz: int | None,
 
 
 def clocks_now() -> dict:
+    """The full volatile snapshot.  Used once per regime and during preconditioning ONLY.
+
+    `hwinfo.snapshot()` issues one `--query-gpu` of ten fields with no `-i` selector, so it
+    enumerates every card on the host and then filters by UUID.  On the eight-card H200 node
+    that measured 0.3-0.4 s per call, and the first version of this file made two of them
+    around EVERY block: 8478 calls, ~92 % of a 3592 s run spent outside the measurement, and
+    a cold host launch path handed to slot 0 of every block.  Never call this per block --
+    call `clock_probe` instead.
+    """
     s = hwinfo.snapshot()
     return {"sm_mhz": s.get("sm_mhz"), "mem_mhz": s.get("mem_mhz"),
             "temp_c": s.get("temp_c"), "power_w": s.get("power_w"),
             "throttle": s.get("throttle") or []}
+
+
+def clock_probe(selector: str | None) -> dict:
+    """One targeted read of ONE card and THREE fields -- the per-window drift sample.
+
+    `-i <selector>` makes the driver report a single GPU instead of all eight, and three
+    fields instead of ten.  That is the difference between ~0.35 s and a few tens of ms.  It
+    is still a subprocess, which is exactly why it is now taken once per WINDOW of blocks
+    rather than twice per block, and why the block that follows a probe still gets a
+    discarded warm-up run to absorb whatever the probe left cold.
+    """
+    if not selector:
+        return {**clocks_now(), "probe": "full-snapshot (no smi selector for this card)"}
+    rc, out, err = smi(["-i", str(selector),
+                        "--query-gpu=clocks.sm,temperature.gpu,"
+                        "clocks_throttle_reasons.active",
+                        "--format=csv,noheader,nounits"], timeout=15)
+    if rc != 0 or not out:
+        return {"sm_mhz": None, "temp_c": None, "throttle": [],
+                "probe_error": (err or f"rc={rc}")[:120]}
+    v = [x.strip() for x in out.splitlines()[0].split(",")]
+    def _f(i):
+        try:
+            return float(v[i])
+        except (ValueError, IndexError):
+            return None
+    return {"sm_mhz": _f(0), "temp_c": _f(1),
+            "throttle": hwinfo.decode_throttle(v[2] if len(v) > 2 else None),
+            "t": round(time.time(), 3)}
 
 
 def thermal_precondition(max_seconds: float, plateau_mhz: float,
@@ -341,13 +415,25 @@ def capture_graph(fns, warmup: int = 5):
         return None, f"{type(exc).__name__}: {exc}"[:200]
 
 
-def time_sequence(seq, runner, flush: bool) -> list[tuple[str, float]]:
+def time_sequence(seq, runner, flush: bool, warmup: int = 0) -> list[tuple[str, float]]:
     """Time every entry of `seq` once, in order, with ONE sync for the whole sequence.
 
-    Returns a LIST, not a dict: the baseline appears twice per block and the two readings
-    are the sandwich.  Collapsing them into a dict key silently discards the first one and
-    with it the drift correction, which is the whole point of the block.
+    Returns a LIST, not a dict: `seq[0]` is run again at the tail as the block's drift probe
+    and the two readings are not interchangeable.  Collapsing them into a dict key discards
+    one of them and with it the drift correction, which is the whole point of the block.
+
+    THE WARM-UP IS NOT SYNCHRONISED, AND THAT IS THE ENTIRE POINT.  `warmup` executions of
+    `seq[0]` are issued and deliberately left in flight.  When the first `a.record()` is
+    enqueued the device is still draining them, so (a) the device timestamps `a` only after
+    the warm-up has drained -- CUDA events are device-side, so none of the warm-up's time is
+    attributed to slot 0 -- and (b) the HOST is by then running ahead of the device, which is
+    the state slots 1..N enjoy for free and slot 0 previously did not.  A
+    `torch.cuda.synchronize()` here would empty the queue again and restore exactly the bias
+    this is here to remove.  Two executions is enough: the host needs ~140 us to issue a
+    14-kernel chain and the shortest layer here runs ~400 us.
     """
+    for _ in range(max(0, warmup)):
+        runner(seq[0])
     evs = []
     for name in seq:
         if flush:
@@ -360,6 +446,151 @@ def time_sequence(seq, runner, flush: bool) -> list[tuple[str, float]]:
         evs.append((name, a, z))
     torch.cuda.synchronize()
     return [(n, a.elapsed_time(z)) for n, a, z in evs]
+
+
+# ---- the block design: pure functions, so they can be tested without a GPU --------------
+def block_order(names: list, b: int) -> list:
+    """Slot assignment for block `b`: rotate by `b`, reverse on alternate rotation CYCLES.
+
+    ROTATION is what removes the position bias.  Over any `n` consecutive blocks every
+    configuration occupies every slot exactly once, so the block-entry penalty at slot 0 --
+    or any other slot-dependent effect -- is charged equally to every configuration instead
+    of being pinned to the baseline, and it therefore cancels out of the ratio distribution
+    rather than inflating its denominator.
+
+    THE REVERSAL IS KEPT, but keyed on the rotation cycle (`b // n`) rather than on the block
+    (`b % 2`), for two reasons.  (1) Rotation alone leaves the neighbour structure completely
+    unbalanced: `names[j]` is preceded by `names[j-1]` in every single block regardless of
+    the rotation, so any carry-over from one configuration into the next -- cache residency,
+    a lingering tail effect -- is a permanent confound between that fixed pair.  Reversing
+    gives each configuration both of its neighbours equally often.  (2) Keying the reversal
+    on `b % 2` would SILENTLY DESTROY the slot balance whenever `n` is even, which it is here
+    (14 configurations in ten of the eleven regimes).  With `n` even, `b % n` and `b % 2` are
+    aliased -- even blocks always get an even rotation -- and the two effects compose so that
+    each configuration is confined to slots of a single parity forever.  Keying on `b // n`
+    decouples them: cycle 0 sweeps all `n` slots forward, cycle 1 sweeps all `n` slots
+    reversed, and the balance is exact after every cycle rather than never.
+    """
+    n = len(names)
+    if n == 0:
+        return []
+    rot = b % n
+    seq = list(names[rot:]) + list(names[:rot])
+    if (b // n) % 2:
+        seq = list(reversed(seq))
+    return seq
+
+
+def block_sequence(order: list) -> list:
+    """The runs actually issued for a block: the rotation, plus a repeat of slot 0.
+
+    The repeat is the block's own drift probe.  The same configuration is measured at slot 0
+    and at slot n, milliseconds apart under identical conditions, so their ratio is a DIRECT
+    in-band measurement of how much the card slowed (or the harness stalled) across the
+    block.  That costs one run -- exactly what the old baseline sandwich cost -- and unlike
+    the two `nvidia-smi` snapshots it replaces, it measures conditions INSIDE the block
+    instead of bracketing it with two reads taken while the device was idle.
+    """
+    return [*order, order[0]] if order else []
+
+
+def block_readings(order: list, timed: list, detrend: bool = True) -> tuple:
+    """Collapse one block's raw readings into one time per configuration.
+
+    `timed` is `len(order) + 1` pairs in slot order; the tail repeats slot 0.  Returns
+    `(times_by_config, drift_frac)` where `drift_frac = t_tail / t_slot0 - 1`.
+
+    DETRENDING GENERALISES THE OLD SANDWICH AND STRICTLY IMPROVES ON IT.  Averaging the
+    baseline's two readings estimated its value at the block MIDPOINT, which cancels a linear
+    drift only for a configuration that also sits at the midpoint; a configuration at slot 1
+    or slot n-1 kept most of the error.  Here the same two readings define a linear
+    multiplicative trend `f(s) = 1 + g*s` with `g = drift_frac / n`, and EVERY slot is divided
+    by its own `f(s)`.  By construction the two probe readings detrend to the same value, so
+    the slot-0 configuration is not silently given a variance-reduced (averaged) reading that
+    its peers do not get -- an asymmetry the old sandwich did have.
+
+    When `detrend` is off the old behaviour is used for the probe configuration (mean of its
+    two readings), which is the honest fallback rather than throwing one reading away.
+
+    CALLERS MUST GATE ON `drift_frac` BEFORE TRUSTING A DETRENDED BLOCK.  The trend is fitted
+    to two readings, so a single corrupt one -- a residual block-entry penalty at slot 0, a
+    one-off host stall -- produces a large spurious `drift_frac` and the correction then
+    spreads that error smoothly over all n slots, converting one outlier into a systematic
+    bias that no longer looks like an outlier.  `measure` therefore calls this twice: once
+    with `detrend=False` to obtain the raw probe ratio it gates on, and again only for the
+    blocks that survived.
+    """
+    n = len(order)
+    if n == 0 or len(timed) < n + 1:
+        return {}, 0.0
+    x = [ms for _, ms in timed]
+    x0, xt = x[0], x[n]
+    drift = (xt / x0 - 1.0) if x0 > 0 else 0.0
+    if detrend and x0 > 0:
+        g = drift / n
+        vals = [x[s] / (1.0 + g * s) if (1.0 + g * s) > 0 else x[s] for s in range(n)]
+    else:
+        vals = list(x[:n])
+        vals[0] = (x0 + xt) / 2.0
+    return {order[s]: vals[s] for s in range(n)}, drift
+
+
+def block_ratios(times_by_cfg: dict, baseline: str) -> dict:
+    """speedup_i = t_baseline / t_i, both from the same block, both detrended."""
+    base = times_by_cfg.get(baseline)
+    if not base or base <= 0:
+        return {}
+    return {n: base / t for n, t in times_by_cfg.items() if n != baseline and t > 0}
+
+
+def project_blocks_needed(halfwidth: float, n: int, target: float) -> float:
+    """How many blocks would reach `target`, if the CI keeps shrinking as 1/sqrt(n)?
+
+    This is the escape hatch the first run needed and did not have.  At `decode_bs4` it had a
+    half-width of 4.6e-3 against a 5e-4 target after 20 blocks; the projection says that needs
+    ~1700 blocks, so continuing to 200 was 180 blocks of measurement that could not possibly
+    reach the goal.  Twenty of twenty-two regime x mode cells were in that position.
+    """
+    if not (halfwidth > 0) or target <= 0 or n <= 0:
+        return float("inf")
+    if halfwidth <= target:
+        return float(n)
+    return n * (halfwidth / target) ** 2
+
+
+def stop_decision(halfwidth: float, n: int, target: float, max_blocks: int,
+                  history: list, *, min_blocks: int, patience: int, plateau: float,
+                  enabled: bool) -> tuple:
+    """(stop, reason).  Three ways to stop, only one of which is "we succeeded"."""
+    if n < max(4, min_blocks):
+        return False, None
+    if halfwidth <= target:
+        return True, "target_ci_met"
+    if not enabled:
+        return False, None
+    # `target_unreachable` may only fire in the SECOND half of the budget.  Under the 1/sqrt(n)
+    # model the projection need = n*(hw_n/target)^2 = (C/target)^2 is independent of n, so an
+    # ungated test is identically "will the target be missed at the ceiling?" -- it can only
+    # ever fire at the FIRST check and would end every such cell at ~min_blocks. On the
+    # 2026-08-13 run that was 18 of 22 regime x mode cells, i.e. a re-run publishing CIs ~2.7x
+    # wider than the run it replaces while leaving most of a non-binding budget unspent.
+    # Missing the target is not a reason to stop while the CI is still shrinking as 1/sqrt(n);
+    # it is a reason not to spend the LAST half of the budget chasing it. Half the blocks costs
+    # sqrt(2) in width, not 2.7x. A genuinely flat CI is the `ci_plateau` rule's job, below.
+    need = project_blocks_needed(halfwidth, n, target)
+    if need > max_blocks and n >= max_blocks // 2:
+        return True, (f"target_unreachable: CI half-width {halfwidth:.2e} after {n} blocks "
+                      f"projects to ~{min(need, 9.99e9):.0f} blocks for {target:.1e}, "
+                      f"over --max-blocks {max_blocks}; stopped at the half-budget mark")
+    if len(history) > patience:
+        old = history[-1 - patience][1]
+        if old > 0:
+            gained = (old - halfwidth) / old
+            if gained < plateau:
+                return True, (f"ci_plateau: half-width improved {gained * 100:.2f}% over the "
+                              f"last {patience} checks ({old:.2e} -> {halfwidth:.2e}), "
+                              f"below --ci-plateau {plateau * 100:.1f}%")
+    return False, None
 
 
 def boot_ci(xs: list[float], n: int = 2000, alpha: float = 0.05,
@@ -395,69 +626,237 @@ def median_se(xs: list[float]) -> float:
 # 4. The blocked, sandwiched, adaptive measurement
 # ======================================================================================
 def measure(names, runner, *, flush: bool, min_blocks: int, max_blocks: int,
-            target_ci: float, drift_mhz: float, tag: str) -> dict:
-    """Blocks of one-run-per-configuration, baseline sandwiched at both ends.
+            target_ci: float, drift_mhz: float, drift_frac: float, tag: str,
+            selector: str | None = None, smi_every: int = 25, warmup: int = 2,
+            detrend: bool = True, gate_throttle: bool = False, early_stop: bool = True,
+            patience: int = 2, plateau: float = 0.05, store_blocks: bool = True) -> dict:
+    """Rotated blocks of one-run-per-configuration, with an in-band drift probe.
 
-    Per block b, configuration i gets ratio_i(b) = mean(t_A at block start, t_A at block
-    end) / t_i(b).  Both operands come from the same block, so a linear drift across the
-    block divides out; the sandwich is what makes that true for configurations timed late
-    in the block as well as early.  Order reverses on odd blocks so no configuration
-    permanently inherits another's cache state.
+    Per block b the running order is `block_order(names, b)` -- a rotation, reversed on
+    alternate cycles -- followed by a repeat of whatever landed in slot 0.  Every
+    configuration including the baseline visits every slot equally often, so no configuration
+    inherits the block-entry penalty as a permanent tax.  Every ratio is still built from two
+    measurements taken milliseconds apart inside one block; that property is what the block
+    structure exists for and it is untouched.
+
+    TWO GATES, AND THE CHEAP ONE IS THE GOOD ONE.
+
+    In-band, every block, zero subprocesses: the slot-0 repeat gives `drift_frac`, the
+    fractional change in one configuration's own time across the block.  Exceed
+    `--drift-frac` and the block is discarded.  This is strictly better evidence than what it
+    replaces.  The old gate read `nvidia-smi` immediately before and immediately after the
+    block -- both times with the device idle and the measurement over -- and asked whether the
+    clock had moved between two idle reads.  It could not see a stall inside the block at all,
+    which is why it discarded 0 of 200 blocks in seven regimes while the baseline was being
+    over-charged by up to 8.5 % in every one of them, and why at T >= 512 every one of its
+    discards was `SwPowerCap` observed on an idle read rather than any measured slowdown.
+
+    Out-of-band, once per WINDOW of blocks, one targeted subprocess: `clock_probe` samples the
+    SM clock and throttle reasons.  If the clock has stepped by more than `--drift-mhz` since
+    the previous sample, the entire window of blocks since that sample is discarded -- the
+    step happened somewhere inside it and there is no way to say where, so all of it is
+    suspect.  Windows are rounded to a whole number of rotation cycles so a discard never
+    unbalances the slot design, and the sampling rate drops the subprocess count by ~50x.
+
+    Harmful throttle reasons are RECORDED but do not discard by default (`--gate-throttle`
+    turns the old behaviour back on).  `SwPowerCap` was asserted continuously on this card
+    under load; gating on it threw away 70-85 % of blocks at the four largest regimes while
+    selecting, not clean blocks, but the blocks that happened to have relaxed by the time of
+    the idle read after them.  `drift_frac` measures whether the block was actually slow.
     """
-    others = [n for n in names if n != UNFUSED]
-    ratios: dict[str, list[float]] = {n: [] for n in others}
-    raw: dict[str, list[float]] = {n: [] for n in names}
+    n = len(names)
+    others = [x for x in names if x != UNFUSED]
+    ratios: dict[str, list[float]] = {x: [] for x in others}
+    raw: dict[str, list[float]] = {x: [] for x in names}
+    slot_hist: dict[str, list[int]] = {x: [0] * n for x in names}
     kept = dropped = 0
     drift_log: list[dict] = []
+    blocks_rec: list[dict] = []
+    all_drift: list[float] = []
     warned = False
 
-    for b in range(1, max_blocks + 1):
-        order = others if b % 2 else list(reversed(others))
-        before = clocks_now()
-        timed = time_sequence([UNFUSED, *order, UNFUSED], runner, flush)
-        after = clocks_now()
+    # Align the sampling window to whole rotation cycles: a discarded window then removes
+    # complete sweeps of the slot design and cannot bias the slot histogram.
+    period = max(n, int(round(max(1, smi_every) / n)) * n)
+    period = max(n, min(period, (max_blocks // n) * n or n))
 
-        # Discard rather than average: on an unlocked card, quietly folding drifted blocks
-        # into the median is how every CI in the file silently widens.
-        c0, c1 = before["sm_mhz"], after["sm_mhz"]
-        thr = sorted(set(before["throttle"]) | set(after["throttle"]))
-        harmful = [t for t in thr if t in HARMFUL_THROTTLE]
-        moved = c0 is not None and c1 is not None and abs(c1 - c0) > drift_mhz
-        if moved or harmful:
+    prev = clock_probe(selector)
+    samples: list[dict] = [{**prev, "after_block": 0}]
+    window: list[tuple] = []
+    hist: list[tuple] = []
+    stop_reason = f"max_blocks ({max_blocks}) reached"
+
+    def _commit(win) -> None:
+        nonlocal kept
+        for rec, times, rat, order in win:
+            kept += 1
+            for nm, t in times.items():
+                raw[nm].append(t)
+            for nm, v in rat.items():
+                ratios[nm].append(v)
+            for s_i, nm in enumerate(order):
+                slot_hist[nm][s_i] += 1
+            if store_blocks:
+                blocks_rec.append(rec)
+
+    for b in range(max_blocks):
+        order = block_order(names, b)
+        timed = time_sequence(block_sequence(order), runner, flush, warmup=warmup)
+        # GATE FIRST, ON UNDETRENDED READINGS, THEN DETREND.  The detrend is driven by the
+        # very probe the gate is judging, so the two must not be entangled: a block whose
+        # slot-0 reading is corrupt (a residual block-entry penalty, a one-off stall) yields
+        # a large spurious `drift_frac`, and applying a trend fitted to that would spray the
+        # error across all n slots -- turning one bad reading into n bad readings and, worse,
+        # into a SMOOTH bias that no longer looks like an outlier. Offline this inflated the
+        # recovered speedups by up to 7.6 % when the gate was disabled. The gate sees the raw
+        # probe ratio, which is exactly the corruption signal, and only survivors are trended.
+        _, dfrac = block_readings(order, timed, detrend=False)
+        all_drift.append(dfrac)
+        rec = {"b": b, "slots": [names.index(x) for x in order],
+               "ms": [round(ms, 6) for _, ms in timed],
+               "drift_frac": round(dfrac, 6), "kept": True}
+
+        # In-band gate.  `ms` is stored for dropped blocks too: the threshold can then be
+        # re-chosen offline against the observed distribution instead of by another 60 min.
+        # A block failing this gate must NOT skip the window-commit logic below.  It used to
+        # `continue` straight to the next block, which deferred the commit past its boundary
+        # and -- when the FINAL block was the one that failed -- ended the loop with an
+        # uncommitted window whose blocks were counted in neither `kept` nor `dropped` and
+        # never written to `blocks_rec`. Unlike an honest discard those were unrecoverable
+        # offline. Drop the block, then fall through to the boundary check regardless.
+        if abs(dfrac) > drift_frac:
             dropped += 1
-            drift_log.append({"block": b, "sm_before": c0, "sm_after": c1,
-                              "throttle": thr, "harmful": harmful})
+            rec["kept"] = False
+            rec["drop"] = "in_block_drift"
+            drift_log.append({"block": b, "reason": "in_block_drift",
+                              "drift_frac": rec["drift_frac"],
+                              "probe_cfg": order[0]})
+            if store_blocks:
+                blocks_rec.append(rec)
             if not warned and dropped > max(10, max_blocks // 4):
                 warned = True
-                print(f"    !! {tag}: {dropped} blocks discarded for drift/throttle -- the "
-                      f"card is not holding still; expect wide CIs", flush=True)
+                print(f"    !! {tag}: {dropped} blocks discarded on the in-block drift probe "
+                      f"(median drift {statistics.median(all_drift) * 100:+.2f}%) -- the card "
+                      f"is not holding still inside a block", flush=True)
+        else:
+            times, _ = block_readings(order, timed, detrend=detrend)
+            rat = block_ratios(times, UNFUSED)
+            rec["ratio"] = [round(rat.get(x, 1.0), 6) for x in order]
+            window.append((rec, times, rat, order))
+
+        at_boundary = ((b + 1) % period == 0) or (b + 1 == max_blocks)
+        if not at_boundary:
             continue
 
-        kept += 1
-        base = (timed[0][1] + timed[-1][1]) / 2.0        # the sandwich
-        raw[UNFUSED].append(base)
-        for name, ms in timed[1:-1]:
-            raw[name].append(ms)
-            ratios[name].append(base / ms)
+        cur = clock_probe(selector)
+        thr = sorted(set(cur.get("throttle") or []))
+        harmful = [t for t in thr if t in HARMFUL_THROTTLE]
+        c0, c1 = prev.get("sm_mhz"), cur.get("sm_mhz")
+        moved = c0 is not None and c1 is not None and abs(c1 - c0) > drift_mhz
+        samples.append({**cur, "after_block": b, "window": len(window),
+                        "sm_step_mhz": (None if (c0 is None or c1 is None) else c1 - c0),
+                        "harmful": harmful,
+                        "action": "drop_window" if (moved or (gate_throttle and harmful))
+                                  else "commit"})
+        if moved or (gate_throttle and harmful):
+            dropped += len(window)
+            for rec_i, _, _, _ in window:
+                rec_i["kept"] = False
+                rec_i["drop"] = "clock_window"
+                if store_blocks:
+                    blocks_rec.append(rec_i)
+            drift_log.append({"block": b, "reason": "clock_window",
+                              "sm_before": c0, "sm_after": c1,
+                              "blocks_discarded": len(window),
+                              "throttle": thr, "harmful": harmful})
+        else:
+            _commit(window)
+        window = []
+        prev = cur
 
-        if b >= min_blocks and kept >= 4:
-            if max((median_se(ratios[n]) for n in others), default=float("inf")) <= target_ci:
-                break
+        hw = max((median_se(ratios[x]) for x in others), default=float("inf"))
+        stop, why = stop_decision(hw, kept, target_ci, max_blocks, hist,
+                                  min_blocks=min_blocks, patience=patience,
+                                  plateau=plateau, enabled=early_stop)
+        hist.append((kept, hw))
+        if stop and why == "target_ci_met":
+            # Confirm with the PUBLISHED estimator before stopping.  `median_se` is an
+            # asymptotic proxy and the bootstrap is what gets printed; in the first run they
+            # disagreed across the threshold at decode_bs256/graph, which stopped at 39
+            # blocks on the proxy while its bootstrap half-width was still above target.
+            hw_boot = max(((lambda t: (t[2] - t[1]) / 2)(boot_ci(ratios[x])) for x in others),
+                          default=float("inf"))
+            if hw_boot > target_ci:
+                stop, why = False, None
+                hist[-1] = (kept, max(hw, hw_boot))
+        if stop:
+            stop_reason = why
+            break
 
-    out = {"blocks_kept": kept, "blocks_dropped": dropped,
+    # Invariant: every measured block is either committed or recorded as dropped. With the
+    # fall-through above the final block always reaches the boundary check, so `window`
+    # should be empty here -- flush it anyway and SAY SO, because the alternative failure
+    # (blocks that were measured and then silently vanished) is the one defect in this
+    # harness that cannot be detected from its own output file.
+    lost = len(window)
+    if window:
+        _commit(window)
+        window = []
+
+    out = {"blocks_kept": kept, "blocks_dropped": dropped, "blocks_flushed_at_exit": lost,
            "drift_log": drift_log[:40], "per_config": {}}
-    for n in names:
+    for x in names:
         entry: dict = {}
-        if raw[n]:
-            entry.update({"ms_p50": statistics.median(raw[n]),
-                          "ms_min": min(raw[n]), "ms_max": max(raw[n]),
-                          "n": len(raw[n])})
-        if n != UNFUSED and ratios[n]:
-            m, lo, hi = boot_ci(ratios[n])
+        if raw[x]:
+            entry.update({"ms_p50": statistics.median(raw[x]),
+                          "ms_min": min(raw[x]), "ms_max": max(raw[x]),
+                          "n": len(raw[x])})
+        if x != UNFUSED and ratios[x]:
+            m, lo, hi = boot_ci(ratios[x])
             entry.update({"speedup_p50": m, "ci_lo": lo, "ci_hi": hi,
                           "ci_halfwidth": (hi - lo) / 2,
                           "beats_unfused": lo > 1.0, "loses_to_unfused": hi < 1.0})
-        out["per_config"][n] = entry
+        out["per_config"][x] = entry
+
+    ach = max((v.get("ci_halfwidth", float("inf"))
+               for k, v in out["per_config"].items() if k != UNFUSED), default=float("nan"))
+    out["stop_reason"] = stop_reason
+    out["ci_target"] = target_ci
+    out["ci_achieved"] = ach
+    out["ci_target_met"] = bool(ach == ach and ach <= target_ci)
+    out["ci_history"] = [{"blocks": k, "halfwidth_proxy": (v if v == v and v != float("inf")
+                                                           else None)} for k, v in hist]
+    out["names"] = list(names)
+    out["slot_histogram"] = slot_hist
+    # max-minus-min visits per slot, over kept blocks. 0 == a perfectly balanced design.
+    out["slot_imbalance"] = {x: (max(h) - min(h)) for x, h in slot_hist.items()}
+    out["clock_samples"] = samples
+    out["drift_probe"] = {
+        "cfg": "whichever configuration the rotation put in slot 0 of that block",
+        "n": len(all_drift),
+        "median_frac": statistics.median(all_drift) if all_drift else None,
+        "min_frac": min(all_drift) if all_drift else None,
+        "max_frac": max(all_drift) if all_drift else None,
+        "limit": drift_frac,
+        "note": "t(slot n, repeat of slot 0) / t(slot 0) - 1. A systematically NEGATIVE "
+                "median means the head of the block is still slower than its tail, i.e. the "
+                "warm-up is not fully absorbing the block-entry penalty: raise "
+                "--warmup-runs. Near zero means it is.",
+    }
+    out["design"] = {
+        "order": "rotation by block index; reversed on alternate rotation cycles "
+                 "(b // n), NOT on alternate blocks -- with n even, b % 2 aliases with the "
+                 "rotation and would confine every configuration to slots of one parity",
+        "baseline_position": "rotating, identical to every other configuration",
+        "block_runs": n + 1,
+        "warmup_runs_discarded": warmup,
+        "warmup_synchronised": False,
+        "detrended": detrend,
+        "smi_period_blocks": period,
+        "gate_throttle": gate_throttle,
+    }
+    if store_blocks:
+        out["blocks"] = blocks_rec
 
     # Tie sets, stated as CI overlap rather than as a spread heuristic.
     scored = {n: v for n, v in out["per_config"].items() if "ci_lo" in v}
@@ -478,28 +877,103 @@ def measure(names, runner, *, flush: bool, min_blocks: int, max_blocks: int,
 # ======================================================================================
 # 5. Per-kernel device time: the work / gap / launch decomposition
 # ======================================================================================
-def profile_kernels(runner, name: str, reps: int) -> dict:
+_FLUSH_KEYS: set | None = None
+
+
+def flush_kernel_keys(reps: int = 20) -> set:
+    """Profile the L2 flush ALONE, once, to learn exactly which kernel names it produces.
+
+    The flush now runs inside the profiled region (see `profile_kernels`), so its kernel has
+    to come back out of `work_us`.  The old substring filter -- drop any key containing
+    `zero_`, `fill_`, `memset` -- is not safe for that job in both directions: it misses the
+    flush when the driver spells it `...FillFunctor<int>...` (no underscore), and it silently
+    deletes REAL layer work when a configuration legitimately zero-fills an accumulator, which
+    `F_f8` and `K_f3_f8` do -- their `FillFunctor` row is the atomics buffer initialisation and
+    is part of the layer.  Measuring the flush's own key set removes both errors: exclusion
+    becomes exact-match on names that were observed to come from the flush and nothing else.
+    """
+    global _FLUSH_KEYS
+    if _FLUSH_KEYS is not None:
+        return _FLUSH_KEYS
+    keys: set = set()
+    try:
+        from torch.profiler import ProfilerActivity, profile
+        for _ in range(3):
+            B._flush_l2()
+        torch.cuda.synchronize()
+        with profile(activities=[ProfilerActivity.CUDA], record_shapes=False) as prof:
+            for _ in range(reps):
+                B._flush_l2()
+            torch.cuda.synchronize()
+        for ev in prof.key_averages():
+            us = getattr(ev, "self_device_time_total", None)
+            if us is None:
+                us = getattr(ev, "self_cuda_time_total", 0.0)
+            if us and us > 0:
+                keys.add(str(ev.key))
+    except Exception:  # noqa: BLE001 -- fall back to the substring filter below
+        keys = set()
+    _FLUSH_KEYS = keys
+    return keys
+
+
+def profile_kernels(runner, name: str, reps: int, *, flush: bool = True,
+                    selector: str | None = None) -> dict:
     """CUPTI per-kernel device time for one configuration, INSIDE the assembled layer.
 
-    This is the measurement the campaign never had.  Summed over the chain it is the
-    layer's real WORK; graph replay minus it is in-graph scheduling gap; wall minus graph
-    is launch cost.  A fusion whose isolated kernels save 70 us but whose layer moves 20 us
-    shows up here as which of those three terms failed to shrink.
+    This is the measurement the campaign never had.  Summed over the chain it is the layer's
+    real WORK; graph replay minus it is in-graph scheduling gap; wall minus graph is launch
+    cost.  A fusion whose isolated kernels save 70 us but whose layer moves 20 us shows up
+    here as which of those three terms failed to shrink.
+
+    MAKING IT COMPARABLE TO THE TIMING BLOCKS.  In the first run this pass was not comparable
+    to them, and the decomposition inverted: `work_us > wall_us` in 40 of 158 rows, with
+    in-graph "gaps" as negative as -905 us.  Two causes, both fixed here, and one of them
+    fixed by DETECTION rather than by removal because it cannot be removed:
+
+      1. Different cache state.  `time_sequence` flushes L2 before every timed run; this pass
+         flushed nothing and ran `reps` back to back, so `work_us` was measured warm and the
+         thing it was subtracted from was measured cold.  Now it flushes between reps exactly
+         as the blocks do, with the flush's own kernels excluded by measured name.
+      2. Different clock state, which INTERLEAVING CANNOT FIX.  Twenty back-to-back profiled
+         reps are the densest sustained load in the harness, and CUPTI's own host overhead
+         changes the duty cycle on top of that; the card simply does not run at the same clock
+         here as it does inside a gated block, and putting this pass inside a block would
+         contaminate the block instead of cleaning up the profile.  So it is not interleaved.
+         Instead the SAME executions are ALSO timed with CUDA events, giving `pass_wall_us`
+         from the identical reps that produced `work_us`.  Two facts follow that the first run
+         could not establish: `work_us <= pass_wall_us` must hold by construction, so a
+         violation indicts CUPTI rather than the run; and `pass_wall_us / wall_us` from the
+         blocks is a direct per-configuration measurement of how far the two passes' operating
+         conditions differ, which is exactly the quantity whose absence made the negative gaps
+         uninterpretable.  `decomposition` carries it as `profile_vs_block`.
     """
     try:
         from torch.profiler import ProfilerActivity, profile
     except Exception as exc:  # noqa: BLE001
         return {"error": f"profiler unavailable: {exc}"}
     try:
+        excl = flush_kernel_keys() if flush else set()
         for _ in range(3):
             runner(name)
         torch.cuda.synchronize()
+        before = clock_probe(selector)
+        evs = []
         with profile(activities=[ProfilerActivity.CUDA], record_shapes=False) as prof:
             for _ in range(reps):
+                if flush:
+                    B._flush_l2()
+                a = torch.cuda.Event(enable_timing=True)
+                z = torch.cuda.Event(enable_timing=True)
+                a.record()
                 runner(name)
+                z.record()
+                evs.append((a, z))
             torch.cuda.synchronize()
+        after = clock_probe(selector)
         per: dict[str, float] = {}
         total = 0.0
+        excluded_us = 0.0
         for ev in prof.key_averages():
             us = getattr(ev, "self_device_time_total", None)
             if us is None:
@@ -507,13 +981,22 @@ def profile_kernels(runner, name: str, reps: int) -> dict:
             if not us or us <= 0:
                 continue
             key = str(ev.key)
-            # The L2 flush buffer zero is harness scaffolding, not layer work.
-            if "zero_" in key or "fill_" in key or "Memset" in key or "memset" in key:
+            if key in excl or "Memset" in key or "memset" in key:
+                excluded_us += us / reps
                 continue
             per[key] = per.get(key, 0.0) + us / reps
             total += us / reps
+        wall_us = [a.elapsed_time(z) * 1000.0 for a, z in evs]
+        pass_wall = statistics.median(wall_us) if wall_us else None
         return {"kernels": dict(sorted(per.items(), key=lambda kv: -kv[1])),
-                "work_us": total, "n_kernels_seen": len(per), "reps": reps}
+                "work_us": total, "n_kernels_seen": len(per), "reps": reps,
+                "flushed": bool(flush),
+                "excluded_flush_keys": sorted(excl),
+                "excluded_us": excluded_us,
+                "pass_wall_us": pass_wall,
+                "pass_wall_min_us": min(wall_us) if wall_us else None,
+                "work_le_pass_wall": (None if pass_wall is None else total <= pass_wall),
+                "clocks_before": before, "clocks_after": after}
     except Exception as exc:  # noqa: BLE001
         return {"error": f"{type(exc).__name__}: {exc}"[:200]}
 
@@ -522,17 +1005,35 @@ def profile_kernels(runner, name: str, reps: int) -> dict:
 # 6. Driver
 # ======================================================================================
 def estimate_seconds(regimes, n_cfg: int, blocks: int, graph: bool, frozen: dict,
-                     profile_reps: int = 0, warm_s: float = 0.0) -> float:
+                     profile_reps: int = 0, warm_s: float = 0.0, warmup_runs: int = 2,
+                     smi_every: int = 25, smi_cost_s: float = 0.35) -> float:
     """Predict wall time from the campaign's own layer timings, before touching the GPU.
 
-    Every term the run actually pays is in here.  An estimate that omits a phase is worse
-    than no estimate at all, because `--budget-min` refuses to start on the strength of it.
+    Every term the run actually pays is in here.  An estimate that omits a phase is worse than
+    no estimate at all, because `--budget-min` refuses to start on the strength of it -- and
+    the first version of this function omitted the single largest term.  It predicted 4-9 min;
+    the run took 60.  The gap was almost entirely `nvidia-smi`: two un-filtered `--query-gpu`
+    calls over all eight cards around every block, ~0.35 s each, 8478 of them, ~92 % of a
+    3592 s run spent outside the measurement it was estimating.  Charged explicitly now, at a
+    rate `--smi-cost-s` the operator can correct from their own host.
+
+    The other half of the miss was the STOPPING rule rather than the per-block cost: the
+    estimate quoted a min_blocks..max_blocks range as though the floor were the likely
+    outcome, when the 5e-4 target was unreachable in 20 of 22 regime x mode cells and every
+    one of them ran to the ceiling.  `main` now quotes the ceiling as the number to budget
+    against and says so.
     """
     total = float(warm_s)
+    n_modes = 2.0 if graph else 1.0
+    period = max(1, int(round(max(1, smi_every) / max(1, n_cfg))) * max(1, n_cfg))
     for r in regimes:
         mop = ((frozen.get(r.name, {}).get("verdict") or {}).get("median_of_passes") or {})
         ms = mop.get(UNFUSED) or 1.0
-        total += ms * (n_cfg + 1) * (2.0 if graph else 1.0) * blocks / 1000.0
+        # n_cfg timed runs + 1 drift-probe repeat + the discarded warm-up runs, per block.
+        total += ms * (n_cfg + 1 + max(0, warmup_runs)) * n_modes * blocks / 1000.0
+        # One targeted nvidia-smi per window of `period` blocks, per mode, plus the opening
+        # sample.  This is the term whose absence produced the 4-9 min prediction.
+        total += (blocks / period + 1.0) * n_modes * smi_cost_s
         # CUPTI adds roughly its own weight again in host-side event handling.
         total += ms * n_cfg * profile_reps * 2.0 / 1000.0
         total += 8.0                      # build + reference check + capture, per regime
@@ -563,7 +1064,45 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--lock-sm-mhz", type=int, default=0)
     ap.add_argument("--lock-mem-mhz", type=int, default=0)
     ap.add_argument("--clock-headroom", type=float, default=0.85)
-    ap.add_argument("--drift-mhz", type=float, default=15.0)
+    ap.add_argument("--drift-mhz", type=float, default=15.0,
+                    help="window gate: SM clock STEP between consecutive samples that "
+                         "discards the whole window of blocks between them")
+    ap.add_argument("--drift-frac", type=float, default=0.02,
+                    help="in-block gate: |t(slot n)/t(slot 0) - 1| above this discards the "
+                         "block. The slot-0 configuration is run again at the tail of every "
+                         "block, so this measures conditions INSIDE the block")
+    ap.add_argument("--smi-every", type=int, default=25,
+                    help="take one targeted nvidia-smi sample per this many blocks (rounded "
+                         "to a whole number of rotation cycles). The first version sampled "
+                         "TWICE PER BLOCK and that cost ~92%% of the run")
+    ap.add_argument("--smi-cost-s", type=float, default=0.35,
+                    help="measured seconds per nvidia-smi call, for --estimate only")
+    ap.add_argument("--warmup-runs", type=int, default=2,
+                    help="executions discarded at the head of every block to absorb the "
+                         "block-entry penalty. NOT synchronised, on purpose")
+    ap.add_argument("--no-detrend", action="store_true",
+                    help="use the old sandwich (mean of the two probe readings) instead of "
+                         "detrending every slot by the measured within-block trend")
+    ap.add_argument("--gate-throttle", action="store_true",
+                    help="also discard a window when a harmful throttle reason is sampled. "
+                         "OFF by default: SwPowerCap was continuously asserted on this card "
+                         "under load and gating on it discarded 70-85%% of blocks at the "
+                         "large regimes without selecting for anything measurable")
+    ap.add_argument("--no-early-stop", action="store_true",
+                    help="disable the unreachable-target and CI-plateau escapes and run to "
+                         "--max-blocks unless the target is actually met")
+    ap.add_argument("--ci-patience", type=int, default=2,
+                    help="how many consecutive CI checks may pass without improvement")
+    ap.add_argument("--ci-plateau", type=float, default=0.05,
+                    help="fractional CI improvement over --ci-patience checks below which "
+                         "the measurement is judged to have stopped improving")
+    ap.add_argument("--no-store-blocks", action="store_true",
+                    help="omit the raw per-position timings and per-block ratios. Storing "
+                         "them is the default: without them the position bias in the "
+                         "2026-08-13 run could only be reconstructed, never measured")
+    ap.add_argument("--no-profile-flush", action="store_true",
+                    help="do not flush L2 between profiled reps (the old behaviour, which "
+                         "made work_us incomparable to the flushed timing blocks)")
     ap.add_argument("--warm-seconds", type=float, default=90.0)
     ap.add_argument("--plateau-mhz", type=float, default=15.0)
     ap.add_argument("--no-cfg-cache", action="store_true")
@@ -575,6 +1114,32 @@ def build_parser() -> argparse.ArgumentParser:
                     help="2 regimes x 4 configs x 6 blocks -- validates every code path in "
                          "about a minute before you spend the budget")
     return ap
+
+
+def _report_measure(label: str, m: dict) -> None:
+    """One line per mode saying what was measured AND whether the design held.
+
+    `stop_reason` and `ci_achieved` are printed because the first run's headline claim was a
+    +-0.05 % CI it missed by 10-30x in every regime but two, and nothing on screen said so.
+    `slot_imbalance` is printed because a rotation that has been unbalanced by dropped blocks
+    is a rotation that is no longer cancelling position, and that must be visible while the
+    run is happening rather than inferred from the file afterwards.
+    """
+    dp = m.get("drift_probe") or {}
+    med = dp.get("median_frac")
+    imb = max((m.get("slot_imbalance") or {}).values(), default=0)
+    print(f"  {label}: {m['blocks_kept']} kept / {m['blocks_dropped']} dropped, "
+          f"CI +-{m.get('ci_achieved', float('nan')):.2e} vs target "
+          f"{m.get('ci_target', float('nan')):.1e} "
+          f"({'MET' if m.get('ci_target_met') else 'NOT met'}), "
+          f"stop: {m.get('stop_reason')}", flush=True)
+    print(f"  {label}: slot imbalance {imb} (0 = every configuration visited every slot "
+          f"equally), in-block drift probe median "
+          f"{(med * 100 if med is not None else float('nan')):+.3f}%", flush=True)
+    if med is not None and abs(med) > 0.003:
+        print(f"  {label}: !! the drift probe is systematically "
+              f"{'NEGATIVE' if med < 0 else 'POSITIVE'} -- slot 0 is still not like the "
+              f"other slots. Raise --warmup-runs before trusting these ratios.", flush=True)
 
 
 def main() -> None:
@@ -605,18 +1170,27 @@ def main() -> None:
         raise SystemExit(f"no frozen configs for {absent} -- this script never tunes. Run "
                          f"bench_layer.py for those regimes, or drop them from --regimes.")
 
+    _est = dict(profile_reps=0 if args.no_profile else args.profile_reps,
+                warm_s=args.warm_seconds, warmup_runs=args.warmup_runs,
+                smi_every=args.smi_every, smi_cost_s=args.smi_cost_s)
     est = estimate_seconds(regimes, len(want), args.max_blocks, not args.no_graph, frozen,
-                           profile_reps=0 if args.no_profile else args.profile_reps,
-                           warm_s=args.warm_seconds)
+                           **_est)
     floor = estimate_seconds(regimes, len(want), args.min_blocks, not args.no_graph, frozen,
-                             profile_reps=0 if args.no_profile else args.profile_reps,
-                             warm_s=args.warm_seconds)
+                             **_est)
     print(f"[plan] {len(regimes)} regimes x {len(want)} configurations, "
           f"{args.min_blocks}-{args.max_blocks} blocks, target CI "
           f"+-{args.target_ci * 100:.3f}%  (frozen configs from {src.name})", flush=True)
-    print(f"[plan] {floor / 60:.1f}-{est / 60:.1f} min of measurement, plus a one-off "
-          f"~2-3 min of Triton compiles for the shared expert on the FIRST run "
-          f"(checkpointed thereafter)", flush=True)
+    print(f"[plan] BUDGET AGAINST {est / 60:.1f} min (every regime runs to --max-blocks). "
+          f"{floor / 60:.1f} min is the floor, and it is only reached where the CI target is "
+          f"actually MET -- on 2026-08-13 that happened in 2 of 22 regime x mode cells, so "
+          f"the ceiling is the honest number.", flush=True)
+    print(f"[plan] early stop: {'DISABLED' if args.no_early_stop else 'on'} -- a cell also "
+          f"stops when {args.target_ci:.1e} is projected to need more than "
+          f"--max-blocks {args.max_blocks} blocks, or when the CI improves by less than "
+          f"{args.ci_plateau * 100:.0f}% over {args.ci_patience} checks. Expect most cells to "
+          f"stop well short of the ceiling for that reason.", flush=True)
+    print(f"[plan] plus a one-off ~2-3 min of Triton compiles for the shared expert on the "
+          f"FIRST run (checkpointed thereafter)", flush=True)
     if args.estimate:
         return
     if est / 60 > args.budget_min and not args.force:
@@ -719,12 +1293,17 @@ def main() -> None:
                                f"nothing to take a ratio against")
         names = list(chains)
 
+        mkw = dict(min_blocks=args.min_blocks, max_blocks=args.max_blocks,
+                   target_ci=args.target_ci, drift_mhz=args.drift_mhz,
+                   drift_frac=args.drift_frac, selector=target["smi_selector"],
+                   smi_every=args.smi_every, warmup=args.warmup_runs,
+                   detrend=not args.no_detrend, gate_throttle=args.gate_throttle,
+                   early_stop=not args.no_early_stop, patience=args.ci_patience,
+                   plateau=args.ci_plateau, store_blocks=not args.no_store_blocks)
+
         wall = measure(names, lambda n: run_chain(chains[n]), flush=True,
-                       min_blocks=args.min_blocks, max_blocks=args.max_blocks,
-                       target_ci=args.target_ci, drift_mhz=args.drift_mhz,
-                       tag=f"{regime.name}/wall")
-        print(f"  wall : {wall['blocks_kept']} kept / {wall['blocks_dropped']} dropped",
-              flush=True)
+                       tag=f"{regime.name}/wall", **mkw)
+        _report_measure("wall ", wall)
 
         graphs: dict = {}
         graph_err: dict = {}
@@ -739,27 +1318,26 @@ def main() -> None:
                     graphs[n] = g
             if UNFUSED in graphs and len(graphs) > 1:
                 graph = measure(list(graphs), lambda n: graphs[n].replay(), flush=True,
-                                min_blocks=args.min_blocks, max_blocks=args.max_blocks,
-                                target_ci=args.target_ci, drift_mhz=args.drift_mhz,
-                                tag=f"{regime.name}/graph")
-                print(f"  graph: {graph['blocks_kept']} kept / "
-                      f"{graph['blocks_dropped']} dropped", flush=True)
+                                tag=f"{regime.name}/graph", **mkw)
+                _report_measure("graph", graph)
 
         prof: dict = {}
         if not args.no_profile:
             for n in names:
+                pk = dict(flush=not args.no_profile_flush, selector=target["smi_selector"])
                 if n in graphs:
                     prof[n] = profile_kernels(lambda nn: graphs[nn].replay(), n,
-                                              args.profile_reps)
+                                              args.profile_reps, **pk)
                 else:
                     prof[n] = profile_kernels(lambda nn: run_chain(chains[nn]), n,
-                                              args.profile_reps)
+                                              args.profile_reps, **pk)
 
         decomp = {}
         for n in names:
             w = (wall["per_config"].get(n) or {}).get("ms_p50")
             g = ((graph or {}).get("per_config", {}).get(n) or {}).get("ms_p50")
-            k = (prof.get(n) or {}).get("work_us")
+            pk = prof.get(n) or {}
+            k = pk.get("work_us")
             row: dict = {"wall_us": w * 1000 if w else None,
                          "graph_us": g * 1000 if g else None,
                          "work_us": k,
@@ -770,6 +1348,22 @@ def main() -> None:
                 row["launch_us"] = row["wall_us"] - row["graph_us"]
                 if row["n_kernels"]:
                     row["launch_us_per_kernel"] = row["launch_us"] / row["n_kernels"]
+
+            # Is `work_us` comparable to the blocked timings it is being subtracted from?
+            # `pass_wall_us` was measured on the SAME executions that produced `work_us`, so
+            # the first test indicts CUPTI and the second indicts the operating conditions.
+            # Without these two numbers the first run's 40 negative gaps (to -905 us) and 6
+            # negative launch costs (to -118 us/kernel) could not be attributed to anything.
+            pw = pk.get("pass_wall_us")
+            row["profile_wall_us"] = pw
+            row["profile_flushed"] = pk.get("flushed")
+            row["work_le_profile_wall"] = pk.get("work_le_pass_wall")
+            if pw and row["wall_us"]:
+                row["profile_vs_block"] = pw / row["wall_us"]
+            ok_signs = all(row.get(t) is None or row[t] >= 0 for t in ("gap_us", "launch_us"))
+            pvb = row.get("profile_vs_block")
+            row["comparable"] = bool(pvb is not None and abs(pvb - 1.0) <= 0.05)
+            row["decomposition_valid"] = bool(ok_signs and row["comparable"])
             decomp[n] = row
 
         out_all[regime.name] = {
@@ -817,19 +1411,65 @@ def main() -> None:
                  f"{src.name} -- nothing is tuned here, so no arm can be tuned unequally. "
                  "One process, one card, every regime.",
         "protocol": {
-            "blocks": "one run per configuration per block, order reversed on odd blocks, "
-                      "all-unfused baseline run at BOTH ends and averaged",
-            "statistic": "median over blocks of (baseline sandwich / configuration), "
+            "blocks": "one run per configuration per block. The running order is a ROTATION "
+                      "by the block index, reversed on alternate rotation cycles, so every "
+                      "configuration INCLUDING the all-unfused baseline visits every slot "
+                      "equally often. The slot-0 configuration is repeated at the tail as "
+                      f"the block's drift probe. {args.warmup_runs} execution(s) are run and "
+                      "DISCARDED at the head of each block, un-synchronised, so the host is "
+                      "already running ahead of the device when slot 0 is timed.",
+            "statistic": "median over blocks of (baseline / configuration), both detrended "
+                         "by the within-block trend measured by the slot-0 repeat; "
                          "percentile bootstrap 95 % CI, 2000 resamples",
             "tie_rule": "CIs overlap => tied; a configuration beats the unfused layer only "
                         "when its CI excludes 1.0",
-            "drift_gate": f"a block is DISCARDED if SM clock moved > {args.drift_mhz} MHz "
-                          f"across it or any of {sorted(HARMFUL_THROTTLE)} was active. "
-                          "ApplicationsClocksSetting is excluded on purpose -- it is the "
-                          "bit the clock lock itself sets.",
+            "drift_gate": (
+                f"TWO gates. In-band, every block: the slot-0 repeat gives "
+                f"t(tail)/t(head)-1 and the block is DISCARDED if |that| > "
+                f"{args.drift_frac}. Out-of-band, one targeted nvidia-smi per ~"
+                f"{args.smi_every} blocks: if the SM clock stepped > {args.drift_mhz} MHz "
+                f"since the previous sample the whole window of blocks between them is "
+                f"discarded, since the step cannot be localised within it. Harmful throttle "
+                f"reasons {sorted(HARMFUL_THROTTLE)} are RECORDED and gate only under "
+                f"--gate-throttle (here: {args.gate_throttle}); on this card SwPowerCap is "
+                f"asserted continuously under load and gating on it discarded 70-85 % of "
+                f"blocks at the large regimes while selecting for nothing measurable. "
+                f"ApplicationsClocksSetting is excluded on purpose -- it is the bit the "
+                f"clock lock itself sets."),
+            "position_bias": (
+                "The 2026-08-13 run pinned A_all_unfused to slot 0 of every block and "
+                "sandwiched it. Slot 0 is timed into an EMPTY launch queue (the block is "
+                "issued asynchronously with one sync at the end) and, in that run, "
+                "immediately after two un-filtered nvidia-smi subprocesses; the baseline "
+                "therefore paid a fixed 28-79 us block-entry penalty in every block, "
+                "2.6-5.6 us of launch cost per kernel against 0.7-1.4 us for configurations "
+                "with the identical kernel count, and every published speedup-vs-unfused was "
+                "inflated by 0.6-8.5 %. It was NOT a clock ramp: the card read its maximum "
+                "1980 MHz before and after every block with 0/200 blocks dropped for clock "
+                "movement at T<=256, and the penalty was 4-5x larger in wall mode than in "
+                "graph mode, which a device-side clock effect cannot distinguish. Fixed by "
+                "the rotation and the discarded warm-up, not by the clock lock."),
+            "raw_storage": (
+                "regimes.*.wall.blocks and .graph.blocks carry, per block, the slot->config "
+                "assignment, the raw per-position timings (including the tail probe, and "
+                "including blocks that were DISCARDED so a gate threshold can be re-chosen "
+                "offline) and the derived per-position ratio. The first run stored only the "
+                "sandwich MEAN, which is why its position bias had to be reconstructed from "
+                "a separate CUPTI pass instead of measured."),
+            "stopping": (
+                f"target {args.target_ci:.1e}; also stops when the target is projected "
+                f"unreachable within --max-blocks {args.max_blocks} under 1/sqrt(n), or when "
+                f"the CI improves < {args.ci_plateau:.0%} over {args.ci_patience} checks. A "
+                f"target-met stop is confirmed with the published bootstrap, not the cheap "
+                f"median_se proxy that decides it. See wall.stop_reason / graph.stop_reason."),
             "decomposition": "wall = work + in-graph gaps + launch cost, where work is the "
                              "CUPTI sum of per-kernel device time and graph replay is wall "
-                             "minus launch cost",
+                             "minus launch cost. The CUPTI pass now flushes L2 between reps "
+                             "as the timing blocks do, excludes the flush by measured kernel "
+                             "name, and CUDA-event-times the same reps it profiles, so "
+                             "decomposition.*.profile_vs_block states how comparable the two "
+                             "passes' conditions were and decomposition.*.decomposition_valid "
+                             "states whether the identity work <= graph <= wall actually held.",
         },
         "host": {"gpu_selection": sel, "gpu_uuid": uuid, "tenants": tenants,
                  "clocks": clocks, "thermal_precondition": warm,
