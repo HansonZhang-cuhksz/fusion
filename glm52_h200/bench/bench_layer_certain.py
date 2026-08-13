@@ -543,7 +543,8 @@ def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(
         description="Whole-layer fusion measurement with the GPU's uncertainty removed.")
     B.add_gpu_args(ap)
-    ap.add_argument("--regimes", default="all")
+    ap.add_argument("--regimes", default="",
+                    help="comma-separated subset; empty or 'all' means every regime")
     ap.add_argument("--only", default="", help="comma-separated configuration ids")
     ap.add_argument("--cfg-json", default="", help="override the frozen-config source")
     ap.add_argument("--min-blocks", type=int, default=20)
@@ -588,6 +589,10 @@ def main() -> None:
     src = Path(args.cfg_json) if args.cfg_json else RESULTS_DIR / f"{FROZEN_SRC}.json"
     frozen = load_frozen(src)
 
+    # `resolve_regimes` spells "everything" as the empty string. Accept the spellings an
+    # operator will actually type rather than failing on them after the GPU is already masked.
+    if args.regimes.strip().lower() in ("all", "*"):
+        args.regimes = ""
     regimes = B.resolve_regimes(C, args.regimes)
     want = [k.strip() for k in args.only.split(",") if k.strip()] or list(CONFIGS)
     unknown = [k for k in want if k not in CONFIGS]
