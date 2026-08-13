@@ -1,0 +1,1521 @@
+{
+  "id": "layer_certain",
+  "scope": "S3-S11 + shared expert. Configurations FROZEN from layer_configurations.json -- nothing is tuned here, so no arm can be tuned unequally. One process, one card, every regime.",
+  "protocol": {
+    "blocks": "one run per configuration per block, order reversed on odd blocks, all-unfused baseline run at BOTH ends and averaged",
+    "statistic": "median over blocks of (baseline sandwich / configuration), percentile bootstrap 95 % CI, 2000 resamples",
+    "tie_rule": "CIs overlap => tied; a configuration beats the unfused layer only when its CI excludes 1.0",
+    "drift_gate": "a block is DISCARDED if SM clock moved > 15.0 MHz across it or any of ['HwPowerBrakeSlowdown', 'HwSlowdown', 'HwThermalSlowdown', 'SwPowerCap', 'SwThermalSlowdown'] was active. ApplicationsClocksSetting is excluded on purpose -- it is the bit the clock lock itself sets.",
+    "decomposition": "wall = work + in-graph gaps + launch cost, where work is the CUPTI sum of per-kernel device time and graph replay is wall minus launch cost"
+  },
+  "host": {
+    "gpu_selection": {
+      "requested": "7",
+      "applied": true,
+      "allow_busy": false,
+      "inventory": [
+        {
+          "index": 4,
+          "uuid": "GPU-c20464a7-77aa-f6f2-9a70-207c42f6b4a1",
+          "name": "NVIDIA H200",
+          "util_pct": 0.0,
+          "mem_used_mb": 0.0,
+          "mem_total_mb": 143771.0,
+          "n_procs": 0,
+          "busy_threshold_mb": 1437.71,
+          "busy": false
+        },
+        {
+          "index": 5,
+          "uuid": "GPU-2c1d24fb-c9a6-9d6c-fa91-28ea2b50e17f",
+          "name": "NVIDIA H200",
+          "util_pct": 0.0,
+          "mem_used_mb": 0.0,
+          "mem_total_mb": 143771.0,
+          "n_procs": 0,
+          "busy_threshold_mb": 1437.71,
+          "busy": false
+        },
+        {
+          "index": 6,
+          "uuid": "GPU-338e7fe0-5ca6-f37f-b9b6-ea4ea6c5358b",
+          "name": "NVIDIA H200",
+          "util_pct": 0.0,
+          "mem_used_mb": 0.0,
+          "mem_total_mb": 143771.0,
+          "n_procs": 0,
+          "busy_threshold_mb": 1437.71,
+          "busy": false
+        },
+        {
+          "index": 7,
+          "uuid": "GPU-3aa19cef-f7a3-bd28-1b5e-2e6d8b8ca670",
+          "name": "NVIDIA H200",
+          "util_pct": 0.0,
+          "mem_used_mb": 0.0,
+          "mem_total_mb": 143771.0,
+          "n_procs": 0,
+          "busy_threshold_mb": 1437.71,
+          "busy": false
+        },
+        {
+          "index": 0,
+          "uuid": "GPU-b2318e71-edbf-aa1b-dcf3-3cc3e6ea7db0",
+          "name": "NVIDIA H200",
+          "util_pct": 0.0,
+          "mem_used_mb": 129409.0,
+          "mem_total_mb": 143771.0,
+          "n_procs": 1,
+          "busy_threshold_mb": 1437.71,
+          "busy": true
+        },
+        {
+          "index": 1,
+          "uuid": "GPU-59aa5198-70aa-0e6f-16b9-a6d483af9c4e",
+          "name": "NVIDIA H200",
+          "util_pct": 0.0,
+          "mem_used_mb": 129409.0,
+          "mem_total_mb": 143771.0,
+          "n_procs": 1,
+          "busy_threshold_mb": 1437.71,
+          "busy": true
+        },
+        {
+          "index": 2,
+          "uuid": "GPU-3eb2bc50-6290-2508-4dc5-e01f05c85e5f",
+          "name": "NVIDIA H200",
+          "util_pct": 0.0,
+          "mem_used_mb": 129409.0,
+          "mem_total_mb": 143771.0,
+          "n_procs": 1,
+          "busy_threshold_mb": 1437.71,
+          "busy": true
+        },
+        {
+          "index": 3,
+          "uuid": "GPU-6c4cc3d3-e0bc-949d-16be-822af843e49f",
+          "name": "NVIDIA H200",
+          "util_pct": 0.0,
+          "mem_used_mb": 129429.0,
+          "mem_total_mb": 143771.0,
+          "n_procs": 1,
+          "busy_threshold_mb": 1437.71,
+          "busy": true
+        }
+      ],
+      "ranking": [
+        4,
+        5,
+        6,
+        7,
+        0,
+        1,
+        2,
+        3
+      ],
+      "index": 7,
+      "uuid": "GPU-3aa19cef-f7a3-bd28-1b5e-2e6d8b8ca670",
+      "name": "NVIDIA H200",
+      "busy": false,
+      "util_pct": 0.0,
+      "mem_used_mb": 0.0,
+      "n_procs": 0,
+      "cuda_visible_devices": "7",
+      "mask_verified": true
+    },
+    "gpu_uuid": "GPU-3aa19cef-f7a3-bd28-1b5e-2e6d8b8ca670",
+    "tenants": {
+      "checked": true,
+      "gating": true,
+      "uuid": "GPU-3aa19cef-f7a3-bd28-1b5e-2e6d8b8ca670",
+      "foreign_procs": [],
+      "clean": true,
+      "host_wide_procs": 5,
+      "self_pid_excluded": 2576908
+    },
+    "clocks": {
+      "locked": false,
+      "sm_requested_mhz": 1683,
+      "mem_requested_mhz": 3201,
+      "sm_max_mhz": 1980,
+      "mem_max_mhz": 3201,
+      "headroom": 0.85,
+      "mem_locked": false,
+      "sm_error": null,
+      "mem_error": null,
+      "note": "clock lock needs root (or persistence mode plus the right permissions). The run continues UNLOCKED: the per-block drift gate is then the only defence and it is a weaker one -- treat sub-0.2 % differences as unresolved rather than as rankings."
+    },
+    "thermal_precondition": {
+      "seconds": 4.6,
+      "plateaued": true,
+      "plateau_mhz_bar": 15.0,
+      "trace": [
+        {
+          "sm_mhz": 1965.0,
+          "mem_mhz": 3201.0,
+          "temp_c": 32.0,
+          "power_w": 146.32,
+          "throttle": [
+            "SwPowerCap"
+          ],
+          "t": 0.1
+        },
+        {
+          "sm_mhz": 1965.0,
+          "mem_mhz": 3201.0,
+          "temp_c": 36.0,
+          "power_w": 565.2,
+          "throttle": [
+            "SwPowerCap"
+          ],
+          "t": 2.2
+        },
+        {
+          "sm_mhz": 1965.0,
+          "mem_mhz": 3201.0,
+          "temp_c": 37.0,
+          "power_w": 515.34,
+          "throttle": [
+            "SwPowerCap"
+          ],
+          "t": 4.2
+        }
+      ]
+    },
+    "calibration": {
+      "timer_tick_us": 0.032,
+      "timer_tick_match_frac": 1.0,
+      "launch_us": 10.272000517163958,
+      "harness_floor_us": 39.45599815675191,
+      "match_frac_min": 0.9,
+      "trusted": true,
+      "reason": null,
+      "mem_in_use_by_others_bytes": 552468480,
+      "mem_in_use_by_others_frac": 0.00368042715657535
+    }
+  },
+  "args": {
+    "gpu": "7",
+    "allow_busy": false,
+    "gpu_busy_mb": null,
+    "regimes": "decode_bs2,decode_bs4",
+    "only": "A_all_unfused,B_f3,H_f3_f10,J_greedy_all",
+    "cfg_json": "",
+    "min_blocks": 4,
+    "max_blocks": 6,
+    "target_ci": 0.0005,
+    "profile_reps": 5,
+    "no_graph": false,
+    "no_profile": false,
+    "no_verify": false,
+    "no_prenorm": false,
+    "no_lock_clocks": false,
+    "lock_sm_mhz": 0,
+    "lock_mem_mhz": 0,
+    "clock_headroom": 0.85,
+    "drift_mhz": 15.0,
+    "warm_seconds": 15.0,
+    "plateau_mhz": 15.0,
+    "no_cfg_cache": false,
+    "allow_tenants": false,
+    "budget_min": 30.0,
+    "force": false,
+    "estimate": false,
+    "smoke": true
+  },
+  "elapsed_s": 22.5,
+  "regimes": {
+    "decode_bs2": {
+      "T": 2,
+      "oproj_K": 32768,
+      "moe_rows": 16,
+      "correctness": {
+        "A_all_unfused": {
+          "rel_err": 0.008849557489156723,
+          "ok": true,
+          "n_kernels": 14,
+          "verified": true
+        },
+        "B_f3": {
+          "rel_err": 0.008849557489156723,
+          "ok": true,
+          "n_kernels": 13,
+          "verified": true
+        },
+        "H_f3_f10": {
+          "rel_err": 0.008849557489156723,
+          "ok": true,
+          "n_kernels": 12,
+          "verified": true
+        },
+        "J_greedy_all": {
+          "rel_err": 0.006637168116867542,
+          "ok": true,
+          "n_kernels": 11,
+          "verified": true
+        }
+      },
+      "cfgs_frozen_from": "/home/guancheng/zsh/fusion/results/h200/layer_configurations.json",
+      "shared_cfg": {
+        "w13": {
+          "BLOCK_M": 16,
+          "BLOCK_N": 64,
+          "BLOCK_K": 64,
+          "GROUP_M": 8,
+          "num_warps": 4,
+          "num_stages": 3
+        },
+        "act": {
+          "BLOCK_M": 1,
+          "BLOCK_N": 512,
+          "num_warps": 4,
+          "num_stages": 2
+        },
+        "w2": {
+          "BLOCK_M": 16,
+          "BLOCK_N": 64,
+          "BLOCK_K": 64,
+          "GROUP_M": 8,
+          "num_warps": 8,
+          "num_stages": 3
+        }
+      },
+      "shared_expert_tuning_ms": {
+        "w13": 0.054207999259233475,
+        "act": 0.005280000157654285,
+        "w2": 0.023615999147295952
+      },
+      "wall": {
+        "blocks_kept": 6,
+        "blocks_dropped": 0,
+        "drift_log": [],
+        "per_config": {
+          "A_all_unfused": {
+            "ms_p50": 1.9639039933681488,
+            "ms_min": 1.8977599740028381,
+            "ms_max": 2.126960039138794,
+            "n": 6
+          },
+          "B_f3": {
+            "ms_p50": 1.6670399904251099,
+            "ms_min": 1.4630399942398071,
+            "ms_max": 3.601151943206787,
+            "n": 6,
+            "speedup_p50": 1.1775273152588646,
+            "ci_lo": 0.8381744983923564,
+            "ci_hi": 1.3496126120037537,
+            "ci_halfwidth": 0.2557190568056987,
+            "beats_unfused": false,
+            "loses_to_unfused": false
+          },
+          "H_f3_f10": {
+            "ms_p50": 1.4967520236968994,
+            "ms_min": 1.4354560375213623,
+            "ms_max": 1.6109119653701782,
+            "n": 6,
+            "speedup_p50": 1.3438789557719764,
+            "ci_lo": 1.2164861024373526,
+            "ci_hi": 1.4125875824142442,
+            "ci_halfwidth": 0.09805073998844582,
+            "beats_unfused": true,
+            "loses_to_unfused": false
+          },
+          "J_greedy_all": {
+            "ms_p50": 1.4213759899139404,
+            "ms_min": 1.3574719429016113,
+            "ms_max": 1.465440034866333,
+            "n": 6,
+            "speedup_p50": 1.4235215423828493,
+            "ci_lo": 1.3631564708136747,
+            "ci_hi": 1.444030434174,
+            "ci_halfwidth": 0.04043698168016263,
+            "beats_unfused": true,
+            "loses_to_unfused": false
+          }
+        },
+        "verdict": {
+          "best": "J_greedy_all",
+          "tied_with_best": [
+            "H_f3_f10",
+            "J_greedy_all"
+          ],
+          "separated": false,
+          "unfused_in_tie_set": false,
+          "rule": "CIs overlap => tied; a configuration beats the unfused layer only when its 95 % CI excludes 1.0"
+        }
+      },
+      "graph": {
+        "blocks_kept": 6,
+        "blocks_dropped": 0,
+        "drift_log": [],
+        "per_config": {
+          "A_all_unfused": {
+            "ms_p50": 0.5401040017604828,
+            "ms_min": 0.538703978061676,
+            "ms_max": 0.5445759892463684,
+            "n": 6
+          },
+          "B_f3": {
+            "ms_p50": 0.489327996969223,
+            "ms_min": 0.48844799399375916,
+            "ms_max": 0.4917120039463043,
+            "n": 6,
+            "speedup_p50": 1.10362736112383,
+            "ci_lo": 1.0992612488587463,
+            "ci_hi": 1.111170049791817,
+            "ci_halfwidth": 0.005954400466535392,
+            "beats_unfused": true,
+            "loses_to_unfused": false
+          },
+          "H_f3_f10": {
+            "ms_p50": 0.4872319996356964,
+            "ms_min": 0.48559999465942383,
+            "ms_max": 0.48953598737716675,
+            "n": 6,
+            "speedup_p50": 1.1087336630792213,
+            "ci_lo": 1.1065452602049684,
+            "ci_hi": 1.1143992326536254,
+            "ci_halfwidth": 0.003926986224328521,
+            "beats_unfused": true,
+            "loses_to_unfused": false
+          },
+          "J_greedy_all": {
+            "ms_p50": 0.49902400374412537,
+            "ms_min": 0.49561598896980286,
+            "ms_max": 0.5005760192871094,
+            "n": 6,
+            "speedup_p50": 1.083233360385715,
+            "ci_lo": 1.0808297410910874,
+            "ci_hi": 1.0899098420405893,
+            "ci_halfwidth": 0.004540050474750923,
+            "beats_unfused": true,
+            "loses_to_unfused": false
+          }
+        },
+        "verdict": {
+          "best": "H_f3_f10",
+          "tied_with_best": [
+            "B_f3",
+            "H_f3_f10"
+          ],
+          "separated": false,
+          "unfused_in_tie_set": false,
+          "rule": "CIs overlap => tied; a configuration beats the unfused layer only when its 95 % CI excludes 1.0"
+        }
+      },
+      "graph_capture_errors": {},
+      "per_kernel": {
+        "A_all_unfused": {
+          "kernels": {
+            "moe_gateup_kernel": 222.22279999999972,
+            "moe_down_kernel": 111.37999999999992,
+            "oproj_gemm_kernel": 104.32739999999994,
+            "add_rmsnorm_kernel": 26.01640000000007,
+            "norm_router_kernel": 22.36780000000035,
+            "resadd_kernel": 3.379000000000451,
+            "silu_and_mul_kernel": 2.7134000000000014,
+            "moe_sum_kernel": 1.6383999999998196
+          },
+          "work_us": 494.0452000000003,
+          "n_kernels_seen": 8,
+          "reps": 5
+        },
+        "B_f3": {
+          "kernels": {
+            "moe_gateup_kernel": 222.20959999999997,
+            "moe_down_kernel": 110.70199999999986,
+            "oproj_gemm_kernel": 104.33360000000012,
+            "norm_router_kernel": 22.521599999999854,
+            "add_rmsnorm_kernel": 4.281399999999849,
+            "resadd_kernel": 3.3213999999999944,
+            "silu_and_mul_kernel": 2.822400000000198,
+            "moe_sum_kernel": 1.5872000000001207
+          },
+          "work_us": 471.77919999999995,
+          "n_kernels_seen": 8,
+          "reps": 5
+        },
+        "H_f3_f10": {
+          "kernels": {
+            "moe_gateup_kernel": 222.51100000000005,
+            "moe_down_kernel": 111.6485999999999,
+            "oproj_gemm_kernel": 103.617,
+            "norm_router_kernel": 22.4765999999996,
+            "add_rmsnorm_kernel": 4.179200000000128,
+            "silu_and_mul_kernel": 2.7583999999997104,
+            "resadd_kernel": 1.7600000000000364,
+            "moe_sum_kernel": 1.6320000000001529
+          },
+          "work_us": 470.5827999999996,
+          "n_kernels_seen": 8,
+          "reps": 5
+        },
+        "J_greedy_all": {
+          "kernels": {
+            "moe_gateup_kernel": 221.43459999999976,
+            "moe_down_kernel": 111.40579999999954,
+            "oproj_gemm_kernel": 104.53220000000019,
+            "norm_router_kernel": 22.502399999999945,
+            "add_rmsnorm_kernel": 16.550400000000263,
+            "resadd_kernel": 1.8817999999997483,
+            "memcpy32_post": 1.3888000000000829,
+            "silu_and_mul_kernel": 1.177599999999984
+          },
+          "work_us": 480.87359999999956,
+          "n_kernels_seen": 8,
+          "reps": 5
+        }
+      },
+      "decomposition": {
+        "A_all_unfused": {
+          "wall_us": 1963.9039933681488,
+          "graph_us": 540.1040017604828,
+          "work_us": 494.0452000000003,
+          "n_kernels": 14,
+          "gap_us": 46.05880176048248,
+          "launch_us": 1423.799991607666,
+          "launch_us_per_kernel": 101.69999940054757
+        },
+        "B_f3": {
+          "wall_us": 1667.0399904251099,
+          "graph_us": 489.327996969223,
+          "work_us": 471.77919999999995,
+          "n_kernels": 13,
+          "gap_us": 17.548796969223076,
+          "launch_us": 1177.7119934558868,
+          "launch_us_per_kernel": 90.59323026583745
+        },
+        "H_f3_f10": {
+          "wall_us": 1496.7520236968994,
+          "graph_us": 487.2319996356964,
+          "work_us": 470.5827999999996,
+          "n_kernels": 12,
+          "gap_us": 16.64919963569679,
+          "launch_us": 1009.520024061203,
+          "launch_us_per_kernel": 84.12666867176692
+        },
+        "J_greedy_all": {
+          "wall_us": 1421.3759899139404,
+          "graph_us": 499.02400374412537,
+          "work_us": 480.87359999999956,
+          "n_kernels": 11,
+          "gap_us": 18.15040374412581,
+          "launch_us": 922.3519861698151,
+          "launch_us_per_kernel": 83.85018056089228
+        }
+      },
+      "clocks_after": {
+        "sm_mhz": 1980.0,
+        "mem_mhz": 3201.0,
+        "temp_c": 34.0,
+        "power_w": 125.8,
+        "throttle": []
+      }
+    },
+    "decode_bs4": {
+      "T": 4,
+      "oproj_K": 32768,
+      "moe_rows": 32,
+      "correctness": {
+        "A_all_unfused": {
+          "rel_err": 0.007092198356986046,
+          "ok": true,
+          "n_kernels": 14,
+          "verified": true
+        },
+        "B_f3": {
+          "rel_err": 0.007092198356986046,
+          "ok": true,
+          "n_kernels": 13,
+          "verified": true
+        },
+        "H_f3_f10": {
+          "rel_err": 0.007092198356986046,
+          "ok": true,
+          "n_kernels": 12,
+          "verified": true
+        },
+        "J_greedy_all": {
+          "rel_err": 0.007092198356986046,
+          "ok": true,
+          "n_kernels": 11,
+          "verified": true
+        }
+      },
+      "cfgs_frozen_from": "/home/guancheng/zsh/fusion/results/h200/layer_configurations.json",
+      "shared_cfg": {
+        "w13": {
+          "BLOCK_M": 64,
+          "BLOCK_N": 64,
+          "BLOCK_K": 64,
+          "GROUP_M": 8,
+          "num_warps": 4,
+          "num_stages": 3
+        },
+        "act": {
+          "BLOCK_M": 1,
+          "BLOCK_N": 1024,
+          "num_warps": 8,
+          "num_stages": 2
+        },
+        "w2": {
+          "BLOCK_M": 16,
+          "BLOCK_N": 64,
+          "BLOCK_K": 64,
+          "GROUP_M": 8,
+          "num_warps": 4,
+          "num_stages": 3
+        }
+      },
+      "shared_expert_tuning_ms": {
+        "w13": 0.054976001381874084,
+        "act": 0.005663999821990728,
+        "w2": 0.027807999402284622
+      },
+      "wall": {
+        "blocks_kept": 6,
+        "blocks_dropped": 0,
+        "drift_log": [],
+        "per_config": {
+          "A_all_unfused": {
+            "ms_p50": 2.0821360051631927,
+            "ms_min": 2.0261919498443604,
+            "ms_max": 2.2418559789657593,
+            "n": 6
+          },
+          "B_f3": {
+            "ms_p50": 1.6620799899101257,
+            "ms_min": 1.5730880498886108,
+            "ms_max": 1.7278399467468262,
+            "n": 6,
+            "speedup_p50": 1.2526517991657673,
+            "ci_lo": 1.2275847307397156,
+            "ci_hi": 1.3206708453451859,
+            "ci_halfwidth": 0.046543057302735114,
+            "beats_unfused": true,
+            "loses_to_unfused": false
+          },
+          "H_f3_f10": {
+            "ms_p50": 1.5476000308990479,
+            "ms_min": 1.5112639665603638,
+            "ms_max": 1.8711680173873901,
+            "n": 6,
+            "speedup_p50": 1.3432725017055887,
+            "ci_lo": 1.2477943567497705,
+            "ci_hi": 1.3724978244960742,
+            "ci_halfwidth": 0.06235173387315185,
+            "beats_unfused": true,
+            "loses_to_unfused": false
+          },
+          "J_greedy_all": {
+            "ms_p50": 1.4995359778404236,
+            "ms_min": 1.4175679683685303,
+            "ms_max": 2.139616012573242,
+            "n": 6,
+            "speedup_p50": 1.4011132267222892,
+            "ci_lo": 1.1942554793724045,
+            "ci_hi": 1.4449057439106707,
+            "ci_halfwidth": 0.1253251322691331,
+            "beats_unfused": true,
+            "loses_to_unfused": false
+          }
+        },
+        "verdict": {
+          "best": "J_greedy_all",
+          "tied_with_best": [
+            "B_f3",
+            "H_f3_f10",
+            "J_greedy_all"
+          ],
+          "separated": false,
+          "unfused_in_tie_set": false,
+          "rule": "CIs overlap => tied; a configuration beats the unfused layer only when its 95 % CI excludes 1.0"
+        }
+      },
+      "graph": {
+        "blocks_kept": 6,
+        "blocks_dropped": 0,
+        "drift_log": [],
+        "per_config": {
+          "A_all_unfused": {
+            "ms_p50": 0.848471999168396,
+            "ms_min": 0.8459360003471375,
+            "ms_max": 0.8935360014438629,
+            "n": 6
+          },
+          "B_f3": {
+            "ms_p50": 0.7568960189819336,
+            "ms_min": 0.7553279995918274,
+            "ms_max": 0.757311999797821,
+            "n": 6,
+            "speedup_p50": 1.1209890263936537,
+            "ci_lo": 1.118597373319313,
+            "ci_hi": 1.1519394550862811,
+            "ci_halfwidth": 0.016671040883484034,
+            "beats_unfused": true,
+            "loses_to_unfused": false
+          },
+          "H_f3_f10": {
+            "ms_p50": 0.7559999823570251,
+            "ms_min": 0.7535679936408997,
+            "ms_max": 0.7581440210342407,
+            "n": 6,
+            "speedup_p50": 1.122580385087659,
+            "ci_lo": 1.117699860771343,
+            "ci_hi": 1.1554941422729783,
+            "ci_halfwidth": 0.01889714075081761,
+            "beats_unfused": true,
+            "loses_to_unfused": false
+          },
+          "J_greedy_all": {
+            "ms_p50": 0.7677440047264099,
+            "ms_min": 0.7648320198059082,
+            "ms_max": 0.7691839933395386,
+            "n": 6,
+            "speedup_p50": 1.103792991351701,
+            "ci_lo": 1.1019510294937263,
+            "ci_hi": 1.1392934489672757,
+            "ci_halfwidth": 0.01867120973677472,
+            "beats_unfused": true,
+            "loses_to_unfused": false
+          }
+        },
+        "verdict": {
+          "best": "H_f3_f10",
+          "tied_with_best": [
+            "B_f3",
+            "H_f3_f10",
+            "J_greedy_all"
+          ],
+          "separated": false,
+          "unfused_in_tie_set": false,
+          "rule": "CIs overlap => tied; a configuration beats the unfused layer only when its 95 % CI excludes 1.0"
+        }
+      },
+      "graph_capture_errors": {},
+      "per_kernel": {
+        "A_all_unfused": {
+          "kernels": {
+            "moe_gateup_kernel": 394.7299999999997,
+            "moe_down_kernel": 198.1645999999997,
+            "oproj_gemm_kernel": 110.4713999999999,
+            "add_rmsnorm_kernel": 39.315599999999634,
+            "norm_router_kernel": 24.6662000000003,
+            "resadd_kernel": 3.2893999999998416,
+            "silu_and_mul_kernel": 2.9186000000001515,
+            "moe_sum_kernel": 1.766399999999885
+          },
+          "work_us": 775.3221999999992,
+          "n_kernels_seen": 8,
+          "reps": 5
+        },
+        "B_f3": {
+          "kernels": {
+            "moe_gateup_kernel": 395.20619999999997,
+            "moe_down_kernel": 198.8290000000001,
+            "oproj_gemm_kernel": 109.95859999999993,
+            "norm_router_kernel": 24.652799999999843,
+            "add_rmsnorm_kernel": 4.838400000000002,
+            "resadd_kernel": 3.295599999999831,
+            "silu_and_mul_kernel": 2.8739999999998873,
+            "moe_sum_kernel": 1.740599999999813
+          },
+          "work_us": 741.3951999999994,
+          "n_kernels_seen": 8,
+          "reps": 5
+        },
+        "H_f3_f10": {
+          "kernels": {
+            "moe_gateup_kernel": 394.7300000000002,
+            "moe_down_kernel": 200.1424000000001,
+            "oproj_gemm_kernel": 110.11280000000006,
+            "norm_router_kernel": 25.13919999999998,
+            "add_rmsnorm_kernel": 4.838999999999942,
+            "silu_and_mul_kernel": 3.0144000000001143,
+            "moe_sum_kernel": 1.85600000000004,
+            "resadd_kernel": 1.8175999999997656
+          },
+          "work_us": 741.6514000000001,
+          "n_kernels_seen": 8,
+          "reps": 5
+        },
+        "J_greedy_all": {
+          "kernels": {
+            "moe_gateup_kernel": 397.17480000000006,
+            "moe_down_kernel": 200.28900000000004,
+            "oproj_gemm_kernel": 104.78780000000015,
+            "norm_router_kernel": 24.781000000000223,
+            "add_rmsnorm_kernel": 21.17820000000038,
+            "resadd_kernel": 1.81800000000012,
+            "Memcpy DtoD (Device -> Device)": 1.3826000000001841,
+            "silu_and_mul_kernel": 1.190400000000227
+          },
+          "work_us": 752.6018000000012,
+          "n_kernels_seen": 8,
+          "reps": 5
+        }
+      },
+      "decomposition": {
+        "A_all_unfused": {
+          "wall_us": 2082.1360051631927,
+          "graph_us": 848.471999168396,
+          "work_us": 775.3221999999992,
+          "n_kernels": 14,
+          "gap_us": 73.14979916839684,
+          "launch_us": 1233.6640059947968,
+          "launch_us_per_kernel": 88.1188575710569
+        },
+        "B_f3": {
+          "wall_us": 1662.0799899101257,
+          "graph_us": 756.8960189819336,
+          "work_us": 741.3951999999994,
+          "n_kernels": 13,
+          "gap_us": 15.50081898193423,
+          "launch_us": 905.1839709281921,
+          "launch_us_per_kernel": 69.62953622524554
+        },
+        "H_f3_f10": {
+          "wall_us": 1547.6000308990479,
+          "graph_us": 755.9999823570251,
+          "work_us": 741.6514000000001,
+          "n_kernels": 12,
+          "gap_us": 14.348582357025066,
+          "launch_us": 791.6000485420227,
+          "launch_us_per_kernel": 65.96667071183522
+        },
+        "J_greedy_all": {
+          "wall_us": 1499.5359778404236,
+          "graph_us": 767.7440047264099,
+          "work_us": 752.6018000000012,
+          "n_kernels": 11,
+          "gap_us": 15.14220472640875,
+          "launch_us": 731.7919731140137,
+          "launch_us_per_kernel": 66.52654301036488
+        }
+      },
+      "clocks_after": {
+        "sm_mhz": 1980.0,
+        "mem_mhz": 3201.0,
+        "temp_c": 33.0,
+        "power_w": 133.08,
+        "throttle": []
+      }
+    }
+  },
+  "_meta": {
+    "schema": 1,
+    "harness": "glm52_h200/common.py",
+    "recorded_at": "2026-08-12 18:27:43",
+    "device": "NVIDIA H200",
+    "visible_devices": "7",
+    "torch": "2.11.0+cu130",
+    "results_dir": "/home/guancheng/zsh/fusion/results/h200",
+    "harness_info": {
+      "_errors": {},
+      "cuda_available": true,
+      "device_name": "NVIDIA H200",
+      "compute_capability": "9.0",
+      "num_sm": 132,
+      "warp_size": 32,
+      "smem_per_block_optin": 232448,
+      "smem_per_sm": 233472,
+      "regs_per_sm": 65536,
+      "threads_per_sm": 2048,
+      "l2_bytes": 62914560,
+      "total_memory": 150109880320,
+      "uuid": "3aa19cef-f7a3-bd28-1b5e-2e6d8b8ca670",
+      "mem_free_bytes": 149557411840,
+      "mem_total_bytes": 150109880320,
+      "torch": "2.11.0+cu130",
+      "triton": "3.6.0",
+      "flush_bytes": 268435456,
+      "flush_source": "max(256MB, 4 x L2=60MB)",
+      "timer_tick_ms": 3.2e-05,
+      "features": {
+        "source": "ok",
+        "cc": "9.0",
+        "sm90": true,
+        "tma": true,
+        "clusters": true,
+        "warp_specialize": true,
+        "ws": true,
+        "num_consumer_groups": false,
+        "dot_bf16": true,
+        "disabled": []
+      },
+      "preflight": {
+        "status": "ok",
+        "path": "/home/guancheng/zsh/fusion/glm52_h200/preflight_h200.json",
+        "timestamp": "2026-08-11 10:57:30",
+        "bandwidth_GBs": 4247.27475533139,
+        "gemm_TFs": 821.581878813965,
+        "launch_ms": 0.010272000517163957
+      },
+      "nvidia_smi": [
+        {
+          "name": "NVIDIA H200",
+          "driver_version": "580.173.02",
+          "pstate": "P0",
+          "clocks.max.sm": "1980 MHz",
+          "enforced.power.limit": "700.00 W",
+          "ecc.mode.current": "Enabled",
+          "mig.mode.current": "Disabled",
+          "persistence_mode": "Enabled"
+        },
+        {
+          "name": "NVIDIA H200",
+          "driver_version": "580.173.02",
+          "pstate": "P0",
+          "clocks.max.sm": "1980 MHz",
+          "enforced.power.limit": "700.00 W",
+          "ecc.mode.current": "Enabled",
+          "mig.mode.current": "Disabled",
+          "persistence_mode": "Enabled"
+        },
+        {
+          "name": "NVIDIA H200",
+          "driver_version": "580.173.02",
+          "pstate": "P0",
+          "clocks.max.sm": "1980 MHz",
+          "enforced.power.limit": "700.00 W",
+          "ecc.mode.current": "Enabled",
+          "mig.mode.current": "Disabled",
+          "persistence_mode": "Enabled"
+        },
+        {
+          "name": "NVIDIA H200",
+          "driver_version": "580.173.02",
+          "pstate": "P0",
+          "clocks.max.sm": "1980 MHz",
+          "enforced.power.limit": "700.00 W",
+          "ecc.mode.current": "Enabled",
+          "mig.mode.current": "Disabled",
+          "persistence_mode": "Enabled"
+        },
+        {
+          "name": "NVIDIA H200",
+          "driver_version": "580.173.02",
+          "pstate": "P0",
+          "clocks.max.sm": "1980 MHz",
+          "enforced.power.limit": "700.00 W",
+          "ecc.mode.current": "Enabled",
+          "mig.mode.current": "Disabled",
+          "persistence_mode": "Enabled"
+        },
+        {
+          "name": "NVIDIA H200",
+          "driver_version": "580.173.02",
+          "pstate": "P0",
+          "clocks.max.sm": "1980 MHz",
+          "enforced.power.limit": "700.00 W",
+          "ecc.mode.current": "Enabled",
+          "mig.mode.current": "Disabled",
+          "persistence_mode": "Enabled"
+        },
+        {
+          "name": "NVIDIA H200",
+          "driver_version": "580.173.02",
+          "pstate": "P0",
+          "clocks.max.sm": "1980 MHz",
+          "enforced.power.limit": "700.00 W",
+          "ecc.mode.current": "Enabled",
+          "mig.mode.current": "Disabled",
+          "persistence_mode": "Enabled"
+        },
+        {
+          "name": "NVIDIA H200",
+          "driver_version": "580.173.02",
+          "pstate": "P0",
+          "clocks.max.sm": "1980 MHz",
+          "enforced.power.limit": "700.00 W",
+          "ecc.mode.current": "Enabled",
+          "mig.mode.current": "Disabled",
+          "persistence_mode": "Enabled"
+        }
+      ]
+    },
+    "hwinfo": {
+      "host": {
+        "hostname": "hgx-h200-233",
+        "cpu_count": 192,
+        "machine": "x86_64",
+        "processor": "x86_64",
+        "kernel": "5.15.0-186-generic",
+        "cpu_model": "INTEL(R) XEON(R) PLATINUM 8558",
+        "mem_total_kb": 2113400636
+      },
+      "stack": {
+        "python": "3.10.12",
+        "platform": "Linux-5.15.0-186-generic-x86_64-with-glibc2.35",
+        "torch": "2.11.0+cu130",
+        "torch_cuda": "13.0",
+        "torch_hip": null,
+        "torch_git": "70d99e998b4955e0049d13a98d77ae1b14db1f45",
+        "cudnn": 91900,
+        "cuda_available": true,
+        "device_count": 1,
+        "cuda_arch_list": [
+          "sm_75",
+          "sm_80",
+          "sm_86",
+          "sm_90",
+          "sm_100",
+          "sm_120"
+        ],
+        "triton": "3.6.0",
+        "triton_file": "/home/guancheng/.local/lib/python3.10/site-packages/triton/__init__.py"
+      },
+      "devices": [
+        {
+          "index": 0,
+          "name": "NVIDIA H200",
+          "uuid": "3aa19cef-f7a3-bd28-1b5e-2e6d8b8ca670",
+          "total_memory": 150109880320,
+          "compute_capability": "9.0",
+          "multi_processor_count": 132
+        }
+      ],
+      "torch_device_properties": {
+        "_index": 0,
+        "L2_cache_size": 62914560,
+        "clock_rate": 1980000,
+        "gcnArchName": "NVIDIA H200",
+        "is_integrated": 0,
+        "is_multi_gpu_board": 0,
+        "major": 9,
+        "max_threads_per_block": 1024,
+        "max_threads_per_multi_processor": 2048,
+        "memory_bus_width": 6016,
+        "memory_clock_rate": 3201000,
+        "minor": 0,
+        "multi_processor_count": 132,
+        "name": "NVIDIA H200",
+        "pci_bus_id": 219,
+        "pci_device_id": 0,
+        "pci_domain_id": 0,
+        "regs_per_multiprocessor": 65536,
+        "shared_memory_per_block": 49152,
+        "shared_memory_per_block_optin": 232448,
+        "shared_memory_per_multiprocessor": 233472,
+        "total_memory": 150109880320,
+        "uuid": "3aa19cef-f7a3-bd28-1b5e-2e6d8b8ca670",
+        "warp_size": 32,
+        "mem_free_bytes": 149557411840,
+        "mem_total_bytes": 150109880320,
+        "compute_capability": "9.0"
+      },
+      "nvidia_smi_static": [
+        {
+          "index": "0",
+          "name": "NVIDIA H200",
+          "uuid": "GPU-b2318e71-edbf-aa1b-dcf3-3cc3e6ea7db0",
+          "serial": "1750225050758",
+          "driver_version": "580.173.02",
+          "vbios_version": "96.00.A5.00.03",
+          "pci.bus_id": "00000000:19:00.0",
+          "pcie.link.gen.max": "5",
+          "pcie.link.width.max": "16",
+          "clocks.max.sm": "1980 MHz",
+          "clocks.max.mem": "3201 MHz",
+          "clocks.max.gr": "1980 MHz",
+          "clocks.default_applications.graphics": "1980 MHz",
+          "clocks.default_applications.memory": "3201 MHz",
+          "ecc.mode.current": "Enabled",
+          "ecc.mode.pending": "Enabled",
+          "mig.mode.current": "Disabled",
+          "mig.mode.pending": "Disabled",
+          "persistence_mode": "Enabled",
+          "compute_mode": "Default",
+          "accounting.mode": "Disabled",
+          "power.max_limit": "700.00 W",
+          "power.min_limit": "200.00 W",
+          "power.default_limit": "700.00 W",
+          "enforced.power.limit": "700.00 W",
+          "memory.total": "143771 MiB"
+        },
+        {
+          "index": "1",
+          "name": "NVIDIA H200",
+          "uuid": "GPU-59aa5198-70aa-0e6f-16b9-a6d483af9c4e",
+          "serial": "1750225056354",
+          "driver_version": "580.173.02",
+          "vbios_version": "96.00.A5.00.03",
+          "pci.bus_id": "00000000:2A:00.0",
+          "pcie.link.gen.max": "5",
+          "pcie.link.width.max": "16",
+          "clocks.max.sm": "1980 MHz",
+          "clocks.max.mem": "3201 MHz",
+          "clocks.max.gr": "1980 MHz",
+          "clocks.default_applications.graphics": "1980 MHz",
+          "clocks.default_applications.memory": "3201 MHz",
+          "ecc.mode.current": "Enabled",
+          "ecc.mode.pending": "Enabled",
+          "mig.mode.current": "Disabled",
+          "mig.mode.pending": "Disabled",
+          "persistence_mode": "Enabled",
+          "compute_mode": "Default",
+          "accounting.mode": "Disabled",
+          "power.max_limit": "700.00 W",
+          "power.min_limit": "200.00 W",
+          "power.default_limit": "700.00 W",
+          "enforced.power.limit": "700.00 W",
+          "memory.total": "143771 MiB"
+        },
+        {
+          "index": "2",
+          "name": "NVIDIA H200",
+          "uuid": "GPU-3eb2bc50-6290-2508-4dc5-e01f05c85e5f",
+          "serial": "1750325032330",
+          "driver_version": "580.173.02",
+          "vbios_version": "96.00.A5.00.03",
+          "pci.bus_id": "00000000:3B:00.0",
+          "pcie.link.gen.max": "5",
+          "pcie.link.width.max": "16",
+          "clocks.max.sm": "1980 MHz",
+          "clocks.max.mem": "3201 MHz",
+          "clocks.max.gr": "1980 MHz",
+          "clocks.default_applications.graphics": "1980 MHz",
+          "clocks.default_applications.memory": "3201 MHz",
+          "ecc.mode.current": "Enabled",
+          "ecc.mode.pending": "Enabled",
+          "mig.mode.current": "Disabled",
+          "mig.mode.pending": "Disabled",
+          "persistence_mode": "Enabled",
+          "compute_mode": "Default",
+          "accounting.mode": "Disabled",
+          "power.max_limit": "700.00 W",
+          "power.min_limit": "200.00 W",
+          "power.default_limit": "700.00 W",
+          "enforced.power.limit": "700.00 W",
+          "memory.total": "143771 MiB"
+        },
+        {
+          "index": "3",
+          "name": "NVIDIA H200",
+          "uuid": "GPU-6c4cc3d3-e0bc-949d-16be-822af843e49f",
+          "serial": "1750225050680",
+          "driver_version": "580.173.02",
+          "vbios_version": "96.00.A5.00.03",
+          "pci.bus_id": "00000000:5D:00.0",
+          "pcie.link.gen.max": "5",
+          "pcie.link.width.max": "16",
+          "clocks.max.sm": "1980 MHz",
+          "clocks.max.mem": "3201 MHz",
+          "clocks.max.gr": "1980 MHz",
+          "clocks.default_applications.graphics": "1980 MHz",
+          "clocks.default_applications.memory": "3201 MHz",
+          "ecc.mode.current": "Enabled",
+          "ecc.mode.pending": "Enabled",
+          "mig.mode.current": "Disabled",
+          "mig.mode.pending": "Disabled",
+          "persistence_mode": "Enabled",
+          "compute_mode": "Default",
+          "accounting.mode": "Disabled",
+          "power.max_limit": "700.00 W",
+          "power.min_limit": "200.00 W",
+          "power.default_limit": "700.00 W",
+          "enforced.power.limit": "700.00 W",
+          "memory.total": "143771 MiB"
+        },
+        {
+          "index": "4",
+          "name": "NVIDIA H200",
+          "uuid": "GPU-c20464a7-77aa-f6f2-9a70-207c42f6b4a1",
+          "serial": "1750225053234",
+          "driver_version": "580.173.02",
+          "vbios_version": "96.00.A5.00.03",
+          "pci.bus_id": "00000000:9B:00.0",
+          "pcie.link.gen.max": "5",
+          "pcie.link.width.max": "16",
+          "clocks.max.sm": "1980 MHz",
+          "clocks.max.mem": "3201 MHz",
+          "clocks.max.gr": "1980 MHz",
+          "clocks.default_applications.graphics": "1980 MHz",
+          "clocks.default_applications.memory": "3201 MHz",
+          "ecc.mode.current": "Enabled",
+          "ecc.mode.pending": "Enabled",
+          "mig.mode.current": "Disabled",
+          "mig.mode.pending": "Disabled",
+          "persistence_mode": "Enabled",
+          "compute_mode": "Default",
+          "accounting.mode": "Disabled",
+          "power.max_limit": "700.00 W",
+          "power.min_limit": "200.00 W",
+          "power.default_limit": "700.00 W",
+          "enforced.power.limit": "700.00 W",
+          "memory.total": "143771 MiB"
+        },
+        {
+          "index": "5",
+          "name": "NVIDIA H200",
+          "uuid": "GPU-2c1d24fb-c9a6-9d6c-fa91-28ea2b50e17f",
+          "serial": "1750225046339",
+          "driver_version": "580.173.02",
+          "vbios_version": "96.00.A5.00.03",
+          "pci.bus_id": "00000000:AB:00.0",
+          "pcie.link.gen.max": "5",
+          "pcie.link.width.max": "16",
+          "clocks.max.sm": "1980 MHz",
+          "clocks.max.mem": "3201 MHz",
+          "clocks.max.gr": "1980 MHz",
+          "clocks.default_applications.graphics": "1980 MHz",
+          "clocks.default_applications.memory": "3201 MHz",
+          "ecc.mode.current": "Enabled",
+          "ecc.mode.pending": "Enabled",
+          "mig.mode.current": "Disabled",
+          "mig.mode.pending": "Disabled",
+          "persistence_mode": "Enabled",
+          "compute_mode": "Default",
+          "accounting.mode": "Disabled",
+          "power.max_limit": "700.00 W",
+          "power.min_limit": "200.00 W",
+          "power.default_limit": "700.00 W",
+          "enforced.power.limit": "700.00 W",
+          "memory.total": "143771 MiB"
+        },
+        {
+          "index": "6",
+          "name": "NVIDIA H200",
+          "uuid": "GPU-338e7fe0-5ca6-f37f-b9b6-ea4ea6c5358b",
+          "serial": "1750225053170",
+          "driver_version": "580.173.02",
+          "vbios_version": "96.00.A5.00.03",
+          "pci.bus_id": "00000000:BB:00.0",
+          "pcie.link.gen.max": "5",
+          "pcie.link.width.max": "16",
+          "clocks.max.sm": "1980 MHz",
+          "clocks.max.mem": "3201 MHz",
+          "clocks.max.gr": "1980 MHz",
+          "clocks.default_applications.graphics": "1980 MHz",
+          "clocks.default_applications.memory": "3201 MHz",
+          "ecc.mode.current": "Enabled",
+          "ecc.mode.pending": "Enabled",
+          "mig.mode.current": "Disabled",
+          "mig.mode.pending": "Disabled",
+          "persistence_mode": "Enabled",
+          "compute_mode": "Default",
+          "accounting.mode": "Disabled",
+          "power.max_limit": "700.00 W",
+          "power.min_limit": "200.00 W",
+          "power.default_limit": "700.00 W",
+          "enforced.power.limit": "700.00 W",
+          "memory.total": "143771 MiB"
+        },
+        {
+          "index": "7",
+          "name": "NVIDIA H200",
+          "uuid": "GPU-3aa19cef-f7a3-bd28-1b5e-2e6d8b8ca670",
+          "serial": "1750225056892",
+          "driver_version": "580.173.02",
+          "vbios_version": "96.00.A5.00.03",
+          "pci.bus_id": "00000000:DB:00.0",
+          "pcie.link.gen.max": "5",
+          "pcie.link.width.max": "16",
+          "clocks.max.sm": "1980 MHz",
+          "clocks.max.mem": "3201 MHz",
+          "clocks.max.gr": "1980 MHz",
+          "clocks.default_applications.graphics": "1980 MHz",
+          "clocks.default_applications.memory": "3201 MHz",
+          "ecc.mode.current": "Enabled",
+          "ecc.mode.pending": "Enabled",
+          "mig.mode.current": "Disabled",
+          "mig.mode.pending": "Disabled",
+          "persistence_mode": "Enabled",
+          "compute_mode": "Default",
+          "accounting.mode": "Disabled",
+          "power.max_limit": "700.00 W",
+          "power.min_limit": "200.00 W",
+          "power.default_limit": "700.00 W",
+          "enforced.power.limit": "700.00 W",
+          "memory.total": "143771 MiB"
+        }
+      ],
+      "nvidia_smi_version": "NVIDIA-SMI version  : 580.173.02\nNVML version        : 580.173\nDRIVER version      : 580.173.02\nCUDA Version        : 13.0",
+      "nvidia_smi_list": "GPU 0: NVIDIA H200 (UUID: GPU-b2318e71-edbf-aa1b-dcf3-3cc3e6ea7db0)\nGPU 1: NVIDIA H200 (UUID: GPU-59aa5198-70aa-0e6f-16b9-a6d483af9c4e)\nGPU 2: NVIDIA H200 (UUID: GPU-3eb2bc50-6290-2508-4dc5-e01f05c85e5f)\nGPU 3: NVIDIA H200 (UUID: GPU-6c4cc3d3-e0bc-949d-16be-822af843e49f)\nGPU 4: NVIDIA H200 (UUID: GPU-c20464a7-77aa-f6f2-9a70-207c42f6b4a1)\nGPU 5: NVIDIA H200 (UUID: GPU-2c1d24fb-c9a6-9d6c-fa91-28ea2b50e17f)\nGPU 6: NVIDIA H200 (UUID: GPU-338e7fe0-5ca6-f37f-b9b6-ea4ea6c5358b)\nGPU 7: NVIDIA H200 (UUID: GPU-3aa19cef-f7a3-bd28-1b5e-2e6d8b8ca670)",
+      "nvidia_smi_clock_report": "\n==============NVSMI LOG==============\n\nTimestamp                                              : Wed Aug 12 18:27:09 2026\nDriver Version                                         : 580.173.02\nCUDA Version                                           : 13.0\n\nAttached GPUs                                          : 8\nGPU 00000000:19:00.0\n    Clocks\n        Graphics                                       : 1980 MHz\n        SM                                             : 1980 MHz\n        Memory                                         : 3201 MHz\n        Video                                          : 1545 MHz\n    Applications Clocks\n        Graphics                                       : 1980 MHz\n        Memory                                         : 3201 MHz\n    Default Applications Clocks\n        Graphics                                       : 1980 MHz\n        Memory                                         : 3201 MHz\n    Deferred Clocks\n        Memory                                         : N/A\n    Max Clocks\n        Graphics                                       : 1980 MHz\n        SM                                             : 1980 MHz\n        Memory                                         : 3201 MHz\n        Video                                          : 1545 MHz\n    Max Customer Boost Clocks\n        Graphics                                       : 1980 MHz\n    SM Clock Samples\n        Duration                                       : Not Found\n        Number of Samples                              : Not Found\n        Max                                            : Not Found\n        Min                                            : Not Found\n        Avg                                            : Not Found\n    Memory Clock Samples\n        Duration                                       : Not Found\n        Number of Samples                              : Not Found\n        Max                                            : Not Found\n        Min                                            : Not Found\n        Avg                                            : Not Found\n    Clock Policy\n        Auto Boost                                     : N/A\n        Auto Boost Default                             : N/A\n\nGPU 00000000:2A:00.0\n    Clocks\n        Graphics                                       : 1980 MHz\n        SM                                             : 1980 MHz\n        Memory                                         : 3201 MHz\n        Video                                          : 1545 MHz\n    Applications Clocks\n        Graphics                                       : 1980 MHz\n        Memory                                         : 3201 MHz\n    Default Applications Clocks\n        Graphics                                       : 1980 MHz\n        Memory                                         : 3201 MHz\n    Deferred Clocks\n        Memory                                         : N/A\n    Max Clocks\n        Graphics                                       : 1980 MHz\n        SM                                             : 1980 MHz\n        Memory                                         : 3201 MHz\n        Video                                          : 1545 MHz\n    Max Customer Boost Clocks\n        Graphics                                       : 1980 MHz\n    SM Clock Samples\n        Duration                                       : Not Found\n        Number of Samples                              : Not Found\n        Max                                            : Not Found\n        Min                                            : Not Found\n        Avg                                            : Not Found\n    Memory Clock Samples\n        Duration                                       : Not Found\n        Number of Samples                              : Not Found\n        Max                                            : Not Found\n        Min                                            : Not Found\n        Avg                            ",
+      "topology": "\tGPU0\tGPU1\tGPU2\tGPU3\tGPU4\tGPU5\tGPU6\tGPU7\tNIC0\tNIC1\tNIC2\tNIC3\tNIC4\tNIC5\tNIC6\tCPU Affinity\tNUMA Affinity\tGPU NUMA ID\nGPU0\t X \tNV18\tNV18\tNV18\tNV18\tNV18\tNV18\tNV18\tNODE\tNODE\tSYS\tSYS\tSYS\tSYS\tSYS\t0-23,96-119\t0\t\tN/A\nGPU1\tNV18\t X \tNV18\tNV18\tNV18\tNV18\tNV18\tNV18\tPIX\tNODE\tSYS\tSYS\tSYS\tSYS\tSYS\t0-23,96-119\t0\t\tN/A\nGPU2\tNV18\tNV18\t X \tNV18\tNV18\tNV18\tNV18\tNV18\tNODE\tPIX\tSYS\tSYS\tSYS\tSYS\tSYS\t0-23,96-119\t0\t\tN/A\nGPU3\tNV18\tNV18\tNV18\t X \tNV18\tNV18\tNV18\tNV18\tSYS\tSYS\tSYS\tSYS\tSYS\tSYS\tSYS\t24-47,120-143\t1\t\tN/A\nGPU4\tNV18\tNV18\tNV18\tNV18\t X \tNV18\tNV18\tNV18\tSYS\tSYS\tPIX\tNODE\tNODE\tSYS\tSYS\t48-71,144-167\t2\t\tN/A\nGPU5\tNV18\tNV18\tNV18\tNV18\tNV18\t X \tNV18\tNV18\tSYS\tSYS\tNODE\tPIX\tNODE\tSYS\tSYS\t48-71,144-167\t2\t\tN/A\nGPU6\tNV18\tNV18\tNV18\tNV18\tNV18\tNV18\t X \tNV18\tSYS\tSYS\tNODE\tNODE\tPIX\tSYS\tSYS\t48-71,144-167\t2\t\tN/A\nGPU7\tNV18\tNV18\tNV18\tNV18\tNV18\tNV18\tNV18\t X \tSYS\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\t72-95,168-191\t3\t\tN/A\nNIC0\tNODE\tPIX\tNODE\tSYS\tSYS\tSYS\tSYS\tSYS\t X \tNODE\tSYS\tSYS\tSYS\tSYS\tSYS\t\t\t\t\nNIC1\tNODE\tNODE\tPIX\tSYS\tSYS\tSYS\tSYS\tSYS\tNODE\t X \tSYS\tSYS\tSYS\tSYS\tSYS\t\t\t\t\nNIC2\tSYS\tSYS\tSYS\tSYS\tPIX\tNODE\tNODE\tSYS\tSYS\tSYS\t X \tNODE\tNODE\tSYS\tSYS\t\t\t\t\nNIC3\tSYS\tSYS\tSYS\tSYS\tNODE\tPIX\tNODE\tSYS\tSYS\tSYS\tNODE\t X \tNODE\tSYS\tSYS\t\t\t\t\nNIC4\tSYS\tSYS\tSYS\tSYS\tNODE\tNODE\tPIX\tSYS\tSYS\tSYS\tNODE\tNODE\t X \tSYS\tSYS\t\t\t\t\nNIC5\tSYS\tSYS\tSYS\tSYS\tSYS\tSYS\tSYS\tNODE\tSYS\tSYS\tSYS\tSYS\tSYS\t X \tPIX\t\t\t\t\nNIC6\tSYS\tSYS\tSYS\tSYS\tSYS\tSYS\tSYS\tNODE\tSYS\tSYS\tSYS\tSYS\tSYS\tPIX\t X \t\t\t\t\n\nLegend:\n\n  X    = Self\n  SYS  = Connection traversing PCIe as well as the SMP interconnect between NUMA nodes (e.g., QPI/UPI)\n  NODE = Connection traversing PCIe as well as the interconnect between PCIe Host Bridges within a NUMA node\n  PHB  = Connection traversing PCIe as well as a PCIe Host Bridge (typically the CPU)\n  PXB  = Connection traversing multiple PCIe bridges (without traversing the PCIe Host Bridge)\n  PIX  = Connection traversing at most a single PCIe bridge\n  NV#  = Connection traversing a bonded set of # NVLinks\n\nNIC Legend:\n\n  NIC0: mlx5_0\n  NIC1: mlx5_1\n  NIC2: mlx5_2\n  NIC3: mlx5_3\n  NIC4: mlx5_4\n  NIC5: mlx5_5\n  NIC6: mlx5_6\n\n",
+      "nvlink": "GPU 0: NVIDIA H200 (UUID: GPU-b2318e71-edbf-aa1b-dcf3-3cc3e6ea7db0)\n\t Link 0: 26.562 GB/s\n\t Link 1: 26.562 GB/s\n\t Link 2: 26.562 GB/s\n\t Link 3: 26.562 GB/s\n\t Link 4: 26.562 GB/s\n\t Link 5: 26.562 GB/s\n\t Link 6: 26.562 GB/s\n\t Link 7: 26.562 GB/s\n\t Link 8: 26.562 GB/s\n\t Link 9: 26.562 GB/s\n\t Link 10: 26.562 GB/s\n\t Link 11: 26.562 GB/s\n\t Link 12: 26.562 GB/s\n\t Link 13: 26.562 GB/s\n\t Link 14: 26.562 GB/s\n\t Link 15: 26.562 GB/s\n\t Link 16: 26.562 GB/s\n\t Link 17: 26.562 GB/s\nGPU 1: NVIDIA H200 (UUID: GPU-59aa5198-70aa-0e6f-16b9-a6d483af9c4e)\n\t Link 0: 26.562 GB/s\n\t Link 1: 26.562 GB/s\n\t Link 2: 26.562 GB/s\n\t Link 3: 26.562 GB/s\n\t Link 4: 26.562 GB/s\n\t Link 5: 26.562 GB/s\n\t Link 6: 26.562 GB/s\n\t Link 7: 26.562 GB/s\n\t Link 8: 26.562 GB/s\n\t Link 9: 26.562 GB/s\n\t Link 10: 26.562 GB/s\n\t Link 11: 26.562 GB/s\n\t Link 12: 26.562 GB/s\n\t Link 13: 26.562 GB/s\n\t Link 14: 26.562 GB/s\n\t Link 15: 26.562 GB/s\n\t Link 16: 26.562 GB/s\n\t Link 17: 26.562 GB/s\nGPU 2: NVIDIA H200 (UUID: GPU-3eb2bc50-6290-2508-4dc5-e01f05c85e5f)\n\t Link 0: 26.562 GB/s\n\t Link 1: 26.562 GB/s\n\t Link 2: 26.562 GB/s\n\t Link 3: 26.562 GB/s\n\t Link 4: 26.562 GB/s\n\t Link 5: 26.562 GB/s\n\t Link 6: 26.562 GB/s\n\t Link 7: 26.562 GB/s\n\t Link 8: 26.562 GB/s\n\t Link 9: 26.562 GB/s\n\t Link 10: 26.562 GB/s\n\t Link 11: 26.562 GB/s\n\t Link 12: 26.562 GB/s\n\t Link 13: 26.562 GB/s\n\t Link 14: 26.562 GB/s\n\t Link 15: 26.562 GB/s\n\t Link 16: 26.562 GB/s\n\t Link 17: 26.562 GB/s\nGPU 3: NVIDIA H200 (UUID: GPU-6c4cc3d3-e0bc-949d-16be-822af843e49f)\n\t Link 0: 26.562 GB/s\n\t Link 1: 26.562 GB/s\n\t Link 2: 26.562 GB/s\n\t Link 3: 26.562 GB/s\n\t Link 4: 26.562 GB/s\n\t Link 5: 26.562 GB/s\n\t Link 6: 26.562 GB/s\n\t Link 7: 26.562 GB/s\n\t Link 8: 26.562 GB/s\n\t Link 9: 26.562 GB/s\n\t Link 10: 26.562 GB/s\n\t Link 11: 26.562 GB/s\n\t Link 12: 26.562 GB/s\n\t Link 13: 26.562 GB/s\n\t Link 14: 26.562 GB/s\n\t Link 15: 26.562 GB/s\n\t Link 16: 26.562 GB/s\n\t Link 17: 26.562 GB/s\nGPU 4: NVIDIA H200 (UUID: GPU-c20464a7-77aa-f6f2-9a70-207c42f6b4a1)\n\t Link 0: 26.562 GB/s\n\t Link 1: 26.562 GB/s\n",
+      "_static_errors": {},
+      "schema": 1,
+      "collected_at": "2026-08-12 18:27:43",
+      "torch_flags": {
+        "float32_matmul_precision": "highest",
+        "cuda.matmul.allow_tf32": false,
+        "cudnn.allow_tf32": true,
+        "cudnn.benchmark": false,
+        "cuda.matmul.allow_bf16_reduced_precision_reduction": true,
+        "cuda.matmul.allow_fp16_reduced_precision_reduction": true,
+        "env": {
+          "CUDA_VISIBLE_DEVICES": "7"
+        }
+      },
+      "nvidia_smi_dynamic": [
+        {
+          "index": "0",
+          "uuid": "GPU-b2318e71-edbf-aa1b-dcf3-3cc3e6ea7db0",
+          "pstate": "P0",
+          "clocks.sm": "1980 MHz",
+          "clocks.mem": "3201 MHz",
+          "clocks.gr": "1980 MHz",
+          "clocks.applications.graphics": "1980 MHz",
+          "clocks.applications.memory": "3201 MHz",
+          "clocks_throttle_reasons.active": "0x0000000000000000",
+          "clocks_event_reasons.active": "0x0000000000000000",
+          "power.draw": "122.81 W",
+          "power.limit": "700.00 W",
+          "temperature.gpu": "33",
+          "temperature.memory": "30",
+          "fan.speed": "[N/A]",
+          "utilization.gpu": "0 %",
+          "utilization.memory": "0 %",
+          "memory.used": "131757 MiB",
+          "memory.free": "11399 MiB",
+          "pcie.link.gen.current": "5",
+          "pcie.link.width.current": "16"
+        },
+        {
+          "index": "1",
+          "uuid": "GPU-59aa5198-70aa-0e6f-16b9-a6d483af9c4e",
+          "pstate": "P0",
+          "clocks.sm": "1980 MHz",
+          "clocks.mem": "3201 MHz",
+          "clocks.gr": "1980 MHz",
+          "clocks.applications.graphics": "1980 MHz",
+          "clocks.applications.memory": "3201 MHz",
+          "clocks_throttle_reasons.active": "0x0000000000000000",
+          "clocks_event_reasons.active": "0x0000000000000000",
+          "power.draw": "128.89 W",
+          "power.limit": "700.00 W",
+          "temperature.gpu": "40",
+          "temperature.memory": "36",
+          "fan.speed": "[N/A]",
+          "utilization.gpu": "0 %",
+          "utilization.memory": "0 %",
+          "memory.used": "131757 MiB",
+          "memory.free": "11399 MiB",
+          "pcie.link.gen.current": "5",
+          "pcie.link.width.current": "16"
+        },
+        {
+          "index": "2",
+          "uuid": "GPU-3eb2bc50-6290-2508-4dc5-e01f05c85e5f",
+          "pstate": "P0",
+          "clocks.sm": "1980 MHz",
+          "clocks.mem": "3201 MHz",
+          "clocks.gr": "1980 MHz",
+          "clocks.applications.graphics": "1980 MHz",
+          "clocks.applications.memory": "3201 MHz",
+          "clocks_throttle_reasons.active": "0x0000000000000000",
+          "clocks_event_reasons.active": "0x0000000000000000",
+          "power.draw": "125.21 W",
+          "power.limit": "700.00 W",
+          "temperature.gpu": "39",
+          "temperature.memory": "34",
+          "fan.speed": "[N/A]",
+          "utilization.gpu": "0 %",
+          "utilization.memory": "0 %",
+          "memory.used": "131757 MiB",
+          "memory.free": "11399 MiB",
+          "pcie.link.gen.current": "5",
+          "pcie.link.width.current": "16"
+        },
+        {
+          "index": "3",
+          "uuid": "GPU-6c4cc3d3-e0bc-949d-16be-822af843e49f",
+          "pstate": "P0",
+          "clocks.sm": "1980 MHz",
+          "clocks.mem": "3201 MHz",
+          "clocks.gr": "1980 MHz",
+          "clocks.applications.graphics": "1980 MHz",
+          "clocks.applications.memory": "3201 MHz",
+          "clocks_throttle_reasons.active": "0x0000000000000000",
+          "clocks_event_reasons.active": "0x0000000000000000",
+          "power.draw": "124.36 W",
+          "power.limit": "700.00 W",
+          "temperature.gpu": "33",
+          "temperature.memory": "31",
+          "fan.speed": "[N/A]",
+          "utilization.gpu": "0 %",
+          "utilization.memory": "0 %",
+          "memory.used": "131757 MiB",
+          "memory.free": "11399 MiB",
+          "pcie.link.gen.current": "5",
+          "pcie.link.width.current": "16"
+        },
+        {
+          "index": "4",
+          "uuid": "GPU-c20464a7-77aa-f6f2-9a70-207c42f6b4a1",
+          "pstate": "P0",
+          "clocks.sm": "345 MHz",
+          "clocks.mem": "3201 MHz",
+          "clocks.gr": "345 MHz",
+          "clocks.applications.graphics": "1980 MHz",
+          "clocks.applications.memory": "3201 MHz",
+          "clocks_throttle_reasons.active": "0x0000000000000001",
+          "clocks_event_reasons.active": "0x0000000000000001",
+          "power.draw": "77.75 W",
+          "power.limit": "700.00 W",
+          "temperature.gpu": "32",
+          "temperature.memory": "29",
+          "fan.speed": "[N/A]",
+          "utilization.gpu": "0 %",
+          "utilization.memory": "0 %",
+          "memory.used": "0 MiB",
+          "memory.free": "143156 MiB",
+          "pcie.link.gen.current": "5",
+          "pcie.link.width.current": "16"
+        },
+        {
+          "index": "5",
+          "uuid": "GPU-2c1d24fb-c9a6-9d6c-fa91-28ea2b50e17f",
+          "pstate": "P0",
+          "clocks.sm": "345 MHz",
+          "clocks.mem": "3201 MHz",
+          "clocks.gr": "345 MHz",
+          "clocks.applications.graphics": "1980 MHz",
+          "clocks.applications.memory": "3201 MHz",
+          "clocks_throttle_reasons.active": "0x0000000000000001",
+          "clocks_event_reasons.active": "0x0000000000000001",
+          "power.draw": "75.13 W",
+          "power.limit": "700.00 W",
+          "temperature.gpu": "33",
+          "temperature.memory": "32",
+          "fan.speed": "[N/A]",
+          "utilization.gpu": "0 %",
+          "utilization.memory": "0 %",
+          "memory.used": "0 MiB",
+          "memory.free": "143156 MiB",
+          "pcie.link.gen.current": "5",
+          "pcie.link.width.current": "16"
+        },
+        {
+          "index": "6",
+          "uuid": "GPU-338e7fe0-5ca6-f37f-b9b6-ea4ea6c5358b",
+          "pstate": "P0",
+          "clocks.sm": "345 MHz",
+          "clocks.mem": "3201 MHz",
+          "clocks.gr": "345 MHz",
+          "clocks.applications.graphics": "1980 MHz",
+          "clocks.applications.memory": "3201 MHz",
+          "clocks_throttle_reasons.active": "0x0000000000000001",
+          "clocks_event_reasons.active": "0x0000000000000001",
+          "power.draw": "77.43 W",
+          "power.limit": "700.00 W",
+          "temperature.gpu": "35",
+          "temperature.memory": "32",
+          "fan.speed": "[N/A]",
+          "utilization.gpu": "0 %",
+          "utilization.memory": "0 %",
+          "memory.used": "0 MiB",
+          "memory.free": "143156 MiB",
+          "pcie.link.gen.current": "5",
+          "pcie.link.width.current": "16"
+        },
+        {
+          "index": "7",
+          "uuid": "GPU-3aa19cef-f7a3-bd28-1b5e-2e6d8b8ca670",
+          "pstate": "P0",
+          "clocks.sm": "1980 MHz",
+          "clocks.mem": "3201 MHz",
+          "clocks.gr": "1980 MHz",
+          "clocks.applications.graphics": "1980 MHz",
+          "clocks.applications.memory": "3201 MHz",
+          "clocks_throttle_reasons.active": "0x0000000000000000",
+          "clocks_event_reasons.active": "0x0000000000000000",
+          "power.draw": "121.38 W",
+          "power.limit": "700.00 W",
+          "temperature.gpu": "33",
+          "temperature.memory": "32",
+          "fan.speed": "[N/A]",
+          "utilization.gpu": "0 %",
+          "utilization.memory": "0 %",
+          "memory.used": "32509 MiB",
+          "memory.free": "110648 MiB",
+          "pcie.link.gen.current": "5",
+          "pcie.link.width.current": "16"
+        }
+      ],
+      "nvml_via_torch": {
+        "clock_rate": 1980,
+        "power_draw": 121376,
+        "temperature": 33,
+        "utilization": 0,
+        "memory_usage": 0
+      },
+      "gpu": {
+        "index": "7",
+        "name": "NVIDIA H200",
+        "uuid": "GPU-3aa19cef-f7a3-bd28-1b5e-2e6d8b8ca670",
+        "serial": "1750225056892",
+        "driver_version": "580.173.02",
+        "vbios_version": "96.00.A5.00.03",
+        "pci.bus_id": "00000000:DB:00.0",
+        "pcie.link.gen.max": "5",
+        "pcie.link.width.max": "16",
+        "clocks.max.sm": "1980 MHz",
+        "clocks.max.mem": "3201 MHz",
+        "clocks.max.gr": "1980 MHz",
+        "clocks.default_applications.graphics": "1980 MHz",
+        "clocks.default_applications.memory": "3201 MHz",
+        "ecc.mode.current": "Enabled",
+        "ecc.mode.pending": "Enabled",
+        "mig.mode.current": "Disabled",
+        "mig.mode.pending": "Disabled",
+        "persistence_mode": "Enabled",
+        "compute_mode": "Default",
+        "accounting.mode": "Disabled",
+        "power.max_limit": "700.00 W",
+        "power.min_limit": "200.00 W",
+        "power.default_limit": "700.00 W",
+        "enforced.power.limit": "700.00 W",
+        "memory.total": "143771 MiB",
+        "_matched_by": "uuid",
+        "pstate": "P0",
+        "clocks.sm": "1980 MHz",
+        "clocks.mem": "3201 MHz",
+        "clocks.gr": "1980 MHz",
+        "clocks.applications.graphics": "1980 MHz",
+        "clocks.applications.memory": "3201 MHz",
+        "clocks_throttle_reasons.active": "0x0000000000000000",
+        "clocks_event_reasons.active": "0x0000000000000000",
+        "power.draw": "121.38 W",
+        "power.limit": "700.00 W",
+        "temperature.gpu": "33",
+        "temperature.memory": "32",
+        "fan.speed": "[N/A]",
+        "utilization.gpu": "0 %",
+        "utilization.memory": "0 %",
+        "memory.used": "32509 MiB",
+        "memory.free": "110648 MiB",
+        "pcie.link.gen.current": "5",
+        "pcie.link.width.current": "16"
+      },
+      "physical_gpu": {
+        "cuda_ordinal": 0,
+        "uuid": "3aa19cef-f7a3-bd28-1b5e-2e6d8b8ca670",
+        "nvidia_smi_index": 7,
+        "matched_by": "uuid",
+        "cuda_visible_devices": "7",
+        "cuda_device_order": null
+      },
+      "clocks": {
+        "state": "unlocked",
+        "basis": [
+          "application clocks equal their defaults"
+        ],
+        "throttle_reasons": [],
+        "sm_mhz": 1980.0,
+        "sm_max_mhz": 1980.0,
+        "sm_frac_of_max": 1.0,
+        "mem_mhz": 3201.0,
+        "mem_max_mhz": 3201.0,
+        "mem_frac_of_max": 1.0,
+        "applications_sm_mhz": 1980.0,
+        "applications_mem_mhz": 3201.0,
+        "default_applications_sm_mhz": 1980.0,
+        "default_applications_mem_mhz": 3201.0
+      },
+      "errors": {}
+    }
+  }
+}
