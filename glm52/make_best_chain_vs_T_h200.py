@@ -1,4 +1,4 @@
-"""`report_glm52_h200/best_chain_vs_T.png` -- one curve: the best fusion CHAIN per regime.
+"""`report_glm52_h200/best_chain_vs_T_campaign.png` -- one curve: the best fusion CHAIN per regime.
 
 Companion to `gain_vs_T.png`, and NOT comparable with it. That figure plots one line per
 individual fusion, each against its own unfused two-or-three-kernel chain. This one plots a
@@ -285,7 +285,7 @@ def main() -> None:
     fig.text(0.062, 0.018, wrapped, fontsize=7.8, color=c["secondary"], ha="left",
              va="bottom", linespacing=1.62)
 
-    p = OUT / "best_chain_vs_T.png"
+    p = OUT / "best_chain_vs_T_campaign.png"
     fig.savefig(p, dpi=140, facecolor=c["surface"])
     print(f"wrote {p}  ({len(rows)} regimes, {len({r['config'] for r in rows})} distinct "
           f"winning chains, {n_uni} unique / {n_null} tied-with-unfused)")

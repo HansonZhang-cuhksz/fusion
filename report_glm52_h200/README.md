@@ -1,5 +1,23 @@
 # report_glm52_h200 — NVIDIA H200 (sm_90, Hopper) fusion report
 
+> **`best_chain_vs_T.png` and `chain_gain_vs_T.png` now show the 2026-08-13
+> re-measurement, not this campaign.** The campaign versions are preserved beside them
+> as `best_chain_vs_T_campaign.png` and `chain_gain_vs_T_campaign.png`; the tables in
+> `certain/` are their source. `gain_vs_T.png` and the per-fusion `fusion_*.csv` are
+> untouched — the re-run measured the whole-layer arm only.
+>
+> **About that re-measurement.** One card,
+> one 428-second session, all eleven regimes, configurations frozen from this campaign's own
+> `layer_configurations.json`, with a bootstrap 95 % CI per configuration. It agrees with the
+> tables below to **≤ 0.3 % on absolute layer time at T = 4..1024**, so it corroborates rather
+> than replaces them — but it resolves a unique winner at **6 of 11** regimes against this
+> campaign's 3, and puts the unfused layer in **0** tie sets against this campaign's 3.
+> Two places it supersedes what follows: `decode_bs1` (this campaign's baseline there carried
+> a cold-start excursion, so 1.2886x becomes **1.0693x**), and the "launch-elimination
+> signature" reading of the small-T wins — measured directly, launch cost is 0.2–3.1 % of the
+> layer at ~1.1 µs per launch, not the calibrated 10.3 µs, and `#3`'s decode win is **33.5 µs
+> of device work removed against 2.0 µs of launch**.
+
 Third device in the study, after `report_glm52_c500/` (the schema) and
 `report_glm52_rtx4060/` (the first port). Same CSV field names, same order, so the three
 directories diff against each other. **The differences below are measured facts about this

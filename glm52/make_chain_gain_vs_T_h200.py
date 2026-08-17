@@ -1,4 +1,4 @@
-"""`report_glm52_h200/chain_gain_vs_T.png` -- nine chains, everywhere, including where they lose.
+"""`report_glm52_h200/chain_gain_vs_T_campaign.png` -- nine chains, everywhere, including where they lose.
 
 Companion to `best_chain_vs_T.png`, and directly comparable with it. That figure draws ONE
 curve, the per-regime winner, so a chain appears only where it happens to lead. This one takes
@@ -933,7 +933,7 @@ def main() -> None:
     fig.text(0.062, 0.009, wrapped, fontsize=7.3, color=c["secondary"], ha="left",
              va="bottom", linespacing=1.56)
 
-    p = OUT / "chain_gain_vs_T.png"
+    p = OUT / "chain_gain_vs_T_campaign.png"
     fig.savefig(p, dpi=140, facecolor=c["surface"])
     print(f"wrote {p}  ({len(CHAIN_ORDER)} chains, {len(REGIMES)} regimes, "
           f"{sum(len(v) for v in gain.values())} points, "
